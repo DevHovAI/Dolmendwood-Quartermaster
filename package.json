@@ -1,0 +1,16 @@
+{
+  "name": "dolmenwood-party-inventory",
+  "version": "1.0.0",
+  "description": "Companion party inventory manager for Dolmenwood RPG in Foundry VTT",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "devDependencies": {
+    "@league-of-foundry-developers/foundry-vtt-types": "^9.280.0",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1",
+    "vite-plugin-static-copy": "^1.0.6"
+  }
+}

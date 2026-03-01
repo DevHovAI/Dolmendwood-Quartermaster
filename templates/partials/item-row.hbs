@@ -1,0 +1,48 @@
+<div class="item-row {{#if item.isSecret}}is-secret{{/if}}" data-item-id="{{item.id}}">
+  <span class="item-name">
+    {{#if item.isSecret}}<i class="fas fa-lock secret-icon" title="Secret item"></i>{{/if}}
+    {{item.name}}
+    {{#if item.def}}
+    <span class="item-size-badge size-{{item.def.size}}" title="{{slotCost item.def.size}}">{{sizeLabel item.def.size}}</span>
+    {{else if item.customDefinition.size}}
+    <span class="item-size-badge size-{{item.customDefinition.size}}" title="{{slotCost item.customDefinition.size}}">{{sizeLabel item.customDefinition.size}}</span>
+    {{/if}}
+    {{#if item.def.cannotBeStowed}}<span class="badge badge-cannot-stow" title="Cannot be stowed">Carried</span>{{/if}}
+  </span>
+
+  {{#if canEdit}}
+  <div class="item-qty-controls">
+    <button type="button" data-action="decrementQty" data-item-id="{{item.id}}" class="qty-btn">−</button>
+    <span class="item-qty">{{item.quantity}}</span>
+    <button type="button" data-action="incrementQty" data-item-id="{{item.id}}" class="qty-btn">+</button>
+  </div>
+
+  <select class="item-zone-select" data-item-id="{{item.id}}" title="Move to zone">
+    <option value="tiny" {{#if (eq item.zone "tiny")}}selected{{/if}}>Tiny</option>
+    <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
+    <option value="stowed" {{#if (eq item.zone "stowed")}}selected{{/if}}>Stowed</option>
+  </select>
+
+  <input type="text" class="item-notes-input" data-item-id="{{item.id}}"
+         value="{{item.notes}}" placeholder="Notes…" title="Notes" />
+
+  {{#if isGM}}
+  <button type="button" data-action="toggleSecret" data-item-id="{{item.id}}"
+          class="icon-btn secret-btn" title="{{#if item.isSecret}}Make visible{{else}}Make secret{{/if}}">
+    <i class="fas {{#if item.isSecret}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
+  </button>
+  {{/if}}
+
+  <button type="button" data-action="giveItem" data-item-id="{{item.id}}"
+          class="icon-btn give-btn" title="Give item to another player">
+    <i class="fas fa-share"></i>
+  </button>
+
+  <button type="button" data-action="deleteItem" data-item-id="{{item.id}}"
+          class="icon-btn delete-btn" title="Remove item">
+    <i class="fas fa-trash"></i>
+  </button>
+  {{else}}
+  <span class="item-qty-readonly">×{{item.quantity}}</span>
+  {{/if}}
+</div>

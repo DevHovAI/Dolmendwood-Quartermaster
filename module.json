@@ -1,0 +1,28 @@
+{
+  "id": "dolmenwood-party-inventory",
+  "title": "Dolmenwood Party Inventory",
+  "description": "A companion party inventory manager for Dolmenwood. Tracks slot-based encumbrance, coins, and shop transactions for the whole party.",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Author Name"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "esmodules": ["module.js"],
+  "styles": ["assets/style.css"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "socket": true,
+  "url": "",
+  "manifest": "",
+  "download": ""
+}

@@ -1,0 +1,63 @@
+<div class="player-inventory">
+  {{!-- Header with actor name and speed --}}
+  <div class="inv-header">
+    <h2 class="actor-name">{{actor.name}}</h2>
+    <div class="header-speed {{speedColor encumbrance.finalSpeed}}">
+      {{encumbrance.finalSpeed}}ft
+    </div>
+  </div>
+
+  {{!-- Encumbrance bars --}}
+  {{> encumbrance-bar encumbrance=encumbrance}}
+
+  {{!-- Coins --}}
+  <section class="inv-coins">
+    <h3><i class="fas fa-coins"></i> Coins</h3>
+    {{> coin-display inventory=inventory encumbrance=encumbrance canEdit=canEdit}}
+  </section>
+
+  {{!-- Tiny Items Zone --}}
+  <section class="inv-zone-section">
+    <div class="zone-header">
+      <h3><i class="fas fa-gem"></i> Tiny Items</h3>
+      <span class="zone-count {{#if (gt encumbrance.tinyCount 10)}}over-limit{{/if}}">
+        {{encumbrance.tinyCount}} / 10
+        {{#if (gt encumbrance.tinyOverflow 0)}}
+        <span class="overflow-badge" title="{{encumbrance.tinyOverflow}} tiny items overflow into stowed slots">
+          +{{encumbrance.tinyOverflow}} overflow
+        </span>
+        {{/if}}
+      </span>
+    </div>
+    {{> inventory-zone items=zones.tiny zone="tiny" canEdit=canEdit isGM=isGM}}
+  </section>
+
+  {{!-- Equipped Zone --}}
+  <section class="inv-zone-section">
+    <div class="zone-header">
+      <h3><i class="fas fa-shield-alt"></i> Equipped</h3>
+      <span class="zone-count">{{encumbrance.equippedSlots}} slots</span>
+    </div>
+    {{> inventory-zone items=zones.equipped zone="equipped" canEdit=canEdit isGM=isGM}}
+  </section>
+
+  {{!-- Stowed Zone --}}
+  <section class="inv-zone-section">
+    <div class="zone-header">
+      <h3><i class="fas fa-backpack"></i> Stowed</h3>
+      <span class="zone-count">{{encumbrance.stowedSlots}} slots
+        {{#if (gt encumbrance.coinSlots 0)}}
+        <span class="coin-slot-note" title="Includes {{encumbrance.coinSlots}} slot(s) from coins">
+          ({{encumbrance.coinSlots}} coins)
+        </span>
+        {{/if}}
+      </span>
+    </div>
+    {{> inventory-zone items=zones.stowed zone="stowed" canEdit=canEdit isGM=isGM}}
+  </section>
+
+  {{!-- GM Transaction Log --}}
+  {{#if isGM}}
+  {{> transaction-log transactions=transactions}}
+  {{/if}}
+</div>

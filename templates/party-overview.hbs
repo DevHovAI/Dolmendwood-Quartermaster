@@ -1,0 +1,109 @@
+<div class="party-overview">
+  {{!-- Toolbar --}}
+  <div class="party-toolbar">
+    <h2><i class="fas fa-users"></i> Party Inventory</h2>
+    <div class="toolbar-buttons">
+      <button type="button" data-action="manageParty" class="btn-toolbar">
+        <i class="fas fa-cog"></i> Manage Party
+      </button>
+      <button type="button" data-action="openShop" class="btn-toolbar btn-shop">
+        <i class="fas fa-store"></i> Open Shop
+      </button>
+    </div>
+  </div>
+
+  {{#if members.length}}
+  {{!-- Party Grid --}}
+  <div class="party-grid" style="grid-template-columns: repeat({{members.length}}, 1fr);">
+    {{#each members}}
+    <div class="player-column" data-actor-id="{{this.actorId}}">
+      {{!-- Player header --}}
+      <div class="player-col-header">
+        <span class="player-name">{{this.actor.name}}</span>
+        <span class="player-speed {{speedColor this.encumbrance.finalSpeed}}">
+          {{this.encumbrance.finalSpeed}}ft
+          {{#if (neq this.encumbrance.bottleneck "none")}}
+          <i class="fas fa-exclamation-triangle" title="Bottleneck: {{bottleneckLabel this.encumbrance.bottleneck}}"></i>
+          {{/if}}
+        </span>
+        <button type="button" data-action="openPlayerInventory"
+                data-actor-id="{{this.actorId}}" class="icon-btn open-inv-btn"
+                title="Open {{this.actor.name}}'s inventory">
+          <i class="fas fa-backpack"></i>
+        </button>
+      </div>
+
+      {{!-- Slot bars --}}
+      <div class="player-bars">
+        <div class="bar-row">
+          <span class="bar-label">Eq</span>
+          <div class="bar-track">
+            <div class="bar-fill {{speedColor this.encumbrance.equippedSpeed}}"
+                 style="width: {{equippedBarWidth this.encumbrance.equippedSlots}}"
+                 title="Equipped: {{this.encumbrance.equippedSlots}} slots"></div>
+          </div>
+          <span class="bar-val">{{this.encumbrance.equippedSlots}}</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">St</span>
+          <div class="bar-track">
+            <div class="bar-fill {{speedColor this.encumbrance.stowedSpeed}}"
+                 style="width: {{stowedBarWidth this.encumbrance.stowedSlots}}"
+                 title="Stowed: {{this.encumbrance.stowedSlots}} slots"></div>
+          </div>
+          <span class="bar-val">{{this.encumbrance.stowedSlots}}</span>
+        </div>
+      </div>
+
+      {{!-- Coins summary --}}
+      <div class="player-coins">
+        {{> coin-display inventory=this.inventory encumbrance=this.encumbrance canEdit=false}}
+      </div>
+
+      {{!-- Item list (compact) --}}
+      <div class="player-items-compact">
+        {{#each this.inventory.items}}
+        {{#if this.isSecret}}
+        <div class="item-compact secret-item">
+          <i class="fas fa-lock"></i> <em>Hidden</em>
+        </div>
+        {{else}}
+        <div class="item-compact zone-{{this.zone}}">
+          <span class="item-compact-name">{{this.name}}</span>
+          <span class="item-compact-qty">×{{this.quantity}}</span>
+        </div>
+        {{/if}}
+        {{/each}}
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  {{!-- Party totals footer --}}
+  <div class="party-footer">
+    <span class="footer-label">Party Total:</span>
+    <span class="footer-coins">
+      {{#if (gt partyTotals.pp 0)}}{{partyTotals.pp}} pp{{/if}}
+      {{#if (gt partyTotals.gp 0)}}{{partyTotals.gp}} gp{{/if}}
+      {{#if (gt partyTotals.sp 0)}}{{partyTotals.sp}} sp{{/if}}
+      {{#if (gt partyTotals.cp 0)}}{{partyTotals.cp}} cp{{/if}}
+    </span>
+  </div>
+
+  {{else}}
+  <div class="party-empty">
+    <p>No party members added yet.</p>
+    <button type="button" data-action="manageParty" class="btn-toolbar">
+      <i class="fas fa-plus"></i> Add Party Members
+    </button>
+  </div>
+  {{/if}}
+
+  {{!-- Recent Transactions --}}
+  {{#if transactions.length}}
+  <details class="party-transactions">
+    <summary><i class="fas fa-scroll"></i> Recent Transactions</summary>
+    {{> transaction-log transactions=transactions}}
+  </details>
+  {{/if}}
+</div>

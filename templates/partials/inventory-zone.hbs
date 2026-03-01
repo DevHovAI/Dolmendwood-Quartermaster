@@ -1,0 +1,10 @@
+<div class="inventory-zone zone-{{zone}}">
+  {{#each items}}
+  {{> item-row item=this canEdit=../canEdit isGM=../isGM}}
+  {{/each}}
+  {{#if canEdit}}
+  <button type="button" class="add-item-zone-btn" data-action="addItem" data-zone="{{zone}}">
+    <i class="fas fa-plus"></i> Add Item
+  </button>
+  {{/if}}
+</div>

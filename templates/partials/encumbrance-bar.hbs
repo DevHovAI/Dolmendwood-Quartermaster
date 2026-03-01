@@ -1,0 +1,26 @@
+<div class="encumbrance-bar">
+  <div class="enc-row enc-equipped">
+    <span class="enc-label">Equipped</span>
+    <div class="enc-track" title="{{encumbrance.equippedSlots}} / 10 slots">
+      <div class="enc-fill {{speedColor encumbrance.equippedSpeed}}"
+           style="width: {{equippedBarWidth encumbrance.equippedSlots}}"></div>
+    </div>
+    <span class="enc-slots">{{encumbrance.equippedSlots}}</span>
+    <span class="enc-speed {{speedColor encumbrance.equippedSpeed}}">→ {{encumbrance.equippedSpeed}}ft</span>
+  </div>
+  <div class="enc-row enc-stowed">
+    <span class="enc-label">Stowed</span>
+    <div class="enc-track" title="{{encumbrance.stowedSlots}} / 16 slots">
+      <div class="enc-fill {{speedColor encumbrance.stowedSpeed}}"
+           style="width: {{stowedBarWidth encumbrance.stowedSlots}}"></div>
+    </div>
+    <span class="enc-slots">{{encumbrance.stowedSlots}}</span>
+    <span class="enc-speed {{speedColor encumbrance.stowedSpeed}}">→ {{encumbrance.stowedSpeed}}ft</span>
+  </div>
+  <div class="enc-final {{speedColor encumbrance.finalSpeed}}">
+    <strong>Speed: {{encumbrance.finalSpeed}}ft</strong>
+    {{#if (neq encumbrance.bottleneck "none")}}
+    <span class="enc-bottleneck">⚠ {{bottleneckLabel encumbrance.bottleneck}}</span>
+    {{/if}}
+  </div>
+</div>

@@ -1,0 +1,93 @@
+<div class="shop-panel">
+  {{!-- Shop Header --}}
+  <div class="shop-header">
+    <h2><i class="fas fa-store"></i> Shop</h2>
+
+    {{!-- Target actor selector --}}
+    <div class="shop-target">
+      <label for="shop-target-actor">Buying for:</label>
+      <select id="shop-target-actor">
+        <option value="">— Select party member —</option>
+        {{#each partyMembers}}
+        <option value="{{this.id}}" {{#if (eq this.id ../selectedActorId)}}selected{{/if}}>
+          {{this.name}}
+        </option>
+        {{/each}}
+      </select>
+    </div>
+
+    {{!-- Selected actor encumbrance summary --}}
+    {{#if selectedActor}}
+    <div class="shop-target-summary">
+      <span>{{selectedActor.name}}:</span>
+      {{> encumbrance-bar encumbrance=selectedEncumbrance}}
+    </div>
+    {{/if}}
+  </div>
+
+  {{!-- Tag Filters --}}
+  {{#if allTags.length}}
+  <div class="shop-tag-filters">
+    <span class="tag-filter-label">Tags:</span>
+    {{#each allTags}}
+    <button type="button" class="tag-chip {{#if (eq (lookup ../shopState.activeTags @index) this)}}active{{/if}}"
+            data-action="toggleTag" data-tag="{{this}}">
+      {{this}}
+    </button>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{!-- Search --}}
+  <div class="shop-search">
+    <input type="text" id="shop-search" placeholder="Search items…" value="{{searchText}}" />
+    <button type="button" data-action="addCustomItem" class="btn-custom-item"
+            title="Grant a custom item to the selected party member">
+      <i class="fas fa-magic"></i> Custom Item
+    </button>
+  </div>
+
+  {{!-- Item Catalog grouped by category --}}
+  <div class="shop-catalog">
+    {{#each grouped}}
+    <details class="shop-category" open>
+      <summary class="shop-category-name">{{@key}}</summary>
+      <div class="shop-item-list">
+        {{#each this}}
+        <div class="shop-item" data-item-id="{{this.id}}">
+          <div class="shop-item-info">
+            <span class="shop-item-name">{{this.name}}</span>
+            <span class="shop-item-subcategory">{{this.subcategory}}</span>
+            {{#if this.qualities.length}}
+            <span class="shop-item-qualities">{{#each this.qualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>
+            {{/if}}
+          </div>
+          <div class="shop-item-meta">
+            <span class="shop-item-size size-{{this.size}}" title="{{slotCost this.size}}">
+              {{sizeLabel this.size}}
+            </span>
+            <span class="shop-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
+          </div>
+          <div class="shop-item-actions">
+            <button type="button" data-action="purchaseItem" data-item-id="{{this.id}}"
+                    class="btn-purchase" title="Purchase (deducts coins)">
+              <i class="fas fa-shopping-cart"></i> Buy
+            </button>
+            <button type="button" data-action="grantItem" data-item-id="{{this.id}}"
+                    class="btn-grant" title="Grant item (no cost)">
+              <i class="fas fa-gift"></i> Grant
+            </button>
+          </div>
+          {{#if this.description}}
+          <div class="shop-item-description">{{this.description}}</div>
+          {{/if}}
+        </div>
+        {{/each}}
+      </div>
+    </details>
+    {{/each}}
+  </div>
+
+  {{!-- Transaction Log --}}
+  {{> transaction-log transactions=[]}}
+</div>

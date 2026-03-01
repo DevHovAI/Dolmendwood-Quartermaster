@@ -1,0 +1,22 @@
+<div class="transaction-log">
+  <h4><i class="fas fa-scroll"></i> Transaction Log</h4>
+  {{#if transactions.length}}
+  <div class="transaction-entries">
+    {{#each transactions}}
+    <div class="transaction-entry tx-{{this.type}}">
+      <span class="tx-time" title="{{this.timestamp}}">
+        {{!-- Display relative or formatted time --}}
+      </span>
+      <span class="tx-type">{{this.type}}</span>
+      <span class="tx-details">
+        {{#each this.items}}
+          {{this.quantity}}× {{this.name}}
+        {{/each}}
+      </span>
+    </div>
+    {{/each}}
+  </div>
+  {{else}}
+  <p class="tx-empty"><em>No transactions yet.</em></p>
+  {{/if}}
+</div>

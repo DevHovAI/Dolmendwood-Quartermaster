@@ -1,0 +1,62 @@
+{
+  "DOLMENWOOD.PartyOverview.Title": "Party Inventory Overview",
+  "DOLMENWOOD.PlayerInventory.Title": "Inventory",
+  "DOLMENWOOD.Shop.Title": "Shop",
+
+  "DOLMENWOOD.Zone.Tiny": "Tiny Items",
+  "DOLMENWOOD.Zone.Equipped": "Equipped",
+  "DOLMENWOOD.Zone.Stowed": "Stowed",
+
+  "DOLMENWOOD.Encumbrance.Equipped": "Equipped",
+  "DOLMENWOOD.Encumbrance.Stowed": "Stowed",
+  "DOLMENWOOD.Encumbrance.Speed": "Speed",
+  "DOLMENWOOD.Encumbrance.Slots": "slots",
+  "DOLMENWOOD.Encumbrance.Bottleneck.Equipped": "Equipped zone is the bottleneck",
+  "DOLMENWOOD.Encumbrance.Bottleneck.Stowed": "Stowed zone is the bottleneck",
+  "DOLMENWOOD.Encumbrance.Bottleneck.Both": "Both zones are limiting speed",
+
+  "DOLMENWOOD.Item.Add": "Add Item",
+  "DOLMENWOOD.Item.Delete": "Remove item",
+  "DOLMENWOOD.Item.Secret": "Secret (only visible to GM and owner)",
+  "DOLMENWOOD.Item.Give": "Give to another player",
+  "DOLMENWOOD.Item.Notes": "Notes",
+  "DOLMENWOOD.Item.Quantity": "Quantity",
+  "DOLMENWOOD.Item.Zone": "Zone",
+  "DOLMENWOOD.Item.Size.Tiny": "Tiny",
+  "DOLMENWOOD.Item.Size.Normal": "Normal",
+  "DOLMENWOOD.Item.Size.Large": "Large",
+  "DOLMENWOOD.Item.CannotBeStowed": "Cannot be stowed",
+
+  "DOLMENWOOD.Currency.CP": "cp",
+  "DOLMENWOOD.Currency.SP": "sp",
+  "DOLMENWOOD.Currency.GP": "gp",
+  "DOLMENWOOD.Currency.PP": "pp",
+  "DOLMENWOOD.Currency.CopperPieces": "Copper Pieces",
+  "DOLMENWOOD.Currency.SilverPieces": "Silver Pieces",
+  "DOLMENWOOD.Currency.GoldPieces": "Gold Pieces",
+  "DOLMENWOOD.Currency.Pellucidium": "Pellucidium",
+
+  "DOLMENWOOD.Shop.BuyingFor": "Buying for",
+  "DOLMENWOOD.Shop.Purchase": "Purchase",
+  "DOLMENWOOD.Shop.Grant": "Grant",
+  "DOLMENWOOD.Shop.CustomItem": "Custom Item",
+  "DOLMENWOOD.Shop.Search": "Search items…",
+  "DOLMENWOOD.Shop.Tags": "Tags",
+  "DOLMENWOOD.Shop.InsufficientFunds": "Insufficient funds",
+  "DOLMENWOOD.Shop.GMOverride": "GM Override",
+
+  "DOLMENWOOD.Party.ManageMembers": "Manage Party Members",
+  "DOLMENWOOD.Party.OpenShop": "Open Shop",
+  "DOLMENWOOD.Party.Total": "Party Total",
+  "DOLMENWOOD.Party.NoMembers": "No party members added yet.",
+
+  "DOLMENWOOD.Transaction.Type.Purchase": "Purchase",
+  "DOLMENWOOD.Transaction.Type.Trade": "Trade",
+  "DOLMENWOOD.Transaction.Type.GMGrant": "GM Grant",
+  "DOLMENWOOD.Transaction.Type.GMRemove": "GM Remove",
+
+  "DOLMENWOOD.Settings.PartyActorIds.Name": "Party Members",
+  "DOLMENWOOD.Settings.PartyActorIds.Hint": "Actor IDs of characters included in the party overview.",
+  "DOLMENWOOD.Settings.ShopState.Name": "Shop State",
+  "DOLMENWOOD.Settings.ShopState.Hint": "Active tags and available items for the shop panel."
+}
