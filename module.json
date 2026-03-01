@@ -1,11 +1,11 @@
 {
   "id": "dolmenwood-party-inventory",
-  "title": "Dolmenwood Party Inventory",
+  "title": "Dolmendudes Quartermaster",
   "description": "A companion party inventory manager for Dolmenwood. Tracks slot-based encumbrance, coins, and shop transactions for the whole party.",
   "version": "1.0.0",
   "authors": [
     {
-      "name": "Author Name"
+      "name": "Dolmendudes"
     }
   ],
   "compatibility": {
@@ -22,7 +22,7 @@
     }
   ],
   "socket": true,
-  "url": "",
-  "manifest": "",
+  "url": "https://github.com/DevHovAI/Dolmendwood-Quartermaster",
+  "manifest": "https://github.com/DevHovAI/Dolmendwood-Quartermaster/releases/latest/download/module.json",
   "download": ""
 }
