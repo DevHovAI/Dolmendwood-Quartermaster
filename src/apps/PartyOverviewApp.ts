@@ -122,7 +122,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
 
   private static async _onManageParty(this: PartyOverviewApp): Promise<void> {
     const g = game as Game;
-    const actors = (g.actors?.contents ?? []).filter((a) => a.type === "character");
+    const actors = g.actors?.contents ?? [];
     const currentIds = g.settings.get(MODULE_ID, "partyActorIds") as string[];
 
     const checkboxes = actors

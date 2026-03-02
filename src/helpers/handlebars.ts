@@ -81,6 +81,11 @@ export function registerHandlebarsHelpers(): void {
 }
 
 export async function registerHandlebarsPartials(): Promise<void> {
-  const partialPaths = Object.values(TEMPLATES.PARTIALS);
-  await loadTemplates(partialPaths);
+  await loadTemplates({
+    "transaction-log": TEMPLATES.PARTIALS.TRANSACTION_LOG,
+    "inventory-zone": TEMPLATES.PARTIALS.INVENTORY_ZONE,
+    "item-row": TEMPLATES.PARTIALS.ITEM_ROW,
+    "coin-display": TEMPLATES.PARTIALS.COIN_DISPLAY,
+    "encumbrance-bar": TEMPLATES.PARTIALS.ENCUMBRANCE_BAR,
+  });
 }

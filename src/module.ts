@@ -95,16 +95,22 @@ Hooks.on("getSceneControlButtons", (controls: SceneControl[]) => {
   const g = game as Game;
   if (!g.user?.isGM) return;
 
-  // Add to the "token" control group
-  const tokenControls = controls.find((c) => c.name === "token");
-  if (tokenControls) {
-    tokenControls.tools.push({
-      name: "dolmenwood-party-inventory",
-      title: "Party Inventory",
-      icon: "fas fa-backpack",
-      button: true,
-      onClick: () => openPartyOverview(),
-    } as SceneControlTool);
+  const tokenControls = controls.find((c) => c.name === "token" || c.name === "tokens");
+  if (!tokenControls) return;
+
+  const tool = {
+    name: "dolmenwood-party-inventory",
+    title: "Party Inventory",
+    icon: "fas fa-backpack",
+    button: true,
+    onClick: () => openPartyOverview(),
+  } as SceneControlTool;
+
+  // v13 changed tools from an array to a keyed object; handle both
+  if (Array.isArray(tokenControls.tools)) {
+    tokenControls.tools.push(tool);
+  } else {
+    (tokenControls.tools as Record<string, unknown>)["dolmenwood-party-inventory"] = tool;
   }
 });
 
