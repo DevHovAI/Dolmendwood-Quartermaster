@@ -5,6 +5,100 @@ import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { ShopApp } from "./ShopApp";
 import { PlayerInventoryApp } from "./PlayerInventoryApp";
 
+export interface PartySummaryCoin {
+  pp: number; gp: number; sp: number; cp: number;
+}
+
+export interface PartySummaryItem {
+  name: string;
+  quantity: number;
+  category: string;
+  ownerName: string;
+  isSecret: boolean;
+}
+
+export interface PartySummary {
+  grouped: Record<string, PartySummaryItem[]>;
+  coins: PartySummaryCoin;
+  totalCp: number;
+  totalGpStr: string;
+  hasItems: boolean;
+}
+
+export function buildPartySummary(
+  partyActors: Actor[],
+  isGM: boolean,
+  currentUser: User | null,
+  coins?: PartySummaryCoin
+): PartySummary {
+  const summaryCoins = coins ?? { pp: 0, gp: 0, sp: 0, cp: 0 };
+
+  // If coins weren't pre-computed (e.g. from PlayerInventoryApp), sum them here
+  if (!coins) {
+    for (const actor of partyActors) {
+      const inv = FlagManager.getInventory(actor);
+      summaryCoins.pp += inv.coins.pp;
+      summaryCoins.gp += inv.coins.gp;
+      summaryCoins.sp += inv.coins.sp;
+      summaryCoins.cp += inv.coins.cp;
+    }
+  }
+
+  const allItems: PartySummaryItem[] = [];
+
+  for (const actor of partyActors) {
+    const inv = FlagManager.getInventory(actor);
+    const userOwnsActor =
+      currentUser !== null &&
+      !currentUser.isGM &&
+      actor.testUserPermission(currentUser, "OWNER");
+
+    for (const item of inv.items) {
+      // Secret items: only GM or the actor's owner can see them
+      if (item.isSecret && !isGM && !userOwnsActor) continue;
+
+      const def = CatalogManager.getDefinition(item.definitionId);
+      allItems.push({
+        name: item.name,
+        quantity: item.quantity,
+        category: def?.category ?? "Custom",
+        ownerName: actor.name ?? "Unknown",
+        isSecret: item.isSecret,
+      });
+    }
+  }
+
+  // Group by category, items sorted alphabetically within each group
+  const grouped: Record<string, PartySummaryItem[]> = {};
+  for (const item of [...allItems].sort((a, b) => a.name.localeCompare(b.name))) {
+    if (!grouped[item.category]) grouped[item.category] = [];
+    grouped[item.category].push(item);
+  }
+
+  const totalCp =
+    summaryCoins.cp +
+    summaryCoins.sp * 10 +
+    summaryCoins.gp * 100 +
+    summaryCoins.pp * 500;
+
+  const gpWhole = Math.floor(totalCp / 100);
+  const spRem = Math.floor((totalCp % 100) / 10);
+  const cpRem = totalCp % 10;
+  const parts: string[] = [];
+  if (gpWhole) parts.push(`${gpWhole} gp`);
+  if (spRem) parts.push(`${spRem} sp`);
+  if (cpRem || parts.length === 0) parts.push(`${cpRem} cp`);
+  const totalGpStr = parts.join(" ");
+
+  return {
+    grouped,
+    coins: summaryCoins,
+    totalCp,
+    totalGpStr,
+    hasItems: allItems.length > 0,
+  };
+}
+
 export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
 ) {
@@ -65,12 +159,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
       .filter(Boolean);
 
     // Party-wide totals
-    const partyTotals = {
-      cp: 0,
-      sp: 0,
-      gp: 0,
-      pp: 0,
-    };
+    const partyTotals = { cp: 0, sp: 0, gp: 0, pp: 0 };
     for (const member of members) {
       if (!member) continue;
       partyTotals.cp += member.inventory.coins.cp;
@@ -79,10 +168,15 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
       partyTotals.pp += member.inventory.coins.pp;
     }
 
+    const isGM = g.user?.isGM ?? false;
+    const currentUser = g.user ?? null;
+    const partySummary = buildPartySummary(partyActors, isGM, currentUser, partyTotals);
+
     return {
       members,
       partyTotals,
-      isGM: g.user?.isGM ?? false,
+      partySummary,
+      isGM,
       transactions: FlagManager.getTransactions().slice(-20).reverse(),
     };
   }

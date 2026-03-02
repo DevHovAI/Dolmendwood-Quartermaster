@@ -82,16 +82,8 @@
     {{/each}}
   </div>
 
-  {{!-- Party totals footer --}}
-  <div class="party-footer">
-    <span class="footer-label">Party Total:</span>
-    <span class="footer-coins">
-      {{#if (gt partyTotals.pp 0)}}{{partyTotals.pp}} pp{{/if}}
-      {{#if (gt partyTotals.gp 0)}}{{partyTotals.gp}} gp{{/if}}
-      {{#if (gt partyTotals.sp 0)}}{{partyTotals.sp}} sp{{/if}}
-      {{#if (gt partyTotals.cp 0)}}{{partyTotals.cp}} cp{{/if}}
-    </span>
-  </div>
+  {{!-- Party Gear & Wealth summary --}}
+  {{> party-summary partySummary=partySummary}}
 
   {{else}}
   <div class="party-empty">

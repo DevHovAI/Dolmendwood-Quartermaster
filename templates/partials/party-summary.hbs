@@ -1,0 +1,42 @@
+<details class="party-summary">
+  <summary><i class="fas fa-scroll"></i> Party Gear &amp; Wealth</summary>
+
+  {{!-- Coin totals --}}
+  <div class="summary-wealth">
+    <div class="summary-coin-row">
+      {{#if (gt partySummary.coins.pp 0)}}<span class="summary-coin"><strong>{{partySummary.coins.pp}}</strong> pp</span>{{/if}}
+      {{#if (gt partySummary.coins.gp 0)}}<span class="summary-coin"><strong>{{partySummary.coins.gp}}</strong> gp</span>{{/if}}
+      {{#if (gt partySummary.coins.sp 0)}}<span class="summary-coin"><strong>{{partySummary.coins.sp}}</strong> sp</span>{{/if}}
+      {{#if (gt partySummary.coins.cp 0)}}<span class="summary-coin"><strong>{{partySummary.coins.cp}}</strong> cp</span>{{/if}}
+      {{#unless (gt partySummary.coins.pp 0)}}{{#unless (gt partySummary.coins.gp 0)}}{{#unless (gt partySummary.coins.sp 0)}}{{#unless (gt partySummary.coins.cp 0)}}
+      <span class="summary-coin-empty">No coins</span>
+      {{/unless}}{{/unless}}{{/unless}}{{/unless}}
+    </div>
+    <div class="summary-total">≈ {{partySummary.totalGpStr}}</div>
+  </div>
+
+  {{!-- Items grouped by category --}}
+  {{#if partySummary.hasItems}}
+  <div class="summary-item-list">
+    {{#each partySummary.grouped}}
+    <div class="summary-category">
+      <div class="summary-cat-header">
+        <i class="fas {{itemIcon @key}}"></i> {{@key}}
+      </div>
+      {{#each this}}
+      <div class="summary-item {{#if this.isSecret}}is-secret{{/if}}">
+        <span class="summary-item-name">
+          {{#if this.isSecret}}<i class="fas fa-lock" title="Secret item"></i> {{/if}}
+          {{this.name}}
+          {{#if (gt this.quantity 1)}}<span class="summary-item-qty">×{{this.quantity}}</span>{{/if}}
+        </span>
+        <span class="summary-item-owner">{{this.ownerName}}</span>
+      </div>
+      {{/each}}
+    </div>
+    {{/each}}
+  </div>
+  {{else}}
+  <p class="summary-empty">No items in party inventory.</p>
+  {{/if}}
+</details>

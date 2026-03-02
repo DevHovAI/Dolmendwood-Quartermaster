@@ -78,6 +78,28 @@ export function registerHandlebarsHelpers(): void {
       default: return "-";
     }
   });
+
+  // Category → Font Awesome icon class for inventory items
+  Handlebars.registerHelper("itemIcon", (category: string) => {
+    switch ((category ?? "").toLowerCase()) {
+      case "adventuring gear": return "fa-compass";
+      case "ammunition":       return "fa-bullseye";
+      case "armour":           return "fa-shield-halved";
+      case "arrows":           return "fa-arrow-up";
+      case "camping and travel": return "fa-tent";
+      case "clothing":         return "fa-shirt";
+      case "containers":       return "fa-box";
+      case "holy items":       return "fa-cross";
+      case "light":            return "fa-lightbulb";
+      case "melee":            return "fa-hand-fist";
+      case "missile":          return "fa-crosshairs";
+      case "quarrels":         return "fa-crosshairs";
+      case "stones":           return "fa-circle";
+      case "tools":            return "fa-wrench";
+      case "weapons":          return "fa-gavel";
+      default:                 return "fa-sack";
+    }
+  });
 }
 
 export async function registerHandlebarsPartials(): Promise<void> {
@@ -87,5 +109,6 @@ export async function registerHandlebarsPartials(): Promise<void> {
     "item-row": TEMPLATES.PARTIALS.ITEM_ROW,
     "coin-display": TEMPLATES.PARTIALS.COIN_DISPLAY,
     "encumbrance-bar": TEMPLATES.PARTIALS.ENCUMBRANCE_BAR,
+    "party-summary": TEMPLATES.PARTIALS.PARTY_SUMMARY,
   });
 }

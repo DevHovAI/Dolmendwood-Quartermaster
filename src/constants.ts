@@ -15,6 +15,7 @@ export const TEMPLATES = {
     COIN_DISPLAY: `modules/${MODULE_ID}/templates/partials/coin-display.hbs`,
     ENCUMBRANCE_BAR: `modules/${MODULE_ID}/templates/partials/encumbrance-bar.hbs`,
     TRANSACTION_LOG: `modules/${MODULE_ID}/templates/partials/transaction-log.hbs`,
+    PARTY_SUMMARY: `modules/${MODULE_ID}/templates/partials/party-summary.hbs`,
   },
 } as const;
 

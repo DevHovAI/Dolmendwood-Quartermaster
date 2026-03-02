@@ -1,5 +1,6 @@
 import { TEMPLATES, SOCKET_EVENTS } from "../constants";
 import { ShopApp } from "./ShopApp";
+import { buildPartySummary } from "./PartyOverviewApp";
 import { FlagManager } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
@@ -83,6 +84,12 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
     );
 
+    // All party actors (for the shared summary)
+    const allPartyActors = (g.actors?.contents ?? []).filter((actor) =>
+      (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
+    );
+    const partySummary = buildPartySummary(allPartyActors, isGM, g.user ?? null);
+
     return {
       actor: this.actor,
       actorId: this.actor.id,
@@ -98,6 +105,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       canEdit: isGM,              // full edit: add/delete/move items, change coins — GM only
       canGive: isOwner && !isGM, // give items/coins to others — player only
       partyMembers,
+      partySummary,
       transactions: isGM ? FlagManager.getTransactions() : [],
     };
   }

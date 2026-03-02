@@ -71,6 +71,9 @@
     {{> inventory-zone items=zones.stowed zone="stowed" canEdit=canEdit canGive=canGive isGM=isGM}}
   </section>
 
+  {{!-- Party Gear & Wealth summary --}}
+  {{> party-summary partySummary=partySummary}}
+
   {{!-- GM Transaction Log --}}
   {{#if isGM}}
   {{> transaction-log transactions=transactions}}

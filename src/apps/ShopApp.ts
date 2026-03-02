@@ -12,6 +12,8 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   private selectedActorId: string | null = null;
   /** Current search/filter text */
   private searchText = "";
+  /** Only show items the selected actor can afford */
+  private showAffordableOnly = false;
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-shop",
@@ -26,6 +28,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     classes: ["dolmenwood-party-inventory", "shop"],
     actions: {
       toggleTag: ShopApp._onToggleTag,
+      toggleAffordable: ShopApp._onToggleAffordable,
       purchaseItem: ShopApp._onPurchaseItem,
       grantItem: ShopApp._onGrantItem,
       addCustomItem: ShopApp._onAddCustomItem,
@@ -60,6 +63,14 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       ? g.actors?.get(this.selectedActorId)
       : undefined;
 
+    // Compute available funds in cp for affordability filtering
+    const availableCp = selectedInventory
+      ? selectedInventory.coins.cp +
+        selectedInventory.coins.sp * 10 +
+        selectedInventory.coins.gp * 100 +
+        selectedInventory.coins.pp * 500
+      : 0;
+
     // Filter catalog
     let items = CatalogManager.filterByTags(shopState.activeTags);
     if (shopState.availableItems.length > 0) {
@@ -73,6 +84,16 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
           i.category.toLowerCase().includes(q) ||
           i.subcategory.toLowerCase().includes(q)
       );
+    }
+    if (this.showAffordableOnly && selectedInventory) {
+      items = items.filter((i) => {
+        const costCp =
+          i.cost.currency === "cp" ? i.cost.amount :
+          i.cost.currency === "sp" ? i.cost.amount * 10 :
+          i.cost.currency === "gp" ? i.cost.amount * 100 :
+          i.cost.amount * 500;
+        return availableCp >= costCp;
+      });
     }
 
     // Group by category
@@ -104,6 +125,8 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       selectedEncumbrance,
       searchText: this.searchText,
       isGM,
+      showAffordableOnly: this.showAffordableOnly,
+      availableCp,
     };
   }
 
@@ -133,6 +156,11 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   }
 
   // ─── Action Handlers ────────────────────────────────────────────────────────
+
+  private static _onToggleAffordable(this: ShopApp): void {
+    this.showAffordableOnly = !this.showAffordableOnly;
+    this.render();
+  }
 
   private static async _onToggleTag(
     this: ShopApp,
@@ -167,23 +195,20 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
     const inventory = FlagManager.getInventory(actor);
 
-    // Calculate available funds
-    const availableCp =
+    // Calculate available funds across all denominations
+    const totalCp =
       inventory.coins.cp +
       inventory.coins.sp * 10 +
       inventory.coins.gp * 100 +
       inventory.coins.pp * 500;
 
     const costCp =
-      def.cost.currency === "cp"
-        ? def.cost.amount
-        : def.cost.currency === "sp"
-          ? def.cost.amount * 10
-          : def.cost.currency === "gp"
-            ? def.cost.amount * 100
-            : def.cost.amount * 500; // pp
+      def.cost.currency === "cp" ? def.cost.amount :
+      def.cost.currency === "sp" ? def.cost.amount * 10 :
+      def.cost.currency === "gp" ? def.cost.amount * 100 :
+      def.cost.amount * 500; // pp
 
-    const canAfford = availableCp >= costCp;
+    const canAfford = totalCp >= costCp;
 
     // Show confirmation dialog
     const confirmed = await new Promise<boolean>((resolve) => {
@@ -219,14 +244,14 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     // Get zone from dialog — we approximate by finding the rendered dialog
     const zone: InventoryItem["zone"] = "stowed"; // default; dialog already closed
 
-    // Deduct cost from actor's coins
-    const remainingCp = canAfford ? availableCp - costCp : availableCp;
+    // Deduct cost from actor's coins, converting across denominations as needed
     await FlagManager.updateInventory(actor, (inv) => {
       if (canAfford) {
-        inv.coins.gp = Math.floor(remainingCp / 100);
-        inv.coins.sp = Math.floor((remainingCp % 100) / 10);
-        inv.coins.cp = remainingCp % 10;
-        inv.coins.pp = 0;
+        const remaining = totalCp - costCp;
+        inv.coins.pp = Math.floor(remaining / 500);
+        inv.coins.gp = Math.floor((remaining % 500) / 100);
+        inv.coins.sp = Math.floor((remaining % 100) / 10);
+        inv.coins.cp = remaining % 10;
       }
       inv.items.push({
         id: foundry.utils.randomID(),

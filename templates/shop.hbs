@@ -47,6 +47,13 @@
   {{!-- Search --}}
   <div class="shop-search">
     <input type="text" id="shop-search" placeholder="Search items…" value="{{searchText}}" />
+    {{#if selectedActor}}
+    <button type="button" data-action="toggleAffordable"
+            class="btn-affordable {{#if showAffordableOnly}}active{{/if}}"
+            title="Show only items you can afford">
+      <i class="fas fa-coins"></i> Affordable
+    </button>
+    {{/if}}
     {{#if isGM}}
     <button type="button" data-action="addCustomItem" class="btn-custom-item"
             title="Grant a custom item to the selected party member">

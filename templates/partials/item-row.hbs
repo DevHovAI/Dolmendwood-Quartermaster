@@ -1,6 +1,6 @@
 <div class="item-row {{#if item.isSecret}}is-secret{{/if}}" data-item-id="{{item.id}}">
   <span class="item-name">
-    {{#if item.isSecret}}<i class="fas fa-lock secret-icon" title="Secret item"></i>{{/if}}
+    {{#if item.isSecret}}<i class="fas fa-lock secret-icon" title="Secret item"></i>{{else if item.def}}<i class="fas {{itemIcon item.def.category}} item-cat-icon" title="{{item.def.category}}"></i>{{/if}}
     {{item.name}}
     {{#if item.def}}
     <span class="item-size-badge size-{{item.def.size}}" title="{{slotCost item.def.size}}">{{sizeLabel item.def.size}}</span>
@@ -8,6 +8,7 @@
     <span class="item-size-badge size-{{item.customDefinition.size}}" title="{{slotCost item.customDefinition.size}}">{{sizeLabel item.customDefinition.size}}</span>
     {{/if}}
     {{#if item.def.cannotBeStowed}}<span class="badge badge-cannot-stow" title="Cannot be stowed">Carried</span>{{/if}}
+    {{#if item.def.description}}<span class="item-description">{{item.def.description}}</span>{{/if}}
   </span>
 
   {{#if canEdit}}
