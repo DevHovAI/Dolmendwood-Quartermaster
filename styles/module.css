@@ -76,14 +76,26 @@
   height: 8px;
   background: #ddd;
   border-radius: 4px;
-  overflow: hidden;
+  position: relative;
   border: 1px solid var(--dw-border-light);
 }
 
 .enc-fill {
+  position: absolute;
+  top: 0; left: 0;
   height: 100%;
   transition: width 0.3s ease;
   border-radius: 4px;
+}
+
+.enc-threshold {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: rgba(0, 0, 0, 0.30);
+  border-radius: 1px;
+  pointer-events: none;
 }
 
 .enc-fill.speed-green  { background: var(--speed-green); }
@@ -488,12 +500,24 @@
   height: 6px;
   background: #e0e0e0;
   border-radius: 3px;
-  overflow: hidden;
+  position: relative;
 }
 
 .bar-fill {
+  position: absolute;
+  top: 0; left: 0;
   height: 100%;
   border-radius: 3px;
+}
+
+.bar-threshold {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 1px;
+  pointer-events: none;
 }
 
 .bar-fill.speed-green  { background: var(--speed-green); }

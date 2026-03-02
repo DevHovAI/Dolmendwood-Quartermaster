@@ -38,6 +38,9 @@
             <div class="bar-fill {{speedColor this.encumbrance.equippedSpeed}}"
                  style="width: {{equippedBarWidth this.encumbrance.equippedSlots}}"
                  title="Equipped: {{this.encumbrance.equippedSlots}} slots"></div>
+            <div class="bar-threshold" style="left: 40%" title="30ft (4 slots)"></div>
+            <div class="bar-threshold" style="left: 60%" title="20ft (6 slots)"></div>
+            <div class="bar-threshold" style="left: 80%" title="10ft (8 slots)"></div>
           </div>
           <span class="bar-val">{{this.encumbrance.equippedSlots}}</span>
         </div>
@@ -47,6 +50,9 @@
             <div class="bar-fill {{speedColor this.encumbrance.stowedSpeed}}"
                  style="width: {{stowedBarWidth this.encumbrance.stowedSlots}}"
                  title="Stowed: {{this.encumbrance.stowedSlots}} slots"></div>
+            <div class="bar-threshold" style="left: 68.75%" title="30ft (11 slots)"></div>
+            <div class="bar-threshold" style="left: 81.25%" title="20ft (13 slots)"></div>
+            <div class="bar-threshold" style="left: 93.75%" title="10ft (15 slots)"></div>
           </div>
           <span class="bar-val">{{this.encumbrance.stowedSlots}}</span>
         </div>

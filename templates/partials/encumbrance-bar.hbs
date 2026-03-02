@@ -4,6 +4,9 @@
     <div class="enc-track" title="{{encumbrance.equippedSlots}} / 10 slots">
       <div class="enc-fill {{speedColor encumbrance.equippedSpeed}}"
            style="width: {{equippedBarWidth encumbrance.equippedSlots}}"></div>
+      <div class="enc-threshold" style="left: 40%" title="30ft threshold (4 slots)"></div>
+      <div class="enc-threshold" style="left: 60%" title="20ft threshold (6 slots)"></div>
+      <div class="enc-threshold" style="left: 80%" title="10ft threshold (8 slots)"></div>
     </div>
     <span class="enc-slots">{{encumbrance.equippedSlots}}</span>
     <span class="enc-speed {{speedColor encumbrance.equippedSpeed}}">→ {{encumbrance.equippedSpeed}}ft</span>
@@ -13,6 +16,9 @@
     <div class="enc-track" title="{{encumbrance.stowedSlots}} / 16 slots">
       <div class="enc-fill {{speedColor encumbrance.stowedSpeed}}"
            style="width: {{stowedBarWidth encumbrance.stowedSlots}}"></div>
+      <div class="enc-threshold" style="left: 68.75%" title="30ft threshold (11 slots)"></div>
+      <div class="enc-threshold" style="left: 81.25%" title="20ft threshold (13 slots)"></div>
+      <div class="enc-threshold" style="left: 93.75%" title="10ft threshold (15 slots)"></div>
     </div>
     <span class="enc-slots">{{encumbrance.stowedSlots}}</span>
     <span class="enc-speed {{speedColor encumbrance.stowedSpeed}}">→ {{encumbrance.stowedSpeed}}ft</span>
