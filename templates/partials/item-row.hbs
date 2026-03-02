@@ -33,16 +33,17 @@
   </button>
   {{/if}}
 
-  <button type="button" data-action="giveItem" data-item-id="{{item.id}}"
-          class="icon-btn give-btn" title="Give item to another player">
-    <i class="fas fa-share"></i>
-  </button>
-
   <button type="button" data-action="deleteItem" data-item-id="{{item.id}}"
           class="icon-btn delete-btn" title="Remove item">
     <i class="fas fa-trash"></i>
   </button>
   {{else}}
   <span class="item-qty-readonly">×{{item.quantity}}</span>
+  {{/if}}
+  {{#if canGive}}
+  <button type="button" data-action="giveItem" data-item-id="{{item.id}}"
+          class="icon-btn give-btn" title="Give item to another player">
+    <i class="fas fa-share"></i>
+  </button>
   {{/if}}
 </div>

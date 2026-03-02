@@ -1,6 +1,6 @@
 <div class="inventory-zone zone-{{zone}}">
   {{#each items}}
-  {{> item-row item=this canEdit=../canEdit isGM=../isGM}}
+  {{> item-row item=this canEdit=../canEdit canGive=../canGive isGM=../isGM}}
   {{/each}}
   {{#if canEdit}}
   <button type="button" class="add-item-zone-btn" data-action="addItem" data-zone="{{zone}}">

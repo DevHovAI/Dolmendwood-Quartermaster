@@ -95,7 +95,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       encumbrance,
       isGM,
       isOwner,
-      canEdit: isGM || isOwner,
+      canEdit: isGM,              // full edit: add/delete/move items, change coins — GM only
+      canGive: isOwner && !isGM, // give items/coins to others — player only
       partyMembers,
       transactions: isGM ? FlagManager.getTransactions() : [],
     };

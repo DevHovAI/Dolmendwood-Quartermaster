@@ -58,10 +58,10 @@ export function calculateEncumbrance(
   const tinyOverflow = Math.max(0, tinyCount - 10);
   stowedSlots += Math.ceil(tinyOverflow / 10);
 
-  // Coins: convert all to cp, then 100 cp = 1 stowed slot
+  // Coins: every coin counts as 1 coin regardless of denomination; 100 coins = 1 stowed slot
   const { cp, sp, gp, pp } = inventory.coins;
-  const totalCp = cp + sp * 10 + gp * 100 + pp * 500;
-  const coinSlots = Math.floor(totalCp / 100);
+  const totalCoins = cp + sp + gp + pp;
+  const coinSlots = totalCoins > 0 ? Math.ceil(totalCoins / 100) : 0;
   stowedSlots += coinSlots;
 
   const equippedSpeed = getSpeedForSlots(equippedSlots, EQUIPPED_SPEED_TIERS);
