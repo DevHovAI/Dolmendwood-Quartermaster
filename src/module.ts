@@ -65,9 +65,13 @@ Hooks.once("ready", async () => {
 
   // ─── Note / Map Marker Hooks ───────────────────────────────────────────────
 
+  // Cache of pending flag values keyed on the app instance.
+  // Updated on every input change; read by closeNoteConfig (which fires without HTML in v13).
+  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality } | false; shop?: { name: string; categories: string[] } | false };
+  const pendingNoteFlags = new WeakMap<object, PendingNoteFlags>();
+
   // v13 ApplicationV2 passes an HTMLElement as the second arg; old Application passed jQuery.
-  // This helper normalises whichever we receive.
-  function noteEl(htmlOrEl: unknown): HTMLElement {
+  function toNoteEl(htmlOrEl: unknown): HTMLElement {
     if (htmlOrEl instanceof HTMLElement) return htmlOrEl;
     if (htmlOrEl && typeof (htmlOrEl as { get?: (n: number) => HTMLElement }).get === "function") {
       return (htmlOrEl as { get: (n: number) => HTMLElement }).get(0);
@@ -75,12 +79,9 @@ Hooks.once("ready", async () => {
     return htmlOrEl as HTMLElement;
   }
 
-  // Single renderNoteConfig hook injects both Inn and Shop fieldsets,
-  // and attaches a submit listener to persist flags (replaces closeNoteConfig,
-  // which no longer receives HTML in v13 ApplicationV2).
-  Hooks.on("renderNoteConfig", (app: { document?: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void>; unsetFlag?: (m: string, k: string) => Promise<void> } }, htmlOrEl: unknown) => {
-    const el = noteEl(htmlOrEl);
-    const note = app.document;
+  Hooks.on("renderNoteConfig", (app: object & { document?: { getFlag?: (m: string, k: string) => unknown } }, htmlOrEl: unknown) => {
+    const el = toNoteEl(htmlOrEl);
+    const note = (app as { document?: { getFlag?: (m: string, k: string) => unknown } }).document;
 
     // ── Inn fieldset ──────────────────────────────────────────────────────────
     const existingInn = note?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality } | undefined;
@@ -161,17 +162,18 @@ Hooks.once("ready", async () => {
         (this as HTMLInputElement).checked ? "" : "none";
     });
 
-    // Save flags on form submit (replaces closeNoteConfig which has no HTML in v13)
-    el.querySelector("form")?.addEventListener("submit", () => {
-      if (!note?.setFlag || !note?.unsetFlag) return;
+    // Helper: read current field values from the DOM into the WeakMap cache.
+    // Called on every input change so closeNoteConfig can save without the HTML.
+    const readFlags = (): PendingNoteFlags => {
+      const flags: PendingNoteFlags = {};
 
       const innChecked = (el.querySelector("#note-is-inn") as HTMLInputElement | null)?.checked ?? false;
       if (innChecked) {
         const name = ((el.querySelector("#note-inn-name") as HTMLInputElement | null)?.value ?? "").trim() || "The Wayward Boar";
         const quality = ((el.querySelector("#note-inn-quality") as HTMLSelectElement | null)?.value ?? "common") as InnQuality;
-        void note.setFlag(MODULE_ID, "inn", { name, quality });
+        flags.inn = { name, quality };
       } else {
-        void note.unsetFlag(MODULE_ID, "inn");
+        flags.inn = false; // explicitly unset
       }
 
       const shopChecked = (el.querySelector("#note-is-shop") as HTMLInputElement | null)?.checked ?? false;
@@ -179,22 +181,58 @@ Hooks.once("ready", async () => {
         const name = ((el.querySelector("#note-shop-name") as HTMLInputElement | null)?.value ?? "").trim() || "Shop";
         const categories: string[] = [];
         el.querySelectorAll<HTMLInputElement>(".note-shop-cat:checked").forEach((cb) => categories.push(cb.value));
-        void note.setFlag(MODULE_ID, "shop", { name, categories });
+        flags.shop = { name, categories };
       } else {
-        void note.unsetFlag(MODULE_ID, "shop");
+        flags.shop = false;
       }
-    });
+
+      return flags;
+    };
+
+    // Seed with initial values so closeNoteConfig works even if nothing is changed
+    pendingNoteFlags.set(app, readFlags());
+
+    // Keep cache fresh on every user interaction
+    el.addEventListener("change", () => pendingNoteFlags.set(app, readFlags()));
+    el.addEventListener("input",  () => pendingNoteFlags.set(app, readFlags()));
+  });
+
+  // Save flags when the Note config closes.
+  // closeNoteConfig fires with (app, options) in v13 — no HTML, but we have the WeakMap cache.
+  Hooks.on("closeNoteConfig", async (app: object & { document?: { setFlag?: (m: string, k: string, v: unknown) => Promise<void>; unsetFlag?: (m: string, k: string) => Promise<void> } }) => {
+    const flags = pendingNoteFlags.get(app);
+    if (!flags) return;
+    const note = (app as { document?: { setFlag?: (m: string, k: string, v: unknown) => Promise<void>; unsetFlag?: (m: string, k: string) => Promise<void> } }).document;
+    if (!note?.setFlag || !note?.unsetFlag) return;
+
+    if (flags.inn) await note.setFlag(MODULE_ID, "inn", flags.inn);
+    else if (flags.inn === false) await note.unsetFlag(MODULE_ID, "inn");
+
+    if (flags.shop) await note.setFlag(MODULE_ID, "shop", flags.shop);
+    else if (flags.shop === false) await note.unsetFlag(MODULE_ID, "shop");
+
+    pendingNoteFlags.delete(app);
   });
 
   // Intercept Note click — open InnApp or ShopApp if the note is flagged.
-  // v13 hook name is "activateNote"; if it doesn't fire, try "clickNote".
-  Hooks.on("activateNote", (note: { document?: { getFlag?: (m: string, k: string) => unknown } }) => {
-    const innData = note.document?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality } | undefined;
+  // In v13 the hook arg may be the NoteDocument directly OR a Note placeable —
+  // we try getFlag on both to handle either case.
+  // Hook name "activateNote" covers v11–v13; if it still doesn't fire, also try "clickNote".
+  const handleNoteClick = (noteOrDoc: unknown): boolean | void => {
+    const asDoc = noteOrDoc as { getFlag?: (m: string, k: string) => unknown; document?: { getFlag?: (m: string, k: string) => unknown } };
+    // Try direct getFlag first (NoteDocument), then .document.getFlag (Note placeable)
+    const getFlag = (key: string) =>
+      asDoc.getFlag?.(MODULE_ID, key) ?? asDoc.document?.getFlag?.(MODULE_ID, key);
+
+    const innData = getFlag("inn") as { name?: string; quality?: InnQuality } | undefined;
     if (innData) { openInn(innData.name, innData.quality); return false; }
-    const shopData = note.document?.getFlag?.(MODULE_ID, "shop") as { name?: string; categories?: string[] } | undefined;
+
+    const shopData = getFlag("shop") as { name?: string; categories?: string[] } | undefined;
     if (shopData) { openShop(shopData.name, shopData.categories ?? []); return false; }
-    return true;
-  });
+  };
+
+  Hooks.on("activateNote", handleNoteClick);
+  Hooks.on("clickNote",    handleNoteClick);
 
   // Auto-open player's own inventory (non-GM players)
   const g = game as Game;
