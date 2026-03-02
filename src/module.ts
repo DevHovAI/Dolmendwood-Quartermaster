@@ -81,22 +81,22 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
   }
 });
 
-// Add a button to the sidebar (scene controls) for GM
+// Add a button to the sidebar (scene controls) for all users
 // In Foundry v13, controls is Record<string, SceneControl> and tools is Record<string, SceneControlTool>
 Hooks.on("getSceneControlButtons", (controls: Record<string, SceneControl>) => {
   const g = game as Game;
-  if (!g.user?.isGM) return;
+  const isGM = g.user?.isGM ?? false;
 
   const tokens = controls.tokens;
   if (!tokens) return;
 
   (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-party-inventory"] = {
     name: "dolmenwood-party-inventory",
-    title: "Party Inventory",
+    title: isGM ? "Party Inventory" : "My Inventory",
     icon: "fas fa-backpack",
     order: Object.keys(tokens.tools as Record<string, SceneControlTool>).length,
     button: true,
-    onChange: () => openPartyOverview(),
+    onChange: isGM ? () => openPartyOverview() : () => openPlayerInventory(),
   } as SceneControlTool;
 });
 
@@ -143,11 +143,6 @@ function openPlayerInventory(actorOrId?: Actor | string): void {
 }
 
 function openShop(): void {
-  const g = game as Game;
-  if (!g.user?.isGM) {
-    ui.notifications?.warn("Only the GM can open the Shop.");
-    return;
-  }
   const existing = getAppInstance("dolmenwood-shop");
   if (existing) {
     existing.render({ force: true });

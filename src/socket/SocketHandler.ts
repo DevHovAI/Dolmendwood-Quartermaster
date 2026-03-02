@@ -4,6 +4,7 @@ import type {
   SocketPayload,
   GMGrantPayload,
   GMRemovePayload,
+  GiveCoinsPayload,
   PurchasePayload,
   Transaction,
 } from "../types";
@@ -48,6 +49,12 @@ export class SocketHandler {
         // Purchase is processed by the GM to ensure authoritative write
         if (g.user?.isGM) {
           SocketHandler.onPurchase(payload.data as PurchasePayload);
+        }
+        break;
+
+      case SOCKET_EVENTS.GIVE_COINS:
+        if (g.user?.isGM) {
+          SocketHandler.onGiveCoins(payload.data as GiveCoinsPayload);
         }
         break;
 
@@ -164,6 +171,44 @@ export class SocketHandler {
           gp: -data.totalCost.gp,
           pp: -data.totalCost.pp,
         },
+      ],
+    };
+    await FlagManager.appendTransaction(tx);
+    SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+  }
+
+  private static async onGiveCoins(data: GiveCoinsPayload): Promise<void> {
+    const g = game as Game;
+    const fromActor = g.actors?.get(data.fromActorId);
+    const toActor = g.actors?.get(data.toActorId);
+    if (!fromActor || !toActor) return;
+
+    await FlagManager.updateInventory(fromActor, (inv) => {
+      inv.coins.cp = Math.max(0, inv.coins.cp - data.cp);
+      inv.coins.sp = Math.max(0, inv.coins.sp - data.sp);
+      inv.coins.gp = Math.max(0, inv.coins.gp - data.gp);
+      inv.coins.pp = Math.max(0, inv.coins.pp - data.pp);
+      return inv;
+    });
+
+    await FlagManager.updateInventory(toActor, (inv) => {
+      inv.coins.cp += data.cp;
+      inv.coins.sp += data.sp;
+      inv.coins.gp += data.gp;
+      inv.coins.pp += data.pp;
+      return inv;
+    });
+
+    const tx: Transaction = {
+      id: foundry.utils.randomID(),
+      timestamp: Date.now(),
+      type: "trade",
+      fromActorId: data.fromActorId,
+      toActorId: data.toActorId,
+      items: [],
+      coinsDelta: [
+        { actorId: data.fromActorId, cp: -data.cp, sp: -data.sp, gp: -data.gp, pp: -data.pp },
+        { actorId: data.toActorId, cp: data.cp, sp: data.sp, gp: data.gp, pp: data.pp },
       ],
     };
     await FlagManager.appendTransaction(tx);

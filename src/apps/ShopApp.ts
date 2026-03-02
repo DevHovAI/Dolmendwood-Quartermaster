@@ -47,8 +47,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
     );
 
-    // Auto-select first party member if none selected
-    if (!this.selectedActorId && partyMembers.length > 0) {
+    const isGM = g.user?.isGM ?? false;
+
+    // Non-GM players can only buy for their own character
+    if (!isGM) {
+      this.selectedActorId = g.user?.character?.id ?? null;
+    } else if (!this.selectedActorId && partyMembers.length > 0) {
       this.selectedActorId = partyMembers[0].id ?? null;
     }
 
@@ -99,7 +103,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       selectedInventory,
       selectedEncumbrance,
       searchText: this.searchText,
-      isGM: g.user?.isGM ?? false,
+      isGM,
     };
   }
 

@@ -5,6 +5,9 @@
     <div class="header-speed {{speedColor encumbrance.finalSpeed}}">
       {{encumbrance.finalSpeed}}ft
     </div>
+    <button type="button" data-action="openShop" class="btn-toolbar btn-shop" title="Open Shop">
+      <i class="fas fa-store"></i> Shop
+    </button>
   </div>
 
   {{!-- Encumbrance bars --}}
@@ -12,7 +15,19 @@
 
   {{!-- Coins --}}
   <section class="inv-coins">
-    <h3><i class="fas fa-coins"></i> Coins</h3>
+    <div class="coins-header">
+      <h3><i class="fas fa-coins"></i> Coins</h3>
+      {{#if isGM}}
+      <button type="button" data-action="grantCoins" class="btn-grant-coins" title="Grant coins to this character">
+        <i class="fas fa-gift"></i> Grant Coins
+      </button>
+      {{/if}}
+      {{#if canEdit}}
+      <button type="button" data-action="giveCoins" class="btn-give-coins" title="Give coins to another party member">
+        <i class="fas fa-hand-holding-heart"></i> Give Coins
+      </button>
+      {{/if}}
+    </div>
     {{> coin-display inventory=inventory encumbrance=encumbrance canEdit=canEdit}}
   </section>
 

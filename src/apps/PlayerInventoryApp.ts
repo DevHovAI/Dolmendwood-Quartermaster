@@ -1,4 +1,5 @@
-import { MODULE_ID, TEMPLATES, SOCKET_EVENTS } from "../constants";
+import { TEMPLATES, SOCKET_EVENTS } from "../constants";
+import { ShopApp } from "./ShopApp";
 import { FlagManager } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
@@ -31,6 +32,9 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       deleteItem: PlayerInventoryApp._onDeleteItem,
       toggleSecret: PlayerInventoryApp._onToggleSecret,
       giveItem: PlayerInventoryApp._onGiveItem,
+      giveCoins: PlayerInventoryApp._onGiveCoins,
+      grantCoins: PlayerInventoryApp._onGrantCoins,
+      openShop: PlayerInventoryApp._onOpenShop,
       incrementQty: PlayerInventoryApp._onIncrementQty,
       decrementQty: PlayerInventoryApp._onDecrementQty,
     },
@@ -73,11 +77,11 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         def: CatalogManager.getDefinition(item.definitionId),
       }));
 
-    // Party members for "Give item" dialog
-    const partyActorIds = g.settings.get(MODULE_ID, "partyActorIds") as string[];
-    const partyMembers = partyActorIds
-      .map((id) => g.actors?.get(id))
-      .filter((a): a is Actor => !!a && a.id !== this.actor.id);
+    // Party members for "Give item" / "Give coins" dialogs
+    const partyMembers = (g.actors?.contents ?? []).filter((actor) =>
+      actor.id !== this.actor.id &&
+      (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
+    );
 
     return {
       actor: this.actor,
@@ -228,6 +232,23 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const itemId = target.dataset.itemId!;
     new GiveItemDialog(this.actor, itemId, () => this.render()).render(true);
   }
+
+  private static _onGiveCoins(this: PlayerInventoryApp): void {
+    new GiveCoinsDialog(this.actor, () => this.render()).render(true);
+  }
+
+  private static _onGrantCoins(this: PlayerInventoryApp): void {
+    new GrantCoinsDialog(this.actor, () => this.render()).render(true);
+  }
+
+  private static _onOpenShop(this: PlayerInventoryApp): void {
+    const existing = foundry.applications?.instances?.get("dolmenwood-shop");
+    if (existing) {
+      (existing as { render: (o: unknown) => void }).render({ force: true });
+    } else {
+      new ShopApp().render(true);
+    }
+  }
 }
 
 // ─── Add Item Dialog ──────────────────────────────────────────────────────────
@@ -348,10 +369,10 @@ class AddItemDialog extends Dialog {
 class GiveItemDialog extends Dialog {
   constructor(fromActor: Actor, itemId: string, onComplete: () => void) {
     const g = game as Game;
-    const partyActorIds = g.settings.get(MODULE_ID, "partyActorIds") as string[];
-    const partyMembers = partyActorIds
-      .map((id) => g.actors?.get(id))
-      .filter((a): a is Actor => !!a && a.id !== fromActor.id);
+    const partyMembers = (g.actors?.contents ?? []).filter((actor) =>
+      actor.id !== fromActor.id &&
+      (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
+    );
 
     const memberOptions = partyMembers
       .map((a) => `<option value="${a.id}">${a.name}</option>`)
@@ -417,6 +438,137 @@ class GiveItemDialog extends Dialog {
         cancel: { label: "Cancel" },
       },
       default: "give",
+    });
+  }
+}
+
+// ─── Give Coins Dialog ────────────────────────────────────────────────────────
+
+
+class GiveCoinsDialog extends Dialog {
+  constructor(fromActor: Actor, onComplete: () => void) {
+    const g = game as Game;
+    const partyMembers = (g.actors?.contents ?? []).filter((actor) =>
+      actor.id !== fromActor.id &&
+      (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
+    );
+
+    if (partyMembers.length === 0) {
+      super({
+        title: "Give Coins",
+        content: "<p>No other party members to give coins to.</p>",
+        buttons: { ok: { label: "OK" } },
+        default: "ok",
+      });
+      return;
+    }
+
+    const memberOptions = partyMembers
+      .map((a) => `<option value="${a.id}">${a.name}</option>`)
+      .join("");
+
+    const inv = FlagManager.getInventory(fromActor);
+
+    super({
+      title: "Give Coins",
+      content: `
+        <form>
+          <div class="form-group">
+            <label>Give to</label>
+            <select id="give-coins-target">${memberOptions}</select>
+          </div>
+          <div class="form-group">
+            <label>PP (have: ${inv.coins.pp})</label>
+            <input type="number" id="give-pp" value="0" min="0" max="${inv.coins.pp}" />
+          </div>
+          <div class="form-group">
+            <label>GP (have: ${inv.coins.gp})</label>
+            <input type="number" id="give-gp" value="0" min="0" max="${inv.coins.gp}" />
+          </div>
+          <div class="form-group">
+            <label>SP (have: ${inv.coins.sp})</label>
+            <input type="number" id="give-sp" value="0" min="0" max="${inv.coins.sp}" />
+          </div>
+          <div class="form-group">
+            <label>CP (have: ${inv.coins.cp})</label>
+            <input type="number" id="give-cp" value="0" min="0" max="${inv.coins.cp}" />
+          </div>
+        </form>
+      `,
+      buttons: {
+        give: {
+          label: "Give",
+          callback: (html: JQuery) => {
+            const toActorId = html.find("#give-coins-target").val() as string;
+            const pp = Math.min(inv.coins.pp, Math.max(0, parseInt(html.find("#give-pp").val() as string, 10) || 0));
+            const gp = Math.min(inv.coins.gp, Math.max(0, parseInt(html.find("#give-gp").val() as string, 10) || 0));
+            const sp = Math.min(inv.coins.sp, Math.max(0, parseInt(html.find("#give-sp").val() as string, 10) || 0));
+            const cp = Math.min(inv.coins.cp, Math.max(0, parseInt(html.find("#give-cp").val() as string, 10) || 0));
+            if (pp + gp + sp + cp === 0) return;
+            SocketHandler.emit(SOCKET_EVENTS.GIVE_COINS, {
+              fromActorId: fromActor.id,
+              toActorId,
+              cp, sp, gp, pp,
+            });
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "give",
+    });
+  }
+}
+
+// ─── Grant Coins Dialog (GM only) ────────────────────────────────────────────
+
+class GrantCoinsDialog extends Dialog {
+  constructor(toActor: Actor, onComplete: () => void) {
+    super({
+      title: `Grant Coins to ${toActor.name}`,
+      content: `
+        <form>
+          <div class="form-group">
+            <label>PP</label>
+            <input type="number" id="grant-pp" value="0" min="0" />
+          </div>
+          <div class="form-group">
+            <label>GP</label>
+            <input type="number" id="grant-gp" value="0" min="0" />
+          </div>
+          <div class="form-group">
+            <label>SP</label>
+            <input type="number" id="grant-sp" value="0" min="0" />
+          </div>
+          <div class="form-group">
+            <label>CP</label>
+            <input type="number" id="grant-cp" value="0" min="0" />
+          </div>
+        </form>
+      `,
+      buttons: {
+        grant: {
+          label: "Grant",
+          callback: async (html: JQuery) => {
+            const pp = Math.max(0, parseInt(html.find("#grant-pp").val() as string, 10) || 0);
+            const gp = Math.max(0, parseInt(html.find("#grant-gp").val() as string, 10) || 0);
+            const sp = Math.max(0, parseInt(html.find("#grant-sp").val() as string, 10) || 0);
+            const cp = Math.max(0, parseInt(html.find("#grant-cp").val() as string, 10) || 0);
+            if (pp + gp + sp + cp === 0) return;
+            await FlagManager.updateInventory(toActor, (inv) => {
+              inv.coins.pp += pp;
+              inv.coins.gp += gp;
+              inv.coins.sp += sp;
+              inv.coins.cp += cp;
+              return inv;
+            });
+            ui.notifications?.info(`Granted coins to ${toActor.name}.`);
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "grant",
     });
   }
 }

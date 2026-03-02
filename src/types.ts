@@ -78,6 +78,15 @@ export interface GMRemovePayload {
   itemId: string;
 }
 
+export interface GiveCoinsPayload {
+  fromActorId: string;
+  toActorId: string;
+  cp: number;
+  sp: number;
+  gp: number;
+  pp: number;
+}
+
 export interface PurchasePayload {
   actorId: string;
   definitionId: string;

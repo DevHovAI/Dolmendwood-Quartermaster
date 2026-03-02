@@ -23,6 +23,7 @@ export const SOCKET_EVENTS = {
   PURCHASE_ITEM: "purchaseItem",
   GM_GRANT: "gmGrant",
   GM_REMOVE: "gmRemove",
+  GIVE_COINS: "giveCoins",
   REQUEST_REFRESH: "requestRefresh",
 } as const;
 

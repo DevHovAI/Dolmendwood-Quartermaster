@@ -3,7 +3,8 @@
   <div class="shop-header">
     <h2><i class="fas fa-store"></i> Shop</h2>
 
-    {{!-- Target actor selector --}}
+    {{!-- Target actor selector (GM can pick any party member; players buy for themselves) --}}
+    {{#if isGM}}
     <div class="shop-target">
       <label for="shop-target-actor">Buying for:</label>
       <select id="shop-target-actor">
@@ -15,6 +16,11 @@
         {{/each}}
       </select>
     </div>
+    {{else}}
+    <div class="shop-target">
+      <span>Buying for: <strong>{{selectedActor.name}}</strong></span>
+    </div>
+    {{/if}}
 
     {{!-- Selected actor encumbrance summary --}}
     {{#if selectedActor}}
@@ -41,10 +47,12 @@
   {{!-- Search --}}
   <div class="shop-search">
     <input type="text" id="shop-search" placeholder="Search items…" value="{{searchText}}" />
+    {{#if isGM}}
     <button type="button" data-action="addCustomItem" class="btn-custom-item"
             title="Grant a custom item to the selected party member">
       <i class="fas fa-magic"></i> Custom Item
     </button>
+    {{/if}}
   </div>
 
   {{!-- Item Catalog grouped by category --}}
@@ -73,10 +81,12 @@
                     class="btn-purchase" title="Purchase (deducts coins)">
               <i class="fas fa-shopping-cart"></i> Buy
             </button>
+            {{#if ../isGM}}
             <button type="button" data-action="grantItem" data-item-id="{{this.id}}"
                     class="btn-grant" title="Grant item (no cost)">
               <i class="fas fa-gift"></i> Grant
             </button>
+            {{/if}}
           </div>
           {{#if this.description}}
           <div class="shop-item-description">{{this.description}}</div>
