@@ -5,6 +5,7 @@ import { FlagManager } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
+import { buildIconPickerHTML, activateIconPicker } from "../helpers/handlebars";
 import type { InventoryItem } from "../types";
 
 export class PlayerInventoryApp extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -102,8 +103,9 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       encumbrance,
       isGM,
       isOwner,
-      canEdit: isGM,              // full edit: add/delete/move items, change coins — GM only
-      canGive: isOwner && !isGM, // give items/coins to others — player only
+      canEdit: isGM,                    // full GM controls: delete, secret toggle
+      canAddItem: isOwner && !isGM,     // players can add custom items to their own inventory
+      canGive: isOwner && !isGM,        // give items/coins to others — player only
       partyMembers,
       partySummary,
       transactions: isGM ? FlagManager.getTransactions() : [],
@@ -229,8 +231,12 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     _event: Event,
     target: HTMLElement
   ): void {
-    const defaultZone = (target.dataset.zone ?? "equipped") as InventoryItem["zone"];
-    new AddItemDialog(this.actor, defaultZone, () => this.render()).render(true);
+    const defaultZone = (target.dataset.zone ?? "stowed") as InventoryItem["zone"];
+    if ((game as Game).user?.isGM) {
+      new AddItemDialog(this.actor, defaultZone, () => this.render()).render(true);
+    } else {
+      new AddCustomItemDialog(this.actor, defaultZone, () => this.render()).render(true);
+    }
   }
 
   private static _onGiveItem(
@@ -315,6 +321,14 @@ class AddItemDialog extends Dialog {
                 <option value="large">Large (2 slots)</option>
               </select>
             </div>
+            <div class="form-group">
+              <label>Icon</label>
+              ${buildIconPickerHTML()}
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea id="add-custom-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+            </div>
           </details>
         </form>
       `,
@@ -329,6 +343,8 @@ class AddItemDialog extends Dialog {
             if (customName) {
               // Custom item
               const customSize = html.find("#add-custom-size").val() as "tiny" | "normal" | "large";
+              const customIcon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
+              const customDesc = (html.find("#add-custom-desc").val() as string).trim();
               await FlagManager.updateInventory(actor, (inv) => {
                 inv.items.push({
                   id: foundry.utils.randomID(),
@@ -338,7 +354,12 @@ class AddItemDialog extends Dialog {
                   zone: selectedZone,
                   isSecret: false,
                   notes: "",
-                  customDefinition: { size: customSize, isCustom: true },
+                  customDefinition: {
+                    size: customSize,
+                    isCustom: true,
+                    icon: customIcon,
+                    ...(customDesc ? { description: customDesc } : {}),
+                  },
                 });
                 return inv;
               });
@@ -370,6 +391,97 @@ class AddItemDialog extends Dialog {
     this.actor = actor;
     this.zone = zone;
     this.onComplete = onComplete;
+  }
+
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    activateIconPicker(html);
+  }
+}
+
+// ─── Add Custom Item Dialog (player-facing) ───────────────────────────────────
+
+class AddCustomItemDialog extends Dialog {
+  constructor(actor: Actor, zone: InventoryItem["zone"], onComplete: () => void) {
+    super({
+      title: "Add Custom Item",
+      content: `
+        <form>
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="custom-name" placeholder="Item name" />
+          </div>
+          <div class="form-group">
+            <label>Size</label>
+            <select id="custom-size">
+              <option value="tiny">Tiny (0 slots)</option>
+              <option value="normal" selected>Normal (1 slot)</option>
+              <option value="large">Large (2 slots)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Zone</label>
+            <select id="custom-zone">
+              <option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>
+              <option value="stowed" ${zone === "stowed" ? "selected" : ""}>Stowed</option>
+              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Tiny</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" id="custom-qty" value="1" min="1" />
+          </div>
+          <div class="form-group">
+            <label>Icon</label>
+            ${buildIconPickerHTML()}
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="custom-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+          </div>
+        </form>
+      `,
+      buttons: {
+        add: {
+          label: "Add",
+          callback: async (html: JQuery) => {
+            const name = (html.find("#custom-name").val() as string).trim();
+            if (!name) { ui.notifications?.warn("Item name is required."); return; }
+            const size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
+            const selectedZone = html.find("#custom-zone").val() as InventoryItem["zone"];
+            const qty = Math.max(1, parseInt(html.find("#custom-qty").val() as string, 10) || 1);
+            const icon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
+            const description = (html.find("#custom-desc").val() as string).trim();
+            await FlagManager.updateInventory(actor, (inv) => {
+              inv.items.push({
+                id: foundry.utils.randomID(),
+                definitionId: "",
+                name,
+                quantity: qty,
+                zone: selectedZone,
+                isSecret: false,
+                notes: "",
+                customDefinition: {
+                  size,
+                  isCustom: true,
+                  icon,
+                  ...(description ? { description } : {}),
+                },
+              });
+              return inv;
+            });
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "add",
+    });
+  }
+
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    activateIconPicker(html);
   }
 }
 

@@ -9,6 +9,7 @@ export interface ItemDefinition {
   cost: { amount: number; currency: "cp" | "sp" | "gp" | "pp" };
   weight: number;
   description: string;
+  icon?: string;
   qualities: string[];
   tags: string[];
   isCustom: boolean;

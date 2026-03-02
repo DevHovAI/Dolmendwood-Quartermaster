@@ -3,6 +3,7 @@ import { CatalogManager } from "../data/CatalogManager";
 import { FlagManager } from "../data/FlagManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
+import { buildIconPickerHTML, activateIconPicker } from "../helpers/handlebars";
 import type { ItemDefinition, ShopState, InventoryItem } from "../types";
 
 export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -63,6 +64,17 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       ? g.actors?.get(this.selectedActorId)
       : undefined;
 
+    // Compute selected actor inventory + encumbrance
+    let selectedInventory = undefined;
+    let selectedEncumbrance = undefined;
+    if (selectedActor) {
+      selectedInventory = FlagManager.getInventory(selectedActor);
+      selectedEncumbrance = calculateEncumbrance(
+        selectedInventory,
+        CatalogManager.getMap()
+      );
+    }
+
     // Compute available funds in cp for affordability filtering
     const availableCp = selectedInventory
       ? selectedInventory.coins.cp +
@@ -101,17 +113,6 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     for (const item of items) {
       if (!grouped[item.category]) grouped[item.category] = [];
       grouped[item.category].push(item);
-    }
-
-    // Compute selected actor encumbrance for affordability display
-    let selectedInventory = undefined;
-    let selectedEncumbrance = undefined;
-    if (selectedActor) {
-      selectedInventory = FlagManager.getInventory(selectedActor);
-      selectedEncumbrance = calculateEncumbrance(
-        selectedInventory,
-        CatalogManager.getMap()
-      );
     }
 
     return {
@@ -300,10 +301,16 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       ui.notifications?.warn("Select a party member first.");
       return;
     }
-    const actorId = this.selectedActorId;
+    new AddCustomShopItemDialog(this.selectedActorId).render(true);
+  }
+}
 
-    new Dialog({
-      title: "Add Custom Item",
+// ─── Add Custom Shop Item Dialog ──────────────────────────────────────────────
+
+class AddCustomShopItemDialog extends Dialog {
+  constructor(actorId: string) {
+    super({
+      title: "Grant Custom Item",
       content: `
         <form>
           <div class="form-group">
@@ -331,6 +338,14 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
             </select>
           </div>
           <div class="form-group">
+            <label>Icon</label>
+            ${buildIconPickerHTML()}
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="custom-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+          </div>
+          <div class="form-group">
             <label>Secret?</label>
             <input type="checkbox" id="custom-secret" />
           </div>
@@ -345,6 +360,8 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
             const size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
             const qty = Math.max(1, parseInt(html.find("#custom-qty").val() as string, 10) || 1);
             const zone = html.find("#custom-zone").val() as InventoryItem["zone"];
+            const icon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
+            const description = (html.find("#custom-desc").val() as string).trim();
             const isSecret = html.find("#custom-secret").prop("checked") as boolean;
 
             SocketHandler.emit(SOCKET_EVENTS.GM_GRANT, {
@@ -356,7 +373,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
                 zone,
                 isSecret,
                 notes: "",
-                customDefinition: { size, isCustom: true },
+                customDefinition: {
+                  size,
+                  isCustom: true,
+                  icon,
+                  ...(description ? { description } : {}),
+                },
               },
             });
           },
@@ -364,6 +386,11 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
         cancel: { label: "Cancel" },
       },
       default: "add",
-    }).render(true);
+    });
+  }
+
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    activateIconPicker(html);
   }
 }

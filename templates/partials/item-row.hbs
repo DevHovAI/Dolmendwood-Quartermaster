@@ -1,6 +1,12 @@
 <div class="item-row {{#if item.isSecret}}is-secret{{/if}}" data-item-id="{{item.id}}">
   <span class="item-name">
-    {{#if item.isSecret}}<i class="fas fa-lock secret-icon" title="Secret item"></i>{{else if item.def}}<i class="fas {{itemIcon item.def.category}} item-cat-icon" title="{{item.def.category}}"></i>{{/if}}
+    {{#if item.isSecret}}
+    <i class="fas fa-lock secret-icon" title="Secret item"></i>
+    {{else if item.def}}
+    <i class="fas {{itemIcon item.def.category}} item-cat-icon" title="{{item.def.category}}"></i>
+    {{else}}
+    <i class="fas {{#if item.customDefinition.icon}}{{item.customDefinition.icon}}{{else}}fa-sack{{/if}} item-cat-icon" title="Custom item"></i>
+    {{/if}}
     {{item.name}}
     {{#if item.def}}
     <span class="item-size-badge size-{{item.def.size}}" title="{{slotCost item.def.size}}">{{sizeLabel item.def.size}}</span>
@@ -9,6 +15,7 @@
     {{/if}}
     {{#if item.def.cannotBeStowed}}<span class="badge badge-cannot-stow" title="Cannot be stowed">Carried</span>{{/if}}
     {{#if item.def.description}}<span class="item-description">{{item.def.description}}</span>{{/if}}
+    {{#if item.customDefinition.description}}<span class="item-description">{{item.customDefinition.description}}</span>{{/if}}
   </span>
 
   {{#if canEdit}}
@@ -17,7 +24,11 @@
     <span class="item-qty">{{item.quantity}}</span>
     <button type="button" data-action="incrementQty" data-item-id="{{item.id}}" class="qty-btn">+</button>
   </div>
+  {{else}}
+  <span class="item-qty-readonly">×{{item.quantity}}</span>
+  {{/if}}
 
+  {{#if isOwner}}
   <select class="item-zone-select" data-item-id="{{item.id}}" title="Move to zone">
     <option value="tiny" {{#if (eq item.zone "tiny")}}selected{{/if}}>Tiny</option>
     <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
@@ -26,6 +37,7 @@
 
   <input type="text" class="item-notes-input" data-item-id="{{item.id}}"
          value="{{item.notes}}" placeholder="Notes…" title="Notes" />
+  {{/if}}
 
   {{#if isGM}}
   <button type="button" data-action="toggleSecret" data-item-id="{{item.id}}"
@@ -34,13 +46,13 @@
   </button>
   {{/if}}
 
+  {{#if canEdit}}
   <button type="button" data-action="deleteItem" data-item-id="{{item.id}}"
           class="icon-btn delete-btn" title="Remove item">
     <i class="fas fa-trash"></i>
   </button>
-  {{else}}
-  <span class="item-qty-readonly">×{{item.quantity}}</span>
   {{/if}}
+
   {{#if canGive}}
   <button type="button" data-action="giveItem" data-item-id="{{item.id}}"
           class="icon-btn give-btn" title="Give item to another player">

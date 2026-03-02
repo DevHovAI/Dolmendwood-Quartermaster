@@ -1174,3 +1174,45 @@
 
 /* ─── Warning Colors ────────────────────────────────────────────────────────── */
 .warning { color: var(--speed-orange); font-weight: bold; }
+
+/* ─── Icon Picker ────────────────────────────────────────────────────────────── */
+.icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 0;
+}
+
+.icon-picker-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dw-bg-parchment, #f5f0e8);
+  border: 1px solid var(--dw-border, #9a7b4b);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--dw-text, #2d1b00);
+  font-size: 0.9rem;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  padding: 0;
+}
+
+.icon-picker-btn:hover {
+  background: var(--dw-secondary, #c4922a);
+  color: #fff;
+  border-color: var(--dw-primary, #6b3f1e);
+}
+
+.icon-picker-btn.selected {
+  background: var(--dw-primary, #6b3f1e);
+  color: var(--dw-accent, #d4af37);
+  border-color: var(--dw-accent, #d4af37);
+}
+
+/* Add Custom Item button for players (slightly different tint) */
+.add-item-zone-btn--player {
+  border-style: dashed;
+  opacity: 0.85;
+}

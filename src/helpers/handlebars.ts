@@ -1,6 +1,57 @@
 import { TEMPLATES } from "../constants";
 import { speedColorClass } from "../data/EncumbranceCalculator";
 
+// ─── Icon Picker Utilities ────────────────────────────────────────────────────
+
+export const ITEM_ICONS: { icon: string; label: string }[] = [
+  { icon: "fa-sack",         label: "Bag / Generic" },
+  { icon: "fa-compass",      label: "Adventuring Gear" },
+  { icon: "fa-shield-halved",label: "Armour" },
+  { icon: "fa-hand-fist",    label: "Melee Weapon" },
+  { icon: "fa-crosshairs",   label: "Ranged Weapon" },
+  { icon: "fa-gavel",        label: "Blunt Weapon" },
+  { icon: "fa-tent",         label: "Camping" },
+  { icon: "fa-shirt",        label: "Clothing" },
+  { icon: "fa-box",          label: "Container" },
+  { icon: "fa-cross",        label: "Holy Item" },
+  { icon: "fa-lightbulb",    label: "Light Source" },
+  { icon: "fa-wrench",       label: "Tool" },
+  { icon: "fa-scroll",       label: "Scroll" },
+  { icon: "fa-flask",        label: "Potion" },
+  { icon: "fa-gem",          label: "Gem / Jewel" },
+  { icon: "fa-key",          label: "Key / Lock" },
+  { icon: "fa-map",          label: "Map" },
+  { icon: "fa-ring",         label: "Ring" },
+  { icon: "fa-hat-wizard",   label: "Magic Item" },
+  { icon: "fa-skull",        label: "Cursed Item" },
+  { icon: "fa-leaf",         label: "Herb / Plant" },
+  { icon: "fa-book",         label: "Book" },
+  { icon: "fa-music",        label: "Instrument" },
+  { icon: "fa-star",         label: "Special" },
+];
+
+export function buildIconPickerHTML(selectedIcon = "fa-sack"): string {
+  const buttons = ITEM_ICONS.map(
+    (i) =>
+      `<button type="button" class="icon-picker-btn${i.icon === selectedIcon ? " selected" : ""}" ` +
+      `data-icon="${i.icon}" title="${i.label}"><i class="fas ${i.icon}"></i></button>`
+  ).join("");
+  return (
+    `<div class="icon-picker">${buttons}</div>` +
+    `<input type="hidden" id="custom-icon-value" value="${selectedIcon}" />`
+  );
+}
+
+export function activateIconPicker(html: JQuery): void {
+  html.find(".icon-picker-btn").on("click", function (e) {
+    e.preventDefault();
+    const btn = e.currentTarget as HTMLElement;
+    html.find(".icon-picker-btn").removeClass("selected");
+    btn.classList.add("selected");
+    html.find("#custom-icon-value").val(btn.dataset.icon ?? "fa-sack");
+  });
+}
+
 export function registerHandlebarsHelpers(): void {
   // Equality check — used in templates: {{#if (eq a b)}}
   Handlebars.registerHelper("eq", (a: unknown, b: unknown) => a === b);
