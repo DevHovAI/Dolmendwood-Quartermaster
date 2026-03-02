@@ -13,6 +13,7 @@ export interface ItemDefinition {
   qualities: string[];
   tags: string[];
   isCustom: boolean;
+  maxUses?: number;       // if set, item instances track remaining uses (e.g. arrows, oil)
 }
 
 export interface InventoryItem {
@@ -20,16 +21,24 @@ export interface InventoryItem {
   definitionId: string;                // reference to ItemDefinition (empty if fully custom)
   name: string;
   quantity: number;
-  zone: "tiny" | "equipped" | "stowed";
+  zone: "tiny" | "equipped" | "stowed" | (string & {});  // string & {} preserves autocomplete while allowing extra zone IDs
   isSecret: boolean;
   notes: string;
+  uses?: number;                       // remaining uses (only for items where def.maxUses is set)
   customDefinition?: Partial<ItemDefinition>;
+}
+
+export interface ExtraZone {
+  id: string;       // UUID, used as zone value on items
+  name: string;     // display name (e.g. "Pack Horse")
+  maxSlots: number; // informational — does NOT affect speed
 }
 
 export interface CharacterInventory {
   actorId: string;
   coins: { cp: number; sp: number; gp: number; pp: number };
   items: InventoryItem[];
+  extraZones?: ExtraZone[];
 }
 
 export interface ShopState {
@@ -93,5 +102,11 @@ export interface PurchasePayload {
   definitionId: string;
   quantity: number;
   zone: InventoryItem["zone"];
+  totalCost: { cp: number; sp: number; gp: number; pp: number };
+}
+
+export interface InnPurchasePayload {
+  actorId: string;
+  itemName: string;
   totalCost: { cp: number; sp: number; gp: number; pp: number };
 }

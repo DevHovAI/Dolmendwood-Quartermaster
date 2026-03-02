@@ -1,11 +1,13 @@
 import { MODULE_ID, SOCKET_NAME, SOCKET_EVENTS } from "../constants";
 import { FlagManager } from "../data/FlagManager";
+import { processInnPurchase } from "../data/innPurchase";
 import type {
   SocketPayload,
   GMGrantPayload,
   GMRemovePayload,
   GiveCoinsPayload,
   PurchasePayload,
+  InnPurchasePayload,
   Transaction,
 } from "../types";
 
@@ -60,6 +62,14 @@ export class SocketHandler {
 
       case SOCKET_EVENTS.REQUEST_REFRESH:
         SocketHandler.onRequestRefresh();
+        break;
+
+      case SOCKET_EVENTS.INN_PURCHASE:
+        if (g.user?.isGM) {
+          void processInnPurchase(payload.data as InnPurchasePayload).then(() => {
+            SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+          });
+        }
         break;
     }
   }

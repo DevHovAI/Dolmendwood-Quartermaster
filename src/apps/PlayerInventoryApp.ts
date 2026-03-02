@@ -6,7 +6,7 @@ import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker } from "../helpers/handlebars";
-import type { InventoryItem } from "../types";
+import type { InventoryItem, ExtraZone } from "../types";
 
 export class PlayerInventoryApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -39,6 +39,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       openShop: PlayerInventoryApp._onOpenShop,
       incrementQty: PlayerInventoryApp._onIncrementQty,
       decrementQty: PlayerInventoryApp._onDecrementQty,
+      incrementUses: PlayerInventoryApp._onIncrementUses,
+      decrementUses: PlayerInventoryApp._onDecrementUses,
+      addExtraZone: PlayerInventoryApp._onAddExtraZone,
+      deleteExtraZone: PlayerInventoryApp._onDeleteExtraZone,
     },
   };
 
@@ -72,12 +76,29 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       stowed: visibleItems.filter((i) => i.zone === "stowed"),
     };
 
-    // Enrich items with their catalog definition for display
+    // Enrich items with their catalog definition for display.
+    // Default uses to maxUses for items that predate the uses field.
     const enriched = (items: InventoryItem[]) =>
-      items.map((item) => ({
-        ...item,
-        def: CatalogManager.getDefinition(item.definitionId),
-      }));
+      items.map((item) => {
+        const def = CatalogManager.getDefinition(item.definitionId);
+        const uses = def?.maxUses !== undefined && item.uses === undefined
+          ? def.maxUses
+          : item.uses;
+        return { ...item, uses, def };
+      });
+
+    // Build extra storage zones with their items and slot counts
+    const extraZones = (inventory.extraZones ?? []).map((ez: ExtraZone) => ({
+      ...ez,
+      items: enriched(visibleItems.filter((i) => i.zone === ez.id)),
+      usedSlots: visibleItems
+        .filter((i) => i.zone === ez.id)
+        .reduce((acc, i) => {
+          const def = CatalogManager.getDefinition(i.definitionId);
+          const size = i.customDefinition?.size ?? def?.size ?? "normal";
+          return acc + (size === "large" ? 2 : size === "normal" ? 1 : 0) * i.quantity;
+        }, 0),
+    }));
 
     // Party members for "Give item" / "Give coins" dialogs
     const partyMembers = (g.actors?.contents ?? []).filter((actor) =>
@@ -100,6 +121,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         equipped: enriched(zones.equipped),
         stowed: enriched(zones.stowed),
       },
+      extraZones,
       encumbrance,
       isGM,
       isOwner,
@@ -193,6 +215,42 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     this.render();
   }
 
+  private static async _onIncrementUses(
+    this: PlayerInventoryApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const itemId = target.dataset.itemId!;
+    await FlagManager.updateInventory(this.actor, (inv) => {
+      const item = inv.items.find((i) => i.id === itemId);
+      if (!item) return inv;
+      const def = CatalogManager.getDefinition(item.definitionId);
+      const maxUses = def?.maxUses ?? 0;
+      const current = item.uses ?? maxUses;
+      item.uses = Math.min(maxUses, current + 1);
+      return inv;
+    });
+    this.render();
+  }
+
+  private static async _onDecrementUses(
+    this: PlayerInventoryApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const itemId = target.dataset.itemId!;
+    await FlagManager.updateInventory(this.actor, (inv) => {
+      const item = inv.items.find((i) => i.id === itemId);
+      if (!item) return inv;
+      const def = CatalogManager.getDefinition(item.definitionId);
+      const maxUses = def?.maxUses ?? 0;
+      const current = item.uses ?? maxUses;
+      item.uses = Math.max(0, current - 1);
+      return inv;
+    });
+    this.render();
+  }
+
   private static async _onDeleteItem(
     this: PlayerInventoryApp,
     _event: Event,
@@ -263,6 +321,36 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     } else {
       new ShopApp().render(true);
     }
+  }
+
+  private static _onAddExtraZone(this: PlayerInventoryApp): void {
+    if (!(game as Game).user?.isGM) return;
+    new AddExtraZoneDialog(this.actor, () => this.render()).render(true);
+  }
+
+  private static async _onDeleteExtraZone(
+    this: PlayerInventoryApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    if (!(game as Game).user?.isGM) return;
+    const zoneId = target.dataset.zoneId!;
+    const confirmed = await Dialog.confirm({
+      title: "Delete Storage Zone",
+      content: "<p>Delete this zone? All items in it will be moved to <strong>Stowed</strong>.</p>",
+    });
+    if (!confirmed) return;
+
+    await FlagManager.updateInventory(this.actor, (inv) => {
+      // Move items in this zone to stowed
+      for (const item of inv.items) {
+        if (item.zone === zoneId) item.zone = "stowed";
+      }
+      // Remove the zone
+      inv.extraZones = (inv.extraZones ?? []).filter((ez) => ez.id !== zoneId);
+      return inv;
+    });
+    this.render();
   }
 }
 
@@ -540,13 +628,17 @@ class GiveItemDialog extends Dialog {
             });
 
             // Add to recipient via socket (so GM handles write if needed)
+            // Normalize extra zones to stowed since recipient doesn't have those zones
+            const safeZone = (["tiny", "equipped", "stowed"] as string[]).includes(item.zone)
+              ? item.zone as "tiny" | "equipped" | "stowed"
+              : "stowed";
             SocketHandler.emit(SOCKET_EVENTS.GM_GRANT, {
               actorId: toActorId,
               item: {
                 definitionId: item.definitionId,
                 name: item.name,
                 quantity: qty,
-                zone: item.zone,
+                zone: safeZone,
                 isSecret: false,
                 notes: "",
                 customDefinition: item.customDefinition,
@@ -637,6 +729,46 @@ class GiveCoinsDialog extends Dialog {
         cancel: { label: "Cancel" },
       },
       default: "give",
+    });
+  }
+}
+
+// ─── Add Extra Zone Dialog (GM only) ─────────────────────────────────────────
+
+class AddExtraZoneDialog extends Dialog {
+  constructor(actor: Actor, onComplete: () => void) {
+    super({
+      title: "Add Storage Zone",
+      content: `
+        <form>
+          <div class="form-group">
+            <label>Zone Name</label>
+            <input type="text" id="extra-zone-name" placeholder="e.g. Pack Horse" />
+          </div>
+          <div class="form-group">
+            <label>Max Slots</label>
+            <input type="number" id="extra-zone-slots" value="10" min="1" max="999" />
+          </div>
+        </form>
+      `,
+      buttons: {
+        add: {
+          label: "Add Zone",
+          callback: async (html: JQuery) => {
+            const name = (html.find("#extra-zone-name").val() as string).trim();
+            if (!name) { ui.notifications?.warn("Zone name is required."); return; }
+            const maxSlots = Math.max(1, parseInt(html.find("#extra-zone-slots").val() as string, 10) || 10);
+            await FlagManager.updateInventory(actor, (inv) => {
+              if (!inv.extraZones) inv.extraZones = [];
+              inv.extraZones.push({ id: foundry.utils.randomID(), name, maxSlots });
+              return inv;
+            });
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "add",
     });
   }
 }

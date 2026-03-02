@@ -1,7 +1,7 @@
 <div class="shop-panel">
   {{!-- Shop Header --}}
   <div class="shop-header">
-    <h2><i class="fas fa-store"></i> Shop</h2>
+    <h2><i class="fas fa-store"></i> {{shopName}}</h2>
 
     {{!-- Target actor selector (GM can pick any party member; players buy for themselves) --}}
     {{#if isGM}}
@@ -71,8 +71,12 @@
         {{#each this}}
         <div class="shop-item" data-item-id="{{this.id}}">
           <div class="shop-item-info">
-            <span class="shop-item-name">{{this.name}}</span>
-            <span class="shop-item-subcategory">{{this.subcategory}}</span>
+            <span class="shop-item-name">
+              <i class="fas {{itemIcon this.category}} shop-item-icon" title="{{this.category}}"></i>
+              {{this.name}}
+            </span>
+            {{#if this.subcategory}}<span class="shop-item-subcategory">{{this.subcategory}}</span>{{/if}}
+            {{#if this.description}}<span class="shop-item-desc-inline">— {{this.description}}</span>{{/if}}
             {{#if this.qualities.length}}
             <span class="shop-item-qualities">{{#each this.qualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>
             {{/if}}
@@ -95,9 +99,6 @@
             </button>
             {{/if}}
           </div>
-          {{#if this.description}}
-          <div class="shop-item-description">{{this.description}}</div>
-          {{/if}}
         </div>
         {{/each}}
       </div>

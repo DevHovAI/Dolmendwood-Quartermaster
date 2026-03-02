@@ -148,6 +148,8 @@ export function registerHandlebarsHelpers(): void {
       case "stones":           return "fa-circle";
       case "tools":            return "fa-wrench";
       case "weapons":          return "fa-gavel";
+      case "pipeleaf":         return "fa-leaf";
+      case "animals & vehicles": return "fa-horse";
       default:                 return "fa-sack";
     }
   });
@@ -161,5 +163,6 @@ export async function registerHandlebarsPartials(): Promise<void> {
     "coin-display": TEMPLATES.PARTIALS.COIN_DISPLAY,
     "encumbrance-bar": TEMPLATES.PARTIALS.ENCUMBRANCE_BAR,
     "party-summary": TEMPLATES.PARTIALS.PARTY_SUMMARY,
+    "extra-zone": TEMPLATES.PARTIALS.EXTRA_ZONE,
   });
 }

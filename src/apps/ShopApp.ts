@@ -15,6 +15,20 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   private searchText = "";
   /** Only show items the selected actor can afford */
   private showAffordableOnly = false;
+  /** Local shop name — set when opened from a Note marker (null = generic shop) */
+  private localName: string | null = null;
+  /** Categories this shop sells — empty means all categories */
+  private localCategories: string[] = [];
+
+  /** Configure this shop instance from a Note marker */
+  setConfig(name: string, categories: string[]): void {
+    this.localName = name;
+    this.localCategories = categories;
+  }
+
+  override get title(): string {
+    return this.localName ?? "Shop";
+  }
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-shop",
@@ -85,7 +99,10 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
     // Filter catalog
     let items = CatalogManager.filterByTags(shopState.activeTags);
-    if (shopState.availableItems.length > 0) {
+    // Local shop category restriction (from Note marker) takes precedence over global availableItems
+    if (this.localCategories.length > 0) {
+      items = items.filter((i) => this.localCategories.includes(i.category));
+    } else if (shopState.availableItems.length > 0) {
       items = items.filter((i) => shopState.availableItems.includes(i.id));
     }
     if (this.searchText) {
@@ -128,6 +145,8 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       isGM,
       showAffordableOnly: this.showAffordableOnly,
       availableCp,
+      shopName: this.localName ?? "Shop",
+      isLocalShop: this.localName !== null,
     };
   }
 

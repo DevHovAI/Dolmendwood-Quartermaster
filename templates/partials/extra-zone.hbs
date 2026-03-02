@@ -1,0 +1,11 @@
+<div class="inventory-zone zone-extra">
+  {{#each zone.items}}
+  {{> item-row item=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones}}
+  {{/each}}
+  {{#if isGM}}
+  <button type="button" class="delete-zone-btn icon-btn" data-action="deleteExtraZone"
+          data-zone-id="{{zone.id}}" title="Delete zone — items moved to Stowed">
+    <i class="fas fa-trash"></i> Delete Zone
+  </button>
+  {{/if}}
+</div>
