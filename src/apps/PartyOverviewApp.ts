@@ -1,4 +1,4 @@
-import { MODULE_ID, TEMPLATES } from "../constants";
+import { TEMPLATES } from "../constants";
 import { FlagManager } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
@@ -22,7 +22,6 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     actions: {
       openShop: PartyOverviewApp._onOpenShop,
       openPlayerInventory: PartyOverviewApp._onOpenPlayerInventory,
-      manageParty: PartyOverviewApp._onManageParty,
     },
   };
 
@@ -36,12 +35,14 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     _options: Partial<ApplicationV2Options>
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
-    const partyActorIds = g.settings.get(MODULE_ID, "partyActorIds") as string[];
 
-    const members = partyActorIds
-      .map((id) => {
-        const actor = g.actors?.get(id);
-        if (!actor) return null;
+    // Auto-detect: all actors owned by a non-GM player
+    const partyActors = (g.actors?.contents ?? []).filter((actor) =>
+      (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
+    );
+
+    const members = partyActors
+      .map((actor) => {
         const inventory = FlagManager.getInventory(actor);
         const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap());
 
@@ -120,39 +121,5 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     if (actor) new PlayerInventoryApp(actor).render(true);
   }
 
-  private static async _onManageParty(this: PartyOverviewApp): Promise<void> {
-    const g = game as Game;
-    const actors = g.actors?.contents ?? [];
-    const currentIds = g.settings.get(MODULE_ID, "partyActorIds") as string[];
-
-    const checkboxes = actors
-      .map(
-        (a) =>
-          `<div class="form-group">
-            <input type="checkbox" id="party-${a.id}" name="${a.id}"
-              ${currentIds.includes(a.id!) ? "checked" : ""} />
-            <label for="party-${a.id}">${a.name}</label>
-          </div>`
-      )
-      .join("");
-
-    new Dialog({
-      title: "Manage Party Members",
-      content: `<form><p>Select actors to include in the party overview:</p>${checkboxes}</form>`,
-      buttons: {
-        save: {
-          label: "Save",
-          callback: async (html: JQuery) => {
-            const selected = actors
-              .filter((a) => html.find(`[name="${a.id}"]`).prop("checked"))
-              .map((a) => a.id!);
-            await g.settings.set(MODULE_ID, "partyActorIds", selected);
-            this.render();
-          },
-        },
-        cancel: { label: "Cancel" },
-      },
-      default: "save",
-    }).render(true);
-  }
 }
+

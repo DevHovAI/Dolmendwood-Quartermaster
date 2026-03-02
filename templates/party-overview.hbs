@@ -3,9 +3,6 @@
   <div class="party-toolbar">
     <h2><i class="fas fa-users"></i> Party Inventory</h2>
     <div class="toolbar-buttons">
-      <button type="button" data-action="manageParty" class="btn-toolbar">
-        <i class="fas fa-cog"></i> Manage Party
-      </button>
       <button type="button" data-action="openShop" class="btn-toolbar btn-shop">
         <i class="fas fa-store"></i> Open Shop
       </button>
@@ -92,10 +89,7 @@
 
   {{else}}
   <div class="party-empty">
-    <p>No party members added yet.</p>
-    <button type="button" data-action="manageParty" class="btn-toolbar">
-      <i class="fas fa-plus"></i> Add Party Members
-    </button>
+    <p>No party members found. Create character actors and assign them to players.</p>
   </div>
   {{/if}}
 

@@ -12,15 +12,6 @@ Hooks.once("init", () => {
   console.log(`${MODULE_ID} | Initializing`);
 
   // Register world-scoped settings
-  game.settings.register(MODULE_ID, SETTINGS.PARTY_ACTOR_IDS, {
-    name: "Party Members",
-    hint: "Actor IDs of characters included in the party overview.",
-    scope: "world",
-    config: false,
-    type: Array,
-    default: [],
-  });
-
   game.settings.register(MODULE_ID, SETTINGS.SHOP_STATE, {
     name: "Shop State",
     hint: "Active tags and available items for the shop panel.",
@@ -91,27 +82,22 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
 });
 
 // Add a button to the sidebar (scene controls) for GM
-Hooks.on("getSceneControlButtons", (controls: SceneControl[]) => {
+// In Foundry v13, controls is Record<string, SceneControl> and tools is Record<string, SceneControlTool>
+Hooks.on("getSceneControlButtons", (controls: Record<string, SceneControl>) => {
   const g = game as Game;
   if (!g.user?.isGM) return;
 
-  const tokenControls = controls.find((c) => c.name === "token" || c.name === "tokens");
-  if (!tokenControls) return;
+  const tokens = controls.tokens;
+  if (!tokens) return;
 
-  const tool = {
+  (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-party-inventory"] = {
     name: "dolmenwood-party-inventory",
     title: "Party Inventory",
     icon: "fas fa-backpack",
+    order: Object.keys(tokens.tools as Record<string, SceneControlTool>).length,
     button: true,
-    onClick: () => openPartyOverview(),
+    onChange: () => openPartyOverview(),
   } as SceneControlTool;
-
-  // v13 changed tools from an array to a keyed object; handle both
-  if (Array.isArray(tokenControls.tools)) {
-    tokenControls.tools.push(tool);
-  } else {
-    (tokenControls.tools as Record<string, unknown>)["dolmenwood-party-inventory"] = tool;
-  }
 });
 
 // ─── Module API Functions ─────────────────────────────────────────────────────

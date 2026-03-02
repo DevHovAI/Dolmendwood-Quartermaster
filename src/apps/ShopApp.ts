@@ -43,10 +43,9 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
     const shopState = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
-    const partyActorIds = g.settings.get(MODULE_ID, "partyActorIds") as string[];
-    const partyMembers = partyActorIds
-      .map((id) => g.actors?.get(id))
-      .filter((a): a is Actor => !!a);
+    const partyMembers = (g.actors?.contents ?? []).filter((actor) =>
+      (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
+    );
 
     // Auto-select first party member if none selected
     if (!this.selectedActorId && partyMembers.length > 0) {
