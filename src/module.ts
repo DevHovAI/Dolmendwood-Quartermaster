@@ -65,15 +65,30 @@ Hooks.once("ready", async () => {
 
   // ─── Note / Map Marker Hooks ───────────────────────────────────────────────
 
-  // Inject Inn fields into Note config dialog
-  Hooks.on("renderNoteConfig", (app: { document?: { getFlag?: (module: string, key: string) => unknown } }, html: JQuery) => {
-    const note = app.document;
-    const existing = note?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality } | undefined;
-    const isInn = !!existing;
-    const savedName = existing?.name ?? "";
-    const savedQuality = existing?.quality ?? "common";
+  // v13 ApplicationV2 passes an HTMLElement as the second arg; old Application passed jQuery.
+  // This helper normalises whichever we receive.
+  function noteEl(htmlOrEl: unknown): HTMLElement {
+    if (htmlOrEl instanceof HTMLElement) return htmlOrEl;
+    if (htmlOrEl && typeof (htmlOrEl as { get?: (n: number) => HTMLElement }).get === "function") {
+      return (htmlOrEl as { get: (n: number) => HTMLElement }).get(0);
+    }
+    return htmlOrEl as HTMLElement;
+  }
 
-    const injection = `
+  // Single renderNoteConfig hook injects both Inn and Shop fieldsets,
+  // and attaches a submit listener to persist flags (replaces closeNoteConfig,
+  // which no longer receives HTML in v13 ApplicationV2).
+  Hooks.on("renderNoteConfig", (app: { document?: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void>; unsetFlag?: (m: string, k: string) => Promise<void> } }, htmlOrEl: unknown) => {
+    const el = noteEl(htmlOrEl);
+    const note = app.document;
+
+    // ── Inn fieldset ──────────────────────────────────────────────────────────
+    const existingInn = note?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality } | undefined;
+    const isInn = !!existingInn;
+    const innName = existingInn?.name ?? "";
+    const innQuality = existingInn?.quality ?? "common";
+
+    const innHtml = `
       <fieldset style="margin:8px 0;padding:8px;border:1px solid #7a5030;">
         <legend style="font-weight:bold;padding:0 4px;">Quartermaster Inn</legend>
         <div class="form-group">
@@ -82,79 +97,34 @@ Hooks.once("ready", async () => {
         <div id="note-inn-fields" style="${isInn ? "" : "display:none;"}">
           <div class="form-group">
             <label>Inn Name</label>
-            <input type="text" id="note-inn-name" value="${savedName}" placeholder="The Wayward Boar" />
+            <input type="text" id="note-inn-name" value="${innName}" placeholder="The Wayward Boar" />
           </div>
           <div class="form-group">
             <label>Quality</label>
             <select id="note-inn-quality">
-              <option value="poor" ${savedQuality === "poor" ? "selected" : ""}>Poor</option>
-              <option value="common" ${savedQuality === "common" ? "selected" : ""}>Common</option>
-              <option value="fancy" ${savedQuality === "fancy" ? "selected" : ""}>Fancy</option>
+              <option value="poor" ${innQuality === "poor" ? "selected" : ""}>Poor</option>
+              <option value="common" ${innQuality === "common" ? "selected" : ""}>Common</option>
+              <option value="fancy" ${innQuality === "fancy" ? "selected" : ""}>Fancy</option>
             </select>
           </div>
         </div>
-      </fieldset>
-    `;
-    html.find("footer").before(injection);
-    html.find("#note-is-inn").on("change", function () {
-      html.find("#note-inn-fields").toggle((this as HTMLInputElement).checked);
-    });
-  });
+      </fieldset>`;
 
-  // Save inn flag when Note config closes
-  Hooks.on("closeNoteConfig", async (app: { document?: { setFlag?: (m: string, k: string, v: unknown) => Promise<void>; unsetFlag?: (m: string, k: string) => Promise<void> } }, html: JQuery) => {
-    const note = app.document;
-    if (!note?.setFlag || !note?.unsetFlag) return;
-    const isInn = (html.find("#note-is-inn")[0] as HTMLInputElement | undefined)?.checked ?? false;
-    if (isInn) {
-      const name = (html.find("#note-inn-name").val() as string | undefined)?.trim() || "The Wayward Boar";
-      const quality = (html.find("#note-inn-quality").val() as InnQuality | undefined) ?? "common";
-      await note.setFlag(MODULE_ID, "inn", { name, quality });
-    } else {
-      await note.unsetFlag(MODULE_ID, "inn");
-    }
-  });
-
-  // Intercept Note click — open InnApp if the note is flagged as an inn,
-  // or ShopApp if flagged as a shop.
-  // v13 hook name is "activateNote"; if it doesn't fire, try "clickNote"
-  Hooks.on("activateNote", (note: { document?: { getFlag?: (m: string, k: string) => unknown } }) => {
-    const innData = note.document?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality } | undefined;
-    if (innData) {
-      openInn(innData.name, innData.quality);
-      return false;
-    }
-    const shopData = note.document?.getFlag?.(MODULE_ID, "shop") as { name?: string; categories?: string[] } | undefined;
-    if (shopData) {
-      openShop(shopData.name, shopData.categories ?? []);
-      return false;
-    }
-    return true; // normal behaviour: open journal
-  });
-
-  // ─── Shop Note Hooks ───────────────────────────────────────────────────────
-
-  Hooks.on("renderNoteConfig", (app: { document?: { getFlag?: (module: string, key: string) => unknown } }, html: JQuery) => {
-    // Skip if Inn fields already injected (same dialog can only be one type)
-    if (html.find("#note-is-inn").length) return;
-
-    const note = app.document;
-    const existing = note?.getFlag?.(MODULE_ID, "shop") as { name?: string; categories?: string[] } | undefined;
-    const isShop = !!existing;
-    const savedName = existing?.name ?? "";
-    const savedCategories = existing?.categories ?? [];
-    const allCategories = CatalogManager.getCategories();
-
-    const categoryCheckboxes = allCategories
+    // ── Shop fieldset ─────────────────────────────────────────────────────────
+    const existingShop = note?.getFlag?.(MODULE_ID, "shop") as { name?: string; categories?: string[] } | undefined;
+    const isShop = !!existingShop;
+    const shopName = existingShop?.name ?? "";
+    const savedCats = existingShop?.categories ?? [];
+    const categoryCheckboxes = CatalogManager.getCategories()
       .map((cat) => {
-        const checked = savedCategories.includes(cat) ? "checked" : "";
+        const checked = savedCats.includes(cat) ? "checked" : "";
         return `<label style="display:flex;align-items:center;gap:4px;font-size:0.85em;">
           <input type="checkbox" class="note-shop-cat" value="${cat}" ${checked} /> ${cat}
         </label>`;
       })
       .join("");
 
-    const injection = `
+    const shopHtml = `
       <fieldset style="margin:8px 0;padding:8px;border:1px solid #7a5030;">
         <legend style="font-weight:bold;padding:0 4px;">Quartermaster Shop</legend>
         <div class="form-group">
@@ -163,7 +133,7 @@ Hooks.once("ready", async () => {
         <div id="note-shop-fields" style="${isShop ? "" : "display:none;"}">
           <div class="form-group">
             <label>Shop Name</label>
-            <input type="text" id="note-shop-name" value="${savedName}" placeholder="e.g. The Blacksmith" />
+            <input type="text" id="note-shop-name" value="${shopName}" placeholder="e.g. The Blacksmith" />
           </div>
           <div class="form-group">
             <label>Categories sold <small>(leave all unchecked = sell everything)</small></label>
@@ -172,28 +142,58 @@ Hooks.once("ready", async () => {
             </div>
           </div>
         </div>
-      </fieldset>
-    `;
-    html.find("footer").before(injection);
-    html.find("#note-is-shop").on("change", function () {
-      html.find("#note-shop-fields").toggle((this as HTMLInputElement).checked);
+      </fieldset>`;
+
+    // Inject before footer
+    const footer = el.querySelector("footer");
+    if (!footer) return;
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = innHtml + shopHtml;
+    footer.before(wrapper);
+
+    // Toggle visibility on checkbox change
+    el.querySelector("#note-is-inn")?.addEventListener("change", function () {
+      (el.querySelector("#note-inn-fields") as HTMLElement).style.display =
+        (this as HTMLInputElement).checked ? "" : "none";
+    });
+    el.querySelector("#note-is-shop")?.addEventListener("change", function () {
+      (el.querySelector("#note-shop-fields") as HTMLElement).style.display =
+        (this as HTMLInputElement).checked ? "" : "none";
+    });
+
+    // Save flags on form submit (replaces closeNoteConfig which has no HTML in v13)
+    el.querySelector("form")?.addEventListener("submit", () => {
+      if (!note?.setFlag || !note?.unsetFlag) return;
+
+      const innChecked = (el.querySelector("#note-is-inn") as HTMLInputElement | null)?.checked ?? false;
+      if (innChecked) {
+        const name = ((el.querySelector("#note-inn-name") as HTMLInputElement | null)?.value ?? "").trim() || "The Wayward Boar";
+        const quality = ((el.querySelector("#note-inn-quality") as HTMLSelectElement | null)?.value ?? "common") as InnQuality;
+        void note.setFlag(MODULE_ID, "inn", { name, quality });
+      } else {
+        void note.unsetFlag(MODULE_ID, "inn");
+      }
+
+      const shopChecked = (el.querySelector("#note-is-shop") as HTMLInputElement | null)?.checked ?? false;
+      if (shopChecked) {
+        const name = ((el.querySelector("#note-shop-name") as HTMLInputElement | null)?.value ?? "").trim() || "Shop";
+        const categories: string[] = [];
+        el.querySelectorAll<HTMLInputElement>(".note-shop-cat:checked").forEach((cb) => categories.push(cb.value));
+        void note.setFlag(MODULE_ID, "shop", { name, categories });
+      } else {
+        void note.unsetFlag(MODULE_ID, "shop");
+      }
     });
   });
 
-  Hooks.on("closeNoteConfig", async (app: { document?: { setFlag?: (m: string, k: string, v: unknown) => Promise<void>; unsetFlag?: (m: string, k: string) => Promise<void> } }, html: JQuery) => {
-    const note = app.document;
-    if (!note?.setFlag || !note?.unsetFlag) return;
-    const isShop = (html.find("#note-is-shop")[0] as HTMLInputElement | undefined)?.checked ?? false;
-    if (isShop) {
-      const name = (html.find("#note-shop-name").val() as string | undefined)?.trim() || "Shop";
-      const categories: string[] = [];
-      html.find(".note-shop-cat:checked").each(function () {
-        categories.push((this as HTMLInputElement).value);
-      });
-      await note.setFlag(MODULE_ID, "shop", { name, categories });
-    } else {
-      await note.unsetFlag(MODULE_ID, "shop");
-    }
+  // Intercept Note click — open InnApp or ShopApp if the note is flagged.
+  // v13 hook name is "activateNote"; if it doesn't fire, try "clickNote".
+  Hooks.on("activateNote", (note: { document?: { getFlag?: (m: string, k: string) => unknown } }) => {
+    const innData = note.document?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality } | undefined;
+    if (innData) { openInn(innData.name, innData.quality); return false; }
+    const shopData = note.document?.getFlag?.(MODULE_ID, "shop") as { name?: string; categories?: string[] } | undefined;
+    if (shopData) { openShop(shopData.name, shopData.categories ?? []); return false; }
+    return true;
   });
 
   // Auto-open player's own inventory (non-GM players)
