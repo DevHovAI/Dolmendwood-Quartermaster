@@ -43,10 +43,14 @@ Tracks slot-based encumbrance, coins, a full Dolmenwood item catalog, and everyt
 
 ### Map Note Integration
 Any Note on the canvas can be flagged as an Inn or a Shop:
-1. Switch to the **Notes layer** (bookmark icon in the left toolbar)
-2. Double-click a Note to open its config
-3. Tick **Mark as Inn** or **Mark as Shop**, fill in the name and settings, and save
-4. Clicking that Note from then on opens the Inn or Shop instead of the journal
+1. Create a **Journal Entry** (it will never be shown — it only exists so players can interact with the note)
+2. Switch to the **Notes layer** (bookmark icon in the left toolbar) and create a Note on the canvas
+3. In the Note config, select the Journal Entry you just created
+4. Tick **Mark as Inn** or **Mark as Shop**, fill in the name and settings, and save
+5. Open the Journal Entry's permissions and set **All Players → Observer**
+6. Double-clicking that Note now opens the Inn or Shop instead of the journal
+
+> **Why the journal entry?** Foundry only lets players double-click a note if they have at least Observer permission on its linked document. The journal is never actually displayed — the Quartermaster intercepts the click before it opens.
 
 ### Multiplayer Sync
 - All inventory writes are routed through the GM client via Foundry's socket system
@@ -91,10 +95,16 @@ Players' inventories open automatically on login if a character is assigned to t
 Open any player's inventory → click **Add Storage Zone** at the bottom → enter a name (e.g. *Pack Horse*) and slot count. The zone appears as a new section. Items can be moved there by selecting it in the zone dropdown on each item row. Deleting a zone moves its contents back to Stowed.
 
 ### Local Shop Notes
-Open a Note config → tick **Mark as Shop** → enter a shop name → tick which **categories** this shop sells (leave all unticked to sell everything) → save. Clicking the Note opens the filtered shop.
+1. Create a blank Journal Entry and set its permissions to **All Players → Observer**
+2. Create a Note on the canvas, link the Journal Entry, tick **Mark as Shop**
+3. Enter a shop name → tick which **categories** this shop sells (leave all unticked = sell everything) → save
+4. Double-clicking the Note opens the filtered shop
 
 ### Inn Notes
-Open a Note config → tick **Mark as Inn** → enter a name and quality tier → save. Clicking the Note opens the Inn with those settings.
+1. Create a blank Journal Entry and set its permissions to **All Players → Observer**
+2. Create a Note on the canvas, link the Journal Entry, tick **Mark as Inn**
+3. Enter a name and quality tier → optionally tick which **categories** the inn serves → save
+4. Double-clicking the Note opens the Inn with those settings
 
 ### Macro API
 
