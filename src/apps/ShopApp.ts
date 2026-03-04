@@ -166,13 +166,17 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     );
 
     // Search input
-    el.querySelector<HTMLInputElement>("#shop-search")?.addEventListener(
-      "input",
-      (e) => {
-        this.searchText = (e.target as HTMLInputElement).value;
-        this.render();
-      }
-    );
+    const searchEl = el.querySelector<HTMLInputElement>("#shop-search");
+    searchEl?.addEventListener("input", (e) => {
+      this.searchText = (e.target as HTMLInputElement).value;
+      this.render();
+    });
+    // Restore cursor to end after re-render (render() recreates the DOM)
+    if (searchEl && this.searchText) {
+      searchEl.focus();
+      const len = searchEl.value.length;
+      searchEl.setSelectionRange(len, len);
+    }
   }
 
   // ─── Action Handlers ────────────────────────────────────────────────────────

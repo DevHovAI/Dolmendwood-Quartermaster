@@ -234,6 +234,26 @@ Hooks.once("ready", async () => {
   Hooks.on("activateNote", handleNoteClick);
   Hooks.on("clickNote",    handleNoteClick);
 
+  // Foundry v13: Note._onClickLeft2 does NOT fire any hook for notes that have no linked
+  // journal entry, so the handlers above never run for our Inn/Shop notes.
+  // Patch the prototype directly to intercept double-clicks before Foundry handles them.
+  type NoteProto = { _onClickLeft2?: (event: Event) => unknown };
+  const NoteCls = (Note as unknown as { prototype: NoteProto }).prototype;
+  if (typeof NoteCls._onClickLeft2 === "function") {
+    const _origClick = NoteCls._onClickLeft2;
+    NoteCls._onClickLeft2 = function(
+      this: { document?: { getFlag?: (m: string, k: string) => unknown } },
+      event: Event
+    ): unknown {
+      const getFlag = (key: string) => this.document?.getFlag?.(MODULE_ID, key);
+      const innFlag = getFlag("inn") as { name?: string; quality?: InnQuality } | undefined;
+      if (innFlag) { openInn(innFlag.name, innFlag.quality); return; }
+      const shopFlag = getFlag("shop") as { name?: string; categories?: string[] } | undefined;
+      if (shopFlag) { openShop(shopFlag.name, shopFlag.categories ?? []); return; }
+      return _origClick.call(this, event);
+    };
+  }
+
   // Auto-open player's own inventory (non-GM players)
   const g = game as Game;
   if (!g.user?.isGM && g.user?.character) {

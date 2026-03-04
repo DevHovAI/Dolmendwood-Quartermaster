@@ -2,60 +2,70 @@
 
   {{!-- Header --}}
   <div class="inn-header">
-    {{#if isGM}}
-    <input type="text" id="inn-name-input" class="inn-name-edit" value="{{innName}}" title="Click to rename inn" />
-    {{else}}
-    <h2 class="inn-name-static">{{innName}}</h2>
-    {{/if}}
+    <div class="inn-title-row">
+      {{#if isGM}}
+      <input type="text" id="inn-name-input" class="inn-name-edit" value="{{innName}}" title="Click to rename inn" />
+      {{else}}
+      <h2 class="inn-name-static">{{innName}}</h2>
+      {{/if}}
 
-    {{!-- Quality selector --}}
-    <div class="quality-buttons">
-      <button type="button" class="quality-btn {{#if (eq quality 'poor')}}active{{/if}}"
-              data-action="setQuality" data-quality="poor">Poor</button>
-      <button type="button" class="quality-btn {{#if (eq quality 'common')}}active{{/if}}"
-              data-action="setQuality" data-quality="common">Common</button>
-      <button type="button" class="quality-btn {{#if (eq quality 'fancy')}}active{{/if}}"
-              data-action="setQuality" data-quality="fancy">Fancy</button>
-    </div>
-  </div>
-
-  {{!-- Character selector + wallet --}}
-  <div class="inn-actor-row">
-    {{#if (gt actors.length 1)}}
-    <select id="inn-actor-select" class="inn-actor-select">
-      {{#each actors}}
-      <option value="{{this.id}}" {{#if (eq this.id ../selectedActorId)}}selected{{/if}}>{{this.name}}</option>
-      {{/each}}
-    </select>
-    {{else}}
-    <span class="inn-actor-name">{{selectedActorName}}</span>
-    {{/if}}
-    <span class="inn-wallet">
-      <i class="fas fa-coins"></i>
-      {{coinTotal coins.cp coins.sp coins.gp coins.pp}}
-    </span>
-  </div>
-
-  {{!-- Menu sections --}}
-  {{#each menuByCategory}}
-  <section class="inn-section">
-    <h3 class="inn-section-header">
-      <i class="fas {{this.icon}}"></i> {{this.label}}
-    </h3>
-    {{#each this.items}}
-    <div class="inn-item {{#unless this.canAfford}}inn-item-unaffordable{{/unless}}">
-      <div class="inn-item-info">
-        <span class="inn-item-name">{{this.name}}</span>
-        <span class="inn-item-desc">{{this.description}}</span>
+      {{!-- Quality indicator: GM gets buttons, players see a static label --}}
+      {{#if isGM}}
+      <div class="quality-buttons">
+        <button type="button" class="quality-btn {{#if (eq quality 'poor')}}active{{/if}}"
+                data-action="setQuality" data-quality="poor">Poor</button>
+        <button type="button" class="quality-btn {{#if (eq quality 'common')}}active{{/if}}"
+                data-action="setQuality" data-quality="common">Common</button>
+        <button type="button" class="quality-btn {{#if (eq quality 'fancy')}}active{{/if}}"
+                data-action="setQuality" data-quality="fancy">Fancy</button>
       </div>
-      <span class="inn-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
-      <button type="button" class="btn-inn-purchase" data-action="purchaseInnItem"
-              data-item-id="{{this.id}}" {{#unless this.canAfford}}disabled title="Cannot afford"{{/unless}}>
-        Pay
-      </button>
+      {{else}}
+      <span class="inn-quality-label">{{quality}}</span>
+      {{/if}}
     </div>
+
+    {{!-- Character selector + wallet --}}
+    <div class="inn-actor-row">
+      {{#if (gt actors.length 1)}}
+      <select id="inn-actor-select" class="inn-actor-select">
+        {{#each actors}}
+        <option value="{{this.id}}" {{#if (eq this.id ../selectedActorId)}}selected{{/if}}>{{this.name}}</option>
+        {{/each}}
+      </select>
+      {{else}}
+      <span class="inn-actor-name">{{selectedActorName}}</span>
+      {{/if}}
+      <span class="inn-wallet">
+        <i class="fas fa-coins"></i>
+        {{coinTotal coins.cp coins.sp coins.gp coins.pp}}
+      </span>
+    </div>
+  </div>
+
+  {{!-- Menu sections — collapsible like Shop categories --}}
+  <div class="inn-menu">
+    {{#each menuByCategory}}
+    <details class="inn-category" open>
+      <summary class="inn-category-header">
+        <i class="fas {{this.icon}}"></i> {{this.label}}
+      </summary>
+      <div class="inn-item-list">
+        {{#each this.items}}
+        <div class="inn-item {{#unless this.canAfford}}inn-item-unaffordable{{/unless}}">
+          <div class="inn-item-info">
+            <span class="inn-item-name">{{this.name}}</span>
+            <span class="inn-item-desc">{{this.description}}</span>
+          </div>
+          <span class="inn-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
+          <button type="button" class="btn-inn-purchase" data-action="purchaseInnItem"
+                  data-item-id="{{this.id}}" {{#unless this.canAfford}}disabled title="Cannot afford"{{/unless}}>
+            Pay
+          </button>
+        </div>
+        {{/each}}
+      </div>
+    </details>
     {{/each}}
-  </section>
-  {{/each}}
+  </div>
 
 </div>

@@ -1008,16 +1008,15 @@
 .btn-custom-item {
   padding: 4px 10px;
   font-size: 0.8em;
-  border: 1px solid var(--dw-accent);
+  border: 1px solid var(--dw-border);
   border-radius: 4px;
   background: var(--dw-bg-dark);
+  color: var(--dw-text);
   cursor: pointer;
   white-space: nowrap;
   font-family: inherit;
   box-shadow: 0 1px 2px rgba(0,0,0,0.12);
 }
-
-.btn-custom-item:hover { background: var(--dw-accent); }
 
 .btn-affordable {
   background: var(--dw-bg-dark);
@@ -1332,6 +1331,27 @@
   gap: 6px;
 }
 
+.inn-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inn-title-row .inn-name-edit,
+.inn-title-row .inn-name-static { flex: 1; }
+
+.inn-quality-label {
+  font-size: 0.82em;
+  font-weight: bold;
+  color: var(--dw-accent);
+  text-transform: capitalize;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  padding: 3px 8px;
+  background: var(--dw-bg-dark);
+  white-space: nowrap;
+}
+
 .inn-name-static {
   margin: 0;
 }
@@ -1416,24 +1436,45 @@
   white-space: nowrap;
 }
 
-.inn-section {
+.inn-menu {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inn-category {
   border: 1px solid var(--dw-border-light);
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 1px 3px var(--dw-shadow);
 }
 
-.inn-section-header {
+.inn-category-header {
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
   padding: 6px 10px;
-  margin: 0;
   font-size: 0.88em;
   font-weight: bold;
   letter-spacing: 0.05em;
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
-  border-bottom: none;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
 }
+
+.inn-category-header::-webkit-details-marker { display: none; }
+
+.inn-category-header::before {
+  content: "▾ ";
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+.inn-category:not([open]) .inn-category-header::before { content: "▸ "; }
+
+.inn-item-list { background: var(--dw-bg-parchment); }
 
 .inn-item {
   display: flex;

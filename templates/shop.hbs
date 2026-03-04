@@ -54,9 +54,9 @@
       <i class="fas fa-coins"></i> Affordable
     </button>
     {{/if}}
-    {{#if isGM}}
+    {{#if selectedActor}}
     <button type="button" data-action="addCustomItem" class="btn-custom-item"
-            title="Grant a custom item to the selected party member">
+            title="Add a custom item{{#if isGM}} to the selected party member{{/if}}">
       <i class="fas fa-magic"></i> Custom Item
     </button>
     {{/if}}
