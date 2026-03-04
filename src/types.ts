@@ -14,6 +14,7 @@ export interface ItemDefinition {
   tags: string[];
   isCustom: boolean;
   maxUses?: number;       // if set, item instances track remaining uses (e.g. arrows, oil)
+  grantsZone?: { name: string; maxSlots: number };  // purchasing this item auto-adds a named storage zone
 }
 
 export interface InventoryItem {
@@ -44,6 +45,7 @@ export interface CharacterInventory {
 export interface ShopState {
   activeTags: string[];
   availableItems: string[];            // if non-empty, only these item IDs are shown
+  hiddenItems?: string[];              // item IDs hidden from players (GM-visible but dimmed)
 }
 
 export interface Transaction {

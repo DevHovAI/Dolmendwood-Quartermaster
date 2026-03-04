@@ -57,7 +57,7 @@
          value="{{item.notes}}" placeholder="Notes…" title="Notes" />
   {{/if}}
 
-  {{#if isGM}}
+  {{#if isOwner}}
   <button type="button" data-action="toggleSecret" data-item-id="{{item.id}}"
           class="icon-btn secret-btn" title="{{#if item.isSecret}}Make visible{{else}}Make secret{{/if}}">
     <i class="fas {{#if item.isSecret}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>

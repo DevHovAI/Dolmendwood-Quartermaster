@@ -17,6 +17,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   private selectedActorId: string | null = null;
   private innName: string = "The Wayward Boar";
   private quality: InnQuality = "common";
+  private localCategories: string[] = [];
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-inn",
@@ -42,9 +43,10 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   };
 
   /** Called externally to pre-configure the inn before rendering */
-  setConfig(name: string, quality: InnQuality): void {
+  setConfig(name: string, quality: InnQuality, categories?: string[]): void {
     this.innName = name;
     this.quality = quality;
+    this.localCategories = categories ?? [];
   }
 
   override get title(): string {
@@ -84,7 +86,10 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const walletCp = coins.cp + coins.sp * 10 + coins.gp * 100 + coins.pp * 500;
 
     const filteredMenu = filterByQuality(INN_MENU, this.quality);
-    const menuByCategory = INN_CATEGORIES.map((cat) => ({
+    const visibleCategories = this.localCategories.length > 0 ? this.localCategories : null;
+    const menuByCategory = INN_CATEGORIES
+      .filter((cat) => !visibleCategories || visibleCategories.includes(cat.key))
+      .map((cat) => ({
       ...cat,
       items: filteredMenu
         .filter((item) => item.category === cat.key)

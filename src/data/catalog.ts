@@ -1914,6 +1914,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Pack Horse", maxSlots: 20 },
   },
   {
     id: "horse-dapple-doff",
@@ -1929,6 +1930,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Pack Horse", maxSlots: 20 },
   },
   {
     id: "horse-hop-clopper",
@@ -1944,6 +1946,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Pack Horse", maxSlots: 20 },
   },
   {
     id: "horse-mule",
@@ -1959,6 +1962,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Mule (Stowage)", maxSlots: 20 },
   },
   {
     id: "horse-prigwort-prancer",
@@ -1974,6 +1978,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Pack Horse", maxSlots: 20 },
   },
   {
     id: "horse-yellow-flank",
@@ -1989,6 +1994,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Pack Horse", maxSlots: 20 },
   },
 
   // Hounds
@@ -2128,6 +2134,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Cart", maxSlots: 40 },
   },
   {
     id: "vehicle-wagon",
@@ -2143,6 +2150,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Wagon", maxSlots: 80 },
   },
 
   // Water Vehicles
@@ -2160,6 +2168,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Barge", maxSlots: 200 },
   },
   {
     id: "vessel-canoe",

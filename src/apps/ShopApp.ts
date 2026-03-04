@@ -47,6 +47,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       purchaseItem: ShopApp._onPurchaseItem,
       grantItem: ShopApp._onGrantItem,
       addCustomItem: ShopApp._onAddCustomItem,
+      toggleHideItem: ShopApp._onToggleHideItem,
     },
   };
 
@@ -125,17 +126,24 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       });
     }
 
-    // Group by category
-    const grouped: Record<string, ItemDefinition[]> = {};
+    // Apply hidden-item filter: GMs see all (with isHidden flag), players see none
+    const hiddenItems = shopState.hiddenItems ?? [];
+    if (!isGM) {
+      items = items.filter((i) => !hiddenItems.includes(i.id));
+    }
+
+    // Group by category, marking hidden items for GM view
+    const grouped: Record<string, (ItemDefinition & { isHidden?: boolean })[]> = {};
     for (const item of items) {
       if (!grouped[item.category]) grouped[item.category] = [];
-      grouped[item.category].push(item);
+      grouped[item.category].push({ ...item, isHidden: isGM && hiddenItems.includes(item.id) });
     }
 
     return {
       shopState,
       allTags: CatalogManager.getAllTags(),
       grouped,
+      hiddenItems,
       partyMembers,
       selectedActorId: this.selectedActorId,
       selectedActor,
@@ -286,6 +294,15 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
         isSecret: false,
         notes: "",
       });
+      // If the item definition grants a storage zone, auto-add it
+      if (def.grantsZone) {
+        inv.extraZones ??= [];
+        inv.extraZones.push({
+          id: foundry.utils.randomID(),
+          name: def.grantsZone.name,
+          maxSlots: def.grantsZone.maxSlots,
+        });
+      }
       return inv;
     });
 
@@ -317,6 +334,25 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       },
     });
     ui.notifications?.info(`Granted ${def.name}.`);
+  }
+
+  private static async _onToggleHideItem(
+    this: ShopApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const itemId = target.dataset.itemId!;
+    const g = game as Game;
+    const shopState = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
+    shopState.hiddenItems ??= [];
+    const idx = shopState.hiddenItems.indexOf(itemId);
+    if (idx === -1) {
+      shopState.hiddenItems.push(itemId);
+    } else {
+      shopState.hiddenItems.splice(idx, 1);
+    }
+    await g.settings.set(MODULE_ID, SETTINGS.SHOP_STATE, shopState);
+    this.render();
   }
 
   private static _onAddCustomItem(this: ShopApp): void {

@@ -6,6 +6,7 @@ import { PlayerInventoryApp } from "./apps/PlayerInventoryApp";
 import { ShopApp } from "./apps/ShopApp";
 import { InnApp } from "./apps/InnApp";
 import { CatalogManager } from "./data/CatalogManager";
+import { INN_CATEGORIES } from "./data/innData";
 import type { InnQuality } from "./data/innData";
 import "../styles/module.css";
 
@@ -41,6 +42,27 @@ Hooks.once("init", () => {
 
   // Register Handlebars helpers (synchronous)
   registerHandlebarsHelpers();
+
+  // ─── Note double-click interception ──────────────────────────────────────
+  // Must be in "init" (not "ready") so the patch is in place before any canvas
+  // renders. The activateNote hook is never called for notes with no linked
+  // journal entry, so a prototype patch is the only reliable approach.
+  // Use foundry.canvas.placeables.Note — the global Note is deprecated in v13.
+  const NoteClass = (foundry as any).canvas?.placeables?.Note as { prototype: { _onClickLeft2?: (event: Event) => unknown } } | undefined;
+  if (NoteClass?.prototype && typeof NoteClass.prototype._onClickLeft2 === "function") {
+    const _origClick = NoteClass.prototype._onClickLeft2;
+    NoteClass.prototype._onClickLeft2 = function(
+      this: { document?: { getFlag?: (m: string, k: string) => unknown } },
+      event: Event
+    ): unknown {
+      const getFlag = (key: string) => this.document?.getFlag?.(MODULE_ID, key);
+      const innFlag = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[] } | undefined;
+      if (innFlag) { openInn(innFlag.name, innFlag.quality, innFlag.categories); return; }
+      const shopFlag = getFlag("shop") as { name?: string; categories?: string[] } | undefined;
+      if (shopFlag) { openShop(shopFlag.name, shopFlag.categories ?? []); return; }
+      return _origClick.call(this, event);
+    };
+  }
 });
 
 Hooks.once("ready", async () => {
@@ -59,7 +81,7 @@ Hooks.once("ready", async () => {
       openPartyOverview: () => openPartyOverview(),
       openPlayerInventory: (actorOrId?: Actor | string) => openPlayerInventory(actorOrId),
       openShop: (name?: string, categories?: string[]) => openShop(name, categories),
-      openInn: (name?: string, quality?: InnQuality) => openInn(name, quality),
+      openInn: (name?: string, quality?: InnQuality, categories?: string[]) => openInn(name, quality, categories),
     };
   }
 
@@ -67,7 +89,7 @@ Hooks.once("ready", async () => {
 
   // Cache of pending flag values keyed on the app instance.
   // Updated on every input change; read by closeNoteConfig (which fires without HTML in v13).
-  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality } | false; shop?: { name: string; categories: string[] } | false };
+  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality; categories: string[] } | false; shop?: { name: string; categories: string[] } | false };
   const pendingNoteFlags = new WeakMap<object, PendingNoteFlags>();
 
   // v13 ApplicationV2 passes an HTMLElement as the second arg; old Application passed jQuery.
@@ -84,10 +106,19 @@ Hooks.once("ready", async () => {
     const note = (app as { document?: { getFlag?: (m: string, k: string) => unknown } }).document;
 
     // ── Inn fieldset ──────────────────────────────────────────────────────────
-    const existingInn = note?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality } | undefined;
+    const existingInn = note?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality; categories?: string[] } | undefined;
     const isInn = !!existingInn;
     const innName = existingInn?.name ?? "";
     const innQuality = existingInn?.quality ?? "common";
+    const savedInnCats = existingInn?.categories ?? [];
+    const innCategoryCheckboxes = INN_CATEGORIES
+      .map((cat) => {
+        const checked = savedInnCats.includes(cat.key) ? "checked" : "";
+        return `<label style="display:flex;align-items:center;gap:4px;font-size:0.85em;">
+          <input type="checkbox" class="note-inn-cat" value="${cat.key}" ${checked} /> ${cat.label}
+        </label>`;
+      })
+      .join("");
 
     const innHtml = `
       <fieldset style="margin:8px 0;padding:8px;border:1px solid #7a5030;">
@@ -107,6 +138,12 @@ Hooks.once("ready", async () => {
               <option value="common" ${innQuality === "common" ? "selected" : ""}>Common</option>
               <option value="fancy" ${innQuality === "fancy" ? "selected" : ""}>Fancy</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label>Categories served <small>(leave all unchecked = serve everything)</small></label>
+            <div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;">
+              ${innCategoryCheckboxes}
+            </div>
           </div>
         </div>
       </fieldset>`;
@@ -171,7 +208,9 @@ Hooks.once("ready", async () => {
       if (innChecked) {
         const name = ((el.querySelector("#note-inn-name") as HTMLInputElement | null)?.value ?? "").trim() || "The Wayward Boar";
         const quality = ((el.querySelector("#note-inn-quality") as HTMLSelectElement | null)?.value ?? "common") as InnQuality;
-        flags.inn = { name, quality };
+        const categories: string[] = [];
+        el.querySelectorAll<HTMLInputElement>(".note-inn-cat:checked").forEach((cb) => categories.push(cb.value));
+        flags.inn = { name, quality, categories };
       } else {
         flags.inn = false; // explicitly unset
       }
@@ -224,35 +263,17 @@ Hooks.once("ready", async () => {
     const getFlag = (key: string) =>
       asDoc.getFlag?.(MODULE_ID, key) ?? asDoc.document?.getFlag?.(MODULE_ID, key);
 
-    const innData = getFlag("inn") as { name?: string; quality?: InnQuality } | undefined;
-    if (innData) { openInn(innData.name, innData.quality); return false; }
+    const innData = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[] } | undefined;
+    if (innData) { openInn(innData.name, innData.quality, innData.categories); return false; }
 
     const shopData = getFlag("shop") as { name?: string; categories?: string[] } | undefined;
     if (shopData) { openShop(shopData.name, shopData.categories ?? []); return false; }
   };
 
+  // Keep activateNote/clickNote as fallbacks for future Foundry versions that may fix the hook.
+  // In v13, they never fire for notes without a linked journal entry (handled in "init" above).
   Hooks.on("activateNote", handleNoteClick);
   Hooks.on("clickNote",    handleNoteClick);
-
-  // Foundry v13: Note._onClickLeft2 does NOT fire any hook for notes that have no linked
-  // journal entry, so the handlers above never run for our Inn/Shop notes.
-  // Patch the prototype directly to intercept double-clicks before Foundry handles them.
-  type NoteProto = { _onClickLeft2?: (event: Event) => unknown };
-  const NoteCls = (Note as unknown as { prototype: NoteProto }).prototype;
-  if (typeof NoteCls._onClickLeft2 === "function") {
-    const _origClick = NoteCls._onClickLeft2;
-    NoteCls._onClickLeft2 = function(
-      this: { document?: { getFlag?: (m: string, k: string) => unknown } },
-      event: Event
-    ): unknown {
-      const getFlag = (key: string) => this.document?.getFlag?.(MODULE_ID, key);
-      const innFlag = getFlag("inn") as { name?: string; quality?: InnQuality } | undefined;
-      if (innFlag) { openInn(innFlag.name, innFlag.quality); return; }
-      const shopFlag = getFlag("shop") as { name?: string; categories?: string[] } | undefined;
-      if (shopFlag) { openShop(shopFlag.name, shopFlag.categories ?? []); return; }
-      return _origClick.call(this, event);
-    };
-  }
 
   // Auto-open player's own inventory (non-GM players)
   const g = game as Game;
@@ -367,20 +388,21 @@ function openShop(name?: string, categories?: string[]): void {
   }
 }
 
-function openInn(name?: string, quality?: InnQuality): void {
+function openInn(name?: string, quality?: InnQuality, categories?: string[]): void {
   const existing = getAppInstance("dolmenwood-inn");
   if (existing) {
-    if (name || quality) {
+    if (name || quality || categories) {
       (existing as unknown as InnApp).setConfig(
         name ?? "The Wayward Boar",
-        quality ?? "common"
+        quality ?? "common",
+        categories
       );
     }
     existing.render({ force: true });
   } else {
     const app = new InnApp();
-    if (name || quality) {
-      app.setConfig(name ?? "The Wayward Boar", quality ?? "common");
+    if (name || quality || categories) {
+      app.setConfig(name ?? "The Wayward Boar", quality ?? "common", categories);
     }
     app.render(true);
   }

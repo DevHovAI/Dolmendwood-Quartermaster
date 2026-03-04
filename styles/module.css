@@ -1165,6 +1165,44 @@
 
 .btn-grant:hover { background: linear-gradient(to bottom, #c8e6c9, #a8d6a8); }
 
+.btn-hide-item {
+  padding: 2px 6px;
+  font-size: 0.78em;
+  background: transparent;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  color: var(--dw-tertiary);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.12s;
+}
+
+.btn-hide-item:hover { opacity: 1; background: rgba(0,0,0,0.06); }
+
+.btn-hide-item.is-hidden {
+  color: #b85500;
+  border-color: #b85500;
+  opacity: 0.85;
+}
+
+.shop-item-hidden {
+  opacity: 0.45;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 4px,
+    rgba(160,100,30,0.06) 4px,
+    rgba(160,100,30,0.06) 5px
+  );
+}
+
+.shop-hidden-badge {
+  color: #b85500;
+  font-size: 0.75em;
+  margin-left: 4px;
+  opacity: 0.75;
+}
+
 /* ─── Transaction Log ───────────────────────────────────────────────────────── */
 .transaction-log {
   margin-top: 6px;

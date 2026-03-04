@@ -1,0 +1,62 @@
+{
+  "DOLMENWOOD.PartyOverview.Title": "Gruppen-Inventarübersicht",
+  "DOLMENWOOD.PlayerInventory.Title": "Inventar",
+  "DOLMENWOOD.Shop.Title": "Laden",
+
+  "DOLMENWOOD.Zone.Tiny": "Kleingegenstände",
+  "DOLMENWOOD.Zone.Equipped": "Ausgerüstet",
+  "DOLMENWOOD.Zone.Stowed": "Verstaut",
+
+  "DOLMENWOOD.Encumbrance.Equipped": "Ausgerüstet",
+  "DOLMENWOOD.Encumbrance.Stowed": "Verstaut",
+  "DOLMENWOOD.Encumbrance.Speed": "Tempo",
+  "DOLMENWOOD.Encumbrance.Slots": "Felder",
+  "DOLMENWOOD.Encumbrance.Bottleneck.Equipped": "Ausrüstungszone ist der Engpass",
+  "DOLMENWOOD.Encumbrance.Bottleneck.Stowed": "Stauzone ist der Engpass",
+  "DOLMENWOOD.Encumbrance.Bottleneck.Both": "Beide Zonen begrenzen das Tempo",
+
+  "DOLMENWOOD.Item.Add": "Gegenstand hinzufügen",
+  "DOLMENWOOD.Item.Delete": "Gegenstand entfernen",
+  "DOLMENWOOD.Item.Secret": "Geheim (nur für SL und Besitzer sichtbar)",
+  "DOLMENWOOD.Item.Give": "An anderen Spieler weitergeben",
+  "DOLMENWOOD.Item.Notes": "Notizen",
+  "DOLMENWOOD.Item.Quantity": "Anzahl",
+  "DOLMENWOOD.Item.Zone": "Zone",
+  "DOLMENWOOD.Item.Size.Tiny": "Klein",
+  "DOLMENWOOD.Item.Size.Normal": "Normal",
+  "DOLMENWOOD.Item.Size.Large": "Groß",
+  "DOLMENWOOD.Item.CannotBeStowed": "Kann nicht verstaut werden",
+
+  "DOLMENWOOD.Currency.CP": "kp",
+  "DOLMENWOOD.Currency.SP": "sp",
+  "DOLMENWOOD.Currency.GP": "gp",
+  "DOLMENWOOD.Currency.PP": "pp",
+  "DOLMENWOOD.Currency.CopperPieces": "Kupferpfennige",
+  "DOLMENWOOD.Currency.SilverPieces": "Silberpfennige",
+  "DOLMENWOOD.Currency.GoldPieces": "Goldmünzen",
+  "DOLMENWOOD.Currency.Pellucidium": "Pellucidium",
+
+  "DOLMENWOOD.Shop.BuyingFor": "Kauft für",
+  "DOLMENWOOD.Shop.Purchase": "Kaufen",
+  "DOLMENWOOD.Shop.Grant": "Schenken",
+  "DOLMENWOOD.Shop.CustomItem": "Eigener Gegenstand",
+  "DOLMENWOOD.Shop.Search": "Gegenstände suchen…",
+  "DOLMENWOOD.Shop.Tags": "Tags",
+  "DOLMENWOOD.Shop.InsufficientFunds": "Nicht genug Geld",
+  "DOLMENWOOD.Shop.GMOverride": "SL-Überschreibung",
+
+  "DOLMENWOOD.Party.ManageMembers": "Gruppenmitglieder verwalten",
+  "DOLMENWOOD.Party.OpenShop": "Laden öffnen",
+  "DOLMENWOOD.Party.Total": "Gruppengesamt",
+  "DOLMENWOOD.Party.NoMembers": "Noch keine Gruppenmitglieder hinzugefügt.",
+
+  "DOLMENWOOD.Transaction.Type.Purchase": "Kauf",
+  "DOLMENWOOD.Transaction.Type.Trade": "Handel",
+  "DOLMENWOOD.Transaction.Type.GMGrant": "SL-Geschenk",
+  "DOLMENWOOD.Transaction.Type.GMRemove": "SL-Entnahme",
+
+  "DOLMENWOOD.Settings.PartyActorIds.Name": "Gruppenmitglieder",
+  "DOLMENWOOD.Settings.PartyActorIds.Hint": "Akteur-IDs der in der Gruppenübersicht enthaltenen Charaktere.",
+  "DOLMENWOOD.Settings.ShopState.Name": "Ladenzustand",
+  "DOLMENWOOD.Settings.ShopState.Hint": "Aktive Tags und verfügbare Gegenstände für das Ladenfenster."
+}
