@@ -5,6 +5,7 @@ import { PartyOverviewApp } from "./apps/PartyOverviewApp";
 import { PlayerInventoryApp } from "./apps/PlayerInventoryApp";
 import { ShopApp } from "./apps/ShopApp";
 import { InnApp } from "./apps/InnApp";
+import { MarketApp } from "./apps/MarketApp";
 import { CatalogManager } from "./data/CatalogManager";
 import { INN_CATEGORIES } from "./data/innData";
 import type { InnQuality } from "./data/innData";
@@ -63,6 +64,8 @@ Hooks.once("init", () => {
       event: Event
     ): unknown {
       const getFlag = (key: string) => this.document?.getFlag?.(MODULE_ID, key);
+      const marketFlag = getFlag("market");
+      if (marketFlag) { openMarket(this.document as { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }); return; }
       const innFlag = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[] } | undefined;
       if (innFlag) { openInn(innFlag.name, innFlag.quality, innFlag.categories); return; }
       const shopFlag = getFlag("shop") as { name?: string; categories?: string[] } | undefined;
@@ -89,6 +92,7 @@ Hooks.once("ready", async () => {
       openPlayerInventory: (actorOrId?: Actor | string) => openPlayerInventory(actorOrId),
       openShop: (name?: string, categories?: string[]) => openShop(name, categories),
       openInn: (name?: string, quality?: InnQuality, categories?: string[]) => openInn(name, quality, categories),
+      openMarket: (noteDoc: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }) => openMarket(noteDoc),
     };
   }
 
@@ -96,7 +100,7 @@ Hooks.once("ready", async () => {
 
   // Cache of pending flag values keyed on the app instance.
   // Updated on every input change; read by closeNoteConfig (which fires without HTML in v13).
-  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality; categories: string[] } | false; shop?: { name: string; categories: string[] } | false };
+  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality; categories: string[] } | false; shop?: { name: string; categories: string[] } | false; market?: { name: string } | false };
   const pendingNoteFlags = new WeakMap<object, PendingNoteFlags>();
 
   // v13 ApplicationV2 passes an HTMLElement as the second arg; old Application passed jQuery.
@@ -189,11 +193,30 @@ Hooks.once("ready", async () => {
         </div>
       </fieldset>`;
 
+    // ── Market fieldset ───────────────────────────────────────────────────────
+    const existingMarket = note?.getFlag?.(MODULE_ID, "market") as { name?: string } | undefined;
+    const isMarket = !!existingMarket;
+    const marketName = existingMarket?.name ?? "";
+    const marketHtml = `
+      <fieldset style="margin:8px 0;padding:8px;border:1px solid #7a5030;">
+        <legend style="font-weight:bold;padding:0 4px;">Quartermaster Market</legend>
+        <div class="form-group">
+          <label><input type="checkbox" id="note-is-market" ${isMarket ? "checked" : ""} /> Mark as Market</label>
+        </div>
+        <div id="note-market-fields" style="${isMarket ? "" : "display:none;"}">
+          <div class="form-group">
+            <label>Market Name</label>
+            <input type="text" id="note-market-name" value="${marketName}" placeholder="e.g. The Grand Bazaar" />
+          </div>
+          <p class="hint" style="margin:4px 0 0;font-size:0.85em;color:#666;">Add shops and inns by opening the market after saving this note.</p>
+        </div>
+      </fieldset>`;
+
     // Inject before footer
     const footer = el.querySelector("footer");
     if (!footer) return;
     const wrapper = document.createElement("div");
-    wrapper.innerHTML = innHtml + shopHtml;
+    wrapper.innerHTML = innHtml + shopHtml + marketHtml;
     footer.before(wrapper);
 
     // Toggle visibility on checkbox change
@@ -203,6 +226,10 @@ Hooks.once("ready", async () => {
     });
     el.querySelector("#note-is-shop")?.addEventListener("change", function () {
       (el.querySelector("#note-shop-fields") as HTMLElement).style.display =
+        (this as HTMLInputElement).checked ? "" : "none";
+    });
+    el.querySelector("#note-is-market")?.addEventListener("change", function () {
+      (el.querySelector("#note-market-fields") as HTMLElement).style.display =
         (this as HTMLInputElement).checked ? "" : "none";
     });
 
@@ -232,6 +259,14 @@ Hooks.once("ready", async () => {
         flags.shop = false;
       }
 
+      const marketChecked = (el.querySelector("#note-is-market") as HTMLInputElement | null)?.checked ?? false;
+      if (marketChecked) {
+        const name = ((el.querySelector("#note-market-name") as HTMLInputElement | null)?.value ?? "").trim() || "Market";
+        flags.market = { name };
+      } else {
+        flags.market = false;
+      }
+
       return flags;
     };
 
@@ -257,6 +292,14 @@ Hooks.once("ready", async () => {
     if (flags.shop) await note.setFlag(MODULE_ID, "shop", flags.shop);
     else if (flags.shop === false) await note.unsetFlag(MODULE_ID, "shop");
 
+    if (flags.market) {
+      // Preserve existing entries when renaming; only name is edited in the config dialog
+      const existing = (note as { getFlag?: (m: string, k: string) => unknown }).getFlag?.(MODULE_ID, "market") as { entries?: unknown[] } | undefined;
+      await note.setFlag(MODULE_ID, "market", { name: flags.market.name, entries: existing?.entries ?? [] });
+    } else if (flags.market === false) {
+      await note.unsetFlag(MODULE_ID, "market");
+    }
+
     pendingNoteFlags.delete(app);
   });
 
@@ -265,10 +308,17 @@ Hooks.once("ready", async () => {
   // we try getFlag on both to handle either case.
   // Hook name "activateNote" covers v11–v13; if it still doesn't fire, also try "clickNote".
   const handleNoteClick = (noteOrDoc: unknown): boolean | void => {
-    const asDoc = noteOrDoc as { getFlag?: (m: string, k: string) => unknown; document?: { getFlag?: (m: string, k: string) => unknown } };
+    const asDoc = noteOrDoc as { getFlag?: (m: string, k: string) => unknown; document?: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> } };
     // Try direct getFlag first (NoteDocument), then .document.getFlag (Note placeable)
     const getFlag = (key: string) =>
       asDoc.getFlag?.(MODULE_ID, key) ?? asDoc.document?.getFlag?.(MODULE_ID, key);
+
+    const marketData = getFlag("market");
+    if (marketData) {
+      const doc = (asDoc.document ?? asDoc) as { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> };
+      openMarket(doc);
+      return false;
+    }
 
     const innData = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[] } | undefined;
     if (innData) { openInn(innData.name, innData.quality, innData.categories); return false; }
@@ -411,6 +461,18 @@ function openInn(name?: string, quality?: InnQuality, categories?: string[]): vo
     if (name || quality || categories) {
       app.setConfig(name ?? "The Wayward Boar", quality ?? "common", categories);
     }
+    app.render(true);
+  }
+}
+
+function openMarket(noteDoc: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }): void {
+  const existing = getAppInstance("dolmenwood-market");
+  if (existing) {
+    (existing as unknown as MarketApp).setNote(noteDoc);
+    existing.render({ force: true });
+  } else {
+    const app = new MarketApp();
+    app.setNote(noteDoc);
     app.render(true);
   }
 }

@@ -1,0 +1,54 @@
+<div class="market-panel">
+  <div class="market-header">
+    <h2><i class="fas fa-map-signs"></i> {{marketName}}</h2>
+  </div>
+
+  <div class="market-entries">
+    {{#each entries}}
+    <div class="market-entry">
+      <div class="market-entry-icon">
+        <i class="fas {{#if (eq this.type 'shop')}}fa-store{{else}}fa-beer-mug-empty{{/if}}"></i>
+      </div>
+      <div class="market-entry-info">
+        <span class="market-entry-name">{{this.name}}</span>
+        {{#if this.description}}
+        <span class="market-entry-desc">{{this.description}}</span>
+        {{/if}}
+        {{#if (eq this.type 'inn')}}
+        <span class="market-entry-quality">{{this.quality}}</span>
+        {{/if}}
+      </div>
+      <div class="market-entry-actions">
+        <button type="button" class="btn-market-open" data-action="openEntry"
+                data-entry-id="{{this.id}}" title="Open {{this.name}}">
+          <i class="fas fa-door-open"></i> Enter
+        </button>
+        {{#if ../isGM}}
+        <button type="button" class="icon-btn" data-action="editEntry"
+                data-entry-id="{{this.id}}" title="Edit entry">
+          <i class="fas fa-pencil"></i>
+        </button>
+        <button type="button" class="icon-btn btn-danger" data-action="removeEntry"
+                data-entry-id="{{this.id}}" title="Remove entry">
+          <i class="fas fa-trash"></i>
+        </button>
+        {{/if}}
+      </div>
+    </div>
+    {{else}}
+    <p class="market-empty">No shops or inns listed yet.
+      {{#if isGM}} Use the buttons below to add some.{{/if}}</p>
+    {{/each}}
+  </div>
+
+  {{#if isGM}}
+  <div class="market-add-btns">
+    <button type="button" data-action="addEntry" data-type="shop" class="btn-market-add">
+      <i class="fas fa-store"></i> Add Shop
+    </button>
+    <button type="button" data-action="addEntry" data-type="inn" class="btn-market-add">
+      <i class="fas fa-beer-mug-empty"></i> Add Inn
+    </button>
+  </div>
+  {{/if}}
+</div>

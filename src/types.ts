@@ -112,10 +112,25 @@ export interface PurchasePayload {
   quantity: number;
   zone: InventoryItem["zone"];
   totalCost: { cp: number; sp: number; gp: number; pp: number };
+  gmOverride?: boolean;
 }
 
 export interface InnPurchasePayload {
   actorId: string;
   itemName: string;
   totalCost: { cp: number; sp: number; gp: number; pp: number };
+}
+
+export interface MarketEntry {
+  id: string;
+  type: "shop" | "inn";
+  name: string;
+  description: string;
+  categories: string[];                     // shop: [] = all categories; ignored for inn
+  quality: "poor" | "common" | "fancy";     // inn only; ignored for shop
+}
+
+export interface MarketFlag {
+  name: string;
+  entries: MarketEntry[];
 }

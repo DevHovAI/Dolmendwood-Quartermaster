@@ -10,6 +10,7 @@ export const TEMPLATES = {
   PLAYER_INVENTORY: `modules/${MODULE_ID}/templates/player-inventory.hbs`,
   SHOP: `modules/${MODULE_ID}/templates/shop.hbs`,
   INN: `modules/${MODULE_ID}/templates/inn.hbs`,
+  MARKET: `modules/${MODULE_ID}/templates/market.hbs`,
   PARTIALS: {
     INVENTORY_ZONE: `modules/${MODULE_ID}/templates/partials/inventory-zone.hbs`,
     ITEM_ROW: `modules/${MODULE_ID}/templates/partials/item-row.hbs`,
