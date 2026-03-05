@@ -102,7 +102,9 @@
               <i class="fas fa-gift"></i> Grant
             </button>
             {{/unless}}
-            <button type="button" data-action="toggleHideItem" data-item-id="{{this.id}}"
+            <button type="button"
+                    data-action="{{#if ../isLocalShop}}toggleLocalHideItem{{else}}toggleHideItem{{/if}}"
+                    data-item-id="{{this.id}}"
                     class="icon-btn btn-hide-item {{#if this.isHidden}}is-hidden{{/if}}"
                     title="{{#if this.isHidden}}Show for players{{else}}Hide from players{{/if}}">
               <i class="fas {{#if this.isHidden}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>

@@ -1,4 +1,5 @@
 import { MODULE_ID, TEMPLATES, SETTINGS, SOCKET_EVENTS } from "../constants";
+type LocalHiddenMap = Record<string, string[]>;
 import { CatalogManager } from "../data/CatalogManager";
 import { FlagManager } from "../data/FlagManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
@@ -48,6 +49,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       grantItem: ShopApp._onGrantItem,
       addCustomItem: ShopApp._onAddCustomItem,
       toggleHideItem: ShopApp._onToggleHideItem,
+      toggleLocalHideItem: ShopApp._onToggleLocalHideItem,
     },
   };
 
@@ -126,24 +128,28 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       });
     }
 
-    // Apply hidden-item filter: GMs see all (with isHidden flag), players see none
-    const hiddenItems = shopState.hiddenItems ?? [];
+    // Apply hidden-item filter: global shop uses shopState.hiddenItems; local shop uses localHidden map
+    const globalHiddenItems = shopState.hiddenItems ?? [];
+    const localHiddenMap = g.settings.get(MODULE_ID, SETTINGS.LOCAL_HIDDEN) as LocalHiddenMap ?? {};
+    const localHiddenItems = this.localName ? (localHiddenMap[this.localName] ?? []) : [];
+    const activeHiddenItems = this.localName !== null ? localHiddenItems : globalHiddenItems;
+
     if (!isGM) {
-      items = items.filter((i) => !hiddenItems.includes(i.id));
+      items = items.filter((i) => !activeHiddenItems.includes(i.id));
     }
 
     // Group by category, marking hidden items for GM view
     const grouped: Record<string, (ItemDefinition & { isHidden?: boolean })[]> = {};
     for (const item of items) {
       if (!grouped[item.category]) grouped[item.category] = [];
-      grouped[item.category].push({ ...item, isHidden: isGM && hiddenItems.includes(item.id) });
+      grouped[item.category].push({ ...item, isHidden: isGM && activeHiddenItems.includes(item.id) });
     }
 
     return {
       shopState,
       allTags: CatalogManager.getAllTags(),
       grouped,
-      hiddenItems,
+      hiddenItems: activeHiddenItems,
       partyMembers,
       selectedActorId: this.selectedActorId,
       selectedActor,
@@ -241,6 +247,13 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       def.cost.amount * 500; // pp
 
     const canAfford = totalCp >= costCp;
+    const isGM = g.user?.isGM ?? false;
+
+    // Non-GM players cannot buy items they can't afford
+    if (!canAfford && !isGM) {
+      ui.notifications?.warn(`${actor.name} cannot afford ${def.name}.`);
+      return;
+    }
 
     // Show confirmation dialog
     const confirmed = await new Promise<boolean>((resolve) => {
@@ -352,6 +365,27 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       shopState.hiddenItems.splice(idx, 1);
     }
     await g.settings.set(MODULE_ID, SETTINGS.SHOP_STATE, shopState);
+    this.render();
+  }
+
+  private static async _onToggleLocalHideItem(
+    this: ShopApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    if (!this.localName) return;
+    const itemId = target.dataset.itemId!;
+    const g = game as Game;
+    const localHiddenMap = (g.settings.get(MODULE_ID, SETTINGS.LOCAL_HIDDEN) as LocalHiddenMap) ?? {};
+    const key = this.localName;
+    if (!localHiddenMap[key]) localHiddenMap[key] = [];
+    const idx = localHiddenMap[key].indexOf(itemId);
+    if (idx === -1) {
+      localHiddenMap[key].push(itemId);
+    } else {
+      localHiddenMap[key].splice(idx, 1);
+    }
+    await g.settings.set(MODULE_ID, SETTINGS.LOCAL_HIDDEN, localHiddenMap);
     this.render();
   }
 

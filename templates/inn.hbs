@@ -51,12 +51,19 @@
       </summary>
       <div class="inn-item-list">
         {{#each this.items}}
-        <div class="inn-item {{#unless this.canAfford}}inn-item-unaffordable{{/unless}}">
+        <div class="inn-item {{#unless this.canAfford}}inn-item-unaffordable{{/unless}} {{#if this.isHidden}}inn-item-gm-hidden{{/if}}">
           <div class="inn-item-info">
             <span class="inn-item-name">{{this.name}}</span>
             <span class="inn-item-desc">{{this.description}}</span>
           </div>
           <span class="inn-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
+          {{#if ../isGM}}
+          <button type="button" class="btn-hide-item {{#if this.isHidden}}is-hidden{{/if}}"
+                  data-action="toggleLocalHideInnItem" data-item-id="{{this.id}}"
+                  title="{{#if this.isHidden}}Show for players{{else}}Hide from players{{/if}}">
+            <i class="fas {{#if this.isHidden}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
+          </button>
+          {{/if}}
           <button type="button" class="btn-inn-purchase" data-action="purchaseInnItem"
                   data-item-id="{{this.id}}" {{#unless this.canAfford}}disabled title="Cannot afford"{{/unless}}>
             Pay

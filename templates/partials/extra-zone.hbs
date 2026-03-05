@@ -2,10 +2,18 @@
   {{#each zone.items}}
   {{> item-row item=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones}}
   {{/each}}
-  {{#if isGM}}
-  <button type="button" class="delete-zone-btn icon-btn" data-action="deleteExtraZone"
-          data-zone-id="{{zone.id}}" title="Delete zone — items moved to Stowed">
-    <i class="fas fa-trash"></i> Delete Zone
-  </button>
-  {{/if}}
+  <div class="zone-footer-btns">
+    {{#if isOwner}}
+    <button type="button" class="rename-zone-btn icon-btn" data-action="renameExtraZone"
+            data-zone-id="{{zone.id}}" title="Rename zone">
+      <i class="fas fa-pencil"></i>
+    </button>
+    {{/if}}
+    {{#if isGM}}
+    <button type="button" class="delete-zone-btn icon-btn" data-action="deleteExtraZone"
+            data-zone-id="{{zone.id}}" title="Delete zone — items moved to Stowed">
+      <i class="fas fa-trash"></i> Delete Zone
+    </button>
+    {{/if}}
+  </div>
 </div>

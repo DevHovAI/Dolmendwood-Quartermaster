@@ -1360,7 +1360,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  height: 100%;
+  /* Do not set height: 100% — let window-content scroll naturally */
 }
 
 .inn-header {
@@ -1585,3 +1585,62 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* ─── Inn Hidden Items (GM view) ─────────────────────────────────────────────── */
+.inn-item-gm-hidden {
+  opacity: 0.45;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 4px,
+    rgba(160,100,30,0.06) 4px,
+    rgba(160,100,30,0.06) 5px
+  );
+}
+
+/* ─── Coin Slot Rows ─────────────────────────────────────────────────────────── */
+.coin-slot-row {
+  background: rgba(200, 160, 50, 0.06);
+  border-left: 2px solid var(--dw-accent);
+}
+
+.coin-slot-zone-select {
+  font-size: 0.75em;
+  padding: 2px 3px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+  max-width: 72px;
+  background: #fffef8;
+  color: var(--dw-text);
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+/* ─── Coin Capacity Counter ──────────────────────────────────────────────────── */
+.item-coin-capacity {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  font-size: 0.78em;
+  color: var(--speed-yellow);
+  white-space: nowrap;
+}
+
+.coin-capacity-val {
+  font-weight: bold;
+}
+
+/* ─── Zone Footer Buttons ────────────────────────────────────────────────────── */
+.zone-footer-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 2px;
+  background: rgba(200,160,80,0.04);
+}
+
+.rename-zone-btn {
+  color: var(--dw-tertiary);
+}
+.rename-zone-btn:hover { color: var(--dw-accent); border-color: var(--dw-accent); }

@@ -1,5 +1,5 @@
 import { MODULE_ID, FLAGS } from "../constants";
-import type { CharacterInventory, Transaction } from "../types";
+import type { CharacterInventory, CoinSlot, Transaction } from "../types";
 
 function defaultInventory(actorId: string): CharacterInventory {
   return {
@@ -7,6 +7,40 @@ function defaultInventory(actorId: string): CharacterInventory {
     coins: { cp: 0, sp: 0, gp: 0, pp: 0 },
     items: [],
   };
+}
+
+/**
+ * Ensure coinSlots array is in sync with the total coin count.
+ * New purses go to "stowed"; excess purses are removed starting from "stowed", then "equipped", then "tiny".
+ */
+function syncCoinSlots(inv: CharacterInventory): void {
+  const total = inv.coins.cp + inv.coins.sp + inv.coins.gp + inv.coins.pp;
+  const needed = total > 0 ? Math.ceil(total / 100) : 0;
+  const current: CoinSlot[] = (inv.coinSlots ?? []).slice();
+
+  if (needed > current.length) {
+    for (let i = current.length; i < needed; i++) {
+      current.push({ id: foundry.utils.randomID(), zone: "stowed" });
+    }
+  } else if (needed < current.length) {
+    let excess = current.length - needed;
+    // Remove from stowed first, then equipped, then tiny, then anything remaining
+    for (const zone of ["stowed", "equipped", "tiny"]) {
+      for (let i = current.length - 1; i >= 0 && excess > 0; i--) {
+        if (current[i].zone === zone) {
+          current.splice(i, 1);
+          excess--;
+        }
+      }
+    }
+    // Remove any remaining excess (extra zones) from the end
+    while (excess > 0) {
+      current.pop();
+      excess--;
+    }
+  }
+
+  inv.coinSlots = current;
 }
 
 export class FlagManager {
@@ -25,6 +59,7 @@ export class FlagManager {
   ): Promise<void> {
     const current = this.getInventory(actor);
     const updated = updater(structuredClone(current));
+    syncCoinSlots(updated);
     await this.setInventory(actor, updated);
   }
 

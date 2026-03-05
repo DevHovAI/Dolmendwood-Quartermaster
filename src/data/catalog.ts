@@ -497,6 +497,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: ["Capacity: 400 coins"],
     tags: [],
     isCustom: false,
+    coinCapacity: 400,
   },
   {
     id: "barrel",
@@ -527,6 +528,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: ["Capacity: 50 coins"],
     tags: [],
     isCustom: false,
+    coinCapacity: 50,
   },
   {
     id: "bucket",
@@ -557,6 +559,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: ["Capacity: 800 coins"],
     tags: [],
     isCustom: false,
+    coinCapacity: 800,
   },
   {
     id: "casket-iron-small",
@@ -572,6 +575,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: ["Capacity: 250 coins"],
     tags: [],
     isCustom: false,
+    coinCapacity: 250,
   },
   {
     id: "chest-wooden-large",
@@ -587,6 +591,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: ["Capacity: 1000 coins"],
     tags: [],
     isCustom: false,
+    coinCapacity: 1000,
   },
   {
     id: "chest-wooden-small",
@@ -602,6 +607,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: ["Capacity: 300 coins"],
     tags: [],
     isCustom: false,
+    coinCapacity: 300,
   },
   {
     id: "sack",
@@ -617,6 +623,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: ["Capacity: 600 coins"],
     tags: [],
     isCustom: false,
+    coinCapacity: 600,
   },
   {
     id: "scroll-case",
@@ -2012,6 +2019,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Bloodhound", maxSlots: 0 },
   },
   {
     id: "hound-dapper",
@@ -2027,6 +2035,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Dapper", maxSlots: 0 },
   },
   {
     id: "hound-dolmen-pincher",
@@ -2042,6 +2051,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Dolmen Pincher", maxSlots: 0 },
   },
   {
     id: "hound-lankston-mastiff",
@@ -2057,6 +2067,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Lankston Mastiff", maxSlots: 0 },
   },
   {
     id: "hound-lichhound",
@@ -2072,6 +2083,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Lichhound", maxSlots: 0 },
   },
   {
     id: "hound-pisker",
@@ -2087,6 +2099,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Pisker", maxSlots: 0 },
   },
   {
     id: "hound-seelie-dog",
@@ -2102,6 +2115,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Seelie Dog", maxSlots: 0 },
   },
   {
     id: "hound-spookhound",
@@ -2117,6 +2131,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Spookhound", maxSlots: 0 },
   },
 
   // Land Vehicles
@@ -2184,6 +2199,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Canoe", maxSlots: 10 },
   },
   {
     id: "vessel-fishing-boat",
@@ -2199,6 +2215,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Fishing Boat", maxSlots: 30 },
   },
   {
     id: "vessel-rowing-boat",
@@ -2214,6 +2231,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    grantsZone: { name: "Rowing Boat", maxSlots: 15 },
   },
 
   // Accessories

@@ -15,6 +15,7 @@ export interface ItemDefinition {
   isCustom: boolean;
   maxUses?: number;       // if set, item instances track remaining uses (e.g. arrows, oil)
   grantsZone?: { name: string; maxSlots: number };  // purchasing this item auto-adds a named storage zone
+  coinCapacity?: number;  // max coins this item can hold (display counter, no structural change)
 }
 
 export interface InventoryItem {
@@ -35,11 +36,17 @@ export interface ExtraZone {
   maxSlots: number; // informational — does NOT affect speed
 }
 
+export interface CoinSlot {
+  id: string;
+  zone: string; // "tiny" | "equipped" | "stowed" | extraZoneId
+}
+
 export interface CharacterInventory {
   actorId: string;
   coins: { cp: number; sp: number; gp: number; pp: number };
   items: InventoryItem[];
   extraZones?: ExtraZone[];
+  coinSlots?: CoinSlot[];  // one slot per started 100 coins; zone assignment for each purse
 }
 
 export interface ShopState {

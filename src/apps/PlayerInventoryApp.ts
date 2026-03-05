@@ -6,7 +6,7 @@ import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker } from "../helpers/handlebars";
-import type { InventoryItem, ExtraZone } from "../types";
+import type { InventoryItem, ExtraZone, CoinSlot } from "../types";
 
 export class PlayerInventoryApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -43,6 +43,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       decrementUses: PlayerInventoryApp._onDecrementUses,
       addExtraZone: PlayerInventoryApp._onAddExtraZone,
       deleteExtraZone: PlayerInventoryApp._onDeleteExtraZone,
+      renameExtraZone: PlayerInventoryApp._onRenameExtraZone,
     },
   };
 
@@ -66,9 +67,13 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const isOwner = this.actor.isOwner;
 
     // Filter secret items: hidden from non-GM non-owners
-    const visibleItems = inventory.items.filter(
-      (item) => !item.isSecret || isGM || isOwner
-    );
+    // Also filter zone-only items (animals & vehicles that grant a zone — shown only as storage zones)
+    const visibleItems = inventory.items.filter((item) => {
+      if (item.isSecret && !isGM && !isOwner) return false;
+      const def = CatalogManager.getDefinition(item.definitionId);
+      if (def?.grantsZone && def?.category === "Animals & Vehicles") return false;
+      return true;
+    });
 
     const zones = {
       tiny: visibleItems.filter((i) => i.zone === "tiny"),
@@ -78,13 +83,21 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
 
     // Enrich items with their catalog definition for display.
     // Default uses to maxUses for items that predate the uses field.
+    // Also compute coinsStored for items with coinCapacity.
+    const totalCoins = inventory.coins.cp + inventory.coins.sp + inventory.coins.gp + inventory.coins.pp;
+    let coinsToAssign = totalCoins;
     const enriched = (items: InventoryItem[]) =>
       items.map((item) => {
         const def = CatalogManager.getDefinition(item.definitionId);
         const uses = def?.maxUses !== undefined && item.uses === undefined
           ? def.maxUses
           : item.uses;
-        return { ...item, uses, def };
+        let coinsStored: number | undefined;
+        if (def?.coinCapacity && coinsToAssign > 0) {
+          coinsStored = Math.min(def.coinCapacity * item.quantity, coinsToAssign);
+          coinsToAssign -= coinsStored;
+        }
+        return { ...item, uses, def, coinsStored };
       });
 
     // Build extra storage zones with their items and slot counts
@@ -99,6 +112,20 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
           return acc + (size === "large" ? 2 : size === "normal" ? 1 : 0) * i.quantity;
         }, 0),
     }));
+
+    // Build coin slot display data: one purse per started 100 coins, grouped by zone
+    const coinSlots = inventory.coinSlots ?? [];
+    const coinSlotCount = totalCoins > 0 ? Math.ceil(totalCoins / 100) : 0;
+    // Build per-zone coin slot arrays for template rendering
+    const coinSlotsPerZone: Record<string, Array<{ id: string; coins: number; zoneIndex: number }>> = {};
+    for (let i = 0; i < Math.min(coinSlots.length, coinSlotCount); i++) {
+      const slot = coinSlots[i];
+      const coinsInSlot = (i === coinSlotCount - 1 && totalCoins % 100 !== 0)
+        ? totalCoins % 100
+        : 100;
+      if (!coinSlotsPerZone[slot.zone]) coinSlotsPerZone[slot.zone] = [];
+      coinSlotsPerZone[slot.zone].push({ id: slot.id, coins: coinsInSlot, zoneIndex: i });
+    }
 
     // Party members for "Give item" / "Give coins" dialogs
     const partyMembers = (g.actors?.contents ?? []).filter((actor) =>
@@ -122,6 +149,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         stowed: enriched(zones.stowed),
       },
       extraZones,
+      coinSlotsPerZone,
       encumbrance,
       isGM,
       isOwner,
@@ -164,6 +192,20 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
           if (item) item.notes = notes;
           return inv;
         });
+      });
+    });
+
+    // Coin slot zone selectors
+    el.querySelectorAll<HTMLSelectElement>(".coin-slot-zone-select").forEach((select) => {
+      select.addEventListener("change", async (e) => {
+        const slotId = (e.target as HTMLSelectElement).dataset.slotId!;
+        const newZone = (e.target as HTMLSelectElement).value;
+        await FlagManager.updateInventory(this.actor, (inv) => {
+          const slot = (inv.coinSlots ?? []).find((s) => s.id === slotId);
+          if (slot) slot.zone = newZone;
+          return inv;
+        });
+        this.render();
       });
     });
 
@@ -351,6 +393,17 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       return inv;
     });
     this.render();
+  }
+  private static async _onRenameExtraZone(
+    this: PlayerInventoryApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const zoneId = target.dataset.zoneId!;
+    const inventory = FlagManager.getInventory(this.actor);
+    const zone = (inventory.extraZones ?? []).find((ez) => ez.id === zoneId);
+    if (!zone) return;
+    new RenameZoneDialog(this.actor, zoneId, zone.name, () => this.render()).render(true);
   }
 }
 
@@ -769,6 +822,41 @@ class AddExtraZoneDialog extends Dialog {
         cancel: { label: "Cancel" },
       },
       default: "add",
+    });
+  }
+}
+
+// ─── Rename Zone Dialog (owner) ──────────────────────────────────────────────
+
+class RenameZoneDialog extends Dialog {
+  constructor(actor: Actor, zoneId: string, currentName: string, onComplete: () => void) {
+    super({
+      title: "Rename Storage Zone",
+      content: `
+        <form>
+          <div class="form-group">
+            <label>Zone Name</label>
+            <input type="text" id="rename-zone-name" value="${currentName}" />
+          </div>
+        </form>
+      `,
+      buttons: {
+        rename: {
+          label: "Rename",
+          callback: async (html: JQuery) => {
+            const name = (html.find("#rename-zone-name").val() as string).trim();
+            if (!name) return;
+            await FlagManager.updateInventory(actor, (inv) => {
+              const zone = (inv.extraZones ?? []).find((ez) => ez.id === zoneId);
+              if (zone) zone.name = name;
+              return inv;
+            });
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "rename",
     });
   }
 }

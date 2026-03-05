@@ -1,4 +1,5 @@
 import { TEMPLATES, SOCKET_EVENTS, MODULE_ID, SETTINGS } from "../constants";
+type LocalHiddenMap = Record<string, string[]>;
 import { FlagManager } from "../data/FlagManager";
 import { processInnPurchase } from "../data/innPurchase";
 import { SocketHandler } from "../socket/SocketHandler";
@@ -33,6 +34,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     actions: {
       purchaseInnItem: InnApp._onPurchaseInnItem,
       setQuality: InnApp._onSetQuality,
+      toggleLocalHideInnItem: InnApp._onToggleLocalHideInnItem,
     },
   };
 
@@ -87,18 +89,26 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
     const filteredMenu = filterByQuality(INN_MENU, this.quality);
     const visibleCategories = this.localCategories.length > 0 ? this.localCategories : null;
+
+    // Local hidden items for this inn
+    const localHiddenMap = (g.settings?.get(MODULE_ID, SETTINGS.LOCAL_HIDDEN) as LocalHiddenMap) ?? {};
+    const innHiddenItems = this.innName ? (localHiddenMap[this.innName] ?? []) : [];
+    const isLocalInn = this.localCategories.length > 0;
+
     const menuByCategory = INN_CATEGORIES
       .filter((cat) => !visibleCategories || visibleCategories.includes(cat.key))
       .map((cat) => ({
       ...cat,
       items: filteredMenu
         .filter((item) => item.category === cat.key)
+        .filter((item) => !isGM ? !innHiddenItems.includes(item.id) : true)
         .map((item) => ({
           ...item,
           canAfford: walletCp >= (item.cost.currency === "pp" ? item.cost.amount * 500
             : item.cost.currency === "gp" ? item.cost.amount * 100
             : item.cost.currency === "sp" ? item.cost.amount * 10
             : item.cost.amount),
+          isHidden: isGM && innHiddenItems.includes(item.id),
         })),
     })).filter((cat) => cat.items.length > 0);
 
@@ -106,6 +116,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       innName: this.innName,
       quality: this.quality,
       isGM,
+      isLocalInn,
       actors,
       selectedActorId: selectedActor?.id ?? null,
       selectedActorName: selectedActor?.name ?? "",
@@ -150,6 +161,26 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   ): Promise<void> {
     this.quality = target.dataset.quality as InnQuality;
     await this._saveState();
+    this.render();
+  }
+
+  private static async _onToggleLocalHideInnItem(
+    this: InnApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const itemId = target.dataset.itemId!;
+    const g = game as Game;
+    const localHiddenMap = (g.settings?.get(MODULE_ID, SETTINGS.LOCAL_HIDDEN) as LocalHiddenMap) ?? {};
+    const key = this.innName;
+    if (!localHiddenMap[key]) localHiddenMap[key] = [];
+    const idx = localHiddenMap[key].indexOf(itemId);
+    if (idx === -1) {
+      localHiddenMap[key].push(itemId);
+    } else {
+      localHiddenMap[key].splice(idx, 1);
+    }
+    await g.settings?.set(MODULE_ID, SETTINGS.LOCAL_HIDDEN, localHiddenMap);
     this.render();
   }
 

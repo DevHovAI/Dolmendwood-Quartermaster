@@ -1,0 +1,18 @@
+<div class="item-row coin-slot-row">
+  <span class="item-name">
+    <i class="fas fa-coins item-cat-icon" style="color:#a07b00;"></i>
+    Coin Purse
+    <span class="item-size-badge size-normal">{{slot.coins}} coins</span>
+  </span>
+
+  {{#if isOwner}}
+  <select class="coin-slot-zone-select" data-slot-id="{{slot.id}}" title="Move coins to zone">
+    <option value="tiny" {{#if (eq slot.zone "tiny")}}selected{{/if}}>Tiny</option>
+    <option value="equipped" {{#if (eq slot.zone "equipped")}}selected{{/if}}>Equipped</option>
+    <option value="stowed" {{#if (eq slot.zone "stowed")}}selected{{/if}}>Stowed</option>
+    {{#each extraZones}}
+    <option value="{{this.id}}" {{#if (eq ../slot.zone this.id)}}selected{{/if}}>{{this.name}}</option>
+    {{/each}}
+  </select>
+  {{/if}}
+</div>

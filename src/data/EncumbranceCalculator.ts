@@ -25,6 +25,8 @@ export function calculateEncumbrance(
 
   for (const item of inventory.items) {
     const def = catalogMap.get(item.definitionId);
+    // Zone-only items (animals/vehicles with grantsZone) don't count toward encumbrance
+    if (def?.grantsZone && def?.category === "Animals & Vehicles") continue;
     // Custom definition overrides the catalog definition's size
     const size: ItemDefinition["size"] =
       item.customDefinition?.size ?? def?.size ?? "normal";
@@ -58,11 +60,25 @@ export function calculateEncumbrance(
   const tinyOverflow = Math.max(0, tinyCount - 10);
   stowedSlots += Math.ceil(tinyOverflow / 10);
 
-  // Coins: every coin counts as 1 coin regardless of denomination; 100 coins = 1 stowed slot
+  // Coins: zone-aware if coinSlots are synced, otherwise fall back to all-stowed
   const { cp, sp, gp, pp } = inventory.coins;
   const totalCoins = cp + sp + gp + pp;
-  const coinSlots = totalCoins > 0 ? Math.ceil(totalCoins / 100) : 0;
-  stowedSlots += coinSlots;
+  const coinSlotCount = totalCoins > 0 ? Math.ceil(totalCoins / 100) : 0;
+  if (inventory.coinSlots && inventory.coinSlots.length === coinSlotCount && coinSlotCount > 0) {
+    for (const slot of inventory.coinSlots) {
+      if (slot.zone === "tiny") {
+        tinyCount += 1;
+      } else if (slot.zone === "equipped") {
+        equippedSlots += 1;
+      } else if (slot.zone === "stowed") {
+        stowedSlots += 1;
+      }
+      // extra zone slots don't affect speed
+    }
+  } else {
+    stowedSlots += coinSlotCount;
+  }
+  const coinSlots = coinSlotCount;
 
   const equippedSpeed = getSpeedForSlots(equippedSlots, EQUIPPED_SPEED_TIERS);
   const stowedSpeed = getSpeedForSlots(stowedSlots, STOWED_SPEED_TIERS);

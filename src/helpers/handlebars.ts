@@ -56,6 +56,17 @@ export function registerHandlebarsHelpers(): void {
   // Equality check — used in templates: {{#if (eq a b)}}
   Handlebars.registerHelper("eq", (a: unknown, b: unknown) => a === b);
 
+  // Logical OR — used in templates: {{#if (or a b)}}
+  Handlebars.registerHelper("or", (a: unknown, b: unknown) => Boolean(a) || Boolean(b));
+
+  // Returns true if the effective size of an item is "tiny"
+  Handlebars.registerHelper("isTinyItem", (item: { def?: { size?: string }; customDefinition?: { size?: string } }) => {
+    const size = (item as { customDefinition?: { size?: string }; def?: { size?: string } }).customDefinition?.size
+      ?? (item as { def?: { size?: string } }).def?.size
+      ?? "normal";
+    return size === "tiny";
+  });
+
   // Not-equal check
   Handlebars.registerHelper("neq", (a: unknown, b: unknown) => a !== b);
 
@@ -164,5 +175,6 @@ export async function registerHandlebarsPartials(): Promise<void> {
     "encumbrance-bar": TEMPLATES.PARTIALS.ENCUMBRANCE_BAR,
     "party-summary": TEMPLATES.PARTIALS.PARTY_SUMMARY,
     "extra-zone": TEMPLATES.PARTIALS.EXTRA_ZONE,
+    "coin-slot-row": TEMPLATES.PARTIALS.COIN_SLOT_ROW,
   });
 }

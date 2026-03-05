@@ -191,6 +191,17 @@ styles/
 
 ## Changelog
 
+### v1.2.0
+- **Coin zone assignment** — coins are split into 100-coin purse slots that can be moved between zones (Tiny/Equipped/Stowed/Extra); encumbrance updates accordingly
+- **Coin-storing items** — containers (backpack, belt pouch, caskets, chests, sack) now show a live "X/capacity" counter for how many coins they hold
+- **Animals & Vehicles as zones only** — horses, hounds, carts, wagons, and boats no longer appear as items in zone lists; they only create storage zones (players can rename zones)
+- **Hounds as companion zones** — all 8 hound breeds now grant a named 0-slot companion zone
+- **Water vehicles** — canoe, fishing boat, and rowing boat now grant storage zones
+- **Tiny zone restriction** — normal and large items can no longer be assigned to the Tiny zone via the dropdown
+- **GM-only purchase override** — players who can't afford an item get a warning; only the GM can force-purchase (override)
+- **Per-location hidden items** — GMs can hide individual items from players in local Inn/Shop views (stored per location name, separate from the global shop hide list)
+- **Zone renaming** — owners (not just GMs) can rename their extra storage zones
+
 ### v1.1.2
 - Fixed: Inn/Shop map Notes not opening the app when clicked (flag saving and hook parameter handling for Foundry v13)
 

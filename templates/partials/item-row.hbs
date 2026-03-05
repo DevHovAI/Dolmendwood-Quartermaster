@@ -28,6 +28,13 @@
   <span class="item-qty-readonly">×{{item.quantity}}</span>
   {{/if}}
 
+  {{#if item.def.coinCapacity}}
+  <div class="item-coin-capacity" title="Coins stored in this container">
+    <i class="fas fa-coins" style="font-size:0.8em;opacity:0.6;"></i>
+    <span class="coin-capacity-val">{{item.coinsStored}}/{{item.def.coinCapacity}}</span>
+  </div>
+  {{/if}}
+
   {{#if item.def.maxUses}}
   <div class="item-uses-controls">
     {{#if isOwner}}
@@ -45,7 +52,9 @@
 
   {{#if isOwner}}
   <select class="item-zone-select" data-item-id="{{item.id}}" title="Move to zone">
+    {{#if (or (isTinyItem item) (eq item.zone "tiny"))}}
     <option value="tiny" {{#if (eq item.zone "tiny")}}selected{{/if}}>Tiny</option>
+    {{/if}}
     <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
     <option value="stowed" {{#if (eq item.zone "stowed")}}selected{{/if}}>Stowed</option>
     {{#each extraZones}}

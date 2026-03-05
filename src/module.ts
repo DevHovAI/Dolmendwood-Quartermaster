@@ -40,6 +40,13 @@ Hooks.once("init", () => {
     default: { name: "The Wayward Boar", quality: "common" },
   });
 
+  game.settings.register(MODULE_ID, SETTINGS.LOCAL_HIDDEN, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
+  });
+
   // Register Handlebars helpers (synchronous)
   registerHandlebarsHelpers();
 

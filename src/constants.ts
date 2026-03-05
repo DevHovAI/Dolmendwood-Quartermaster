@@ -18,6 +18,7 @@ export const TEMPLATES = {
     TRANSACTION_LOG: `modules/${MODULE_ID}/templates/partials/transaction-log.hbs`,
     PARTY_SUMMARY: `modules/${MODULE_ID}/templates/partials/party-summary.hbs`,
     EXTRA_ZONE: `modules/${MODULE_ID}/templates/partials/extra-zone.hbs`,
+    COIN_SLOT_ROW: `modules/${MODULE_ID}/templates/partials/coin-slot-row.hbs`,
   },
 } as const;
 
@@ -36,6 +37,7 @@ export const SETTINGS = {
   SHOP_STATE: "shopState",
   TRANSACTION_LOG: "transactionLog",
   INN_STATE: "innState",
+  LOCAL_HIDDEN: "localHidden", // Record<locationName, itemId[]> — per-location hidden items
 } as const;
 
 export const SOCKET_NAME = `module.${MODULE_ID}` as const;
