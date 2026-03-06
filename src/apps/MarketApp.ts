@@ -88,9 +88,9 @@ export class MarketApp extends foundry.applications.api.HandlebarsApplicationMix
     const api = ((game as Game).modules.get(MODULE_ID) as { api?: Record<string, unknown> } | undefined)?.api;
     if (!api) return;
     if (entry.type === "shop") {
-      (api.openShop as (name: string, categories: string[]) => void)(entry.name, entry.categories);
+      (api.openShop as (name: string, categories: string[], priceFactor: number) => void)(entry.name, entry.categories, entry.priceFactor ?? 100);
     } else {
-      (api.openInn as (name: string, quality: string, categories: string[]) => void)(entry.name, entry.quality, []);
+      (api.openInn as (name: string, quality: string, categories: string[], priceFactor: number) => void)(entry.name, entry.quality, [], entry.priceFactor ?? 100);
     }
   }
 
@@ -180,6 +180,10 @@ class MarketEntryDialog extends Dialog {
           <label>Icon</label>
           ${buildIconPickerHTML(entry?.icon ?? defaultIcon, LOCATION_ICONS)}
         </div>
+        <div class="form-group">
+          <label>Price Factor <small>(%  — 100 = normal, 200 = double)</small></label>
+          <input type="number" id="entry-price-factor" value="${entry?.priceFactor ?? 100}" min="1" max="10000" step="1" style="width:80px;" />
+        </div>
         ${
           isShop
             ? `<div class="form-group">
@@ -209,6 +213,7 @@ class MarketEntryDialog extends Dialog {
               cats.push((el as HTMLInputElement).value)
             );
             const icon = (html.find("#custom-icon-value").val() as string) || defaultIcon;
+            const priceFactor = Math.max(1, parseInt(html.find("#entry-price-factor").val() as string, 10) || 100);
             const newEntry: MarketEntry = {
               id: entry?.id ?? foundry.utils.randomID(),
               type,
@@ -219,6 +224,7 @@ class MarketEntryDialog extends Dialog {
               quality: isShop
                 ? "common"
                 : ((html.find("#entry-quality").val() as string) as MarketEntry["quality"]),
+              priceFactor,
             };
             this.app.saveEntry(newEntry);
           },

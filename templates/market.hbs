@@ -10,7 +10,10 @@
         <i class="fas {{#if this.icon}}{{this.icon}}{{else}}{{#if (eq this.type 'shop')}}fa-store{{else}}fa-beer-mug-empty{{/if}}{{/if}}"></i>
       </div>
       <div class="market-entry-info">
-        <span class="market-entry-name">{{this.name}}</span>
+        <span class="market-entry-name">
+          {{this.name}}
+          {{#if this.priceFactor}}{{#if (neq this.priceFactor 100)}}<span class="price-factor-badge" title="Prices adjusted to {{this.priceFactor}}%">{{this.priceFactor}}%</span>{{/if}}{{/if}}
+        </span>
         {{#if this.description}}
         <span class="market-entry-desc">{{this.description}}</span>
         {{/if}}

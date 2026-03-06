@@ -129,6 +129,7 @@ export interface MarketEntry {
   icon?: string;                            // FA icon class, e.g. "fa-store"; falls back to type default
   categories: string[];                     // shop: [] = all categories; ignored for inn
   quality: "poor" | "common" | "fancy";     // inn only; ignored for shop
+  priceFactor?: number;                     // percentage; 100 = normal (default)
 }
 
 export interface MarketFlag {
