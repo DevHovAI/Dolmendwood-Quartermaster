@@ -20,6 +20,7 @@ export const TEMPLATES = {
     PARTY_SUMMARY: `modules/${MODULE_ID}/templates/partials/party-summary.hbs`,
     EXTRA_ZONE: `modules/${MODULE_ID}/templates/partials/extra-zone.hbs`,
     COIN_SLOT_ROW: `modules/${MODULE_ID}/templates/partials/coin-slot-row.hbs`,
+    COIN_CONTAINER_ROW: `modules/${MODULE_ID}/templates/partials/coin-container-row.hbs`,
   },
 } as const;
 

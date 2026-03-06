@@ -1,0 +1,25 @@
+<div class="item-row coin-container-row {{#if (eq item.coinsStored 0)}}coin-container-empty{{/if}}">
+  <span class="item-name">
+    <i class="fas fa-box item-cat-icon" style="color:#a07b00;"></i>
+    {{item.name}}
+    <span class="item-size-badge size-normal">{{item.coinsStored}} / {{item.capacity}} coins</span>
+  </span>
+
+  {{#if isOwner}}
+  <select class="item-zone-select" data-item-id="{{item.id}}" title="Move to zone">
+    <option value="tiny"     {{#if (eq item.zone "tiny")}}selected{{/if}}>Tiny</option>
+    <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
+    <option value="stowed"   {{#if (eq item.zone "stowed")}}selected{{/if}}>Stowed</option>
+    {{#each extraZones}}
+    <option value="{{this.id}}" {{#if (eq ../item.zone this.id)}}selected{{/if}}>{{this.name}}</option>
+    {{/each}}
+  </select>
+  {{/if}}
+
+  {{#if canEdit}}
+  <button type="button" class="icon-btn btn-danger" data-action="deleteItem"
+          data-item-id="{{item.id}}" title="Remove from inventory">
+    <i class="fas fa-trash"></i>
+  </button>
+  {{/if}}
+</div>

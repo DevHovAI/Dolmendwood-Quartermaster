@@ -68,10 +68,12 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
 
     // Filter secret items: hidden from non-GM non-owners
     // Also filter zone-only items (animals & vehicles that grant a zone — shown only as storage zones)
+    // Also filter coin containers (chests etc.) — shown in coin display instead
     const visibleItems = inventory.items.filter((item) => {
       if (item.isSecret && !isGM && !isOwner) return false;
       const def = CatalogManager.getDefinition(item.definitionId);
       if (def?.grantsZone && def?.category === "Animals & Vehicles") return false;
+      if (def?.coinCapacity) return false;
       return true;
     });
 
@@ -83,22 +85,29 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
 
     // Enrich items with their catalog definition for display.
     // Default uses to maxUses for items that predate the uses field.
-    // Also compute coinsStored for items with coinCapacity.
     const totalCoins = inventory.coins.cp + inventory.coins.sp + inventory.coins.gp + inventory.coins.pp;
-    let coinsToAssign = totalCoins;
     const enriched = (items: InventoryItem[]) =>
       items.map((item) => {
         const def = CatalogManager.getDefinition(item.definitionId);
         const uses = def?.maxUses !== undefined && item.uses === undefined
           ? def.maxUses
           : item.uses;
-        let coinsStored: number | undefined;
-        if (def?.coinCapacity && coinsToAssign > 0) {
-          coinsStored = Math.min(def.coinCapacity * item.quantity, coinsToAssign);
-          coinsToAssign -= coinsStored;
-        }
-        return { ...item, uses, def, coinsStored };
+        return { ...item, uses, def };
       });
+
+    // Build coin container display data: chests fill first, purses hold overflow.
+    let coinsLeft = totalCoins;
+    const coinContainersByZone: Record<string, Array<{ id: string; name: string; zone: string; capacity: number; coinsStored: number }>> = {};
+    for (const item of inventory.items) {
+      const def = CatalogManager.getDefinition(item.definitionId);
+      if (!def?.coinCapacity) continue;
+      const capacity = def.coinCapacity * item.quantity;
+      const coinsStored = Math.min(capacity, coinsLeft);
+      coinsLeft -= coinsStored;
+      const zone = item.zone as string;
+      if (!coinContainersByZone[zone]) coinContainersByZone[zone] = [];
+      coinContainersByZone[zone].push({ id: item.id, name: item.name, zone, capacity, coinsStored });
+    }
 
     // Build extra storage zones with their items and slot counts
     const extraZones = (inventory.extraZones ?? []).map((ez: ExtraZone) => ({
@@ -113,18 +122,19 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         }, 0),
     }));
 
-    // Build coin slot display data: one purse per started 100 coins, grouped by zone
+    // Build coin slot display data: one purse per started 100 coins (after chest capacity), grouped by zone
     const coinSlots = inventory.coinSlots ?? [];
-    const coinSlotCount = totalCoins > 0 ? Math.ceil(totalCoins / 100) : 0;
+    const purseCoins = coinsLeft; // remainder after chest capacity consumed
+    const coinSlotCount = purseCoins > 0 ? Math.ceil(purseCoins / 100) : 0;
     // Build per-zone coin slot arrays for template rendering
-    const coinSlotsPerZone: Record<string, Array<{ id: string; coins: number; zoneIndex: number }>> = {};
+    const coinSlotsPerZone: Record<string, Array<{ id: string; coins: number; zoneIndex: number; zone: string }>> = {};
     for (let i = 0; i < Math.min(coinSlots.length, coinSlotCount); i++) {
       const slot = coinSlots[i];
-      const coinsInSlot = (i === coinSlotCount - 1 && totalCoins % 100 !== 0)
-        ? totalCoins % 100
+      const coinsInSlot = (i === coinSlotCount - 1 && purseCoins % 100 !== 0)
+        ? purseCoins % 100
         : 100;
       if (!coinSlotsPerZone[slot.zone]) coinSlotsPerZone[slot.zone] = [];
-      coinSlotsPerZone[slot.zone].push({ id: slot.id, coins: coinsInSlot, zoneIndex: i });
+      coinSlotsPerZone[slot.zone].push({ id: slot.id, coins: coinsInSlot, zoneIndex: i, zone: slot.zone });
     }
 
     // Party members for "Give item" / "Give coins" dialogs
@@ -150,6 +160,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       },
       extraZones,
       coinSlotsPerZone,
+      coinContainersByZone,
       encumbrance,
       isGM,
       isOwner,

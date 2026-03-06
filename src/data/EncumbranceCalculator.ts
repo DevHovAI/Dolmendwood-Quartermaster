@@ -63,7 +63,13 @@ export function calculateEncumbrance(
   // Coins: zone-aware if coinSlots are synced, otherwise fall back to all-stowed
   const { cp, sp, gp, pp } = inventory.coins;
   const totalCoins = cp + sp + gp + pp;
-  const coinSlotCount = totalCoins > 0 ? Math.ceil(totalCoins / 100) : 0;
+  let chestCapacity = 0;
+  for (const item of inventory.items) {
+    const def = catalogMap.get(item.definitionId);
+    if (def?.coinCapacity) chestCapacity += def.coinCapacity * item.quantity;
+  }
+  const purseCoins = Math.max(0, totalCoins - chestCapacity);
+  const coinSlotCount = purseCoins > 0 ? Math.ceil(purseCoins / 100) : 0;
   if (inventory.coinSlots && inventory.coinSlots.length === coinSlotCount && coinSlotCount > 0) {
     for (const slot of inventory.coinSlots) {
       if (slot.zone === "tiny") {

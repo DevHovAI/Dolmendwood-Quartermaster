@@ -8,6 +8,7 @@
       {{else}}
       <h2 class="inn-name-static">{{innName}}</h2>
       {{/if}}
+      {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
 
       {{!-- Quality indicator: GM gets buttons, players see a static label --}}
       {{#if isGM}}
@@ -57,11 +58,11 @@
             <span class="inn-item-desc">{{this.description}}</span>
           </div>
           <span class="inn-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
-          {{#if ../isGM}}
-          <button type="button" class="btn-hide-item {{#if this.isHidden}}is-hidden{{/if}}"
+          {{#if ../../isGM}}
+          <button type="button" class="icon-btn btn-hide-item {{#if this.isHidden}}is-hidden{{/if}}"
                   data-action="toggleLocalHideInnItem" data-item-id="{{this.id}}"
                   title="{{#if this.isHidden}}Show for players{{else}}Hide from players{{/if}}">
-            <i class="fas {{#if this.isHidden}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
+            <i class="fas fa-eye-slash"></i>
           </button>
           {{/if}}
           <button type="button" class="btn-inn-purchase" data-action="purchaseInnItem"

@@ -1203,6 +1203,19 @@
   opacity: 0.75;
 }
 
+.price-factor-badge {
+  display: inline-block;
+  font-size: 0.7em;
+  font-weight: bold;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--dw-accent);
+  color: var(--dw-primary);
+  margin-left: 6px;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+}
+
 /* ─── Transaction Log ───────────────────────────────────────────────────────── */
 .transaction-log {
   margin-top: 6px;
@@ -1614,6 +1627,16 @@
   color: var(--dw-text);
   font-family: inherit;
   flex-shrink: 0;
+}
+
+/* ─── Coin Container Rows ────────────────────────────────────────────────────── */
+.coin-container-row {
+  background: rgba(200, 160, 50, 0.06);
+  border-left: 2px solid var(--dw-accent);
+}
+
+.coin-container-empty {
+  opacity: 0.5;
 }
 
 /* ─── Coin Capacity Counter ──────────────────────────────────────────────────── */

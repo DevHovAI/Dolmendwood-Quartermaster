@@ -1,5 +1,6 @@
 import { MODULE_ID, SOCKET_NAME, SOCKET_EVENTS } from "../constants";
 import { FlagManager } from "../data/FlagManager";
+import { CatalogManager } from "../data/CatalogManager";
 import { processInnPurchase } from "../data/innPurchase";
 import type {
   SocketPayload,
@@ -50,7 +51,9 @@ export class SocketHandler {
       case SOCKET_EVENTS.PURCHASE_ITEM:
         // Purchase is processed by the GM to ensure authoritative write
         if (g.user?.isGM) {
-          SocketHandler.onPurchase(payload.data as PurchasePayload);
+          void SocketHandler.processPurchase(payload.data as PurchasePayload).then(() => {
+            SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+          });
         }
         break;
 
@@ -125,14 +128,13 @@ export class SocketHandler {
     SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
   }
 
-  private static async onPurchase(data: PurchasePayload): Promise<void> {
+  static async processPurchase(data: PurchasePayload): Promise<void> {
     const actor = (game as Game).actors?.get(data.actorId);
     if (!actor) return;
 
-    // Deduct coins — try to pay in the most valuable denomination first
-    // For simplicity, deduct directly from gp, converting as needed
+    const def = CatalogManager.getDefinition(data.definitionId);
+
     await FlagManager.updateInventory(actor, (inv) => {
-      // Convert total cost to cp and deduct from coins pool
       const costCp =
         (data.totalCost.cp ?? 0) +
         (data.totalCost.sp ?? 0) * 10 +
@@ -144,25 +146,35 @@ export class SocketHandler {
         inv.coins.gp * 100 +
         inv.coins.pp * 500;
 
-      if (availableCp < costCp) return inv; // insufficient funds — GM should handle override
+      if (availableCp < costCp && !data.gmOverride) return inv;
 
-      const remainingCp = availableCp - costCp;
-      // Rebuild coins from remaining cp (prefer gp > sp > cp)
-      inv.coins.pp = 0; // simplification: convert everything to gp/sp/cp
-      inv.coins.gp = Math.floor(remainingCp / 100);
-      inv.coins.sp = Math.floor((remainingCp % 100) / 10);
-      inv.coins.cp = remainingCp % 10;
+      if (availableCp >= costCp) {
+        const remainingCp = availableCp - costCp;
+        inv.coins.pp = 0;
+        inv.coins.gp = Math.floor(remainingCp / 100);
+        inv.coins.sp = Math.floor((remainingCp % 100) / 10);
+        inv.coins.cp = remainingCp % 10;
+      }
 
-      // Add item to inventory
       inv.items.push({
         id: foundry.utils.randomID(),
         definitionId: data.definitionId,
-        name: data.definitionId, // will be resolved by UI from catalog
+        name: def?.name ?? data.definitionId,
         quantity: data.quantity,
         zone: data.zone,
         isSecret: false,
         notes: "",
       });
+
+      if (def?.grantsZone) {
+        inv.extraZones ??= [];
+        inv.extraZones.push({
+          id: foundry.utils.randomID(),
+          name: def.grantsZone.name,
+          maxSlots: def.grantsZone.maxSlots,
+        });
+      }
+
       return inv;
     });
 
@@ -172,7 +184,7 @@ export class SocketHandler {
       type: "purchase",
       fromActorId: "shop",
       toActorId: data.actorId,
-      items: [{ definitionId: data.definitionId, name: data.definitionId, quantity: data.quantity }],
+      items: [{ definitionId: data.definitionId, name: def?.name ?? data.definitionId, quantity: data.quantity }],
       coinsDelta: [
         {
           actorId: data.actorId,
@@ -184,7 +196,6 @@ export class SocketHandler {
       ],
     };
     await FlagManager.appendTransaction(tx);
-    SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
   }
 
   private static async onGiveCoins(data: GiveCoinsPayload): Promise<void> {

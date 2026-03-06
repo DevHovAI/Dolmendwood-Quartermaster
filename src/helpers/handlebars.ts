@@ -30,8 +30,31 @@ export const ITEM_ICONS: { icon: string; label: string }[] = [
   { icon: "fa-star",         label: "Special" },
 ];
 
-export function buildIconPickerHTML(selectedIcon = "fa-sack"): string {
-  const buttons = ITEM_ICONS.map(
+export const LOCATION_ICONS: { icon: string; label: string }[] = [
+  { icon: "fa-store",          label: "Shop (generic)" },
+  { icon: "fa-beer-mug-empty", label: "Inn / Tavern" },
+  { icon: "fa-horse",          label: "Stable" },
+  { icon: "fa-hammer",         label: "Blacksmith" },
+  { icon: "fa-flask",          label: "Alchemist" },
+  { icon: "fa-scroll",         label: "Scribe / Scrolls" },
+  { icon: "fa-book",           label: "Books / Library" },
+  { icon: "fa-gem",            label: "Jeweller" },
+  { icon: "fa-shirt",          label: "Clothier" },
+  { icon: "fa-shield-halved",  label: "Armourer" },
+  { icon: "fa-leaf",           label: "Herbalist" },
+  { icon: "fa-wrench",         label: "Smithy / Tools" },
+  { icon: "fa-hat-wizard",     label: "Wizard / Magic" },
+  { icon: "fa-cross",          label: "Temple / Holy" },
+  { icon: "fa-music",          label: "Instruments / Bard" },
+  { icon: "fa-map",            label: "Cartographer" },
+  { icon: "fa-coins",          label: "Money Changer" },
+  { icon: "fa-utensils",       label: "Food / Cook" },
+  { icon: "fa-fire",           label: "Forge" },
+  { icon: "fa-star",           label: "Special" },
+];
+
+export function buildIconPickerHTML(selectedIcon = "fa-sack", icons = ITEM_ICONS): string {
+  const buttons = icons.map(
     (i) =>
       `<button type="button" class="icon-picker-btn${i.icon === selectedIcon ? " selected" : ""}" ` +
       `data-icon="${i.icon}" title="${i.label}"><i class="fas ${i.icon}"></i></button>`
@@ -176,5 +199,6 @@ export async function registerHandlebarsPartials(): Promise<void> {
     "party-summary": TEMPLATES.PARTIALS.PARTY_SUMMARY,
     "extra-zone": TEMPLATES.PARTIALS.EXTRA_ZONE,
     "coin-slot-row": TEMPLATES.PARTIALS.COIN_SLOT_ROW,
+    "coin-container-row": TEMPLATES.PARTIALS.COIN_CONTAINER_ROW,
   });
 }

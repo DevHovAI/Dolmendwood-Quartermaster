@@ -5,7 +5,7 @@ import { FlagManager } from "../data/FlagManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker } from "../helpers/handlebars";
-import type { ItemDefinition, ShopState, InventoryItem } from "../types";
+import type { ItemDefinition, ShopState, InventoryItem, PurchasePayload } from "../types";
 
 export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -20,11 +20,16 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   private localName: string | null = null;
   /** Categories this shop sells — empty means all categories */
   private localCategories: string[] = [];
+  /** Price multiplier in percent (100 = normal, 200 = double price) */
+  private priceFactor = 100;
+  /** Saved scroll position of .window-content — restored after each re-render */
+  private _scrollTop = 0;
 
   /** Configure this shop instance from a Note marker */
-  setConfig(name: string, categories: string[]): void {
+  setConfig(name: string, categories: string[], priceFactor = 100): void {
     this.localName = name;
     this.localCategories = categories;
+    this.priceFactor = priceFactor;
   }
 
   override get title(): string {
@@ -118,13 +123,15 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       );
     }
     if (this.showAffordableOnly && selectedInventory) {
+      const factor = this.priceFactor;
       items = items.filter((i) => {
-        const costCp =
+        const rawCostCp =
           i.cost.currency === "cp" ? i.cost.amount :
           i.cost.currency === "sp" ? i.cost.amount * 10 :
           i.cost.currency === "gp" ? i.cost.amount * 100 :
           i.cost.amount * 500;
-        return availableCp >= costCp;
+        const adjCostCp = Math.max(1, Math.round(rawCostCp * factor / 100));
+        return availableCp >= adjCostCp;
       });
     }
 
@@ -138,11 +145,16 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       items = items.filter((i) => !activeHiddenItems.includes(i.id));
     }
 
-    // Group by category, marking hidden items for GM view
+    // Group by category, marking hidden items for GM view and applying price factor
+    const factor = this.priceFactor;
     const grouped: Record<string, (ItemDefinition & { isHidden?: boolean })[]> = {};
     for (const item of items) {
       if (!grouped[item.category]) grouped[item.category] = [];
-      grouped[item.category].push({ ...item, isHidden: isGM && activeHiddenItems.includes(item.id) });
+      const adjustedCost = factor === 100 ? item.cost : {
+        amount: Math.max(1, Math.round(item.cost.amount * factor / 100)),
+        currency: item.cost.currency,
+      };
+      grouped[item.category].push({ ...item, cost: adjustedCost, isHidden: isGM && activeHiddenItems.includes(item.id) });
     }
 
     return {
@@ -161,7 +173,13 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       availableCp,
       shopName: this.localName ?? "Shop",
       isLocalShop: this.localName !== null,
+      priceFactor: this.priceFactor,
     };
+  }
+
+  override render(...args: Parameters<InstanceType<typeof foundry.applications.api.ApplicationV2>["render"]>): unknown {
+    this._scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? 0;
+    return super.render(...args);
   }
 
   override _onRender(
@@ -169,6 +187,10 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     _options: Partial<ApplicationV2Options>
   ): void {
     const el = this.element;
+
+    // Restore scroll position after re-render
+    const wc = el.querySelector<HTMLElement>(".window-content");
+    if (wc) wc.scrollTop = this._scrollTop;
 
     // Target actor selector
     el.querySelector<HTMLSelectElement>("#shop-target-actor")?.addEventListener(
@@ -240,11 +262,13 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       inventory.coins.gp * 100 +
       inventory.coins.pp * 500;
 
-    const costCp =
+    const rawCostCp =
       def.cost.currency === "cp" ? def.cost.amount :
       def.cost.currency === "sp" ? def.cost.amount * 10 :
       def.cost.currency === "gp" ? def.cost.amount * 100 :
       def.cost.amount * 500; // pp
+    const adjustedAmount = Math.max(1, Math.round(def.cost.amount * this.priceFactor / 100));
+    const costCp = Math.max(1, Math.round(rawCostCp * this.priceFactor / 100));
 
     const canAfford = totalCp >= costCp;
     const isGM = g.user?.isGM ?? false;
@@ -255,12 +279,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       return;
     }
 
-    // Show confirmation dialog
-    const confirmed = await new Promise<boolean>((resolve) => {
+    // Show confirmation dialog — capture zone selection inside callback
+    const result = await new Promise<{ confirmed: boolean; zone: string }>((resolve) => {
       new Dialog({
         title: "Purchase Item",
         content: `
-          <p>Purchase <strong>${def.name}</strong> for <strong>${def.cost.amount} ${def.cost.currency}</strong>?</p>
+          <p>Purchase <strong>${def.name}</strong> for <strong>${adjustedAmount} ${def.cost.currency}</strong>?</p>
           <p>Target: <strong>${actor.name}</strong></p>
           ${!canAfford ? '<p class="warning"><i class="fas fa-exclamation-triangle"></i> Insufficient funds! Proceed anyway (GM override)?</p>' : ""}
           <div class="form-group">
@@ -276,51 +300,39 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
           confirm: {
             label: canAfford ? "Purchase" : "Override & Purchase",
             icon: `<i class="fas ${canAfford ? "fa-shopping-cart" : "fa-exclamation-triangle"}"></i>`,
-            callback: () => resolve(true),
+            callback: (html: JQuery) => {
+              const zone = (html.find("#purchase-zone").val() as string) ?? "stowed";
+              resolve({ confirmed: true, zone });
+            },
           },
-          cancel: { label: "Cancel", callback: () => resolve(false) },
+          cancel: { label: "Cancel", callback: () => resolve({ confirmed: false, zone: "stowed" }) },
         },
         default: "confirm",
       }).render(true);
     });
 
-    if (!confirmed) return;
+    if (!result.confirmed) return;
 
-    // Get zone from dialog — we approximate by finding the rendered dialog
-    const zone: InventoryItem["zone"] = "stowed"; // default; dialog already closed
+    const costObj = { cp: 0, sp: 0, gp: 0, pp: 0 };
+    costObj[def.cost.currency as "cp" | "sp" | "gp" | "pp"] = adjustedAmount;
 
-    // Deduct cost from actor's coins, converting across denominations as needed
-    await FlagManager.updateInventory(actor, (inv) => {
-      if (canAfford) {
-        const remaining = totalCp - costCp;
-        inv.coins.pp = Math.floor(remaining / 500);
-        inv.coins.gp = Math.floor((remaining % 500) / 100);
-        inv.coins.sp = Math.floor((remaining % 100) / 10);
-        inv.coins.cp = remaining % 10;
-      }
-      inv.items.push({
-        id: foundry.utils.randomID(),
-        definitionId,
-        name: def.name,
-        quantity: 1,
-        zone,
-        isSecret: false,
-        notes: "",
-      });
-      // If the item definition grants a storage zone, auto-add it
-      if (def.grantsZone) {
-        inv.extraZones ??= [];
-        inv.extraZones.push({
-          id: foundry.utils.randomID(),
-          name: def.grantsZone.name,
-          maxSlots: def.grantsZone.maxSlots,
-        });
-      }
-      return inv;
-    });
+    const payload: PurchasePayload = {
+      actorId: this.selectedActorId,
+      definitionId,
+      quantity: 1,
+      zone: result.zone,
+      totalCost: costObj,
+      gmOverride: !canAfford && isGM,
+    };
+
+    if (isGM) {
+      await SocketHandler.processPurchase(payload);
+      SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+    } else {
+      SocketHandler.emit(SOCKET_EVENTS.PURCHASE_ITEM, payload);
+    }
 
     ui.notifications?.info(`Purchased ${def.name} for ${actor.name}.`);
-    this.render();
   }
 
   private static _onGrantItem(

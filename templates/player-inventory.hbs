@@ -48,6 +48,9 @@
     {{#each coinSlotsPerZone.tiny}}
     {{> coin-slot-row slot=this extraZones=../extraZones isOwner=../isOwner}}
     {{/each}}
+    {{#each coinContainersByZone.tiny}}
+    {{> coin-container-row item=this extraZones=../extraZones isOwner=../isOwner canEdit=../canEdit}}
+    {{/each}}
   </section>
 
   {{!-- Equipped Zone --}}
@@ -59,6 +62,9 @@
     {{> inventory-zone items=zones.equipped zone="equipped" canEdit=canEdit canGive=canGive isGM=isGM isOwner=isOwner canAddItem=canAddItem extraZones=extraZones}}
     {{#each coinSlotsPerZone.equipped}}
     {{> coin-slot-row slot=this extraZones=../extraZones isOwner=../isOwner}}
+    {{/each}}
+    {{#each coinContainersByZone.equipped}}
+    {{> coin-container-row item=this extraZones=../extraZones isOwner=../isOwner canEdit=../canEdit}}
     {{/each}}
   </section>
 
@@ -78,6 +84,9 @@
     {{#each coinSlotsPerZone.stowed}}
     {{> coin-slot-row slot=this extraZones=../extraZones isOwner=../isOwner}}
     {{/each}}
+    {{#each coinContainersByZone.stowed}}
+    {{> coin-container-row item=this extraZones=../extraZones isOwner=../isOwner canEdit=../canEdit}}
+    {{/each}}
   </section>
 
   {{!-- Extra Storage Zones (GM-created, e.g. Pack Horse) --}}
@@ -90,6 +99,9 @@
     {{> extra-zone zone=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones}}
     {{#each (lookup ../coinSlotsPerZone this.id)}}
     {{> coin-slot-row slot=this extraZones=../../extraZones isOwner=../../isOwner}}
+    {{/each}}
+    {{#each (lookup ../coinContainersByZone this.id)}}
+    {{> coin-container-row item=this extraZones=../../extraZones isOwner=../../isOwner canEdit=../../canEdit}}
     {{/each}}
   </section>
   {{/each}}

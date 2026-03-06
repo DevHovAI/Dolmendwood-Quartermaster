@@ -1,5 +1,6 @@
 import { MODULE_ID, TEMPLATES } from "../constants";
 import { CatalogManager } from "../data/CatalogManager";
+import { buildIconPickerHTML, activateIconPicker, LOCATION_ICONS } from "../helpers/handlebars";
 import type { MarketEntry, MarketFlag } from "../types";
 
 type NoteDoc = {
@@ -142,6 +143,7 @@ class MarketEntryDialog extends Dialog {
     private readonly app: MarketApp
   ) {
     const isShop = type === "shop";
+    const defaultIcon = isShop ? "fa-store" : "fa-beer-mug-empty";
     const savedCats = entry?.categories ?? [];
     const categoryCheckboxes = isShop
       ? CatalogManager.getCategories()
@@ -174,6 +176,10 @@ class MarketEntryDialog extends Dialog {
           <label>Description</label>
           <textarea id="entry-desc" rows="2" style="width:100%;resize:vertical;">${entry?.description ?? ""}</textarea>
         </div>
+        <div class="form-group">
+          <label>Icon</label>
+          ${buildIconPickerHTML(entry?.icon ?? defaultIcon, LOCATION_ICONS)}
+        </div>
         ${
           isShop
             ? `<div class="form-group">
@@ -202,11 +208,13 @@ class MarketEntryDialog extends Dialog {
             html.find(".entry-cat:checked").each((_: number, el: Element) =>
               cats.push((el as HTMLInputElement).value)
             );
+            const icon = (html.find("#custom-icon-value").val() as string) || defaultIcon;
             const newEntry: MarketEntry = {
               id: entry?.id ?? foundry.utils.randomID(),
               type,
               name,
               description,
+              icon,
               categories: isShop ? cats : [],
               quality: isShop
                 ? "common"
@@ -219,5 +227,10 @@ class MarketEntryDialog extends Dialog {
       },
       default: "save",
     });
+  }
+
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    activateIconPicker(html);
   }
 }

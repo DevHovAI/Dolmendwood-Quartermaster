@@ -66,10 +66,10 @@ Hooks.once("init", () => {
       const getFlag = (key: string) => this.document?.getFlag?.(MODULE_ID, key);
       const marketFlag = getFlag("market");
       if (marketFlag) { openMarket(this.document as { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }); return; }
-      const innFlag = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[] } | undefined;
-      if (innFlag) { openInn(innFlag.name, innFlag.quality, innFlag.categories); return; }
-      const shopFlag = getFlag("shop") as { name?: string; categories?: string[] } | undefined;
-      if (shopFlag) { openShop(shopFlag.name, shopFlag.categories ?? []); return; }
+      const innFlag = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[]; priceFactor?: number } | undefined;
+      if (innFlag) { openInn(innFlag.name, innFlag.quality, innFlag.categories, innFlag.priceFactor); return; }
+      const shopFlag = getFlag("shop") as { name?: string; categories?: string[]; priceFactor?: number } | undefined;
+      if (shopFlag) { openShop(shopFlag.name, shopFlag.categories ?? [], shopFlag.priceFactor); return; }
       return _origClick.call(this, event);
     };
   }
@@ -90,8 +90,8 @@ Hooks.once("ready", async () => {
     (mod as ModuleData & { api: unknown }).api = {
       openPartyOverview: () => openPartyOverview(),
       openPlayerInventory: (actorOrId?: Actor | string) => openPlayerInventory(actorOrId),
-      openShop: (name?: string, categories?: string[]) => openShop(name, categories),
-      openInn: (name?: string, quality?: InnQuality, categories?: string[]) => openInn(name, quality, categories),
+      openShop: (name?: string, categories?: string[], priceFactor?: number) => openShop(name, categories, priceFactor),
+      openInn: (name?: string, quality?: InnQuality, categories?: string[], priceFactor?: number) => openInn(name, quality, categories, priceFactor),
       openMarket: (noteDoc: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }) => openMarket(noteDoc),
     };
   }
@@ -100,7 +100,7 @@ Hooks.once("ready", async () => {
 
   // Cache of pending flag values keyed on the app instance.
   // Updated on every input change; read by closeNoteConfig (which fires without HTML in v13).
-  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality; categories: string[] } | false; shop?: { name: string; categories: string[] } | false; market?: { name: string } | false };
+  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality; categories: string[]; priceFactor: number } | false; shop?: { name: string; categories: string[]; priceFactor: number } | false; market?: { name: string } | false };
   const pendingNoteFlags = new WeakMap<object, PendingNoteFlags>();
 
   // v13 ApplicationV2 passes an HTMLElement as the second arg; old Application passed jQuery.
@@ -117,11 +117,12 @@ Hooks.once("ready", async () => {
     const note = (app as { document?: { getFlag?: (m: string, k: string) => unknown } }).document;
 
     // ── Inn fieldset ──────────────────────────────────────────────────────────
-    const existingInn = note?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality; categories?: string[] } | undefined;
+    const existingInn = note?.getFlag?.(MODULE_ID, "inn") as { name?: string; quality?: InnQuality; categories?: string[]; priceFactor?: number } | undefined;
     const isInn = !!existingInn;
     const innName = existingInn?.name ?? "";
     const innQuality = existingInn?.quality ?? "common";
     const savedInnCats = existingInn?.categories ?? [];
+    const innPriceFactor = existingInn?.priceFactor ?? 100;
     const innCategoryCheckboxes = INN_CATEGORIES
       .map((cat) => {
         const checked = savedInnCats.includes(cat.key) ? "checked" : "";
@@ -151,6 +152,10 @@ Hooks.once("ready", async () => {
             </select>
           </div>
           <div class="form-group">
+            <label>Price Factor <small>(%  — 100 = normal, 200 = double)</small></label>
+            <input type="number" id="note-inn-price-factor" value="${innPriceFactor}" min="1" max="10000" step="1" style="width:80px;" />
+          </div>
+          <div class="form-group">
             <label>Categories served <small>(leave all unchecked = serve everything)</small></label>
             <div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;">
               ${innCategoryCheckboxes}
@@ -160,10 +165,11 @@ Hooks.once("ready", async () => {
       </fieldset>`;
 
     // ── Shop fieldset ─────────────────────────────────────────────────────────
-    const existingShop = note?.getFlag?.(MODULE_ID, "shop") as { name?: string; categories?: string[] } | undefined;
+    const existingShop = note?.getFlag?.(MODULE_ID, "shop") as { name?: string; categories?: string[]; priceFactor?: number } | undefined;
     const isShop = !!existingShop;
     const shopName = existingShop?.name ?? "";
     const savedCats = existingShop?.categories ?? [];
+    const shopPriceFactor = existingShop?.priceFactor ?? 100;
     const categoryCheckboxes = CatalogManager.getCategories()
       .map((cat) => {
         const checked = savedCats.includes(cat) ? "checked" : "";
@@ -183,6 +189,10 @@ Hooks.once("ready", async () => {
           <div class="form-group">
             <label>Shop Name</label>
             <input type="text" id="note-shop-name" value="${shopName}" placeholder="e.g. The Blacksmith" />
+          </div>
+          <div class="form-group">
+            <label>Price Factor <small>(%  — 100 = normal, 200 = double)</small></label>
+            <input type="number" id="note-shop-price-factor" value="${shopPriceFactor}" min="1" max="10000" step="1" style="width:80px;" />
           </div>
           <div class="form-group">
             <label>Categories sold <small>(leave all unchecked = sell everything)</small></label>
@@ -244,7 +254,8 @@ Hooks.once("ready", async () => {
         const quality = ((el.querySelector("#note-inn-quality") as HTMLSelectElement | null)?.value ?? "common") as InnQuality;
         const categories: string[] = [];
         el.querySelectorAll<HTMLInputElement>(".note-inn-cat:checked").forEach((cb) => categories.push(cb.value));
-        flags.inn = { name, quality, categories };
+        const priceFactor = Math.max(1, parseInt((el.querySelector("#note-inn-price-factor") as HTMLInputElement | null)?.value ?? "100", 10) || 100);
+        flags.inn = { name, quality, categories, priceFactor };
       } else {
         flags.inn = false; // explicitly unset
       }
@@ -254,7 +265,8 @@ Hooks.once("ready", async () => {
         const name = ((el.querySelector("#note-shop-name") as HTMLInputElement | null)?.value ?? "").trim() || "Shop";
         const categories: string[] = [];
         el.querySelectorAll<HTMLInputElement>(".note-shop-cat:checked").forEach((cb) => categories.push(cb.value));
-        flags.shop = { name, categories };
+        const priceFactor = Math.max(1, parseInt((el.querySelector("#note-shop-price-factor") as HTMLInputElement | null)?.value ?? "100", 10) || 100);
+        flags.shop = { name, categories, priceFactor };
       } else {
         flags.shop = false;
       }
@@ -320,11 +332,11 @@ Hooks.once("ready", async () => {
       return false;
     }
 
-    const innData = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[] } | undefined;
-    if (innData) { openInn(innData.name, innData.quality, innData.categories); return false; }
+    const innData = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[]; priceFactor?: number } | undefined;
+    if (innData) { openInn(innData.name, innData.quality, innData.categories, innData.priceFactor); return false; }
 
-    const shopData = getFlag("shop") as { name?: string; categories?: string[] } | undefined;
-    if (shopData) { openShop(shopData.name, shopData.categories ?? []); return false; }
+    const shopData = getFlag("shop") as { name?: string; categories?: string[]; priceFactor?: number } | undefined;
+    if (shopData) { openShop(shopData.name, shopData.categories ?? [], shopData.priceFactor); return false; }
   };
 
   // Keep activateNote/clickNote as fallbacks for future Foundry versions that may fix the hook.
@@ -433,33 +445,34 @@ function openPlayerInventory(actorOrId?: Actor | string): void {
   }
 }
 
-function openShop(name?: string, categories?: string[]): void {
+function openShop(name?: string, categories?: string[], priceFactor?: number): void {
   const existing = getAppInstance("dolmenwood-shop");
   if (existing) {
-    if (name !== undefined) (existing as unknown as ShopApp).setConfig(name, categories ?? []);
+    if (name !== undefined) (existing as unknown as ShopApp).setConfig(name, categories ?? [], priceFactor ?? 100);
     existing.render({ force: true });
   } else {
     const app = new ShopApp();
-    if (name !== undefined) app.setConfig(name, categories ?? []);
+    if (name !== undefined) app.setConfig(name, categories ?? [], priceFactor ?? 100);
     app.render(true);
   }
 }
 
-function openInn(name?: string, quality?: InnQuality, categories?: string[]): void {
+function openInn(name?: string, quality?: InnQuality, categories?: string[], priceFactor?: number): void {
   const existing = getAppInstance("dolmenwood-inn");
   if (existing) {
-    if (name || quality || categories) {
+    if (name || quality || categories || priceFactor !== undefined) {
       (existing as unknown as InnApp).setConfig(
         name ?? "The Wayward Boar",
         quality ?? "common",
-        categories
+        categories,
+        priceFactor ?? 100
       );
     }
     existing.render({ force: true });
   } else {
     const app = new InnApp();
-    if (name || quality || categories) {
-      app.setConfig(name ?? "The Wayward Boar", quality ?? "common", categories);
+    if (name || quality || categories || priceFactor !== undefined) {
+      app.setConfig(name ?? "The Wayward Boar", quality ?? "common", categories, priceFactor ?? 100);
     }
     app.render(true);
   }

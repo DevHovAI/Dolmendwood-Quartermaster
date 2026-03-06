@@ -126,6 +126,7 @@ export interface MarketEntry {
   type: "shop" | "inn";
   name: string;
   description: string;
+  icon?: string;                            // FA icon class, e.g. "fa-store"; falls back to type default
   categories: string[];                     // shop: [] = all categories; ignored for inn
   quality: "poor" | "common" | "fancy";     // inn only; ignored for shop
 }

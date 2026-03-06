@@ -19,6 +19,8 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   private innName: string = "The Wayward Boar";
   private quality: InnQuality = "common";
   private localCategories: string[] = [];
+  private priceFactor = 100;
+  private _scrollTop = 0;
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-inn",
@@ -45,10 +47,11 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   };
 
   /** Called externally to pre-configure the inn before rendering */
-  setConfig(name: string, quality: InnQuality, categories?: string[]): void {
+  setConfig(name: string, quality: InnQuality, categories?: string[], priceFactor = 100): void {
     this.innName = name;
     this.quality = quality;
     this.localCategories = categories ?? [];
+    this.priceFactor = priceFactor;
   }
 
   override get title(): string {
@@ -95,6 +98,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const innHiddenItems = this.innName ? (localHiddenMap[this.innName] ?? []) : [];
     const isLocalInn = this.localCategories.length > 0;
 
+    const factor = this.priceFactor;
     const menuByCategory = INN_CATEGORIES
       .filter((cat) => !visibleCategories || visibleCategories.includes(cat.key))
       .map((cat) => ({
@@ -102,14 +106,19 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       items: filteredMenu
         .filter((item) => item.category === cat.key)
         .filter((item) => !isGM ? !innHiddenItems.includes(item.id) : true)
-        .map((item) => ({
-          ...item,
-          canAfford: walletCp >= (item.cost.currency === "pp" ? item.cost.amount * 500
-            : item.cost.currency === "gp" ? item.cost.amount * 100
-            : item.cost.currency === "sp" ? item.cost.amount * 10
-            : item.cost.amount),
-          isHidden: isGM && innHiddenItems.includes(item.id),
-        })),
+        .map((item) => {
+          const adjustedAmount = Math.max(1, Math.round(item.cost.amount * factor / 100));
+          const adjustedCostCp = adjustedAmount * (item.cost.currency === "pp" ? 500
+            : item.cost.currency === "gp" ? 100
+            : item.cost.currency === "sp" ? 10
+            : 1);
+          return {
+            ...item,
+            cost: { amount: adjustedAmount, currency: item.cost.currency },
+            canAfford: walletCp >= adjustedCostCp,
+            isHidden: isGM && innHiddenItems.includes(item.id),
+          };
+        }),
     })).filter((cat) => cat.items.length > 0);
 
     return {
@@ -117,6 +126,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       quality: this.quality,
       isGM,
       isLocalInn,
+      priceFactor: this.priceFactor,
       actors,
       selectedActorId: selectedActor?.id ?? null,
       selectedActorName: selectedActor?.name ?? "",
@@ -125,11 +135,19 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     };
   }
 
+  override render(...args: Parameters<InstanceType<typeof foundry.applications.api.ApplicationV2>["render"]>): unknown {
+    this._scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? 0;
+    return super.render(...args);
+  }
+
   override _onRender(
     _context: Record<string, unknown>,
     _options: Partial<ApplicationV2Options>
   ): void {
     const el = this.element;
+
+    const wc = el.querySelector<HTMLElement>(".window-content");
+    if (wc) wc.scrollTop = this._scrollTop;
 
     // Actor selector
     el.querySelector<HTMLSelectElement>("#inn-actor-select")?.addEventListener("change", (e) => {
@@ -206,10 +224,11 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const inventory = FlagManager.getInventory(actor);
     const walletCp = inventory.coins.cp + inventory.coins.sp * 10
       + inventory.coins.gp * 100 + inventory.coins.pp * 500;
-    const costCp = item.cost.currency === "pp" ? item.cost.amount * 500
-      : item.cost.currency === "gp" ? item.cost.amount * 100
-      : item.cost.currency === "sp" ? item.cost.amount * 10
-      : item.cost.amount;
+    const adjustedAmount = Math.max(1, Math.round(item.cost.amount * this.priceFactor / 100));
+    const costCp = adjustedAmount * (item.cost.currency === "pp" ? 500
+      : item.cost.currency === "gp" ? 100
+      : item.cost.currency === "sp" ? 10
+      : 1);
 
     if (walletCp < costCp) {
       ui.notifications?.warn(`${actor.name} cannot afford ${item.name}.`);
@@ -218,16 +237,16 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
     const confirmed = await Dialog.confirm({
       title: `Pay for ${item.name}`,
-      content: `<p>Pay <strong>${item.cost.amount} ${item.cost.currency}</strong> for <em>${item.name}</em>?</p>`,
+      content: `<p>Pay <strong>${adjustedAmount} ${item.cost.currency}</strong> for <em>${item.name}</em>?</p>`,
     });
     if (!confirmed) return;
 
     // Determine coin breakdown for the payload
     const totalCost = {
-      cp: item.cost.currency === "cp" ? item.cost.amount : 0,
-      sp: item.cost.currency === "sp" ? item.cost.amount : 0,
-      gp: item.cost.currency === "gp" ? item.cost.amount : 0,
-      pp: item.cost.currency === "pp" ? item.cost.amount : 0,
+      cp: item.cost.currency === "cp" ? adjustedAmount : 0,
+      sp: item.cost.currency === "sp" ? adjustedAmount : 0,
+      gp: item.cost.currency === "gp" ? adjustedAmount : 0,
+      pp: item.cost.currency === "pp" ? adjustedAmount : 0,
     };
     const payload: InnPurchasePayload = { actorId, itemName: item.name, totalCost };
 

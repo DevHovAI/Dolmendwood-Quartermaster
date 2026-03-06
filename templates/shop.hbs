@@ -1,7 +1,10 @@
 <div class="shop-panel">
   {{!-- Shop Header --}}
   <div class="shop-header">
-    <h2><i class="fas fa-store"></i> {{shopName}}</h2>
+    <h2>
+      <i class="fas fa-store"></i> {{shopName}}
+      {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
+    </h2>
 
     {{!-- Target actor selector (GM can pick any party member; players buy for themselves) --}}
     {{#if isGM}}
@@ -95,7 +98,7 @@
               <i class="fas fa-shopping-cart"></i> Buy
             </button>
             {{/unless}}
-            {{#if ../isGM}}
+            {{#if ../../isGM}}
             {{#unless this.isHidden}}
             <button type="button" data-action="grantItem" data-item-id="{{this.id}}"
                     class="btn-grant" title="Grant item (no cost)">
@@ -103,7 +106,7 @@
             </button>
             {{/unless}}
             <button type="button"
-                    data-action="{{#if ../isLocalShop}}toggleLocalHideItem{{else}}toggleHideItem{{/if}}"
+                    data-action="{{#if ../../isLocalShop}}toggleLocalHideItem{{else}}toggleHideItem{{/if}}"
                     data-item-id="{{this.id}}"
                     class="icon-btn btn-hide-item {{#if this.isHidden}}is-hidden{{/if}}"
                     title="{{#if this.isHidden}}Show for players{{else}}Hide from players{{/if}}">

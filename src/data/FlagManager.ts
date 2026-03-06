@@ -1,4 +1,5 @@
 import { MODULE_ID, FLAGS } from "../constants";
+import { CatalogManager } from "./CatalogManager";
 import type { CharacterInventory, CoinSlot, Transaction } from "../types";
 
 function defaultInventory(actorId: string): CharacterInventory {
@@ -15,7 +16,13 @@ function defaultInventory(actorId: string): CharacterInventory {
  */
 function syncCoinSlots(inv: CharacterInventory): void {
   const total = inv.coins.cp + inv.coins.sp + inv.coins.gp + inv.coins.pp;
-  const needed = total > 0 ? Math.ceil(total / 100) : 0;
+  let chestCapacity = 0;
+  for (const item of inv.items) {
+    const def = CatalogManager.getMap().get(item.definitionId);
+    if (def?.coinCapacity) chestCapacity += def.coinCapacity * item.quantity;
+  }
+  const purseCoins = Math.max(0, total - chestCapacity);
+  const needed = purseCoins > 0 ? Math.ceil(purseCoins / 100) : 0;
   const current: CoinSlot[] = (inv.coinSlots ?? []).slice();
 
   if (needed > current.length) {
