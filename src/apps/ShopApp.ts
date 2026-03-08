@@ -227,6 +227,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     _event: Event,
     target: HTMLElement
   ): Promise<void> {
+    const scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? this._scrollTop;
     const tag = target.dataset.tag!;
     const g = game as Game;
     const shopState = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
@@ -237,6 +238,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       shopState.activeTags.splice(idx, 1);
     }
     await g.settings.set(MODULE_ID, SETTINGS.SHOP_STATE, shopState);
+    this._scrollTop = scrollTop;
     this.render();
   }
 
@@ -366,6 +368,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     _event: Event,
     target: HTMLElement
   ): Promise<void> {
+    const scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? this._scrollTop;
     const itemId = target.dataset.itemId!;
     const g = game as Game;
     const shopState = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
@@ -377,6 +380,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       shopState.hiddenItems.splice(idx, 1);
     }
     await g.settings.set(MODULE_ID, SETTINGS.SHOP_STATE, shopState);
+    this._scrollTop = scrollTop;
     this.render();
   }
 
@@ -386,6 +390,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     target: HTMLElement
   ): Promise<void> {
     if (!this.localName) return;
+    const scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? this._scrollTop;
     const itemId = target.dataset.itemId!;
     const g = game as Game;
     const localHiddenMap = (g.settings.get(MODULE_ID, SETTINGS.LOCAL_HIDDEN) as LocalHiddenMap) ?? {};
@@ -398,6 +403,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       localHiddenMap[key].splice(idx, 1);
     }
     await g.settings.set(MODULE_ID, SETTINGS.LOCAL_HIDDEN, localHiddenMap);
+    this._scrollTop = scrollTop;
     this.render();
   }
 
