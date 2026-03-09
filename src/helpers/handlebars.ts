@@ -90,6 +90,22 @@ export function registerHandlebarsHelpers(): void {
     return size === "tiny";
   });
 
+  // Returns true if item can go in the tiny (belt pouch) zone.
+  // In slot mode: item must have size "tiny".
+  // In weight mode: item weight must be ≤ 10.
+  Handlebars.registerHelper("canUseTinyZone", (item: { def?: { size?: string; weight?: number }; customDefinition?: { size?: string; weight?: number } }, encMode: string) => {
+    if (encMode === "weight") {
+      const w = (item as { customDefinition?: { weight?: number }; def?: { weight?: number } }).customDefinition?.weight
+        ?? (item as { def?: { weight?: number } }).def?.weight
+        ?? 0;
+      return w <= 10;
+    }
+    const size = (item as { customDefinition?: { size?: string }; def?: { size?: string } }).customDefinition?.size
+      ?? (item as { def?: { size?: string } }).def?.size
+      ?? "normal";
+    return size === "tiny";
+  });
+
   // Not-equal check
   Handlebars.registerHelper("neq", (a: unknown, b: unknown) => a !== b);
 

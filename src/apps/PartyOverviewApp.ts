@@ -179,6 +179,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
       partyTotals,
       partySummary,
       isGM,
+      encMode,
       transactions: FlagManager.getTransactions().slice(-20).reverse(),
     };
   }

@@ -8,10 +8,18 @@
     <i class="fas {{#if item.customDefinition.icon}}{{item.customDefinition.icon}}{{else}}fa-sack{{/if}} item-cat-icon" title="Custom item"></i>
     {{/if}}
     {{item.name}}
-    {{#if item.def}}
-    <span class="item-size-badge size-{{item.def.size}}" title="{{slotCost item.def.size}}">{{sizeLabel item.def.size}}</span>
-    {{else if item.customDefinition.size}}
-    <span class="item-size-badge size-{{item.customDefinition.size}}" title="{{slotCost item.customDefinition.size}}">{{sizeLabel item.customDefinition.size}}</span>
+    {{#if (eq encMode "weight")}}
+      {{#if item.def}}
+      <span class="item-size-badge item-weight-badge" title="Weight per unit">{{item.def.weight}} wt</span>
+      {{else if item.customDefinition}}
+      <span class="item-size-badge item-weight-badge" title="Weight per unit">{{#if item.customDefinition.weight}}{{item.customDefinition.weight}}{{else}}0{{/if}} wt</span>
+      {{/if}}
+    {{else}}
+      {{#if item.def}}
+      <span class="item-size-badge size-{{item.def.size}}" title="{{slotCost item.def.size}}">{{sizeLabel item.def.size}}</span>
+      {{else if item.customDefinition.size}}
+      <span class="item-size-badge size-{{item.customDefinition.size}}" title="{{slotCost item.customDefinition.size}}">{{sizeLabel item.customDefinition.size}}</span>
+      {{/if}}
     {{/if}}
     {{#if item.def.cannotBeStowed}}<span class="badge badge-cannot-stow" title="Cannot be stowed">Carried</span>{{/if}}
     {{#if item.def.description}}<span class="item-description">{{item.def.description}}</span>{{/if}}
@@ -52,8 +60,8 @@
 
   {{#if isOwner}}
   <select class="item-zone-select" data-item-id="{{item.id}}" title="Move to zone">
-    {{#if (or (isTinyItem item) (eq item.zone "tiny"))}}
-    <option value="tiny" {{#if (eq item.zone "tiny")}}selected{{/if}}>Tiny</option>
+    {{#if (or (canUseTinyZone item encMode) (eq item.zone "tiny"))}}
+    <option value="tiny" {{#if (eq item.zone "tiny")}}selected{{/if}}>Belt Pouch</option>
     {{/if}}
     <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
     <option value="stowed" {{#if (eq item.zone "stowed")}}selected{{/if}}>Stowed</option>

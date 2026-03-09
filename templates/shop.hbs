@@ -29,7 +29,7 @@
     {{#if selectedActor}}
     <div class="shop-target-summary">
       <span>{{selectedActor.name}}:</span>
-      {{> encumbrance-bar encumbrance=selectedEncumbrance}}
+      {{> encumbrance-bar encumbrance=selectedEncumbrance encMode=encMode}}
     </div>
     {{/if}}
   </div>
@@ -80,15 +80,17 @@
               {{#if this.isHidden}}<span class="shop-hidden-badge" title="Hidden from players"><i class="fas fa-eye-slash"></i></span>{{/if}}
             </span>
             {{#if this.subcategory}}<span class="shop-item-subcategory">{{this.subcategory}}</span>{{/if}}
-            {{#if this.description}}<span class="shop-item-desc-inline">— {{this.description}}</span>{{/if}}
+            {{#if this.description}}<span class="shop-item-desc-inline">{{this.description}}</span>{{/if}}
             {{#if this.qualities.length}}
             <span class="shop-item-qualities">{{#each this.qualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>
             {{/if}}
           </div>
           <div class="shop-item-meta">
-            <span class="shop-item-size size-{{this.size}}" title="{{slotCost this.size}}">
-              {{sizeLabel this.size}}
-            </span>
+            {{#if (eq ../../encMode "weight")}}
+            <span class="shop-item-size item-weight-badge" title="Weight per unit">{{this.weight}} wt</span>
+            {{else}}
+            <span class="shop-item-size size-{{this.size}}" title="{{slotCost this.size}}">{{sizeLabel this.size}}</span>
+            {{/if}}
             <span class="shop-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
           </div>
           <div class="shop-item-actions">

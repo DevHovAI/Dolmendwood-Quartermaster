@@ -154,6 +154,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       actor: this.actor,
       actorId: this.actor.id,
       inventory,
+      encMode,
       zones: {
         tiny: enriched(zones.tiny),
         equipped: enriched(zones.equipped),
@@ -456,7 +457,7 @@ class AddItemDialog extends Dialog {
             <select id="add-item-zone">
               <option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>
               <option value="stowed" ${zone === "stowed" ? "selected" : ""}>Stowed</option>
-              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Tiny</option>
+              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Belt Pouch</option>
             </select>
           </div>
           <hr/>
@@ -577,7 +578,7 @@ class AddCustomItemDialog extends Dialog {
             <select id="custom-zone">
               <option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>
               <option value="stowed" ${zone === "stowed" ? "selected" : ""}>Stowed</option>
-              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Tiny</option>
+              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Belt Pouch</option>
             </select>
           </div>
           <div class="form-group">

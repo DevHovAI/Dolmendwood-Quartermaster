@@ -19,8 +19,10 @@
         <span class="player-name">{{this.actor.name}}</span>
         <span class="player-speed {{speedColor this.encumbrance.finalSpeed}}">
           {{this.encumbrance.finalSpeed}}ft
+          {{#if (eq ../encMode "slots")}}
           {{#if (neq this.encumbrance.bottleneck "none")}}
           <i class="fas fa-exclamation-triangle" title="Bottleneck: {{bottleneckLabel this.encumbrance.bottleneck}}"></i>
+          {{/if}}
           {{/if}}
         </span>
         <button type="button" data-action="openPlayerInventory"
@@ -30,8 +32,22 @@
         </button>
       </div>
 
-      {{!-- Slot bars --}}
+      {{!-- Encumbrance bars --}}
       <div class="player-bars">
+        {{#if (eq ../encMode "weight")}}
+        <div class="bar-row">
+          <span class="bar-label">Wt</span>
+          <div class="bar-track">
+            <div class="bar-fill {{speedColor this.encumbrance.finalSpeed}}"
+                 style="width: {{weightBarWidth this.encumbrance.totalWeight}}"
+                 title="Total weight: {{this.encumbrance.totalWeight}} / 1,600"></div>
+            <div class="bar-threshold" style="left: 25%"   title="40ft → 30ft (400)"></div>
+            <div class="bar-threshold" style="left: 37.5%" title="30ft → 20ft (600)"></div>
+            <div class="bar-threshold" style="left: 50%"   title="20ft → 10ft (800)"></div>
+          </div>
+          <span class="bar-val">{{this.encumbrance.totalWeight}}</span>
+        </div>
+        {{else}}
         <div class="bar-row">
           <span class="bar-label">Eq</span>
           <div class="bar-track">
@@ -56,6 +72,7 @@
           </div>
           <span class="bar-val">{{this.encumbrance.stowedSlots}}</span>
         </div>
+        {{/if}}
       </div>
 
       {{!-- Coins summary --}}

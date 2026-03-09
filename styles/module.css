@@ -1113,11 +1113,9 @@
   color: var(--dw-tertiary);
   font-size: 0.82em;
   font-style: italic;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex-shrink: 1;
-  min-width: 0;
+  white-space: normal;
+  word-break: break-word;
+  width: 100%;
 }
 .shop-item-qualities { color: #665533; font-size: 0.8em; width: 100%; }
 

@@ -86,6 +86,8 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       ? g.actors?.get(this.selectedActorId)
       : undefined;
 
+    const encMode = (g.settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+
     // Compute selected actor inventory + encumbrance
     let selectedInventory = undefined;
     let selectedEncumbrance = undefined;
@@ -93,7 +95,8 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       selectedInventory = FlagManager.getInventory(selectedActor);
       selectedEncumbrance = calculateEncumbrance(
         selectedInventory,
-        CatalogManager.getMap()
+        CatalogManager.getMap(),
+        encMode
       );
     }
 
@@ -169,6 +172,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       selectedEncumbrance,
       searchText: this.searchText,
       isGM,
+      encMode,
       showAffordableOnly: this.showAffordableOnly,
       availableCp,
       shopName: this.localName ?? "Shop",

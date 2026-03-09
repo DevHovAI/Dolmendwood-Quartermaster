@@ -1,6 +1,6 @@
 <div class="inventory-zone zone-extra">
   {{#each zone.items}}
-  {{> item-row item=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones}}
+  {{> item-row item=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
   {{/each}}
   <div class="zone-footer-btns">
     {{#if isOwner}}
