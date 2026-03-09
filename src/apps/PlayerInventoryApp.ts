@@ -110,18 +110,35 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       coinContainersByZone[zone].push({ id: item.id, name: item.name, zone, capacity, coinsStored });
     }
 
-    // Build extra storage zones with their items and slot counts
-    const extraZones = (inventory.extraZones ?? []).map((ez: ExtraZone) => ({
-      ...ez,
-      items: enriched(visibleItems.filter((i) => i.zone === ez.id)),
-      usedSlots: visibleItems
-        .filter((i) => i.zone === ez.id)
-        .reduce((acc, i) => {
-          const def = CatalogManager.getDefinition(i.definitionId);
-          const size = i.customDefinition?.size ?? def?.size ?? "normal";
-          return acc + (size === "large" ? 2 : size === "normal" ? 1 : 0) * i.quantity;
-        }, 0),
-    }));
+    // Build extra storage zones split into vehicle zones and storage zones
+    const allExtraZones = inventory.extraZones ?? [];
+
+    const vehicleZones = allExtraZones
+      .filter((ez) => !ez.type || ez.type === "vehicle")
+      .map((ez: ExtraZone) => ({
+        ...ez,
+        items: enriched(visibleItems.filter((i) => i.zone === ez.id)),
+        usedSlots: visibleItems
+          .filter((i) => i.zone === ez.id)
+          .reduce((acc, i) => {
+            const def = CatalogManager.getDefinition(i.definitionId);
+            const size = i.customDefinition?.size ?? def?.size ?? "normal";
+            return acc + (size === "large" ? 2 : size === "normal" ? 1 : 0) * i.quantity;
+          }, 0),
+      }));
+
+    const storageZones = allExtraZones
+      .filter((ez) => ez.type === "storage")
+      .map((ez: ExtraZone) => ({
+        ...ez,
+        items: enriched(visibleItems.filter((i) => i.zone === ez.id)),
+        usedWeight: visibleItems
+          .filter((i) => i.zone === ez.id)
+          .reduce((acc, i) => {
+            const def = CatalogManager.getDefinition(i.definitionId);
+            return acc + (i.customDefinition?.weight ?? def?.weight ?? 0) * i.quantity;
+          }, 0),
+      }));
 
     // Build coin slot display data: one purse per started 100 coins (after chest capacity), grouped by zone
     const coinSlots = inventory.coinSlots ?? [];
@@ -160,7 +177,9 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         equipped: enriched(zones.equipped),
         stowed: enriched(zones.stowed),
       },
-      extraZones,
+      extraZones: allExtraZones,   // full list for zone selectors
+      storageZones,                // for weight mode storage section display
+      vehicleZones,                // for vehicle zone section display
       coinSlotsPerZone,
       coinContainersByZone,
       encumbrance,
@@ -826,7 +845,7 @@ class AddExtraZoneDialog extends Dialog {
             const maxSlots = Math.max(1, parseInt(html.find("#extra-zone-slots").val() as string, 10) || 10);
             await FlagManager.updateInventory(actor, (inv) => {
               if (!inv.extraZones) inv.extraZones = [];
-              inv.extraZones.push({ id: foundry.utils.randomID(), name, maxSlots });
+              inv.extraZones.push({ id: foundry.utils.randomID(), name, maxSlots, weightCapacity: 0 });
               return inv;
             });
             onComplete();

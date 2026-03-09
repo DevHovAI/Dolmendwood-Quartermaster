@@ -15,6 +15,7 @@ export interface ItemDefinition {
   isCustom: boolean;
   maxUses?: number;       // if set, item instances track remaining uses (e.g. arrows, oil)
   grantsZone?: { name: string; maxSlots: number; weightCapacity: number };  // purchasing this item auto-adds a named storage zone
+  grantsStorageZone?: { name: string; weightCapacity: number; isBeltPouch?: boolean };  // weight mode: purchasing creates a storage zone that counts toward character weight
   coinCapacity?: number;  // max coins this item can hold (display counter, no structural change)
 }
 
@@ -34,7 +35,9 @@ export interface ExtraZone {
   id: string;            // UUID, used as zone value on items
   name: string;          // display name (e.g. "Pack Horse")
   maxSlots: number;      // slot mode capacity — does NOT affect character speed
-  weightCapacity: number; // weight mode capacity (in coins) — does NOT affect character speed
+  weightCapacity: number; // weight mode capacity (in coins)
+  type?: "vehicle" | "storage";  // undefined = "vehicle" for backward compat
+  isBeltPouch?: boolean; // storage zone that acts as the tiny/belt-pouch zone in weight mode
 }
 
 export interface CoinSlot {

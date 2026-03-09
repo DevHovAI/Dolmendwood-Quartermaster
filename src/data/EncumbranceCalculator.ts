@@ -143,39 +143,39 @@ function calculateWeightEncumbrance(
   let stowedWeight = 0;
   let tinyWeight = 0;
 
-  const extraZoneIds = new Set(inventory.extraZones?.map((z) => z.id) ?? []);
+  // Build a map of extra zone id → zone object
+  const extraZoneMap = new Map((inventory.extraZones ?? []).map((z) => [z.id, z]));
 
   for (const item of inventory.items) {
     const def = catalogMap.get(item.definitionId);
     // Animals/vehicles with grantsZone don't count toward character weight
     if (def?.grantsZone && def?.category === "Animals & Vehicles") continue;
-    // Items stored in extra zones (horse/vehicle) don't count toward character weight
-    if (extraZoneIds.has(item.zone)) continue;
+
+    const extraZone = extraZoneMap.get(item.zone);
+    if (extraZone) {
+      if (!extraZone.type || extraZone.type === "vehicle") continue; // vehicle zones excluded from character weight
+      // storage zone — items count toward character weight
+      const w = (item.customDefinition?.weight ?? def?.weight ?? 0) * item.quantity;
+      if (extraZone.isBeltPouch) tinyWeight += w;
+      else stowedWeight += w;
+      continue;
+    }
 
     const w = (item.customDefinition?.weight ?? def?.weight ?? 0) * item.quantity;
-
-    if (item.zone === "tiny") {
-      tinyWeight += w;
-    } else if (item.zone === "equipped") {
-      equippedWeight += w;
-    } else {
-      // stowed (and any other non-extra zone)
-      stowedWeight += w;
-    }
+    if (item.zone === "tiny") tinyWeight += w;
+    else if (item.zone === "equipped") equippedWeight += w;
+    else stowedWeight += w; // "stowed" and any unknown zone
   }
 
-  // Coins: each coin (cp/sp/gp/pp) weighs 1 unit
+  // Coins: each coin weighs 1 unit. Default to equipped in weight mode.
   const { cp, sp, gp, pp } = inventory.coins;
   const totalCoins = cp + sp + gp + pp;
 
-  // Distribute coin weight to zones via coinSlots (each slot = 100 coins = weight 100)
   let coinWeightEquipped = 0;
   let coinWeightStowed = 0;
   let coinWeightTiny = 0;
-  let coinWeightExtra = 0;
 
   if (inventory.coinSlots && inventory.coinSlots.length > 0) {
-    // Calculate coins in containers (those go to extra zones effectively — not character-carried weight)
     let chestCapacity = 0;
     for (const item of inventory.items) {
       const def = catalogMap.get(item.definitionId);
@@ -186,28 +186,25 @@ function calculateWeightEncumbrance(
 
     if (inventory.coinSlots.length === coinSlotCount) {
       for (const slot of inventory.coinSlots) {
-        const slotWeight = 100; // each slot = 100 coins = 100 weight
-        if (slot.zone === "tiny") coinWeightTiny += slotWeight;
-        else if (slot.zone === "equipped") coinWeightEquipped += slotWeight;
-        else if (extraZoneIds.has(slot.zone)) coinWeightExtra += slotWeight;
-        else coinWeightStowed += slotWeight;
+        const slotWeight = 100;
+        const slotZone = extraZoneMap.get(slot.zone);
+        if (slotZone && (!slotZone.type || slotZone.type === "vehicle")) continue; // vehicle zone coins excluded
+        if (slot.zone === "tiny" || slotZone?.isBeltPouch) coinWeightTiny += slotWeight;
+        else coinWeightEquipped += slotWeight; // equipped and storage zones all go to equipped weight bucket for coins
       }
     } else {
-      // Fallback: all purse coins go to stowed
-      coinWeightStowed += purseCoins;
+      // Fallback: unassigned purse coins default to equipped in weight mode
+      coinWeightEquipped += purseCoins;
     }
-    // Coins in containers are carried by the container (which already has its own weight entry)
-    // but the coin weight itself still applies; add chest-stored coin weight to stowed
+    // Chest-stored coins add weight to stowed
     coinWeightStowed += Math.min(chestCapacity, totalCoins);
   } else {
-    // No slot tracking: all coins go to stowed
-    coinWeightStowed += totalCoins;
+    coinWeightEquipped += totalCoins; // no slot tracking — default to equipped
   }
 
   equippedWeight += coinWeightEquipped;
   stowedWeight += coinWeightStowed;
   tinyWeight += coinWeightTiny;
-  // coinWeightExtra is ignored for speed (extra zone)
 
   const totalWeight = equippedWeight + stowedWeight + tinyWeight;
   const finalSpeed = getSpeedForWeight(totalWeight);
@@ -215,12 +212,10 @@ function calculateWeightEncumbrance(
   return {
     mode: "weight",
     finalSpeed,
-    // Weight fields
     totalWeight,
     equippedWeight,
     stowedWeight,
     tinyWeight,
-    // Slot fields unused in weight mode
     equippedSlots: 0,
     stowedSlots: 0,
     equippedSpeed: finalSpeed,

@@ -498,6 +498,7 @@ export const CATALOG: ItemDefinition[] = [
     tags: [],
     isCustom: false,
     coinCapacity: 400,
+    grantsStorageZone: { name: "Backpack", weightCapacity: 400 },
   },
   {
     id: "barrel",
@@ -529,6 +530,7 @@ export const CATALOG: ItemDefinition[] = [
     tags: [],
     isCustom: false,
     coinCapacity: 50,
+    grantsStorageZone: { name: "Belt Pouch", weightCapacity: 50, isBeltPouch: true },
   },
   {
     id: "bucket",
@@ -560,6 +562,7 @@ export const CATALOG: ItemDefinition[] = [
     tags: [],
     isCustom: false,
     coinCapacity: 800,
+    grantsStorageZone: { name: "Casket (Iron, Large)", weightCapacity: 800 },
   },
   {
     id: "casket-iron-small",
@@ -576,6 +579,7 @@ export const CATALOG: ItemDefinition[] = [
     tags: [],
     isCustom: false,
     coinCapacity: 250,
+    grantsStorageZone: { name: "Casket (Iron, Small)", weightCapacity: 250 },
   },
   {
     id: "chest-wooden-large",
@@ -592,6 +596,7 @@ export const CATALOG: ItemDefinition[] = [
     tags: [],
     isCustom: false,
     coinCapacity: 1000,
+    grantsStorageZone: { name: "Chest (Wooden, Large)", weightCapacity: 1000 },
   },
   {
     id: "chest-wooden-small",
@@ -608,6 +613,7 @@ export const CATALOG: ItemDefinition[] = [
     tags: [],
     isCustom: false,
     coinCapacity: 300,
+    grantsStorageZone: { name: "Chest (Wooden, Small)", weightCapacity: 300 },
   },
   {
     id: "sack",
@@ -624,6 +630,7 @@ export const CATALOG: ItemDefinition[] = [
     tags: [],
     isCustom: false,
     coinCapacity: 600,
+    grantsStorageZone: { name: "Sack", weightCapacity: 600 },
   },
   {
     id: "scroll-case",

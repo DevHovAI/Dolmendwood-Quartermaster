@@ -1,4 +1,4 @@
-import { MODULE_ID, SOCKET_NAME, SOCKET_EVENTS } from "../constants";
+import { MODULE_ID, SOCKET_NAME, SOCKET_EVENTS, SETTINGS } from "../constants";
 import { FlagManager } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { processInnPurchase } from "../data/innPurchase";
@@ -172,7 +172,23 @@ export class SocketHandler {
           id: foundry.utils.randomID(),
           name: def.grantsZone.name,
           maxSlots: def.grantsZone.maxSlots,
+          weightCapacity: def.grantsZone.weightCapacity ?? 0,
         });
+      }
+
+      if (def?.grantsStorageZone) {
+        const encMode = (game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots";
+        if (encMode === "weight") {
+          inv.extraZones ??= [];
+          inv.extraZones.push({
+            id: foundry.utils.randomID(),
+            name: def.grantsStorageZone.name,
+            maxSlots: 0,
+            weightCapacity: def.grantsStorageZone.weightCapacity,
+            type: "storage" as const,
+            ...(def.grantsStorageZone.isBeltPouch ? { isBeltPouch: true } : {}),
+          });
+        }
       }
 
       return inv;

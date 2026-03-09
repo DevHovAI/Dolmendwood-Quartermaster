@@ -7,12 +7,19 @@
 
   {{#if isOwner}}
   <select class="coin-slot-zone-select" data-slot-id="{{slot.id}}" title="Move coins to zone">
+    {{#if (eq encMode "weight")}}
+    <option value="equipped" {{#if (eq slot.zone "equipped")}}selected{{/if}}>Equipped</option>
+    {{#each extraZones}}
+    <option value="{{this.id}}" {{#if (eq ../slot.zone this.id)}}selected{{/if}}>{{this.name}}</option>
+    {{/each}}
+    {{else}}
     <option value="tiny" {{#if (eq slot.zone "tiny")}}selected{{/if}}>Belt Pouch</option>
     <option value="equipped" {{#if (eq slot.zone "equipped")}}selected{{/if}}>Equipped</option>
     <option value="stowed" {{#if (eq slot.zone "stowed")}}selected{{/if}}>Stowed</option>
     {{#each extraZones}}
     <option value="{{this.id}}" {{#if (eq ../slot.zone this.id)}}selected{{/if}}>{{this.name}}</option>
     {{/each}}
+    {{/if}}
   </select>
   {{/if}}
 </div>

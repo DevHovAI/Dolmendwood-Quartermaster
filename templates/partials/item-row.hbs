@@ -60,6 +60,12 @@
 
   {{#if isOwner}}
   <select class="item-zone-select" data-item-id="{{item.id}}" title="Move to zone">
+    {{#if (eq encMode "weight")}}
+    <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
+    {{#each extraZones}}
+    <option value="{{this.id}}" {{#if (eq ../item.zone this.id)}}selected{{/if}}>{{this.name}}</option>
+    {{/each}}
+    {{else}}
     {{#if (or (canUseTinyZone item encMode) (eq item.zone "tiny"))}}
     <option value="tiny" {{#if (eq item.zone "tiny")}}selected{{/if}}>Belt Pouch</option>
     {{/if}}
@@ -68,6 +74,7 @@
     {{#each extraZones}}
     <option value="{{this.id}}" {{#if (eq ../item.zone this.id)}}selected{{/if}}>{{this.name}}</option>
     {{/each}}
+    {{/if}}
   </select>
 
   <input type="text" class="item-notes-input" data-item-id="{{item.id}}"

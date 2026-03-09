@@ -82,6 +82,9 @@ export function registerHandlebarsHelpers(): void {
   // Logical OR — used in templates: {{#if (or a b)}}
   Handlebars.registerHelper("or", (a: unknown, b: unknown) => Boolean(a) || Boolean(b));
 
+  // Logical AND — used in templates: {{#if (and a b)}}
+  Handlebars.registerHelper("and", (a: unknown, b: unknown) => Boolean(a) && Boolean(b));
+
   // Returns true if the effective size of an item is "tiny"
   Handlebars.registerHelper("isTinyItem", (item: { def?: { size?: string }; customDefinition?: { size?: string } }) => {
     const size = (item as { customDefinition?: { size?: string }; def?: { size?: string } }).customDefinition?.size
