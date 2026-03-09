@@ -48,6 +48,19 @@ Hooks.once("init", () => {
     default: {},
   });
 
+  game.settings.register(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE, {
+    name: "Encumbrance System",
+    hint: "Slot Encumbrance tracks gear slots (equipped ≤10, stowed ≤16). Weight Encumbrance tracks total item weight in coins (max 1,600).",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: {
+      slots: "Slot Encumbrance (default)",
+      weight: "Weight Encumbrance",
+    },
+    default: "slots",
+  } as Parameters<typeof game.settings.register>[2]);
+
   // Register Handlebars helpers (synchronous)
   registerHandlebarsHelpers();
 

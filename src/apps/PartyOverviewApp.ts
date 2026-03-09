@@ -1,4 +1,4 @@
-import { TEMPLATES } from "../constants";
+import { TEMPLATES, SETTINGS, MODULE_ID } from "../constants";
 import { FlagManager } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
@@ -135,10 +135,12 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
       (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
     );
 
+    const encMode = (g.settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+
     const members = partyActors
       .map((actor) => {
         const inventory = FlagManager.getInventory(actor);
-        const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap());
+        const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap(), encMode);
 
         // Compute per-category item totals visible to GM
         const itemsByCategory: Record<string, { name: string; total: number }[]> = {};

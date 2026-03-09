@@ -14,7 +14,7 @@ export interface ItemDefinition {
   tags: string[];
   isCustom: boolean;
   maxUses?: number;       // if set, item instances track remaining uses (e.g. arrows, oil)
-  grantsZone?: { name: string; maxSlots: number };  // purchasing this item auto-adds a named storage zone
+  grantsZone?: { name: string; maxSlots: number; weightCapacity: number };  // purchasing this item auto-adds a named storage zone
   coinCapacity?: number;  // max coins this item can hold (display counter, no structural change)
 }
 
@@ -31,9 +31,10 @@ export interface InventoryItem {
 }
 
 export interface ExtraZone {
-  id: string;       // UUID, used as zone value on items
-  name: string;     // display name (e.g. "Pack Horse")
-  maxSlots: number; // informational — does NOT affect speed
+  id: string;            // UUID, used as zone value on items
+  name: string;          // display name (e.g. "Pack Horse")
+  maxSlots: number;      // slot mode capacity — does NOT affect character speed
+  weightCapacity: number; // weight mode capacity (in coins) — does NOT affect character speed
 }
 
 export interface CoinSlot {
@@ -67,16 +68,23 @@ export interface Transaction {
 
 // Derived encumbrance result — never stored, always calculated
 export interface EncumbranceResult {
+  mode: "slots" | "weight";
+  finalSpeed: 40 | 30 | 20 | 10;
+  // Slot mode fields
   equippedSlots: number;
   stowedSlots: number;
   equippedSpeed: 40 | 30 | 20 | 10;
   stowedSpeed: 40 | 30 | 20 | 10;
-  finalSpeed: 40 | 30 | 20 | 10;
   bottleneck: "equipped" | "stowed" | "both" | "none";
   tinyCount: number;
   freeTinySlots: number;               // max(0, 10 - tinyCount)
   tinyOverflow: number;                // tiny items beyond 10
   coinSlots: number;
+  // Weight mode fields
+  totalWeight: number;
+  equippedWeight: number;
+  stowedWeight: number;
+  tinyWeight: number;                  // weight in belt pouch (capacity: 50)
 }
 
 // Socket message payload

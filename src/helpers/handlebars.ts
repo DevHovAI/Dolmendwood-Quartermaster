@@ -121,6 +121,11 @@ export function registerHandlebarsHelpers(): void {
     Math.min(100, (slots / 16) * 100).toFixed(1) + "%"
   );
 
+  // Weight bar width as percentage (max 1600 coins)
+  Handlebars.registerHelper("weightBarWidth", (weight: number) =>
+    Math.min(100, (weight / 1600) * 100).toFixed(1) + "%"
+  );
+
   // Bottleneck label
   Handlebars.registerHelper("bottleneckLabel", (bottleneck: string) => {
     switch (bottleneck) {

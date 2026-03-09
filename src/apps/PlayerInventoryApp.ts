@@ -1,4 +1,4 @@
-import { TEMPLATES, SOCKET_EVENTS } from "../constants";
+import { TEMPLATES, SOCKET_EVENTS, SETTINGS, MODULE_ID } from "../constants";
 import { ShopApp } from "./ShopApp";
 import { buildPartySummary } from "./PartyOverviewApp";
 import { FlagManager } from "../data/FlagManager";
@@ -62,7 +62,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
     const inventory = FlagManager.getInventory(this.actor);
-    const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap());
+    const encMode = (g.settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+    const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap(), encMode);
     const isGM = g.user?.isGM ?? false;
     const isOwner = this.actor.isOwner;
 

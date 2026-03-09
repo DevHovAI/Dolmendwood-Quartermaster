@@ -1876,7 +1876,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Pack Horse", maxSlots: 20 },
+    grantsZone: { name: "Pack Horse", maxSlots: 40, weightCapacity: 4000 },
   },
   {
     id: "horse-dapple-doff",
@@ -1892,7 +1892,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Pack Horse", maxSlots: 20 },
+    grantsZone: { name: "Pack Horse", maxSlots: 50, weightCapacity: 5000 },
   },
   {
     id: "horse-hop-clopper",
@@ -1908,7 +1908,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Pack Horse", maxSlots: 20 },
+    grantsZone: { name: "Pack Horse", maxSlots: 50, weightCapacity: 5000 },
   },
   {
     id: "horse-mule",
@@ -1924,7 +1924,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Mule (Stowage)", maxSlots: 20 },
+    grantsZone: { name: "Mule (Stowage)", maxSlots: 25, weightCapacity: 2500 },
   },
   {
     id: "horse-prigwort-prancer",
@@ -1940,7 +1940,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Pack Horse", maxSlots: 20 },
+    grantsZone: { name: "Pack Horse", maxSlots: 30, weightCapacity: 3000 },
   },
   {
     id: "horse-yellow-flank",
@@ -1956,7 +1956,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Pack Horse", maxSlots: 20 },
+    grantsZone: { name: "Pack Horse", maxSlots: 35, weightCapacity: 3500 },
   },
 
   // Hounds
@@ -1974,7 +1974,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Bloodhound", maxSlots: 0 },
+    grantsZone: { name: "Bloodhound", maxSlots: 0, weightCapacity: 0 },
   },
   {
     id: "hound-dapper",
@@ -1990,7 +1990,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Dapper", maxSlots: 0 },
+    grantsZone: { name: "Dapper", maxSlots: 0, weightCapacity: 0 },
   },
   {
     id: "hound-dolmen-pincher",
@@ -2006,7 +2006,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Dolmen Pincher", maxSlots: 0 },
+    grantsZone: { name: "Dolmen Pincher", maxSlots: 0, weightCapacity: 0 },
   },
   {
     id: "hound-lankston-mastiff",
@@ -2022,7 +2022,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Lankston Mastiff", maxSlots: 0 },
+    grantsZone: { name: "Lankston Mastiff", maxSlots: 0, weightCapacity: 0 },
   },
   {
     id: "hound-lichhound",
@@ -2038,7 +2038,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Lichhound", maxSlots: 0 },
+    grantsZone: { name: "Lichhound", maxSlots: 0, weightCapacity: 0 },
   },
   {
     id: "hound-pisker",
@@ -2054,7 +2054,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Pisker", maxSlots: 0 },
+    grantsZone: { name: "Pisker", maxSlots: 0, weightCapacity: 0 },
   },
   {
     id: "hound-seelie-dog",
@@ -2070,7 +2070,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Seelie Dog", maxSlots: 0 },
+    grantsZone: { name: "Seelie Dog", maxSlots: 0, weightCapacity: 0 },
   },
   {
     id: "hound-spookhound",
@@ -2086,7 +2086,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Spookhound", maxSlots: 0 },
+    grantsZone: { name: "Spookhound", maxSlots: 0, weightCapacity: 0 },
   },
 
   // Land Vehicles
@@ -2104,7 +2104,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Cart", maxSlots: 40 },
+    grantsZone: { name: "Cart", maxSlots: 100, weightCapacity: 10000 },
   },
   {
     id: "vehicle-wagon",
@@ -2120,7 +2120,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Wagon", maxSlots: 80 },
+    grantsZone: { name: "Wagon", maxSlots: 200, weightCapacity: 20000 },
   },
 
   // Water Vehicles
@@ -2138,7 +2138,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Barge", maxSlots: 200 },
+    grantsZone: { name: "Barge", maxSlots: 1600, weightCapacity: 160000 },
   },
   {
     id: "vessel-canoe",
@@ -2154,7 +2154,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Canoe", maxSlots: 10 },
+    grantsZone: { name: "Canoe", maxSlots: 50, weightCapacity: 5000 },
   },
   {
     id: "vessel-fishing-boat",
@@ -2170,7 +2170,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Fishing Boat", maxSlots: 30 },
+    grantsZone: { name: "Fishing Boat", maxSlots: 250, weightCapacity: 25000 },
   },
   {
     id: "vessel-raft",
@@ -2186,7 +2186,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Raft", maxSlots: 10 },
+    grantsZone: { name: "Raft", maxSlots: 50, weightCapacity: 5000 },
   },
   {
     id: "vessel-raft-makeshift",
@@ -2202,7 +2202,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Raft (Makeshift)", maxSlots: 5 },
+    grantsZone: { name: "Raft (Makeshift)", maxSlots: 25, weightCapacity: 2500 },
   },
   {
     id: "vessel-rowing-boat",
@@ -2218,7 +2218,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Rowing Boat", maxSlots: 15 },
+    grantsZone: { name: "Rowing Boat", maxSlots: 50, weightCapacity: 5000 },
   },
 
   // Accessories

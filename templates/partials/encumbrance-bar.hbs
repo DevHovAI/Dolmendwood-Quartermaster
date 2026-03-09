@@ -1,3 +1,35 @@
+{{#if (eq encumbrance.mode "weight")}}
+{{!-- ── Weight Encumbrance ── --}}
+<div class="encumbrance-bar encumbrance-weight">
+  <div class="enc-row enc-total-weight">
+    <span class="enc-label">Weight</span>
+    <div class="enc-track" title="{{encumbrance.totalWeight}} / 1,600 coins">
+      <div class="enc-fill {{speedColor encumbrance.finalSpeed}}"
+           style="width: {{weightBarWidth encumbrance.totalWeight}}"></div>
+      <div class="enc-threshold" style="left: 25%"   title="Speed 40 threshold (400 coins)"></div>
+      <div class="enc-threshold" style="left: 37.5%" title="Speed 30 threshold (600 coins)"></div>
+      <div class="enc-threshold" style="left: 50%"   title="Speed 20 threshold (800 coins)"></div>
+      <div class="enc-threshold" style="left: 100%"  title="Max load (1,600 coins)"></div>
+    </div>
+    <span class="enc-slots">{{encumbrance.totalWeight}}</span>
+    <span class="enc-speed {{speedColor encumbrance.finalSpeed}}">→ {{encumbrance.finalSpeed}}ft</span>
+  </div>
+  <div class="enc-weight-breakdown">
+    <span class="enc-breakdown-item" title="Equipped items weight">Eq: {{encumbrance.equippedWeight}}</span>
+    <span class="enc-breakdown-sep">·</span>
+    <span class="enc-breakdown-item" title="Stowed items weight">St: {{encumbrance.stowedWeight}}</span>
+    <span class="enc-breakdown-sep">·</span>
+    <span class="enc-breakdown-item {{#if (gt encumbrance.tinyWeight 50)}}enc-over{{/if}}" title="Belt pouch weight (max 50)">Pouch: {{encumbrance.tinyWeight}}/50</span>
+  </div>
+  <div class="enc-final {{speedColor encumbrance.finalSpeed}}">
+    <strong>Speed: {{encumbrance.finalSpeed}}ft</strong>
+    {{#if (gt encumbrance.totalWeight 1600)}}
+    <span class="enc-bottleneck">⚠ Cannot move!</span>
+    {{/if}}
+  </div>
+</div>
+{{else}}
+{{!-- ── Slot Encumbrance (default) ── --}}
 <div class="encumbrance-bar">
   <div class="enc-row enc-equipped">
     <span class="enc-label">Equipped</span>
@@ -30,3 +62,4 @@
     {{/if}}
   </div>
 </div>
+{{/if}}

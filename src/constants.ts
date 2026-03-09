@@ -40,6 +40,7 @@ export const SETTINGS = {
   TRANSACTION_LOG: "transactionLog",
   INN_STATE: "innState",
   LOCAL_HIDDEN: "localHidden", // Record<locationName, itemId[]> — per-location hidden items
+  ENCUMBRANCE_MODE: "encumbranceMode", // "slots" | "weight"
 } as const;
 
 export const SOCKET_NAME = `module.${MODULE_ID}` as const;
@@ -58,3 +59,13 @@ export const STOWED_SPEED_TIERS: [number, number, 40 | 30 | 20 | 10][] = [
   [13, 14, 20],
   [15, 16, 10],
 ];
+
+// Weight encumbrance: [maxWeight (coins), speed]
+export const WEIGHT_SPEED_TIERS: [number, 40 | 30 | 20 | 10][] = [
+  [400, 40],
+  [600, 30],
+  [800, 20],
+  [1600, 10],
+];
+
+export const TINY_ZONE_WEIGHT_CAPACITY = 50; // belt pouch coin capacity
