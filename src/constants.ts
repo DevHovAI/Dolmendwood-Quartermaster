@@ -19,8 +19,7 @@ export const TEMPLATES = {
     TRANSACTION_LOG: `modules/${MODULE_ID}/templates/partials/transaction-log.hbs`,
     PARTY_SUMMARY: `modules/${MODULE_ID}/templates/partials/party-summary.hbs`,
     EXTRA_ZONE: `modules/${MODULE_ID}/templates/partials/extra-zone.hbs`,
-    COIN_SLOT_ROW: `modules/${MODULE_ID}/templates/partials/coin-slot-row.hbs`,
-    COIN_CONTAINER_ROW: `modules/${MODULE_ID}/templates/partials/coin-container-row.hbs`,
+    ZONE_COIN_PURSE: `modules/${MODULE_ID}/templates/partials/zone-coin-purse.hbs`,
   },
 } as const;
 

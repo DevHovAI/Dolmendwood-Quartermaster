@@ -1,54 +1,114 @@
 import { MODULE_ID, FLAGS } from "../constants";
 import { CatalogManager } from "./CatalogManager";
-import type { CharacterInventory, CoinSlot, Transaction } from "../types";
+import type { CharacterInventory, ZoneCoins, Transaction } from "../types";
 
 function defaultInventory(actorId: string): CharacterInventory {
   return {
     actorId,
     coins: { cp: 0, sp: 0, gp: 0, pp: 0 },
+    coinsByZone: { equipped: { cp: 0, sp: 0, gp: 0, pp: 0 } },
     items: [],
   };
 }
 
-/**
- * Ensure coinSlots array is in sync with the total coin count.
- * New purses go to "stowed"; excess purses are removed starting from "stowed", then "equipped", then "tiny".
- */
-function syncCoinSlots(inv: CharacterInventory): void {
-  const total = inv.coins.cp + inv.coins.sp + inv.coins.gp + inv.coins.pp;
-  let chestCapacity = 0;
-  for (const item of inv.items) {
-    const def = CatalogManager.getMap().get(item.definitionId);
-    if (def?.coinCapacity) chestCapacity += def.coinCapacity * item.quantity;
-  }
-  const purseCoins = Math.max(0, total - chestCapacity);
-  const needed = purseCoins > 0 ? Math.ceil(purseCoins / 100) : 0;
-  const current: CoinSlot[] = (inv.coinSlots ?? []).slice();
+// ─── Coin Helpers (exported for use in SocketHandler, innPurchase, etc.) ──────
 
-  if (needed > current.length) {
-    for (let i = current.length; i < needed; i++) {
-      current.push({ id: foundry.utils.randomID(), zone: "stowed" });
-    }
-  } else if (needed < current.length) {
-    let excess = current.length - needed;
-    // Remove from stowed first, then equipped, then tiny, then anything remaining
-    for (const zone of ["stowed", "equipped", "tiny"]) {
-      for (let i = current.length - 1; i >= 0 && excess > 0; i--) {
-        if (current[i].zone === zone) {
-          current.splice(i, 1);
-          excess--;
-        }
-      }
-    }
-    // Remove any remaining excess (extra zones) from the end
-    while (excess > 0) {
-      current.pop();
-      excess--;
-    }
+export function totalZoneCoins(coinsByZone: Record<string, ZoneCoins>): ZoneCoins {
+  const t = { cp: 0, sp: 0, gp: 0, pp: 0 };
+  for (const z of Object.values(coinsByZone)) {
+    t.cp += z.cp; t.sp += z.sp; t.gp += z.gp; t.pp += z.pp;
   }
-
-  inv.coinSlots = current;
+  return t;
 }
+
+/**
+ * Deduct costCp worth of coins from zones (equipped → stowed → tiny → extras).
+ * Mutates coinsByZone in place. Returns true if successful.
+ */
+export function deductCoins(coinsByZone: Record<string, ZoneCoins>, costCp: number): boolean {
+  const avail = Object.values(coinsByZone)
+    .reduce((s, z) => s + z.cp + z.sp * 10 + z.gp * 100 + z.pp * 500, 0);
+  if (avail < costCp) return false;
+  const extras = Object.keys(coinsByZone).filter(k => !["equipped", "stowed", "tiny"].includes(k));
+  const order = ["equipped", "stowed", "tiny", ...extras];
+  let rem = costCp;
+  for (const id of order) {
+    if (rem <= 0) break;
+    const z = coinsByZone[id];
+    if (!z) continue;
+    const inZone = z.cp + z.sp * 10 + z.gp * 100 + z.pp * 500;
+    if (inZone <= 0) continue;
+    if (inZone <= rem) {
+      rem -= inZone;
+      z.cp = 0; z.sp = 0; z.gp = 0; z.pp = 0;
+    } else {
+      const left = inZone - rem; rem = 0;
+      z.pp = 0; z.gp = Math.floor(left / 100);
+      z.sp = Math.floor((left % 100) / 10); z.cp = left % 10;
+    }
+  }
+  return true;
+}
+
+/** Add coins to a specific zone (default: equipped). Mutates coinsByZone in place. */
+export function addCoinsToZone(
+  coinsByZone: Record<string, ZoneCoins>,
+  coins: ZoneCoins,
+  zoneId = "equipped"
+): void {
+  if (!coinsByZone[zoneId]) coinsByZone[zoneId] = { cp: 0, sp: 0, gp: 0, pp: 0 };
+  const z = coinsByZone[zoneId];
+  z.cp += coins.cp; z.sp += coins.sp; z.gp += coins.gp; z.pp += coins.pp;
+}
+
+// ─── Internal sync ─────────────────────────────────────────────────────────────
+
+/**
+ * Ensures coinsByZone exists (migrating from legacy coins if needed),
+ * clamps all values, prunes orphaned zone entries, and syncs inv.coins total.
+ */
+function syncCoins(inv: CharacterInventory): void {
+  // Migration: if coinsByZone is absent, create it from the legacy coins total
+  if (!inv.coinsByZone) {
+    inv.coinsByZone = {
+      equipped: {
+        cp: inv.coins.cp ?? 0,
+        sp: inv.coins.sp ?? 0,
+        gp: inv.coins.gp ?? 0,
+        pp: inv.coins.pp ?? 0,
+      },
+    };
+  }
+
+  // Valid zone IDs: standard zones + current extra zones
+  const validIds = new Set([
+    "tiny", "equipped", "stowed",
+    ...(inv.extraZones ?? []).map(ez => ez.id),
+  ]);
+
+  // Prune coins from zones that no longer exist → move to equipped
+  const equip = (inv.coinsByZone["equipped"] ??= { cp: 0, sp: 0, gp: 0, pp: 0 });
+  for (const zoneId of Object.keys(inv.coinsByZone)) {
+    if (!validIds.has(zoneId)) {
+      const z = inv.coinsByZone[zoneId];
+      equip.cp += z.cp; equip.sp += z.sp; equip.gp += z.gp; equip.pp += z.pp;
+      delete inv.coinsByZone[zoneId];
+    }
+  }
+
+  // Clamp all values to non-negative integers
+  for (const z of Object.values(inv.coinsByZone)) {
+    z.cp = Math.max(0, Math.round(z.cp ?? 0));
+    z.sp = Math.max(0, Math.round(z.sp ?? 0));
+    z.gp = Math.max(0, Math.round(z.gp ?? 0));
+    z.pp = Math.max(0, Math.round(z.pp ?? 0));
+  }
+
+  // Sync inv.coins to the total across all zones
+  inv.coins = totalZoneCoins(inv.coinsByZone);
+}
+
+// ─── FlagManager ───────────────────────────────────────────────────────────────
 
 export class FlagManager {
   static getInventory(actor: Actor): CharacterInventory {
@@ -66,7 +126,7 @@ export class FlagManager {
   ): Promise<void> {
     const current = this.getInventory(actor);
     const updated = updater(structuredClone(current));
-    syncCoinSlots(updated);
+    syncCoins(updated);
     await this.setInventory(actor, updated);
   }
 
@@ -80,7 +140,6 @@ export class FlagManager {
   static async appendTransaction(tx: Transaction): Promise<void> {
     const log = this.getTransactions();
     log.push(tx);
-    // Keep last 200 transactions to prevent unbounded growth
     const trimmed = log.slice(-200);
     await (game as Game).settings.set(MODULE_ID, FLAGS.TRANSACTION_LOG, trimmed);
   }

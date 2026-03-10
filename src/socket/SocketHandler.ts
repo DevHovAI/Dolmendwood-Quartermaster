@@ -1,5 +1,5 @@
 import { MODULE_ID, SOCKET_NAME, SOCKET_EVENTS, SETTINGS } from "../constants";
-import { FlagManager } from "../data/FlagManager";
+import { FlagManager, deductCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { processInnPurchase } from "../data/innPurchase";
 import type {
@@ -140,21 +140,10 @@ export class SocketHandler {
         (data.totalCost.sp ?? 0) * 10 +
         (data.totalCost.gp ?? 0) * 100 +
         (data.totalCost.pp ?? 0) * 500;
-      const availableCp =
-        inv.coins.cp +
-        inv.coins.sp * 10 +
-        inv.coins.gp * 100 +
-        inv.coins.pp * 500;
 
-      if (availableCp < costCp && !data.gmOverride) return inv;
-
-      if (availableCp >= costCp) {
-        const remainingCp = availableCp - costCp;
-        inv.coins.pp = 0;
-        inv.coins.gp = Math.floor(remainingCp / 100);
-        inv.coins.sp = Math.floor((remainingCp % 100) / 10);
-        inv.coins.cp = remainingCp % 10;
-      }
+      inv.coinsByZone ??= { equipped: { ...inv.coins } };
+      const canAfford = deductCoins(inv.coinsByZone, costCp);
+      if (!canAfford && !data.gmOverride) return inv;
 
       inv.items.push({
         id: foundry.utils.randomID(),
@@ -179,6 +168,9 @@ export class SocketHandler {
       if (def?.grantsStorageZone) {
         const encMode = (game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots";
         if (encMode === "weight") {
+          // Override the container item's zone to "equipped" — it lives on the character
+          const pushed = inv.items[inv.items.length - 1];
+          if (pushed) pushed.zone = "equipped";
           inv.extraZones ??= [];
           inv.extraZones.push({
             id: foundry.utils.randomID(),
@@ -186,6 +178,7 @@ export class SocketHandler {
             maxSlots: 0,
             weightCapacity: def.grantsStorageZone.weightCapacity,
             type: "storage" as const,
+            selfWeight: def.weight ?? 0,
             ...(def.grantsStorageZone.isBeltPouch ? { isBeltPouch: true } : {}),
           });
         }
@@ -220,19 +213,16 @@ export class SocketHandler {
     const toActor = g.actors?.get(data.toActorId);
     if (!fromActor || !toActor) return;
 
+    const costCp = data.cp + data.sp * 10 + data.gp * 100 + data.pp * 500;
     await FlagManager.updateInventory(fromActor, (inv) => {
-      inv.coins.cp = Math.max(0, inv.coins.cp - data.cp);
-      inv.coins.sp = Math.max(0, inv.coins.sp - data.sp);
-      inv.coins.gp = Math.max(0, inv.coins.gp - data.gp);
-      inv.coins.pp = Math.max(0, inv.coins.pp - data.pp);
+      inv.coinsByZone ??= { equipped: { ...inv.coins } };
+      deductCoins(inv.coinsByZone, costCp);
       return inv;
     });
 
     await FlagManager.updateInventory(toActor, (inv) => {
-      inv.coins.cp += data.cp;
-      inv.coins.sp += data.sp;
-      inv.coins.gp += data.gp;
-      inv.coins.pp += data.pp;
+      inv.coinsByZone ??= { equipped: { ...inv.coins } };
+      addCoinsToZone(inv.coinsByZone, { cp: data.cp, sp: data.sp, gp: data.gp, pp: data.pp });
       return inv;
     });
 

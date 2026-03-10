@@ -13,7 +13,7 @@
   {{!-- Encumbrance bars --}}
   {{> encumbrance-bar encumbrance=encumbrance encMode=encMode}}
 
-  {{!-- Coins --}}
+  {{!-- Coins — total summary only; per-zone purses appear in each zone section below --}}
   <section class="inv-coins">
     <div class="coins-header">
       <h3><i class="fas fa-coins"></i> Coins</h3>
@@ -46,12 +46,7 @@
       </span>
     </div>
     {{> inventory-zone items=zones.tiny zone="tiny" canEdit=canEdit canGive=canGive isGM=isGM isOwner=isOwner canAddItem=canAddItem extraZones=extraZones encMode=encMode}}
-    {{#each coinSlotsPerZone.tiny}}
-    {{> coin-slot-row slot=this extraZones=../extraZones isOwner=../isOwner encMode=../encMode}}
-    {{/each}}
-    {{#each coinContainersByZone.tiny}}
-    {{> coin-container-row item=this extraZones=../extraZones isOwner=../isOwner canEdit=../canEdit encMode=../encMode}}
-    {{/each}}
+    {{> zone-coin-purse zoneId="tiny" zoneCoins=(lookup coinsByZone "tiny") canEdit=canEdit isOwner=isOwner}}
   </section>
   {{/unless}}
 
@@ -66,12 +61,7 @@
       {{/if}}
     </div>
     {{> inventory-zone items=zones.equipped zone="equipped" canEdit=canEdit canGive=canGive isGM=isGM isOwner=isOwner canAddItem=canAddItem extraZones=extraZones encMode=encMode}}
-    {{#each coinSlotsPerZone.equipped}}
-    {{> coin-slot-row slot=this extraZones=../extraZones isOwner=../isOwner encMode=../encMode}}
-    {{/each}}
-    {{#each coinContainersByZone.equipped}}
-    {{> coin-container-row item=this extraZones=../extraZones isOwner=../isOwner canEdit=../canEdit encMode=../encMode}}
-    {{/each}}
+    {{> zone-coin-purse zoneId="equipped" zoneCoins=(lookup coinsByZone "equipped") canEdit=canEdit isOwner=isOwner}}
   </section>
 
   {{!-- Stowed Zone (slot mode only) --}}
@@ -88,12 +78,7 @@
       </span>
     </div>
     {{> inventory-zone items=zones.stowed zone="stowed" canEdit=canEdit canGive=canGive isGM=isGM isOwner=isOwner canAddItem=canAddItem extraZones=extraZones encMode=encMode}}
-    {{#each coinSlotsPerZone.stowed}}
-    {{> coin-slot-row slot=this extraZones=../extraZones isOwner=../isOwner encMode=../encMode}}
-    {{/each}}
-    {{#each coinContainersByZone.stowed}}
-    {{> coin-container-row item=this extraZones=../extraZones isOwner=../isOwner canEdit=../canEdit encMode=../encMode}}
-    {{/each}}
+    {{> zone-coin-purse zoneId="stowed" zoneCoins=(lookup coinsByZone "stowed") canEdit=canEdit isOwner=isOwner}}
   </section>
   {{else}}
   {{!-- In weight mode: show stowed items as unsorted if any exist --}}
@@ -113,16 +98,11 @@
   {{#each storageZones}}
   <section class="inv-zone-section inv-zone-extra">
     <div class="zone-header zone-header-extra">
-      <h3><i class="fas fa-box"></i> {{this.name}}</h3>
+      <h3><i class="fas fa-box"></i> {{this.name}} {{#if this.selfWeight}}<span class="zone-self-weight" title="Container weight">({{this.selfWeight}} wt)</span>{{/if}}</h3>
       <span class="zone-count">{{this.usedWeight}} / {{this.weightCapacity}} wt</span>
     </div>
     {{> extra-zone zone=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
-    {{#each (lookup ../coinSlotsPerZone this.id)}}
-    {{> coin-slot-row slot=this extraZones=../../extraZones isOwner=../../isOwner encMode=../../encMode}}
-    {{/each}}
-    {{#each (lookup ../coinContainersByZone this.id)}}
-    {{> coin-container-row item=this extraZones=../../extraZones isOwner=../../isOwner canEdit=../../canEdit encMode=../../encMode}}
-    {{/each}}
+    {{> zone-coin-purse zoneId=this.id zoneCoins=(lookup ../coinsByZone this.id) canEdit=../canEdit isOwner=../isOwner}}
   </section>
   {{/each}}
   {{/if}}
@@ -132,19 +112,18 @@
   <section class="inv-zone-section inv-zone-extra">
     <div class="zone-header zone-header-extra">
       <h3><i class="fas fa-horse"></i> {{this.name}}</h3>
+      {{#if (eq ../encMode "weight")}}
+      <span class="zone-count">{{this.usedWeight}} / {{this.weightCapacity}} wt</span>
+      {{else}}
       <span class="zone-count">{{this.usedSlots}} / {{this.maxSlots}} slots</span>
+      {{/if}}
     </div>
     {{> extra-zone zone=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
-    {{#each (lookup ../coinSlotsPerZone this.id)}}
-    {{> coin-slot-row slot=this extraZones=../../extraZones isOwner=../../isOwner encMode=../../encMode}}
-    {{/each}}
-    {{#each (lookup ../coinContainersByZone this.id)}}
-    {{> coin-container-row item=this extraZones=../../extraZones isOwner=../../isOwner canEdit=../../canEdit encMode=../../encMode}}
-    {{/each}}
+    {{> zone-coin-purse zoneId=this.id zoneCoins=(lookup ../coinsByZone this.id) canEdit=../canEdit isOwner=../isOwner}}
   </section>
   {{/each}}
 
-  {{!-- GM button to add a new storage zone (slot mode only — weight mode creates zones via container purchases) --}}
+  {{!-- GM button to add a new storage zone (slot mode only) --}}
   {{#if (and isGM (neq encMode "weight"))}}
   <button type="button" data-action="addExtraZone" class="btn-add-extra-zone">
     <i class="fas fa-plus"></i> Add Storage Zone

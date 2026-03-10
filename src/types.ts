@@ -38,19 +38,28 @@ export interface ExtraZone {
   weightCapacity: number; // weight mode capacity (in coins)
   type?: "vehicle" | "storage";  // undefined = "vehicle" for backward compat
   isBeltPouch?: boolean; // storage zone that acts as the tiny/belt-pouch zone in weight mode
+  selfWeight?: number;   // weight of the container item itself (e.g. backpack = 50 coins wt)
+}
+
+export interface ZoneCoins {
+  cp: number;
+  sp: number;
+  gp: number;
+  pp: number;
 }
 
 export interface CoinSlot {
   id: string;
-  zone: string; // "tiny" | "equipped" | "stowed" | extraZoneId
+  zone: string; // legacy — kept for backward-compat reading only
 }
 
 export interface CharacterInventory {
   actorId: string;
-  coins: { cp: number; sp: number; gp: number; pp: number };
+  coins: { cp: number; sp: number; gp: number; pp: number }; // always = sum of coinsByZone (synced on every write)
   items: InventoryItem[];
   extraZones?: ExtraZone[];
-  coinSlots?: CoinSlot[];  // one slot per started 100 coins; zone assignment for each purse
+  coinSlots?: CoinSlot[];    // legacy — no longer written; kept so old saves don't lose data on first read
+  coinsByZone?: Record<string, ZoneCoins>; // per-zone coin amounts; zone IDs: "tiny"|"equipped"|"stowed"|extraZoneId
 }
 
 export interface ShopState {

@@ -1,4 +1,4 @@
-import { FlagManager } from "./FlagManager";
+import { FlagManager, deductCoins } from "./FlagManager";
 import type { InnPurchasePayload } from "../types";
 
 /**
@@ -16,20 +16,9 @@ export async function processInnPurchase(payload: InnPurchasePayload): Promise<v
       (payload.totalCost.sp ?? 0) * 10 +
       (payload.totalCost.gp ?? 0) * 100 +
       (payload.totalCost.pp ?? 0) * 500;
-    const availCp =
-      inv.coins.cp +
-      inv.coins.sp * 10 +
-      inv.coins.gp * 100 +
-      inv.coins.pp * 500;
 
-    if (availCp < costCp) return inv; // insufficient funds — caller should have validated
-
-    const rem = availCp - costCp;
-    // Same simplification as ShopApp: pp consumed into gp/sp/cp, pp set to 0
-    inv.coins.pp = 0;
-    inv.coins.gp = Math.floor(rem / 100);
-    inv.coins.sp = Math.floor((rem % 100) / 10);
-    inv.coins.cp = rem % 10;
+    inv.coinsByZone ??= { equipped: { ...inv.coins } };
+    deductCoins(inv.coinsByZone, costCp);
     return inv;
   });
 }

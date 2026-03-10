@@ -63,7 +63,10 @@
     {{#if (eq encMode "weight")}}
     <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
     {{#each extraZones}}
+    {{!-- Show belt pouch zones only if item fits (≤ 10 wt) or item is already in this zone --}}
+    {{#if (or (eq ../item.zone this.id) (or (not this.isBeltPouch) (canUseTinyZone ../item ../encMode)))}}
     <option value="{{this.id}}" {{#if (eq ../item.zone this.id)}}selected{{/if}}>{{this.name}}</option>
+    {{/if}}
     {{/each}}
     {{else}}
     {{#if (or (canUseTinyZone item encMode) (eq item.zone "tiny"))}}

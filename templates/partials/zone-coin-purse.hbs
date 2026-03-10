@@ -1,0 +1,39 @@
+<div class="zone-coin-purse">
+  <i class="fas fa-coins zone-purse-icon" title="Coins in this zone"></i>
+
+  {{#if canEdit}}
+  {{!-- GM: editable coin inputs per zone --}}
+  <div class="zone-purse-inputs">
+    <input type="number" class="zone-coin-input" data-zone-id="{{zoneId}}" data-currency="pp"
+           value="{{zoneCoins.pp}}" min="0" title="Pellucidium" />
+    <span class="zone-coin-label pp">pp</span>
+    <input type="number" class="zone-coin-input" data-zone-id="{{zoneId}}" data-currency="gp"
+           value="{{zoneCoins.gp}}" min="0" title="Gold" />
+    <span class="zone-coin-label gp">gp</span>
+    <input type="number" class="zone-coin-input" data-zone-id="{{zoneId}}" data-currency="sp"
+           value="{{zoneCoins.sp}}" min="0" title="Silver" />
+    <span class="zone-coin-label sp">sp</span>
+    <input type="number" class="zone-coin-input" data-zone-id="{{zoneId}}" data-currency="cp"
+           value="{{zoneCoins.cp}}" min="0" title="Copper" />
+    <span class="zone-coin-label cp">cp</span>
+  </div>
+  {{else}}
+  {{!-- Non-GM: read-only coin badge --}}
+  <div class="zone-purse-readonly">
+    {{#if (gt zoneCoins.pp 0)}}<span class="coin-val">{{zoneCoins.pp}}<span class="coin-unit pp">pp</span></span>{{/if}}
+    {{#if (gt zoneCoins.gp 0)}}<span class="coin-val">{{zoneCoins.gp}}<span class="coin-unit gp">gp</span></span>{{/if}}
+    {{#if (gt zoneCoins.sp 0)}}<span class="coin-val">{{zoneCoins.sp}}<span class="coin-unit sp">sp</span></span>{{/if}}
+    {{#if (gt zoneCoins.cp 0)}}<span class="coin-val">{{zoneCoins.cp}}<span class="coin-unit cp">cp</span></span>{{/if}}
+    {{#if (and (eq zoneCoins.pp 0) (eq zoneCoins.gp 0) (eq zoneCoins.sp 0) (eq zoneCoins.cp 0))}}
+    <span class="zone-purse-empty">—</span>
+    {{/if}}
+  </div>
+  {{/if}}
+
+  {{#if isOwner}}
+  <button type="button" class="icon-btn zone-move-coins-btn" data-action="moveZoneCoins"
+          data-zone-id="{{zoneId}}" title="Move coins to another zone">
+    <i class="fas fa-arrow-right-arrow-left"></i>
+  </button>
+  {{/if}}
+</div>

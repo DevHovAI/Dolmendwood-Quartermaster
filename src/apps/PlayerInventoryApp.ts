@@ -1,12 +1,12 @@
 import { TEMPLATES, SOCKET_EVENTS, SETTINGS, MODULE_ID } from "../constants";
 import { ShopApp } from "./ShopApp";
 import { buildPartySummary } from "./PartyOverviewApp";
-import { FlagManager } from "../data/FlagManager";
+import { FlagManager, totalZoneCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker } from "../helpers/handlebars";
-import type { InventoryItem, ExtraZone, CoinSlot } from "../types";
+import type { InventoryItem, ExtraZone, ZoneCoins } from "../types";
 
 export class PlayerInventoryApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -44,6 +44,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       addExtraZone: PlayerInventoryApp._onAddExtraZone,
       deleteExtraZone: PlayerInventoryApp._onDeleteExtraZone,
       renameExtraZone: PlayerInventoryApp._onRenameExtraZone,
+      moveZoneCoins: PlayerInventoryApp._onMoveZoneCoins,
     },
   };
 
@@ -63,18 +64,29 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const g = game as Game;
     const inventory = FlagManager.getInventory(this.actor);
     const encMode = (g.settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
-    const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap(), encMode);
     const isGM = g.user?.isGM ?? false;
     const isOwner = this.actor.isOwner;
 
+    // Extra zones (needed early for coinsByZone normalization)
+    const allExtraZones = inventory.extraZones ?? [];
+
+    // Build per-zone coin map (normalised: all zone IDs present with default 0s)
+    const rawCoinsByZone = inventory.coinsByZone ?? { equipped: { ...inventory.coins } };
+    const coinsByZone: Record<string, ZoneCoins> = {};
+    for (const zoneId of ["tiny", "equipped", "stowed", ...allExtraZones.map(z => z.id)]) {
+      coinsByZone[zoneId] = rawCoinsByZone[zoneId] ?? { cp: 0, sp: 0, gp: 0, pp: 0 };
+    }
+
+    const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap(), encMode);
+
     // Filter secret items: hidden from non-GM non-owners
-    // Also filter zone-only items (animals & vehicles that grant a zone — shown only as storage zones)
-    // Also filter coin containers (chests etc.) — shown in coin display instead
+    // In weight mode filter container items (grantsStorageZone) — they appear as storage zone headers
+    // Also filter zone-only animals/vehicles — they appear as vehicle zone headers
     const visibleItems = inventory.items.filter((item) => {
       if (item.isSecret && !isGM && !isOwner) return false;
       const def = CatalogManager.getDefinition(item.definitionId);
       if (def?.grantsZone && def?.category === "Animals & Vehicles") return false;
-      if (def?.coinCapacity) return false;
+      if (def?.grantsStorageZone && encMode === "weight") return false;
       return true;
     });
 
@@ -84,76 +96,51 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       stowed: visibleItems.filter((i) => i.zone === "stowed"),
     };
 
-    // Enrich items with their catalog definition for display.
-    // Default uses to maxUses for items that predate the uses field.
-    const totalCoins = inventory.coins.cp + inventory.coins.sp + inventory.coins.gp + inventory.coins.pp;
+    // Enrich items with catalog def + computed display fields
     const enriched = (items: InventoryItem[]) =>
       items.map((item) => {
         const def = CatalogManager.getDefinition(item.definitionId);
-        const uses = def?.maxUses !== undefined && item.uses === undefined
-          ? def.maxUses
-          : item.uses;
-        return { ...item, uses, def };
+        const uses = def?.maxUses !== undefined && item.uses === undefined ? def.maxUses : item.uses;
+        const effectiveWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+        return { ...item, uses, def, effectiveWeight };
       });
-
-    // Build coin container display data: chests fill first, purses hold overflow.
-    let coinsLeft = totalCoins;
-    const coinContainersByZone: Record<string, Array<{ id: string; name: string; zone: string; capacity: number; coinsStored: number }>> = {};
-    for (const item of inventory.items) {
-      const def = CatalogManager.getDefinition(item.definitionId);
-      if (!def?.coinCapacity) continue;
-      const capacity = def.coinCapacity * item.quantity;
-      const coinsStored = Math.min(capacity, coinsLeft);
-      coinsLeft -= coinsStored;
-      const zone = item.zone as string;
-      if (!coinContainersByZone[zone]) coinContainersByZone[zone] = [];
-      coinContainersByZone[zone].push({ id: item.id, name: item.name, zone, capacity, coinsStored });
-    }
-
-    // Build extra storage zones split into vehicle zones and storage zones
-    const allExtraZones = inventory.extraZones ?? [];
 
     const vehicleZones = allExtraZones
       .filter((ez) => !ez.type || ez.type === "vehicle")
-      .map((ez: ExtraZone) => ({
-        ...ez,
-        items: enriched(visibleItems.filter((i) => i.zone === ez.id)),
-        usedSlots: visibleItems
-          .filter((i) => i.zone === ez.id)
-          .reduce((acc, i) => {
+      .map((ez: ExtraZone) => {
+        const zoneItems = visibleItems.filter((i) => i.zone === ez.id);
+        const zoneCoins = coinsByZone[ez.id] ?? { cp: 0, sp: 0, gp: 0, pp: 0 };
+        const coinWeight = zoneCoins.cp + zoneCoins.sp + zoneCoins.gp + zoneCoins.pp;
+        return {
+          ...ez,
+          items: enriched(zoneItems),
+          usedSlots: zoneItems.reduce((acc, i) => {
             const def = CatalogManager.getDefinition(i.definitionId);
             const size = i.customDefinition?.size ?? def?.size ?? "normal";
             return acc + (size === "large" ? 2 : size === "normal" ? 1 : 0) * i.quantity;
           }, 0),
-      }));
+          usedWeight: zoneItems.reduce((acc, i) => {
+            const def = CatalogManager.getDefinition(i.definitionId);
+            return acc + (i.customDefinition?.weight ?? def?.weight ?? 0) * i.quantity;
+          }, 0) + coinWeight,
+        };
+      });
 
     const storageZones = allExtraZones
       .filter((ez) => ez.type === "storage")
-      .map((ez: ExtraZone) => ({
-        ...ez,
-        items: enriched(visibleItems.filter((i) => i.zone === ez.id)),
-        usedWeight: visibleItems
-          .filter((i) => i.zone === ez.id)
-          .reduce((acc, i) => {
+      .map((ez: ExtraZone) => {
+        const zoneItems = visibleItems.filter((i) => i.zone === ez.id);
+        const zoneCoins = coinsByZone[ez.id] ?? { cp: 0, sp: 0, gp: 0, pp: 0 };
+        const coinWeight = zoneCoins.cp + zoneCoins.sp + zoneCoins.gp + zoneCoins.pp;
+        return {
+          ...ez,
+          items: enriched(zoneItems),
+          usedWeight: zoneItems.reduce((acc, i) => {
             const def = CatalogManager.getDefinition(i.definitionId);
             return acc + (i.customDefinition?.weight ?? def?.weight ?? 0) * i.quantity;
-          }, 0),
-      }));
-
-    // Build coin slot display data: one purse per started 100 coins (after chest capacity), grouped by zone
-    const coinSlots = inventory.coinSlots ?? [];
-    const purseCoins = coinsLeft; // remainder after chest capacity consumed
-    const coinSlotCount = purseCoins > 0 ? Math.ceil(purseCoins / 100) : 0;
-    // Build per-zone coin slot arrays for template rendering
-    const coinSlotsPerZone: Record<string, Array<{ id: string; coins: number; zoneIndex: number; zone: string }>> = {};
-    for (let i = 0; i < Math.min(coinSlots.length, coinSlotCount); i++) {
-      const slot = coinSlots[i];
-      const coinsInSlot = (i === coinSlotCount - 1 && purseCoins % 100 !== 0)
-        ? purseCoins % 100
-        : 100;
-      if (!coinSlotsPerZone[slot.zone]) coinSlotsPerZone[slot.zone] = [];
-      coinSlotsPerZone[slot.zone].push({ id: slot.id, coins: coinsInSlot, zoneIndex: i, zone: slot.zone });
-    }
+          }, 0) + coinWeight,
+        };
+      });
 
     // Party members for "Give item" / "Give coins" dialogs
     const partyMembers = (g.actors?.contents ?? []).filter((actor) =>
@@ -161,7 +148,6 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
     );
 
-    // All party actors (for the shared summary)
     const allPartyActors = (g.actors?.contents ?? []).filter((actor) =>
       (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
     );
@@ -177,17 +163,16 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         equipped: enriched(zones.equipped),
         stowed: enriched(zones.stowed),
       },
-      extraZones: allExtraZones,   // full list for zone selectors
-      storageZones,                // for weight mode storage section display
-      vehicleZones,                // for vehicle zone section display
-      coinSlotsPerZone,
-      coinContainersByZone,
+      extraZones: allExtraZones,
+      storageZones,
+      vehicleZones,
+      coinsByZone,
       encumbrance,
       isGM,
       isOwner,
-      canEdit: isGM,                    // full GM controls: delete, secret toggle
-      canAddItem: isOwner && !isGM,     // players can add custom items to their own inventory
-      canGive: isOwner && !isGM,        // give items/coins to others — player only
+      canEdit: isGM,
+      canAddItem: isOwner && !isGM,
+      canGive: isOwner && !isGM,
       partyMembers,
       partySummary,
       transactions: isGM ? FlagManager.getTransactions() : [],
@@ -203,11 +188,47 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     // Zone change dropdowns
     el.querySelectorAll<HTMLSelectElement>(".item-zone-select").forEach((select) => {
       select.addEventListener("change", async (e) => {
-        const itemId = (e.target as HTMLSelectElement).dataset.itemId!;
-        const newZone = (e.target as HTMLSelectElement).value as InventoryItem["zone"];
+        const sel = e.target as HTMLSelectElement;
+        const itemId = sel.dataset.itemId!;
+        const newZone = sel.value as InventoryItem["zone"];
+        const inventory = FlagManager.getInventory(this.actor);
+        const item = inventory.items.find((i) => i.id === itemId);
+
+        // Enforce storage zone capacity in weight mode
+        const targetZone = (inventory.extraZones ?? []).find((ez) => ez.id === newZone);
+        if (targetZone?.type === "storage" && targetZone.weightCapacity > 0 && item) {
+          const def = CatalogManager.getDefinition(item.definitionId);
+          const itemWeight = (item.customDefinition?.weight ?? def?.weight ?? 0) * item.quantity;
+          const currentZoneWeight = inventory.items
+            .filter((i) => i.zone === newZone && i.id !== itemId)
+            .reduce((acc, i) => {
+              const d = CatalogManager.getDefinition(i.definitionId);
+              return acc + (i.customDefinition?.weight ?? d?.weight ?? 0) * i.quantity;
+            }, 0);
+          if (currentZoneWeight + itemWeight > targetZone.weightCapacity) {
+            ui.notifications?.warn(
+              `"${targetZone.name}" can hold ${targetZone.weightCapacity} wt. ` +
+              `Currently ${currentZoneWeight} wt; item is ${itemWeight} wt.`
+            );
+            sel.value = item.zone; // reset select to current zone
+            return;
+          }
+        }
+
+        // Enforce belt pouch weight limit (≤ 10 wt)
+        if (targetZone?.isBeltPouch && item) {
+          const def = CatalogManager.getDefinition(item.definitionId);
+          const itemWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+          if (itemWeight > 10) {
+            ui.notifications?.warn(`Only items weighing 10 wt or less fit in a belt pouch (item weighs ${itemWeight} wt).`);
+            sel.value = item.zone;
+            return;
+          }
+        }
+
         await FlagManager.updateInventory(this.actor, (inv) => {
-          const item = inv.items.find((i) => i.id === itemId);
-          if (item) item.zone = newZone;
+          const i = inv.items.find((i) => i.id === itemId);
+          if (i) i.zone = newZone;
           return inv;
         });
         this.render();
@@ -227,31 +248,17 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       });
     });
 
-    // Coin slot zone selectors
-    el.querySelectorAll<HTMLSelectElement>(".coin-slot-zone-select").forEach((select) => {
-      select.addEventListener("change", async (e) => {
-        const slotId = (e.target as HTMLSelectElement).dataset.slotId!;
-        const newZone = (e.target as HTMLSelectElement).value;
-        await FlagManager.updateInventory(this.actor, (inv) => {
-          const slot = (inv.coinSlots ?? []).find((s) => s.id === slotId);
-          if (slot) slot.zone = newZone;
-          return inv;
-        });
-        this.render();
-      });
-    });
-
-    // Coin inputs
-    el.querySelectorAll<HTMLInputElement>(".coin-input").forEach((input) => {
+    // Zone coin inputs (GM only — editable fields in zone coin purses)
+    el.querySelectorAll<HTMLInputElement>(".zone-coin-input").forEach((input) => {
       input.addEventListener("change", async (e) => {
-        const currency = (e.target as HTMLInputElement).dataset.currency as
-          | "cp"
-          | "sp"
-          | "gp"
-          | "pp";
-        const value = Math.max(0, parseInt((e.target as HTMLInputElement).value, 10) || 0);
+        const inp = e.target as HTMLInputElement;
+        const zoneId = inp.dataset.zoneId!;
+        const currency = inp.dataset.currency as "cp" | "sp" | "gp" | "pp";
+        const value = Math.max(0, parseInt(inp.value, 10) || 0);
         await FlagManager.updateInventory(this.actor, (inv) => {
-          inv.coins[currency] = value;
+          inv.coinsByZone ??= { equipped: { ...inv.coins } };
+          inv.coinsByZone[zoneId] ??= { cp: 0, sp: 0, gp: 0, pp: 0 };
+          inv.coinsByZone[zoneId][currency] = value;
           return inv;
         });
         this.render();
@@ -408,19 +415,21 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     target: HTMLElement
   ): Promise<void> {
     if (!(game as Game).user?.isGM) return;
+    const g = game as Game;
+    const encMode = (g.settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+    const fallbackZone = encMode === "weight" ? "equipped" : "stowed";
+    const fallbackLabel = encMode === "weight" ? "Equipped" : "Stowed";
     const zoneId = target.dataset.zoneId!;
     const confirmed = await Dialog.confirm({
       title: "Delete Storage Zone",
-      content: "<p>Delete this zone? All items in it will be moved to <strong>Stowed</strong>.</p>",
+      content: `<p>Delete this zone? All items in it will be moved to <strong>${fallbackLabel}</strong>.</p>`,
     });
     if (!confirmed) return;
 
     await FlagManager.updateInventory(this.actor, (inv) => {
-      // Move items in this zone to stowed
       for (const item of inv.items) {
-        if (item.zone === zoneId) item.zone = "stowed";
+        if (item.zone === zoneId) item.zone = fallbackZone;
       }
-      // Remove the zone
       inv.extraZones = (inv.extraZones ?? []).filter((ez) => ez.id !== zoneId);
       return inv;
     });
@@ -437,6 +446,16 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     if (!zone) return;
     new RenameZoneDialog(this.actor, zoneId, zone.name, () => this.render()).render(true);
   }
+
+  private static _onMoveZoneCoins(
+    this: PlayerInventoryApp,
+    _event: Event,
+    target: HTMLElement
+  ): void {
+    const fromZoneId = target.dataset.zoneId!;
+    const inventory = FlagManager.getInventory(this.actor);
+    new MoveCoinsBetweenZonesDialog(this.actor, fromZoneId, inventory, () => this.render()).render(true);
+  }
 }
 
 // ─── Add Item Dialog ──────────────────────────────────────────────────────────
@@ -447,6 +466,7 @@ class AddItemDialog extends Dialog {
   private onComplete: () => void;
 
   constructor(actor: Actor, zone: InventoryItem["zone"], onComplete: () => void) {
+    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
     const catalogItems = CatalogManager.getAllDefinitions();
     const optionsByCategory: Record<string, string> = {};
     for (const item of catalogItems) {
@@ -458,6 +478,26 @@ class AddItemDialog extends Dialog {
     for (const [cat, opts] of Object.entries(optionsByCategory)) {
       selectContent += `<optgroup label="${cat}">${opts}</optgroup>`;
     }
+
+    const customSizeOrWeightField = encMode === "weight"
+      ? `<div class="form-group">
+              <label>Custom Weight (coin wt)</label>
+              <input type="number" id="add-custom-weight" value="10" min="0" />
+            </div>`
+      : `<div class="form-group">
+              <label>Custom Size</label>
+              <select id="add-custom-size">
+                <option value="tiny">Tiny (0 slots)</option>
+                <option value="normal" selected>Normal (1 slot)</option>
+                <option value="large">Large (2 slots)</option>
+              </select>
+            </div>`;
+
+    const zoneOptions = encMode === "weight"
+      ? `<option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>`
+      : `<option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>
+              <option value="stowed" ${zone === "stowed" ? "selected" : ""}>Stowed</option>
+              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Belt Pouch</option>`;
 
     super({
       title: "Add Item to Inventory",
@@ -474,9 +514,7 @@ class AddItemDialog extends Dialog {
           <div class="form-group">
             <label>Zone</label>
             <select id="add-item-zone">
-              <option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>
-              <option value="stowed" ${zone === "stowed" ? "selected" : ""}>Stowed</option>
-              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Belt Pouch</option>
+              ${zoneOptions}
             </select>
           </div>
           <hr/>
@@ -486,14 +524,7 @@ class AddItemDialog extends Dialog {
               <label>Custom Name</label>
               <input type="text" id="add-custom-name" placeholder="Custom item name" />
             </div>
-            <div class="form-group">
-              <label>Custom Size</label>
-              <select id="add-custom-size">
-                <option value="tiny">Tiny (0 slots)</option>
-                <option value="normal" selected>Normal (1 slot)</option>
-                <option value="large">Large (2 slots)</option>
-              </select>
-            </div>
+            ${customSizeOrWeightField}
             <div class="form-group">
               <label>Icon</label>
               ${buildIconPickerHTML()}
@@ -515,9 +546,16 @@ class AddItemDialog extends Dialog {
 
             if (customName) {
               // Custom item
-              const customSize = html.find("#add-custom-size").val() as "tiny" | "normal" | "large";
               const customIcon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
               const customDesc = (html.find("#add-custom-desc").val() as string).trim();
+              const customDef: Partial<import("../types").ItemDefinition> = { isCustom: true, icon: customIcon };
+              if (encMode === "weight") {
+                customDef.weight = Math.max(0, parseInt(html.find("#add-custom-weight").val() as string, 10) || 0);
+                customDef.size = "normal";
+              } else {
+                customDef.size = html.find("#add-custom-size").val() as "tiny" | "normal" | "large";
+              }
+              if (customDesc) customDef.description = customDesc;
               await FlagManager.updateInventory(actor, (inv) => {
                 inv.items.push({
                   id: foundry.utils.randomID(),
@@ -527,12 +565,7 @@ class AddItemDialog extends Dialog {
                   zone: selectedZone,
                   isSecret: false,
                   notes: "",
-                  customDefinition: {
-                    size: customSize,
-                    isCustom: true,
-                    icon: customIcon,
-                    ...(customDesc ? { description: customDesc } : {}),
-                  },
+                  customDefinition: customDef,
                 });
                 return inv;
               });
@@ -576,6 +609,25 @@ class AddItemDialog extends Dialog {
 
 class AddCustomItemDialog extends Dialog {
   constructor(actor: Actor, zone: InventoryItem["zone"], onComplete: () => void) {
+    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+    const sizeOrWeightField = encMode === "weight"
+      ? `<div class="form-group">
+            <label>Weight (coin wt)</label>
+            <input type="number" id="custom-weight" value="10" min="0" />
+          </div>`
+      : `<div class="form-group">
+            <label>Size</label>
+            <select id="custom-size">
+              <option value="tiny">Tiny (0 slots)</option>
+              <option value="normal" selected>Normal (1 slot)</option>
+              <option value="large">Large (2 slots)</option>
+            </select>
+          </div>`;
+    const zoneOptions = encMode === "weight"
+      ? `<option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>`
+      : `<option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>
+              <option value="stowed" ${zone === "stowed" ? "selected" : ""}>Stowed</option>
+              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Belt Pouch</option>`;
     super({
       title: "Add Custom Item",
       content: `
@@ -584,20 +636,11 @@ class AddCustomItemDialog extends Dialog {
             <label>Name</label>
             <input type="text" id="custom-name" placeholder="Item name" />
           </div>
-          <div class="form-group">
-            <label>Size</label>
-            <select id="custom-size">
-              <option value="tiny">Tiny (0 slots)</option>
-              <option value="normal" selected>Normal (1 slot)</option>
-              <option value="large">Large (2 slots)</option>
-            </select>
-          </div>
+          ${sizeOrWeightField}
           <div class="form-group">
             <label>Zone</label>
             <select id="custom-zone">
-              <option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>
-              <option value="stowed" ${zone === "stowed" ? "selected" : ""}>Stowed</option>
-              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Belt Pouch</option>
+              ${zoneOptions}
             </select>
           </div>
           <div class="form-group">
@@ -620,11 +663,18 @@ class AddCustomItemDialog extends Dialog {
           callback: async (html: JQuery) => {
             const name = (html.find("#custom-name").val() as string).trim();
             if (!name) { ui.notifications?.warn("Item name is required."); return; }
-            const size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
             const selectedZone = html.find("#custom-zone").val() as InventoryItem["zone"];
             const qty = Math.max(1, parseInt(html.find("#custom-qty").val() as string, 10) || 1);
             const icon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
             const description = (html.find("#custom-desc").val() as string).trim();
+            const customDef: Partial<import("../types").ItemDefinition> = { isCustom: true, icon };
+            if (encMode === "weight") {
+              customDef.weight = Math.max(0, parseInt(html.find("#custom-weight").val() as string, 10) || 0);
+              customDef.size = "normal";
+            } else {
+              customDef.size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
+            }
+            if (description) customDef.description = description;
             await FlagManager.updateInventory(actor, (inv) => {
               inv.items.push({
                 id: foundry.utils.randomID(),
@@ -634,12 +684,7 @@ class AddCustomItemDialog extends Dialog {
                 zone: selectedZone,
                 isSecret: false,
                 notes: "",
-                customDefinition: {
-                  size,
-                  isCustom: true,
-                  icon,
-                  ...(description ? { description } : {}),
-                },
+                customDefinition: customDef,
               });
               return inv;
             });
@@ -929,10 +974,8 @@ class GrantCoinsDialog extends Dialog {
             const cp = Math.max(0, parseInt(html.find("#grant-cp").val() as string, 10) || 0);
             if (pp + gp + sp + cp === 0) return;
             await FlagManager.updateInventory(toActor, (inv) => {
-              inv.coins.pp += pp;
-              inv.coins.gp += gp;
-              inv.coins.sp += sp;
-              inv.coins.cp += cp;
+              inv.coinsByZone ??= { equipped: { ...inv.coins } };
+              addCoinsToZone(inv.coinsByZone, { cp, sp, gp, pp });
               return inv;
             });
             ui.notifications?.info(`Granted coins to ${toActor.name}.`);
@@ -942,6 +985,95 @@ class GrantCoinsDialog extends Dialog {
         cancel: { label: "Cancel" },
       },
       default: "grant",
+    });
+  }
+}
+
+// ─── Move Coins Between Zones Dialog ─────────────────────────────────────────
+
+function zoneIdToName(zoneId: string, extraZones: ExtraZone[]): string {
+  if (zoneId === "equipped") return "Equipped";
+  if (zoneId === "stowed") return "Stowed";
+  if (zoneId === "tiny") return "Belt Pouch";
+  return extraZones.find((ez) => ez.id === zoneId)?.name ?? zoneId;
+}
+
+class MoveCoinsBetweenZonesDialog extends Dialog {
+  constructor(
+    actor: Actor,
+    fromZoneId: string,
+    inventory: import("../types").CharacterInventory,
+    onComplete: () => void
+  ) {
+    const extraZones = inventory.extraZones ?? [];
+    const fromCoins = (inventory.coinsByZone ?? {})[fromZoneId] ?? { cp: 0, sp: 0, gp: 0, pp: 0 };
+    const fromName = zoneIdToName(fromZoneId, extraZones);
+
+    // Build target zone list (all zones except the source)
+    const allZones = [
+      { id: "equipped", name: "Equipped" },
+      { id: "stowed", name: "Stowed" },
+      { id: "tiny", name: "Belt Pouch" },
+      ...extraZones.map((ez) => ({ id: ez.id, name: ez.name })),
+    ].filter((z) => z.id !== fromZoneId);
+    const toOptions = allZones.map((z) => `<option value="${z.id}">${z.name}</option>`).join("");
+
+    super({
+      title: `Move Coins from ${fromName}`,
+      content: `
+        <form>
+          <p style="margin:0 0 8px;opacity:0.8;">
+            Available: ${fromCoins.pp}pp &nbsp; ${fromCoins.gp}gp &nbsp; ${fromCoins.sp}sp &nbsp; ${fromCoins.cp}cp
+          </p>
+          <div class="form-group">
+            <label>Move to</label>
+            <select id="move-coins-to">${toOptions}</select>
+          </div>
+          <div class="form-group">
+            <label>PP</label>
+            <input type="number" id="move-pp" value="0" min="0" max="${fromCoins.pp}" />
+          </div>
+          <div class="form-group">
+            <label>GP</label>
+            <input type="number" id="move-gp" value="0" min="0" max="${fromCoins.gp}" />
+          </div>
+          <div class="form-group">
+            <label>SP</label>
+            <input type="number" id="move-sp" value="0" min="0" max="${fromCoins.sp}" />
+          </div>
+          <div class="form-group">
+            <label>CP</label>
+            <input type="number" id="move-cp" value="0" min="0" max="${fromCoins.cp}" />
+          </div>
+        </form>
+      `,
+      buttons: {
+        move: {
+          label: "Move",
+          callback: async (html: JQuery) => {
+            const toZoneId = html.find("#move-coins-to").val() as string;
+            const pp = Math.min(fromCoins.pp, Math.max(0, parseInt(html.find("#move-pp").val() as string, 10) || 0));
+            const gp = Math.min(fromCoins.gp, Math.max(0, parseInt(html.find("#move-gp").val() as string, 10) || 0));
+            const sp = Math.min(fromCoins.sp, Math.max(0, parseInt(html.find("#move-sp").val() as string, 10) || 0));
+            const cp = Math.min(fromCoins.cp, Math.max(0, parseInt(html.find("#move-cp").val() as string, 10) || 0));
+            if (pp + gp + sp + cp === 0) return;
+
+            await FlagManager.updateInventory(actor, (inv) => {
+              inv.coinsByZone ??= { equipped: { ...inv.coins } };
+              const from = (inv.coinsByZone[fromZoneId] ??= { cp: 0, sp: 0, gp: 0, pp: 0 });
+              from.pp = Math.max(0, from.pp - pp);
+              from.gp = Math.max(0, from.gp - gp);
+              from.sp = Math.max(0, from.sp - sp);
+              from.cp = Math.max(0, from.cp - cp);
+              addCoinsToZone(inv.coinsByZone, { cp, sp, gp, pp }, toZoneId);
+              return inv;
+            });
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "move",
     });
   }
 }

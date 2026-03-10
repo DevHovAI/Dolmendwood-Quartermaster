@@ -79,6 +79,9 @@ export function registerHandlebarsHelpers(): void {
   // Equality check — used in templates: {{#if (eq a b)}}
   Handlebars.registerHelper("eq", (a: unknown, b: unknown) => a === b);
 
+  // Logical NOT — used in templates: {{#if (not a)}}
+  Handlebars.registerHelper("not", (a: unknown) => !a);
+
   // Logical OR — used in templates: {{#if (or a b)}}
   Handlebars.registerHelper("or", (a: unknown, b: unknown) => Boolean(a) || Boolean(b));
 
@@ -222,7 +225,6 @@ export async function registerHandlebarsPartials(): Promise<void> {
     "encumbrance-bar": TEMPLATES.PARTIALS.ENCUMBRANCE_BAR,
     "party-summary": TEMPLATES.PARTIALS.PARTY_SUMMARY,
     "extra-zone": TEMPLATES.PARTIALS.EXTRA_ZONE,
-    "coin-slot-row": TEMPLATES.PARTIALS.COIN_SLOT_ROW,
-    "coin-container-row": TEMPLATES.PARTIALS.COIN_CONTAINER_ROW,
+    "zone-coin-purse": TEMPLATES.PARTIALS.ZONE_COIN_PURSE,
   });
 }

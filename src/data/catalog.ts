@@ -689,6 +689,7 @@ export const CATALOG: ItemDefinition[] = [
     unit: "piece",
     cost: { amount: 1, currency: "gp" },
     weight: 20,
+    maxUses: 10,
     description: "Casts dim light in a 5' radius and burns for 1 hour each.",
     qualities: [],
     tags: [],
@@ -817,6 +818,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    maxUses: 1,
   },
   {
     id: "fishing-rod-and-tackle",
@@ -986,6 +988,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    maxUses: 20,
   },
   {
     id: "chain-10ft",
@@ -1016,6 +1019,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    maxUses: 10,
   },
   {
     id: "chisel",
@@ -1121,6 +1125,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    maxUses: 12,
   },
   {
     id: "lock",
@@ -1181,6 +1186,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    maxUses: 20,
   },
   {
     id: "mining-pick",
@@ -1256,6 +1262,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
+    maxUses: 2,
   },
   {
     id: "pole-10ft",

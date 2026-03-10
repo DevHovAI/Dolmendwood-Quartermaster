@@ -79,30 +79,29 @@ function calculateSlotEncumbrance(
   const tinyOverflow = Math.max(0, tinyCount - 10);
   stowedSlots += Math.ceil(tinyOverflow / 10);
 
-  // Coins
-  const { cp, sp, gp, pp } = inventory.coins;
-  const totalCoins = cp + sp + gp + pp;
-  let chestCapacity = 0;
-  for (const item of inventory.items) {
-    const def = catalogMap.get(item.definitionId);
-    if (def?.coinCapacity) chestCapacity += def.coinCapacity * item.quantity;
-  }
-  const purseCoins = Math.max(0, totalCoins - chestCapacity);
-  const coinSlotCount = purseCoins > 0 ? Math.ceil(purseCoins / 100) : 0;
-  if (inventory.coinSlots && inventory.coinSlots.length === coinSlotCount && coinSlotCount > 0) {
-    for (const slot of inventory.coinSlots) {
-      if (slot.zone === "tiny") {
-        tinyCount += 1;
-      } else if (slot.zone === "equipped") {
-        equippedSlots += 1;
-      } else if (slot.zone === "stowed") {
-        stowedSlots += 1;
+  // Coins: per-zone coins contribute to their zone's slot count.
+  // Coin containers (coinCapacity items) in a zone absorb that zone's coin slot usage.
+  const coinsByZone = inventory.coinsByZone ?? { equipped: inventory.coins };
+  function purseCoinsInZone(zoneId: string): number {
+    const zc = coinsByZone[zoneId];
+    if (!zc) return 0;
+    const total = zc.cp + zc.sp + zc.gp + zc.pp;
+    let cap = 0;
+    for (const item of inventory.items) {
+      if (item.zone === zoneId) {
+        const d = catalogMap.get(item.definitionId);
+        if (d?.coinCapacity) cap += d.coinCapacity * item.quantity;
       }
     }
-  } else {
-    stowedSlots += coinSlotCount;
+    return Math.max(0, total - cap);
   }
-  const coinSlots = coinSlotCount;
+  const tinyCoinItems    = purseCoinsInZone("tiny")     > 0 ? Math.ceil(purseCoinsInZone("tiny")     / 100) : 0;
+  const equippedCoinSlots = purseCoinsInZone("equipped") > 0 ? Math.ceil(purseCoinsInZone("equipped") / 100) : 0;
+  const stowedCoinSlots   = purseCoinsInZone("stowed")   > 0 ? Math.ceil(purseCoinsInZone("stowed")   / 100) : 0;
+  tinyCount    += tinyCoinItems;
+  equippedSlots += equippedCoinSlots;
+  stowedSlots   += stowedCoinSlots;
+  const coinSlots = tinyCoinItems + equippedCoinSlots + stowedCoinSlots;
 
   const equippedSpeed = getSpeedForSlots(equippedSlots, EQUIPPED_SPEED_TIERS);
   const stowedSpeed = getSpeedForSlots(stowedSlots, STOWED_SPEED_TIERS);
@@ -155,56 +154,42 @@ function calculateWeightEncumbrance(
     if (extraZone) {
       if (!extraZone.type || extraZone.type === "vehicle") continue; // vehicle zones excluded from character weight
       // storage zone — items count toward character weight
-      const w = (item.customDefinition?.weight ?? def?.weight ?? 0) * item.quantity;
+      // Scale weight by remaining uses ratio for consumable items
+      const baseW = item.customDefinition?.weight ?? def?.weight ?? 0;
+      const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
+      const w = baseW * usesRatio * item.quantity;
       if (extraZone.isBeltPouch) tinyWeight += w;
       else stowedWeight += w;
       continue;
     }
 
-    const w = (item.customDefinition?.weight ?? def?.weight ?? 0) * item.quantity;
+    // Scale weight by remaining uses ratio for consumable items
+    const baseW = item.customDefinition?.weight ?? def?.weight ?? 0;
+    const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
+    const w = baseW * usesRatio * item.quantity;
     if (item.zone === "tiny") tinyWeight += w;
     else if (item.zone === "equipped") equippedWeight += w;
     else stowedWeight += w; // "stowed" and any unknown zone
   }
 
-  // Coins: each coin weighs 1 unit. Default to equipped in weight mode.
-  const { cp, sp, gp, pp } = inventory.coins;
-  const totalCoins = cp + sp + gp + pp;
-
-  let coinWeightEquipped = 0;
-  let coinWeightStowed = 0;
-  let coinWeightTiny = 0;
-
-  if (inventory.coinSlots && inventory.coinSlots.length > 0) {
-    let chestCapacity = 0;
-    for (const item of inventory.items) {
-      const def = catalogMap.get(item.definitionId);
-      if (def?.coinCapacity) chestCapacity += def.coinCapacity * item.quantity;
-    }
-    const purseCoins = Math.max(0, totalCoins - chestCapacity);
-    const coinSlotCount = purseCoins > 0 ? Math.ceil(purseCoins / 100) : 0;
-
-    if (inventory.coinSlots.length === coinSlotCount) {
-      for (const slot of inventory.coinSlots) {
-        const slotWeight = 100;
-        const slotZone = extraZoneMap.get(slot.zone);
-        if (slotZone && (!slotZone.type || slotZone.type === "vehicle")) continue; // vehicle zone coins excluded
-        if (slot.zone === "tiny" || slotZone?.isBeltPouch) coinWeightTiny += slotWeight;
-        else coinWeightEquipped += slotWeight; // equipped and storage zones all go to equipped weight bucket for coins
-      }
+  // Coins: each coin weighs 1 unit, counted in the zone it's assigned to.
+  const coinsByZone = inventory.coinsByZone ?? { equipped: inventory.coins };
+  for (const [zoneId, zc] of Object.entries(coinsByZone)) {
+    const coinWeight = zc.cp + zc.sp + zc.gp + zc.pp;
+    if (coinWeight <= 0) continue;
+    if (zoneId === "tiny") {
+      tinyWeight += coinWeight;
+    } else if (zoneId === "equipped") {
+      equippedWeight += coinWeight;
+    } else if (zoneId === "stowed") {
+      stowedWeight += coinWeight;
     } else {
-      // Fallback: unassigned purse coins default to equipped in weight mode
-      coinWeightEquipped += purseCoins;
+      const ez = extraZoneMap.get(zoneId);
+      if (!ez || !ez.type || ez.type === "vehicle") continue; // vehicle zones excluded
+      if (ez.isBeltPouch) tinyWeight += coinWeight;
+      else stowedWeight += coinWeight;
     }
-    // Chest-stored coins add weight to stowed
-    coinWeightStowed += Math.min(chestCapacity, totalCoins);
-  } else {
-    coinWeightEquipped += totalCoins; // no slot tracking — default to equipped
   }
-
-  equippedWeight += coinWeightEquipped;
-  stowedWeight += coinWeightStowed;
-  tinyWeight += coinWeightTiny;
 
   const totalWeight = equippedWeight + stowedWeight + tinyWeight;
   const finalSpeed = getSpeedForWeight(totalWeight);

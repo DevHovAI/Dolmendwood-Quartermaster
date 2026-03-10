@@ -1,32 +1,8 @@
 <div class="coin-display">
-  {{#if canEdit}}
-  <div class="coin-row">
-    <label class="coin-label cp" title="Copper pieces">cp</label>
-    <input type="number" class="coin-input" data-currency="cp" value="{{inventory.coins.cp}}" min="0" />
-  </div>
-  <div class="coin-row">
-    <label class="coin-label sp" title="Silver pieces">sp</label>
-    <input type="number" class="coin-input" data-currency="sp" value="{{inventory.coins.sp}}" min="0" />
-  </div>
-  <div class="coin-row">
-    <label class="coin-label gp" title="Gold pieces">gp</label>
-    <input type="number" class="coin-input" data-currency="gp" value="{{inventory.coins.gp}}" min="0" />
-  </div>
-  <div class="coin-row">
-    <label class="coin-label pp" title="Pellucidium">pp</label>
-    <input type="number" class="coin-input" data-currency="pp" value="{{inventory.coins.pp}}" min="0" />
-  </div>
-  {{#if (gt encumbrance.coinSlots 0)}}
-  <div class="coin-slots">{{encumbrance.coinSlots}} stowed slot{{#if (gt encumbrance.coinSlots 1)}}s{{/if}} from coins</div>
-  {{/if}}
-  {{else}}
   <div class="coin-totals-readonly">
+    {{#if (gt inventory.coins.pp 0)}}<span class="coin-val">{{inventory.coins.pp}}<span class="coin-unit pp">pp</span></span>{{/if}}
     <span class="coin-val">{{inventory.coins.gp}}<span class="coin-unit gp">gp</span></span>
     <span class="coin-val">{{inventory.coins.sp}}<span class="coin-unit sp">sp</span></span>
     <span class="coin-val">{{inventory.coins.cp}}<span class="coin-unit cp">cp</span></span>
-    {{#if (gt inventory.coins.pp 0)}}
-    <span class="coin-val">{{inventory.coins.pp}}<span class="coin-unit pp">pp</span></span>
-    {{/if}}
   </div>
-  {{/if}}
 </div>
