@@ -254,14 +254,16 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         const inp = e.target as HTMLInputElement;
         const zoneId = inp.dataset.zoneId!;
         const currency = inp.dataset.currency as "cp" | "sp" | "gp" | "pp";
-        const value = Math.max(0, parseInt(inp.value, 10) || 0);
+        // parseInt("0") is falsy, so use explicit null-check instead of || 0
+        const parsed = parseInt(inp.value, 10);
+        const value = Math.max(0, Number.isNaN(parsed) ? 0 : parsed);
         await FlagManager.updateInventory(this.actor, (inv) => {
           inv.coinsByZone ??= { equipped: { ...inv.coins } };
           inv.coinsByZone[zoneId] ??= { cp: 0, sp: 0, gp: 0, pp: 0 };
           inv.coinsByZone[zoneId][currency] = value;
           return inv;
         });
-        this.render();
+        this.render({ force: true } as Parameters<typeof this.render>[0]);
       });
     });
   }
@@ -427,8 +429,13 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     if (!confirmed) return;
 
     await FlagManager.updateInventory(this.actor, (inv) => {
+      const zone = (inv.extraZones ?? []).find((ez) => ez.id === zoneId);
       for (const item of inv.items) {
         if (item.zone === zoneId) item.zone = fallbackZone;
+      }
+      // Also remove the container item that created this zone (tracked via itemId)
+      if (zone?.itemId) {
+        inv.items = inv.items.filter((i) => i.id !== zone.itemId);
       }
       inv.extraZones = (inv.extraZones ?? []).filter((ez) => ez.id !== zoneId);
       return inv;
@@ -1005,15 +1012,19 @@ class MoveCoinsBetweenZonesDialog extends Dialog {
     inventory: import("../types").CharacterInventory,
     onComplete: () => void
   ) {
+    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
     const extraZones = inventory.extraZones ?? [];
     const fromCoins = (inventory.coinsByZone ?? {})[fromZoneId] ?? { cp: 0, sp: 0, gp: 0, pp: 0 };
     const fromName = zoneIdToName(fromZoneId, extraZones);
 
     // Build target zone list (all zones except the source)
+    // In weight mode there is no Stowed or Belt Pouch zone
     const allZones = [
       { id: "equipped", name: "Equipped" },
-      { id: "stowed", name: "Stowed" },
-      { id: "tiny", name: "Belt Pouch" },
+      ...(encMode !== "weight" ? [
+        { id: "stowed", name: "Stowed" },
+        { id: "tiny", name: "Belt Pouch" },
+      ] : []),
       ...extraZones.map((ez) => ({ id: ez.id, name: ez.name })),
     ].filter((z) => z.id !== fromZoneId);
     const toOptions = allZones.map((z) => `<option value="${z.id}">${z.name}</option>`).join("");

@@ -179,6 +179,7 @@ export class SocketHandler {
             weightCapacity: def.grantsStorageZone.weightCapacity,
             type: "storage" as const,
             selfWeight: def.weight ?? 0,
+            itemId: pushed?.id,
             ...(def.grantsStorageZone.isBeltPouch ? { isBeltPouch: true } : {}),
           });
         }

@@ -68,8 +68,10 @@ export function addCoinsToZone(
  * clamps all values, prunes orphaned zone entries, and syncs inv.coins total.
  */
 function syncCoins(inv: CharacterInventory): void {
-  // Migration: if coinsByZone is absent, create it from the legacy coins total
-  if (!inv.coinsByZone) {
+  // One-time migration: if coinsByZone has never been set, seed it from the legacy coins total.
+  // After this runs once, coinsByZone is always present and inv.coins becomes a derived total.
+  // We use inv.coinsByZone == null (not just falsy) to avoid re-migrating if explicitly set to {}.
+  if (inv.coinsByZone == null) {
     inv.coinsByZone = {
       equipped: {
         cp: inv.coins.cp ?? 0,

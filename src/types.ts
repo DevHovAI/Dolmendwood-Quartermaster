@@ -39,6 +39,7 @@ export interface ExtraZone {
   type?: "vehicle" | "storage";  // undefined = "vehicle" for backward compat
   isBeltPouch?: boolean; // storage zone that acts as the tiny/belt-pouch zone in weight mode
   selfWeight?: number;   // weight of the container item itself (e.g. backpack = 50 coins wt)
+  itemId?: string;       // ID of the inventory item that created this zone (for cleanup on deletion)
 }
 
 export interface ZoneCoins {
