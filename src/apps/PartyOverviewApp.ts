@@ -29,7 +29,8 @@ export function buildPartySummary(
   partyActors: Actor[],
   isGM: boolean,
   currentUser: User | null,
-  coins?: PartySummaryCoin
+  coins?: PartySummaryCoin,
+  encMode: "slots" | "weight" = "slots"
 ): PartySummary {
   const summaryCoins = coins ?? { pp: 0, gp: 0, sp: 0, cp: 0 };
 
@@ -58,6 +59,9 @@ export function buildPartySummary(
       if (item.isSecret && !isGM && !userOwnsActor) continue;
 
       const def = CatalogManager.getDefinition(item.definitionId);
+      // In weight mode, hide container items that exist only to provide a storage zone
+      if (encMode === "weight" && def?.grantsStorageZone) continue;
+
       allItems.push({
         name: item.name,
         quantity: item.quantity,
@@ -172,7 +176,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
 
     const isGM = g.user?.isGM ?? false;
     const currentUser = g.user ?? null;
-    const partySummary = buildPartySummary(partyActors, isGM, currentUser, partyTotals);
+    const partySummary = buildPartySummary(partyActors, isGM, currentUser, partyTotals, encMode);
 
     return {
       members,

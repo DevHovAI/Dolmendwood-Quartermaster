@@ -151,7 +151,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const allPartyActors = (g.actors?.contents ?? []).filter((actor) =>
       (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
     );
-    const partySummary = buildPartySummary(allPartyActors, isGM, g.user ?? null);
+    const partySummary = buildPartySummary(allPartyActors, isGM, g.user ?? null, undefined, encMode);
 
     return {
       actor: this.actor,
@@ -373,10 +373,11 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     target: HTMLElement
   ): void {
     const defaultZone = (target.dataset.zone ?? "stowed") as InventoryItem["zone"];
+    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
     if ((game as Game).user?.isGM) {
-      new AddItemDialog(this.actor, defaultZone, () => this.render()).render(true);
+      new AddItemDialog(this.actor, defaultZone, encMode, () => this.render()).render(true);
     } else {
-      new AddCustomItemDialog(this.actor, defaultZone, () => this.render()).render(true);
+      new AddCustomItemDialog(this.actor, defaultZone, encMode, () => this.render()).render(true);
     }
   }
 
@@ -433,9 +434,15 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       for (const item of inv.items) {
         if (item.zone === zoneId) item.zone = fallbackZone;
       }
-      // Also remove the container item that created this zone (tracked via itemId)
+      // Remove the container item that created this zone.
+      // New zones track via itemId; old zones fall back to matching by grantsStorageZone name.
       if (zone?.itemId) {
         inv.items = inv.items.filter((i) => i.id !== zone.itemId);
+      } else if (zone?.type === "storage") {
+        inv.items = inv.items.filter((i) => {
+          const def = CatalogManager.getDefinition(i.definitionId);
+          return !(def?.grantsStorageZone?.name === zone.name);
+        });
       }
       inv.extraZones = (inv.extraZones ?? []).filter((ez) => ez.id !== zoneId);
       return inv;
@@ -472,8 +479,7 @@ class AddItemDialog extends Dialog {
   private zone: InventoryItem["zone"];
   private onComplete: () => void;
 
-  constructor(actor: Actor, zone: InventoryItem["zone"], onComplete: () => void) {
-    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+  constructor(actor: Actor, zone: InventoryItem["zone"], encMode: "slots" | "weight", onComplete: () => void) {
     const catalogItems = CatalogManager.getAllDefinitions();
     const optionsByCategory: Record<string, string> = {};
     for (const item of catalogItems) {
@@ -615,8 +621,7 @@ class AddItemDialog extends Dialog {
 // ─── Add Custom Item Dialog (player-facing) ───────────────────────────────────
 
 class AddCustomItemDialog extends Dialog {
-  constructor(actor: Actor, zone: InventoryItem["zone"], onComplete: () => void) {
-    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+  constructor(actor: Actor, zone: InventoryItem["zone"], encMode: "slots" | "weight", onComplete: () => void) {
     const sizeOrWeightField = encMode === "weight"
       ? `<div class="form-group">
             <label>Weight (coin wt)</label>
