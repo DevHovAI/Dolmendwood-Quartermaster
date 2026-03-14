@@ -148,18 +148,18 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
         const inventory = FlagManager.getInventory(actor);
         const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap(), encMode);
 
-        // Compute per-category item totals visible to GM
-        const itemsByCategory: Record<string, { name: string; total: number }[]> = {};
-        for (const item of inventory.items) {
-          if (!itemsByCategory[item.zone]) {
-            itemsByCategory[item.zone] = [];
-          }
-        }
+        // Filter items for the compact display column: hide animals and container items
+        const visibleItems = inventory.items.filter((item) => {
+          const def = CatalogManager.getDefinition(item.definitionId);
+          if (def?.grantsZone && def?.category === "Animals & Vehicles") return false;
+          if (encMode === "weight" && def?.grantsStorageZone) return false;
+          return true;
+        });
 
         return {
           actor,
           actorId: actor.id,
-          inventory,
+          inventory: { ...inventory, items: visibleItems },
           encumbrance,
           isOwner: actor.isOwner,
         };

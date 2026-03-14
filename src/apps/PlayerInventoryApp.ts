@@ -435,13 +435,13 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         if (item.zone === zoneId) item.zone = fallbackZone;
       }
       // Remove the container item that created this zone.
-      // New zones track via itemId; old zones fall back to matching by grantsStorageZone name.
+      // New zones track via itemId; old zones fall back to matching by catalog zone name.
       if (zone?.itemId) {
         inv.items = inv.items.filter((i) => i.id !== zone.itemId);
-      } else if (zone?.type === "storage") {
+      } else if (zone) {
         inv.items = inv.items.filter((i) => {
           const def = CatalogManager.getDefinition(i.definitionId);
-          return !(def?.grantsStorageZone?.name === zone.name);
+          return !(def?.grantsStorageZone?.name === zone.name || def?.grantsZone?.name === zone.name);
         });
       }
       inv.extraZones = (inv.extraZones ?? []).filter((ez) => ez.id !== zoneId);
