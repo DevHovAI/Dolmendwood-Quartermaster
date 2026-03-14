@@ -424,6 +424,25 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
 class AddCustomShopItemDialog extends Dialog {
   constructor(actorId: string) {
+    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+    const sizeOrWeightField = encMode === "weight"
+      ? `<div class="form-group">
+            <label>Weight (coin wt)</label>
+            <input type="number" id="custom-weight" value="10" min="0" />
+          </div>`
+      : `<div class="form-group">
+            <label>Size</label>
+            <select id="custom-size">
+              <option value="tiny">Tiny (0 slots)</option>
+              <option value="normal" selected>Normal (1 slot)</option>
+              <option value="large">Large (2 slots)</option>
+            </select>
+          </div>`;
+    const zoneOptions = encMode === "weight"
+      ? `<option value="equipped">Equipped</option>`
+      : `<option value="equipped">Equipped</option>
+              <option value="stowed" selected>Stowed</option>
+              <option value="tiny">Belt Pouch</option>`;
     super({
       title: "Grant Custom Item",
       content: `
@@ -432,14 +451,7 @@ class AddCustomShopItemDialog extends Dialog {
             <label>Item Name</label>
             <input type="text" id="custom-name" placeholder="Custom item name" />
           </div>
-          <div class="form-group">
-            <label>Size</label>
-            <select id="custom-size">
-              <option value="tiny">Tiny (0 slots)</option>
-              <option value="normal" selected>Normal (1 slot)</option>
-              <option value="large">Large (2 slots)</option>
-            </select>
-          </div>
+          ${sizeOrWeightField}
           <div class="form-group">
             <label>Quantity</label>
             <input type="number" id="custom-qty" value="1" min="1" />
@@ -447,9 +459,7 @@ class AddCustomShopItemDialog extends Dialog {
           <div class="form-group">
             <label>Zone</label>
             <select id="custom-zone">
-              <option value="equipped">Equipped</option>
-              <option value="stowed" selected>Stowed</option>
-              <option value="tiny">Tiny</option>
+              ${zoneOptions}
             </select>
           </div>
           <div class="form-group">
@@ -472,12 +482,19 @@ class AddCustomShopItemDialog extends Dialog {
           callback: (html: JQuery) => {
             const name = (html.find("#custom-name").val() as string).trim();
             if (!name) return;
-            const size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
             const qty = Math.max(1, parseInt(html.find("#custom-qty").val() as string, 10) || 1);
             const zone = html.find("#custom-zone").val() as InventoryItem["zone"];
             const icon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
             const description = (html.find("#custom-desc").val() as string).trim();
             const isSecret = html.find("#custom-secret").prop("checked") as boolean;
+            const customDef: Partial<ItemDefinition> = { isCustom: true, icon };
+            if (encMode === "weight") {
+              customDef.weight = Math.max(0, parseInt(html.find("#custom-weight").val() as string, 10) || 0);
+              customDef.size = "normal";
+            } else {
+              customDef.size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
+            }
+            if (description) customDef.description = description;
 
             SocketHandler.emit(SOCKET_EVENTS.GM_GRANT, {
               actorId,
@@ -488,12 +505,7 @@ class AddCustomShopItemDialog extends Dialog {
                 zone,
                 isSecret,
                 notes: "",
-                customDefinition: {
-                  size,
-                  isCustom: true,
-                  icon,
-                  ...(description ? { description } : {}),
-                },
+                customDefinition: customDef,
               },
             });
           },

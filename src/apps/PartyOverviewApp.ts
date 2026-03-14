@@ -59,6 +59,8 @@ export function buildPartySummary(
       if (item.isSecret && !isGM && !userOwnsActor) continue;
 
       const def = CatalogManager.getDefinition(item.definitionId);
+      // Hide animal/vehicle items — they appear as zone headers, not as inventory rows
+      if (def?.grantsZone && def?.category === "Animals & Vehicles") continue;
       // In weight mode, hide container items that exist only to provide a storage zone
       if (encMode === "weight" && def?.grantsStorageZone) continue;
 
