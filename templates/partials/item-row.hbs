@@ -80,8 +80,8 @@
     {{/if}}
   </select>
 
-  <input type="text" class="item-notes-input" data-item-id="{{item.id}}"
-         value="{{item.notes}}" placeholder="Notes…" title="Notes" />
+  <textarea class="item-notes-input" data-item-id="{{item.id}}"
+            placeholder="Notes…" title="Notes" rows="2">{{item.notes}}</textarea>
   {{/if}}
 
   {{#if isOwner}}

@@ -55,6 +55,8 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       addCustomItem: ShopApp._onAddCustomItem,
       toggleHideItem: ShopApp._onToggleHideItem,
       toggleLocalHideItem: ShopApp._onToggleLocalHideItem,
+      addToShop: ShopApp._onAddToShop,
+      removeFromShop: ShopApp._onRemoveFromShop,
     },
   };
 
@@ -148,16 +150,35 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       items = items.filter((i) => !activeHiddenItems.includes(i.id));
     }
 
-    // Group by category, marking hidden items for GM view and applying price factor
+    // Group by category → subcategory, applying price factor and hidden markers
+    type GroupedItem = ItemDefinition & { isHidden?: boolean; isLocalCustom?: boolean };
     const factor = this.priceFactor;
-    const grouped: Record<string, (ItemDefinition & { isHidden?: boolean })[]> = {};
-    for (const item of items) {
+    const grouped: Record<string, { subcategory: string; items: GroupedItem[] }[]> = {};
+
+    const addToGrouped = (item: GroupedItem) => {
       if (!grouped[item.category]) grouped[item.category] = [];
+      const catGroups = grouped[item.category];
+      let sub = catGroups.find((g) => g.subcategory === (item.subcategory || ""));
+      if (!sub) { sub = { subcategory: item.subcategory || "", items: [] }; catGroups.push(sub); }
+      sub.items.push(item);
+    };
+
+    for (const item of items) {
       const adjustedCost = factor === 100 ? item.cost : {
         amount: Math.max(1, Math.round(item.cost.amount * factor / 100)),
         currency: item.cost.currency,
       };
-      grouped[item.category].push({ ...item, cost: adjustedCost, isHidden: isGM && activeHiddenItems.includes(item.id) });
+      addToGrouped({ ...item, cost: adjustedCost, isHidden: isGM && activeHiddenItems.includes(item.id) });
+    }
+
+    // Append GM-added custom items for this local shop
+    if (this.localName) {
+      const localCustomItems = ((g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {})[this.localName] ?? [];
+      for (const item of localCustomItems) {
+        const q = this.searchText.toLowerCase();
+        if (this.searchText && !item.name.toLowerCase().includes(q) && !item.category.toLowerCase().includes(q)) continue;
+        addToGrouped({ ...item, isLocalCustom: true, isHidden: false });
+      }
     }
 
     return {
@@ -177,6 +198,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       availableCp,
       shopName: this.localName ?? "Shop",
       isLocalShop: this.localName !== null,
+      localName: this.localName,
       priceFactor: this.priceFactor,
     };
   }
@@ -252,10 +274,13 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     target: HTMLElement
   ): Promise<void> {
     const definitionId = target.dataset.itemId!;
-    const def = CatalogManager.getDefinition(definitionId);
-    if (!def || !this.selectedActorId) return;
-
     const g = game as Game;
+    const catalogDef = CatalogManager.getDefinition(definitionId);
+    const localCustomItems = this.localName
+      ? ((g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {})[this.localName] ?? []
+      : [];
+    const def = catalogDef ?? localCustomItems.find((i) => i.id === definitionId);
+    if (!def || !this.selectedActorId) return;
     const actor = g.actors?.get(this.selectedActorId);
     if (!actor) return;
 
@@ -286,6 +311,17 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     }
 
     // Show confirmation dialog — capture zone selection inside callback
+    const encMode = (g.settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+    const zoneFormGroup = encMode === "weight"
+      ? ""
+      : `<div class="form-group">
+           <label>Add to zone:</label>
+           <select id="purchase-zone">
+             <option value="equipped">Equipped</option>
+             <option value="stowed" selected>Stowed</option>
+             <option value="tiny">Belt Pouch</option>
+           </select>
+         </div>`;
     const result = await new Promise<{ confirmed: boolean; zone: string }>((resolve) => {
       new Dialog({
         title: "Purchase Item",
@@ -293,21 +329,14 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
           <p>Purchase <strong>${def.name}</strong> for <strong>${adjustedAmount} ${def.cost.currency}</strong>?</p>
           <p>Target: <strong>${actor.name}</strong></p>
           ${!canAfford ? '<p class="warning"><i class="fas fa-exclamation-triangle"></i> Insufficient funds! Proceed anyway (GM override)?</p>' : ""}
-          <div class="form-group">
-            <label>Add to zone:</label>
-            <select id="purchase-zone">
-              <option value="equipped">Equipped</option>
-              <option value="stowed" selected>Stowed</option>
-              <option value="tiny">Tiny</option>
-            </select>
-          </div>
+          ${zoneFormGroup}
         `,
         buttons: {
           confirm: {
             label: canAfford ? "Purchase" : "Override & Purchase",
             icon: `<i class="fas ${canAfford ? "fa-shopping-cart" : "fa-exclamation-triangle"}"></i>`,
             callback: (html: JQuery) => {
-              const zone = (html.find("#purchase-zone").val() as string) ?? "stowed";
+              const zone = encMode === "weight" ? "stowed" : ((html.find("#purchase-zone").val() as string) ?? "stowed");
               resolve({ confirmed: true, zone });
             },
           },
@@ -322,6 +351,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     const costObj = { cp: 0, sp: 0, gp: 0, pp: 0 };
     costObj[def.cost.currency as "cp" | "sp" | "gp" | "pp"] = adjustedAmount;
 
+    const isLocalCustom = !catalogDef;
     const payload: PurchasePayload = {
       actorId: this.selectedActorId,
       definitionId,
@@ -329,6 +359,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       zone: result.zone,
       totalCost: costObj,
       gmOverride: !canAfford && isGM,
+      ...(isLocalCustom ? { customDef: def as Partial<ItemDefinition> } : {}),
     };
 
     if (isGM) {
@@ -408,6 +439,26 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     }
     await g.settings.set(MODULE_ID, SETTINGS.LOCAL_HIDDEN, localHiddenMap);
     this._scrollTop = scrollTop;
+    this.render();
+  }
+
+  private static _onAddToShop(this: ShopApp): void {
+    if (!this.localName) return;
+    new AddToShopDialog(this.localName, () => this.render()).render(true);
+  }
+
+  private static async _onRemoveFromShop(
+    this: ShopApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    if (!this.localName) return;
+    const itemId = target.dataset.itemId!;
+    const g = game as Game;
+    const all = (g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {};
+    if (!all[this.localName]) return;
+    all[this.localName] = all[this.localName].filter((i) => i.id !== itemId);
+    await g.settings.set(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, all);
     this.render();
   }
 
@@ -508,6 +559,122 @@ class AddCustomShopItemDialog extends Dialog {
                 customDefinition: customDef,
               },
             });
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "add",
+    });
+  }
+
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    activateIconPicker(html);
+  }
+}
+
+// ─── Add To Shop Dialog ───────────────────────────────────────────────────────
+
+class AddToShopDialog extends Dialog {
+  constructor(shopName: string, onComplete: () => void) {
+    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+    const categories = CatalogManager.getCategories();
+    const categoryOptions = categories.map((c) => `<option value="${c}">${c}</option>`).join("");
+    const sizeOrWeightField = encMode === "weight"
+      ? `<div class="form-group">
+            <label>Weight (coin wt)</label>
+            <input type="number" id="shop-item-weight" value="10" min="0" />
+          </div>`
+      : `<div class="form-group">
+            <label>Size</label>
+            <select id="shop-item-size">
+              <option value="tiny">Tiny (0 slots)</option>
+              <option value="normal" selected>Normal (1 slot)</option>
+              <option value="large">Large (2 slots)</option>
+            </select>
+          </div>`;
+    super({
+      title: "Add Item to Shop",
+      content: `
+        <form>
+          <div class="form-group">
+            <label>Item Name</label>
+            <input type="text" id="shop-item-name" placeholder="Item name" />
+          </div>
+          <div class="form-group" style="display:flex;gap:8px;">
+            <div style="flex:1;">
+              <label>Price</label>
+              <input type="number" id="shop-item-price" value="1" min="0" />
+            </div>
+            <div style="flex:1;">
+              <label>Currency</label>
+              <select id="shop-item-currency">
+                <option value="cp">cp</option>
+                <option value="sp">sp</option>
+                <option value="gp" selected>gp</option>
+                <option value="pp">pp</option>
+              </select>
+            </div>
+          </div>
+          ${sizeOrWeightField}
+          <div class="form-group">
+            <label>Category</label>
+            <select id="shop-item-category">
+              ${categoryOptions}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Subcategory (optional)</label>
+            <input type="text" id="shop-item-subcategory" placeholder="e.g. Melee Weapons" />
+          </div>
+          <div class="form-group">
+            <label>Icon</label>
+            ${buildIconPickerHTML()}
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="shop-item-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+          </div>
+        </form>
+      `,
+      buttons: {
+        add: {
+          label: "Add to Shop",
+          callback: async (html: JQuery) => {
+            const name = (html.find("#shop-item-name").val() as string).trim();
+            if (!name) return;
+            const priceAmount = Math.max(0, parseInt(html.find("#shop-item-price").val() as string, 10) || 1);
+            const currency = html.find("#shop-item-currency").val() as "cp" | "sp" | "gp" | "pp";
+            const category = html.find("#shop-item-category").val() as string;
+            const subcategory = (html.find("#shop-item-subcategory").val() as string).trim();
+            const icon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
+            const description = (html.find("#shop-item-desc").val() as string).trim();
+
+            const newItem: ItemDefinition = {
+              id: foundry.utils.randomID(),
+              name,
+              category,
+              subcategory,
+              cost: { amount: priceAmount, currency },
+              size: "normal",
+              weight: 10,
+              icon,
+              tags: [],
+              isCustom: true,
+              ...(description ? { description } : {}),
+            };
+            if (encMode === "weight") {
+              newItem.weight = Math.max(0, parseInt(html.find("#shop-item-weight").val() as string, 10) || 0);
+            } else {
+              newItem.size = html.find("#shop-item-size").val() as "tiny" | "normal" | "large";
+            }
+
+            const g = game as Game;
+            const all = ((g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {});
+            if (!all[shopName]) all[shopName] = [];
+            all[shopName].push(newItem);
+            await g.settings.set(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, all);
+            onComplete();
           },
         },
         cancel: { label: "Cancel" },

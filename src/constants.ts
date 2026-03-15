@@ -40,6 +40,7 @@ export const SETTINGS = {
   INN_STATE: "innState",
   LOCAL_HIDDEN: "localHidden", // Record<locationName, itemId[]> — per-location hidden items
   ENCUMBRANCE_MODE: "encumbranceMode", // "slots" | "weight"
+  LOCAL_CUSTOM_ITEMS: "localCustomItems", // Record<shopName, ItemDefinition[]>
 } as const;
 
 export const SOCKET_NAME = `module.${MODULE_ID}` as const;

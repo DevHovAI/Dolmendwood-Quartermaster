@@ -14,7 +14,7 @@ export interface ItemDefinition {
   tags: string[];
   isCustom: boolean;
   maxUses?: number;       // if set, item instances track remaining uses (e.g. arrows, oil)
-  grantsZone?: { name: string; maxSlots: number; weightCapacity: number };  // purchasing this item auto-adds a named storage zone
+  grantsZone?: { name: string; maxSlots: number; weightCapacity: number; speed?: number };  // purchasing this item auto-adds a named storage zone
   grantsStorageZone?: { name: string; weightCapacity: number; isBeltPouch?: boolean };  // weight mode: purchasing creates a storage zone that counts toward character weight
   coinCapacity?: number;  // max coins this item can hold (display counter, no structural change)
 }
@@ -40,6 +40,7 @@ export interface ExtraZone {
   isBeltPouch?: boolean; // storage zone that acts as the tiny/belt-pouch zone in weight mode
   selfWeight?: number;   // weight of the container item itself (e.g. backpack = 50 coins wt)
   itemId?: string;       // ID of the inventory item that created this zone (for cleanup on deletion)
+  speed?: number;        // base travel speed in ft (for animals/vehicles that affect convoy speed)
 }
 
 export interface ZoneCoins {
@@ -79,6 +80,16 @@ export interface Transaction {
   coinsDelta: { actorId: string; cp: number; sp: number; gp: number; pp: number }[];
 }
 
+export interface AnimalSpeedInfo {
+  zoneName: string;
+  baseSpeed: number;
+  usedWeight: number;
+  capacity: number;
+  isOverloaded: boolean;    // usedWeight > capacity && <= capacity * 2
+  isOverCapacity: boolean;  // usedWeight > capacity * 2
+  effectiveSpeed: number;   // baseSpeed, halved if overloaded, 0 if over capacity
+}
+
 // Derived encumbrance result — never stored, always calculated
 export interface EncumbranceResult {
   mode: "slots" | "weight";
@@ -98,6 +109,9 @@ export interface EncumbranceResult {
   equippedWeight: number;
   stowedWeight: number;
   tinyWeight: number;                  // weight in belt pouch (capacity: 50)
+  // Animal/convoy speed
+  animalSpeeds: AnimalSpeedInfo[];
+  convoySpeed: number | null;          // null = no animals with speed; otherwise min effective speed
 }
 
 // Socket message payload
@@ -134,6 +148,7 @@ export interface PurchasePayload {
   zone: InventoryItem["zone"];
   totalCost: { cp: number; sp: number; gp: number; pp: number };
   gmOverride?: boolean;
+  customDef?: Partial<ItemDefinition>;  // inline definition for custom shop items not in the catalog
 }
 
 export interface InnPurchasePayload {

@@ -132,7 +132,7 @@ export class SocketHandler {
     const actor = (game as Game).actors?.get(data.actorId);
     if (!actor) return;
 
-    const def = CatalogManager.getDefinition(data.definitionId);
+    const def = CatalogManager.getDefinition(data.definitionId) ?? (data.customDef as typeof def | undefined);
 
     await FlagManager.updateInventory(actor, (inv) => {
       const costCp =
@@ -145,6 +145,7 @@ export class SocketHandler {
       const canAfford = deductCoins(inv.coinsByZone, costCp);
       if (!canAfford && !data.gmOverride) return inv;
 
+      const isCustomShopItem = !CatalogManager.getDefinition(data.definitionId) && !!data.customDef;
       inv.items.push({
         id: foundry.utils.randomID(),
         definitionId: data.definitionId,
@@ -153,6 +154,7 @@ export class SocketHandler {
         zone: data.zone,
         isSecret: false,
         notes: "",
+        ...(isCustomShopItem ? { customDefinition: data.customDef } : {}),
       });
 
       if (def?.grantsZone) {
@@ -162,6 +164,7 @@ export class SocketHandler {
           name: def.grantsZone.name,
           maxSlots: def.grantsZone.maxSlots,
           weightCapacity: def.grantsZone.weightCapacity ?? 0,
+          ...(def.grantsZone.speed !== undefined ? { speed: def.grantsZone.speed } : {}),
         });
       }
 

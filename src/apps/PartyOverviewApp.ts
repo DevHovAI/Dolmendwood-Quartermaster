@@ -148,7 +148,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
         const inventory = FlagManager.getInventory(actor);
         const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap(), encMode);
 
-        // Filter items for the compact display column: hide animals and container items
+        // Filter items for display: hide animals and (weight mode) container items
         const visibleItems = inventory.items.filter((item) => {
           const def = CatalogManager.getDefinition(item.definitionId);
           if (def?.grantsZone && def?.category === "Animals & Vehicles") return false;
@@ -156,10 +156,32 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
           return true;
         });
 
+        // Build zone sections for the compact column
+        const extraZones = inventory.extraZones ?? [];
+        const standardZones = encMode === "weight"
+          ? [{ id: "equipped", name: "Equipped" }]
+          : [
+              { id: "equipped", name: "Equipped" },
+              { id: "stowed",   name: "Stowed" },
+              { id: "tiny",     name: "Belt Pouch" },
+            ];
+        const allZoneDefs = [
+          ...standardZones,
+          ...extraZones.map((ez) => ({ id: ez.id, name: ez.name })),
+        ];
+        const zoneSections = allZoneDefs
+          .map((z) => ({
+            id: z.id,
+            name: z.name,
+            items: visibleItems.filter((i) => i.zone === z.id),
+          }))
+          .filter((s) => s.items.length > 0);
+
         return {
           actor,
           actorId: actor.id,
           inventory: { ...inventory, items: visibleItems },
+          zoneSections,
           encumbrance,
           isOwner: actor.isOwner,
         };

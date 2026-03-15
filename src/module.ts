@@ -48,6 +48,13 @@ Hooks.once("init", () => {
     default: {},
   });
 
+  game.settings.register(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
+  });
+
   game.settings.register(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE, {
     name: "Encumbrance System",
     hint: "Slot Encumbrance tracks gear slots (equipped ≤10, stowed ≤16). Weight Encumbrance tracks total item weight in coins (max 1,600).",

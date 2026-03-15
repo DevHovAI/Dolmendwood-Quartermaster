@@ -450,19 +450,21 @@
 
 .item-notes-input {
   font-size: 0.75em;
-  padding: 2px 3px;
+  padding: 2px 4px;
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
-  width: 64px;
+  width: 120px;
+  min-width: 80px;
+  max-width: 160px;
   background: #fffef8;
   color: var(--dw-text);
   font-family: inherit;
   flex-shrink: 0;
-  transition: width 0.2s ease;
+  resize: vertical;
+  line-height: 1.3;
 }
 
 .item-notes-input:focus {
-  width: 160px;
   outline: 1px solid var(--dw-accent);
 }
 
@@ -752,12 +754,21 @@
   flex: 1;
 }
 
-.item-compact.zone-equipped { color: var(--dw-primary); }
-.item-compact.zone-stowed   { color: var(--dw-secondary); }
-.item-compact.zone-tiny     { color: #4a7a4a; }
 .item-compact.secret-item   { color: var(--dw-tertiary); font-style: italic; }
 
 .item-compact-qty { font-size: 0.85em; color: var(--dw-secondary); margin-left: 4px; }
+
+.zone-section-compact { margin-bottom: 4px; }
+.zone-section-compact-header {
+  font-size: 0.7em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--dw-secondary);
+  border-bottom: 1px solid var(--dw-border);
+  margin-bottom: 2px;
+  padding-bottom: 1px;
+}
 
 .party-empty {
   text-align: center;
@@ -1200,6 +1211,133 @@
   margin-left: 4px;
   opacity: 0.75;
 }
+
+/* Shop subcategory header */
+.shop-subcategory-header {
+  padding: 3px 8px;
+  font-size: 0.78em;
+  font-weight: bold;
+  color: var(--dw-tertiary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-top: 1px solid rgba(160,100,30,0.15);
+  margin-top: 2px;
+  background: rgba(160,100,30,0.04);
+}
+
+/* Custom shop item marker */
+.shop-item-custom {
+  border-left: 2px solid var(--dw-accent);
+}
+.shop-custom-badge {
+  color: var(--dw-accent);
+  font-size: 0.75em;
+  margin-left: 4px;
+  opacity: 0.85;
+}
+
+/* "Add to Shop" button */
+.btn-add-to-shop {
+  padding: 4px 10px;
+  font-size: 0.82em;
+  background: var(--dw-accent);
+  color: var(--dw-primary);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.btn-add-to-shop:hover { filter: brightness(1.1); }
+
+/* "Remove from Shop" button */
+.btn-remove-from-shop { color: #c0392b; }
+.btn-remove-from-shop:hover { color: #e74c3c; }
+
+/* ─── Convoy / Animal Speed ─────────────────────────────────────────────────── */
+.convoy-speed-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--dw-bg-dark);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 5px;
+  margin-bottom: 6px;
+  font-size: 0.82em;
+}
+.convoy-label {
+  font-weight: bold;
+  color: var(--dw-secondary);
+  white-space: nowrap;
+}
+.convoy-speed-bar .animal-speed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.88em;
+  font-weight: bold;
+  color: #fff;
+  background: rgba(100,80,40,0.4);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.convoy-speed-bar .animal-speed-badge.speed-green { background: rgba(40,140,40,0.55); }
+.convoy-speed-bar .animal-speed-badge.speed-yellow { background: rgba(180,150,0,0.55); }
+.convoy-speed-bar .animal-speed-badge.speed-orange { background: rgba(200,100,0,0.55); }
+.convoy-speed-bar .animal-speed-badge.speed-red { background: rgba(180,30,30,0.55); }
+.convoy-final {
+  font-weight: bold;
+  font-size: 1em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+}
+.convoy-final.speed-green { background: rgba(40,140,40,0.7); }
+.convoy-final.speed-yellow { background: rgba(180,150,0,0.7); }
+.convoy-final.speed-orange { background: rgba(200,100,0,0.7); }
+.convoy-final.speed-red { background: rgba(180,30,30,0.7); }
+
+/* Animal info row in vehicle zone header */
+.animal-info-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 3px 10px 4px;
+  background: rgba(160,100,30,0.06);
+  border-bottom: 1px solid var(--dw-border-light);
+  font-size: 0.82em;
+}
+.animal-type-badge {
+  font-style: italic;
+  color: var(--dw-tertiary);
+  font-weight: bold;
+}
+.animal-info-row .animal-speed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: bold;
+  color: #fff;
+}
+.animal-info-row .animal-speed-badge.speed-green { background: rgba(40,140,40,0.7); }
+.animal-info-row .animal-speed-badge.speed-yellow { background: rgba(180,150,0,0.75); color: #2a2000; }
+.animal-info-row .animal-speed-badge.speed-orange { background: rgba(200,100,0,0.75); }
+.animal-info-row .animal-speed-badge.speed-red { background: rgba(180,30,30,0.75); }
+.animal-description {
+  color: var(--dw-tertiary);
+  font-style: italic;
+  font-size: 0.95em;
+  flex: 1;
+}
+
 
 .price-factor-badge {
   display: inline-block;

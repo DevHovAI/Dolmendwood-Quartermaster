@@ -117,9 +117,11 @@ export function registerHandlebarsHelpers(): void {
 
   // Greater-than check
   Handlebars.registerHelper("gt", (a: number, b: number) => a > b);
+  Handlebars.registerHelper("gte", (a: number, b: number) => a >= b);
 
   // Less-than check
   Handlebars.registerHelper("lt", (a: number, b: number) => a < b);
+  Handlebars.registerHelper("lte", (a: number, b: number) => a <= b);
 
   // Format currency as "X gp" / "X sp" etc.
   Handlebars.registerHelper(

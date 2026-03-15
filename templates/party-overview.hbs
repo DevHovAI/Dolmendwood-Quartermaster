@@ -80,19 +80,24 @@
         {{> coin-display inventory=this.inventory encumbrance=this.encumbrance canEdit=false}}
       </div>
 
-      {{!-- Item list (compact) --}}
+      {{!-- Item list grouped by zone --}}
       <div class="player-items-compact">
-        {{#each this.inventory.items}}
-        {{#if this.isSecret}}
-        <div class="item-compact secret-item">
-          <i class="fas fa-lock"></i> <em>Hidden</em>
+        {{#each this.zoneSections}}
+        <div class="zone-section-compact">
+          <div class="zone-section-compact-header">{{this.name}}</div>
+          {{#each this.items}}
+          {{#if this.isSecret}}
+          <div class="item-compact secret-item">
+            <i class="fas fa-lock"></i> <em>Hidden</em>
+          </div>
+          {{else}}
+          <div class="item-compact">
+            <span class="item-compact-name">{{this.name}}</span>
+            <span class="item-compact-qty">×{{this.quantity}}</span>
+          </div>
+          {{/if}}
+          {{/each}}
         </div>
-        {{else}}
-        <div class="item-compact zone-{{this.zone}}">
-          <span class="item-compact-name">{{this.name}}</span>
-          <span class="item-compact-qty">×{{this.quantity}}</span>
-        </div>
-        {{/if}}
         {{/each}}
       </div>
     </div>

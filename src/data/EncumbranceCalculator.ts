@@ -1,5 +1,5 @@
 import { EQUIPPED_SPEED_TIERS, STOWED_SPEED_TIERS, WEIGHT_SPEED_TIERS } from "../constants";
-import type { CharacterInventory, EncumbranceResult, ItemDefinition } from "../types";
+import type { CharacterInventory, EncumbranceResult, ItemDefinition, AnimalSpeedInfo } from "../types";
 
 function getSpeedForSlots(
   slots: number,
@@ -129,6 +129,8 @@ function calculateSlotEncumbrance(
     equippedWeight: 0,
     stowedWeight: 0,
     tinyWeight: 0,
+    animalSpeeds: [],
+    convoySpeed: null,
   };
 }
 
@@ -192,7 +194,43 @@ function calculateWeightEncumbrance(
   }
 
   const totalWeight = equippedWeight + stowedWeight + tinyWeight;
-  const finalSpeed = getSpeedForWeight(totalWeight);
+  let finalSpeed = getSpeedForWeight(totalWeight);
+
+  // ── Animal / convoy speed ───────────────────────────────────────────────────
+  const animalSpeeds: AnimalSpeedInfo[] = [];
+  for (const ez of inventory.extraZones ?? []) {
+    if (ez.type && ez.type !== "vehicle") continue; // storage zones are not animals
+    if (!ez.speed) continue;
+
+    const zoneItems = inventory.items.filter((i) => i.zone === ez.id);
+    const coinWeight =
+      (inventory.coinsByZone?.[ez.id]?.cp ?? 0) +
+      (inventory.coinsByZone?.[ez.id]?.sp ?? 0) +
+      (inventory.coinsByZone?.[ez.id]?.gp ?? 0) +
+      (inventory.coinsByZone?.[ez.id]?.pp ?? 0);
+    const usedWeight = zoneItems.reduce((acc, i) => {
+      const def = catalogMap.get(i.definitionId);
+      return acc + (i.customDefinition?.weight ?? def?.weight ?? 0) * i.quantity;
+    }, 0) + coinWeight;
+
+    const capacity = ez.weightCapacity;
+    const isOverCapacity = capacity > 0 && usedWeight > capacity * 2;
+    const isOverloaded   = capacity > 0 && usedWeight > capacity && !isOverCapacity;
+    let effectiveSpeed = ez.speed;
+    if (isOverCapacity) effectiveSpeed = 0;
+    else if (isOverloaded) effectiveSpeed = Math.floor(ez.speed / 2);
+
+    animalSpeeds.push({ zoneName: ez.name, baseSpeed: ez.speed, usedWeight, capacity, isOverloaded, isOverCapacity, effectiveSpeed });
+  }
+
+  let convoySpeed: number | null = null;
+  if (animalSpeeds.length > 0) {
+    const notOverCapacity = animalSpeeds.filter((a) => !a.isOverCapacity);
+    if (notOverCapacity.length > 0) {
+      convoySpeed = Math.min(...notOverCapacity.map((a) => a.effectiveSpeed));
+      if (convoySpeed < finalSpeed) finalSpeed = Math.max(10, convoySpeed) as 40 | 30 | 20 | 10;
+    }
+  }
 
   return {
     mode: "weight",
@@ -210,6 +248,8 @@ function calculateWeightEncumbrance(
     freeTinySlots: 0,
     tinyOverflow: 0,
     coinSlots: 0,
+    animalSpeeds,
+    convoySpeed,
   };
 }
 

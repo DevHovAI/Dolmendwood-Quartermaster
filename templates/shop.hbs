@@ -63,59 +63,82 @@
       <i class="fas fa-magic"></i> Custom Item
     </button>
     {{/if}}
+    {{#if isGM}}{{#if isLocalShop}}
+    <button type="button" data-action="addToShop" class="btn-add-to-shop"
+            title="Add a custom item to this shop's inventory">
+      <i class="fas fa-plus"></i> Add to Shop
+    </button>
+    {{/if}}{{/if}}
   </div>
 
-  {{!-- Item Catalog grouped by category --}}
+  {{!-- Item Catalog grouped by category → subcategory --}}
   <div class="shop-catalog">
     {{#each grouped}}
-    <details class="shop-category" open>
+    <details class="shop-category">
       <summary class="shop-category-name">{{@key}}</summary>
-      <div class="shop-item-list">
+      <div class="shop-category-body">
         {{#each this}}
-        <div class="shop-item {{#if this.isHidden}}shop-item-hidden{{/if}}" data-item-id="{{this.id}}">
-          <div class="shop-item-info">
-            <span class="shop-item-name">
-              <i class="fas {{itemIcon this.category}} shop-item-icon" title="{{this.category}}"></i>
-              {{this.name}}
-              {{#if this.isHidden}}<span class="shop-hidden-badge" title="Hidden from players"><i class="fas fa-eye-slash"></i></span>{{/if}}
-            </span>
-            {{#if this.subcategory}}<span class="shop-item-subcategory">{{this.subcategory}}</span>{{/if}}
-            {{#if this.description}}<span class="shop-item-desc-inline">{{this.description}}</span>{{/if}}
-            {{#if this.qualities.length}}
-            <span class="shop-item-qualities">{{#each this.qualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>
-            {{/if}}
+        {{!-- subcategory group: this = { subcategory, items } --}}
+        {{#if this.subcategory}}
+        <div class="shop-subcategory-header">{{this.subcategory}}</div>
+        {{/if}}
+        <div class="shop-item-list">
+          {{#each this.items}}
+          {{!-- item: use @root for top-level context --}}
+          <div class="shop-item {{#if this.isHidden}}shop-item-hidden{{/if}} {{#if this.isLocalCustom}}shop-item-custom{{/if}}" data-item-id="{{this.id}}">
+            <div class="shop-item-info">
+              <span class="shop-item-name">
+                <i class="fas {{itemIcon this.category}} shop-item-icon" title="{{this.category}}"></i>
+                {{this.name}}
+                {{#if this.isHidden}}<span class="shop-hidden-badge" title="Hidden from players"><i class="fas fa-eye-slash"></i></span>{{/if}}
+                {{#if this.isLocalCustom}}<span class="shop-custom-badge" title="Custom shop item"><i class="fas fa-plus-circle"></i></span>{{/if}}
+              </span>
+              {{#if this.description}}<span class="shop-item-desc-inline">{{this.description}}</span>{{/if}}
+              {{#if this.qualities.length}}
+              <span class="shop-item-qualities">{{#each this.qualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>
+              {{/if}}
+            </div>
+            <div class="shop-item-meta">
+              {{#if (eq @root.encMode "weight")}}
+              <span class="shop-item-size item-weight-badge" title="Weight per unit">{{this.weight}} wt</span>
+              {{else}}
+              <span class="shop-item-size size-{{this.size}}" title="{{slotCost this.size}}">{{sizeLabel this.size}}</span>
+              {{/if}}
+              <span class="shop-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
+            </div>
+            <div class="shop-item-actions">
+              {{#unless this.isHidden}}
+              <button type="button" data-action="purchaseItem" data-item-id="{{this.id}}"
+                      class="btn-purchase" title="Purchase (deducts coins)">
+                <i class="fas fa-shopping-cart"></i> Buy
+              </button>
+              {{/unless}}
+              {{#if @root.isGM}}
+              {{#unless this.isLocalCustom}}
+              {{#unless this.isHidden}}
+              <button type="button" data-action="grantItem" data-item-id="{{this.id}}"
+                      class="btn-grant" title="Grant item (no cost)">
+                <i class="fas fa-gift"></i> Grant
+              </button>
+              {{/unless}}
+              <button type="button"
+                      data-action="{{#if @root.isLocalShop}}toggleLocalHideItem{{else}}toggleHideItem{{/if}}"
+                      data-item-id="{{this.id}}"
+                      class="icon-btn btn-hide-item {{#if this.isHidden}}is-hidden{{/if}}"
+                      title="{{#if this.isHidden}}Show for players{{else}}Hide from players{{/if}}">
+                <i class="fas {{#if this.isHidden}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
+              </button>
+              {{/unless}}
+              {{#if this.isLocalCustom}}
+              <button type="button" data-action="removeFromShop" data-item-id="{{this.id}}"
+                      class="icon-btn btn-remove-from-shop" title="Remove from shop">
+                <i class="fas fa-trash"></i>
+              </button>
+              {{/if}}
+              {{/if}}
+            </div>
           </div>
-          <div class="shop-item-meta">
-            {{#if (eq ../../encMode "weight")}}
-            <span class="shop-item-size item-weight-badge" title="Weight per unit">{{this.weight}} wt</span>
-            {{else}}
-            <span class="shop-item-size size-{{this.size}}" title="{{slotCost this.size}}">{{sizeLabel this.size}}</span>
-            {{/if}}
-            <span class="shop-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
-          </div>
-          <div class="shop-item-actions">
-            {{#unless this.isHidden}}
-            <button type="button" data-action="purchaseItem" data-item-id="{{this.id}}"
-                    class="btn-purchase" title="Purchase (deducts coins)">
-              <i class="fas fa-shopping-cart"></i> Buy
-            </button>
-            {{/unless}}
-            {{#if ../../isGM}}
-            {{#unless this.isHidden}}
-            <button type="button" data-action="grantItem" data-item-id="{{this.id}}"
-                    class="btn-grant" title="Grant item (no cost)">
-              <i class="fas fa-gift"></i> Grant
-            </button>
-            {{/unless}}
-            <button type="button"
-                    data-action="{{#if ../../isLocalShop}}toggleLocalHideItem{{else}}toggleHideItem{{/if}}"
-                    data-item-id="{{this.id}}"
-                    class="icon-btn btn-hide-item {{#if this.isHidden}}is-hidden{{/if}}"
-                    title="{{#if this.isHidden}}Show for players{{else}}Hide from players{{/if}}">
-              <i class="fas {{#if this.isHidden}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
-            </button>
-            {{/if}}
-          </div>
+          {{/each}}
         </div>
         {{/each}}
       </div>

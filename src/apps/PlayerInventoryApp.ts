@@ -111,6 +111,26 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         const zoneItems = visibleItems.filter((i) => i.zone === ez.id);
         const zoneCoins = coinsByZone[ez.id] ?? { cp: 0, sp: 0, gp: 0, pp: 0 };
         const coinWeight = zoneCoins.cp + zoneCoins.sp + zoneCoins.gp + zoneCoins.pp;
+        const usedWeight = zoneItems.reduce((acc, i) => {
+          const def = CatalogManager.getDefinition(i.definitionId);
+          return acc + (i.customDefinition?.weight ?? def?.weight ?? 0) * i.quantity;
+        }, 0) + coinWeight;
+
+        // Find the animal item definition that granted this zone
+        let animalDescription: string | undefined;
+        let animalSubcategory: string | undefined;
+        for (const item of inventory.items) {
+          const def = CatalogManager.getDefinition(item.definitionId);
+          if (def?.grantsZone?.name === ez.name) {
+            animalDescription = def.description;
+            animalSubcategory = def.subcategory;
+            break;
+          }
+        }
+
+        // Look up speed info from encumbrance result
+        const speedInfo = encumbrance.animalSpeeds.find((a) => a.zoneName === ez.name);
+
         return {
           ...ez,
           items: enriched(zoneItems),
@@ -119,10 +139,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
             const size = i.customDefinition?.size ?? def?.size ?? "normal";
             return acc + (size === "large" ? 2 : size === "normal" ? 1 : 0) * i.quantity;
           }, 0),
-          usedWeight: zoneItems.reduce((acc, i) => {
-            const def = CatalogManager.getDefinition(i.definitionId);
-            return acc + (i.customDefinition?.weight ?? def?.weight ?? 0) * i.quantity;
-          }, 0) + coinWeight,
+          usedWeight,
+          animalDescription,
+          animalSubcategory,
+          speedInfo,
         };
       });
 
@@ -236,10 +256,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     });
 
     // Notes editing
-    el.querySelectorAll<HTMLInputElement>(".item-notes-input").forEach((input) => {
+    el.querySelectorAll<HTMLTextAreaElement>(".item-notes-input").forEach((input) => {
       input.addEventListener("change", async (e) => {
-        const itemId = (e.target as HTMLInputElement).dataset.itemId!;
-        const notes = (e.target as HTMLInputElement).value;
+        const itemId = (e.target as HTMLTextAreaElement).dataset.itemId!;
+        const notes = (e.target as HTMLTextAreaElement).value;
         await FlagManager.updateInventory(this.actor, (inv) => {
           const item = inv.items.find((i) => i.id === itemId);
           if (item) item.notes = notes;
