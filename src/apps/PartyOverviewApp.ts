@@ -116,7 +116,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     },
     position: {
       width: 960,
-      height: 620,
+      height: 780,
     },
     classes: ["dolmenwood-party-inventory", "party-overview"],
     actions: {
@@ -169,6 +169,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
           ...standardZones,
           ...extraZones.map((ez) => ({ id: ez.id, name: ez.name })),
         ];
+        const knownZoneIds = new Set(allZoneDefs.map((z) => z.id));
         const zoneSections = allZoneDefs
           .map((z) => ({
             id: z.id,
@@ -176,6 +177,12 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
             items: visibleItems.filter((i) => i.zone === z.id),
           }))
           .filter((s) => s.items.length > 0);
+
+        // Items whose zone doesn't match any known zone (orphaned / unassigned)
+        const unassignedItems = visibleItems.filter((i) => !knownZoneIds.has(i.zone));
+        if (unassignedItems.length > 0) {
+          zoneSections.push({ id: "_unassigned", name: "Unassigned", items: unassignedItems });
+        }
 
         return {
           actor,

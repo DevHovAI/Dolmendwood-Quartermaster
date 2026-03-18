@@ -53,6 +53,47 @@ export const LOCATION_ICONS: { icon: string; label: string }[] = [
   { icon: "fa-star",           label: "Special" },
 ];
 
+export const ZONE_ICONS: { icon: string; label: string }[] = [
+  { icon: "fa-backpack",  label: "Backpack" },
+  { icon: "fa-sack",      label: "Sack / Pouch" },
+  { icon: "fa-box",       label: "Chest / Box" },
+  { icon: "fa-horse",     label: "Horse" },
+  { icon: "fa-caravan",   label: "Wagon / Cart" },
+  { icon: "fa-dog",       label: "Dog" },
+  { icon: "fa-ship",      label: "Boat / Ship" },
+];
+
+export const ZONE_COLORS: { key: string; label: string; bg: string; text: string }[] = [
+  { key: "green",   label: "Green (default)",  bg: "linear-gradient(135deg, #1a3d1a 0%, #2e6b2e 100%)", text: "#c8e6c8" },
+  { key: "brown",   label: "Brown",            bg: "linear-gradient(135deg, #3d1f0a 0%, #6b3515 100%)", text: "#e8c898" },
+  { key: "navy",    label: "Navy",             bg: "linear-gradient(135deg, #0a1f3d 0%, #153565 100%)", text: "#a8c8e8" },
+  { key: "purple",  label: "Purple",           bg: "linear-gradient(135deg, #2a0a3d 0%, #4a1565 100%)", text: "#d0a8e8" },
+  { key: "slate",   label: "Slate",            bg: "linear-gradient(135deg, #1f2a30 0%, #2e4050 100%)", text: "#a8c8d8" },
+  { key: "crimson", label: "Crimson",          bg: "linear-gradient(135deg, #3d0a0a 0%, #651515 100%)", text: "#e8a8a8" },
+  { key: "teal",    label: "Teal",             bg: "linear-gradient(135deg, #0a3d30 0%, #156550 100%)", text: "#a8e0d0" },
+];
+
+export function buildColorPickerHTML(selectedColor = "green"): string {
+  const buttons = ZONE_COLORS.map((c) =>
+    `<button type="button" class="color-picker-btn${c.key === selectedColor ? " selected" : ""}" ` +
+    `data-color="${c.key}" title="${c.label}" style="background:${c.bg};"></button>`
+  ).join("");
+  return (
+    `<div class="color-picker">${buttons}</div>` +
+    `<input type="hidden" id="zone-color-value" value="${selectedColor}" />`
+  );
+}
+
+export function activateColorPicker(html: JQuery): void {
+  html.find(".color-picker-btn").on("click", function (e) {
+    e.preventDefault();
+    const btn = e.currentTarget as HTMLElement;
+    html.find(".color-picker-btn").removeClass("selected");
+    btn.classList.add("selected");
+    html.find("#zone-color-value").val(btn.dataset.color ?? "green");
+  });
+}
+
 export function buildIconPickerHTML(selectedIcon = "fa-sack", icons = ITEM_ICONS): string {
   const buttons = icons.map(
     (i) =>
@@ -114,6 +155,9 @@ export function registerHandlebarsHelpers(): void {
 
   // Not-equal check
   Handlebars.registerHelper("neq", (a: unknown, b: unknown) => a !== b);
+
+  // Array includes check (e.g. for tag filter active state)
+  Handlebars.registerHelper("includes", (arr: unknown, val: unknown) => Array.isArray(arr) && arr.includes(val));
 
   // Greater-than check
   Handlebars.registerHelper("gt", (a: number, b: number) => a > b);

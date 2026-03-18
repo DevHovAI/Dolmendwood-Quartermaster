@@ -120,9 +120,10 @@
   {{!-- Storage Zones (weight mode: backpack, sack, etc.) --}}
   {{#if (eq encMode "weight")}}
   {{#each storageZones}}
-  <section class="inv-zone-section inv-zone-extra">
+  <section class="inv-zone-section inv-zone-extra" data-zone-drag-id="{{this.id}}" data-zone-color="{{this.color}}">
     <div class="zone-header zone-header-extra">
-      <h3><i class="fas fa-box"></i> {{this.name}} {{#if this.selfWeight}}<span class="zone-self-weight" title="Container weight">({{this.selfWeight}} wt)</span>{{/if}}</h3>
+      {{#if ../isOwner}}<i class="fas fa-grip-vertical zone-drag-handle" draggable="true" title="Drag to reorder"></i>{{/if}}
+      <h3><i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-backpack{{/if}}"></i> {{this.name}} {{#if this.selfWeight}}<span class="zone-self-weight" title="Container weight">({{this.selfWeight}} wt)</span>{{/if}}</h3>
       <span class="zone-count">{{this.usedWeight}} / {{this.weightCapacity}} wt</span>
     </div>
     {{> extra-zone zone=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
@@ -133,9 +134,10 @@
 
   {{!-- Vehicle/Animal Zones --}}
   {{#each vehicleZones}}
-  <section class="inv-zone-section inv-zone-extra">
+  <section class="inv-zone-section inv-zone-extra" data-zone-drag-id="{{this.id}}" data-zone-color="{{this.color}}">
     <div class="zone-header zone-header-extra">
-      <h3><i class="fas fa-horse"></i> {{this.name}}</h3>
+      {{#if ../isOwner}}<i class="fas fa-grip-vertical zone-drag-handle" draggable="true" title="Drag to reorder"></i>{{/if}}
+      <h3><i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-horse{{/if}}"></i> {{this.name}}</h3>
       {{#if (eq ../encMode "weight")}}
       <span class="zone-count">{{this.usedWeight}} / {{this.weightCapacity}} wt</span>
       {{else}}

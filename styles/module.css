@@ -606,13 +606,13 @@
   gap: 8px;
   flex: 1;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
 }
 
 .player-column {
   border: 1px solid var(--dw-border);
   border-radius: 7px;
-  overflow: hidden;
+  overflow-y: auto;
   cursor: pointer;
   transition: box-shadow 0.15s, transform 0.1s;
   min-width: 160px;
@@ -733,8 +733,6 @@
 
 .player-items-compact {
   padding: 4px 8px;
-  max-height: 180px;
-  overflow-y: auto;
   background: var(--dw-bg-parchment);
 }
 
@@ -1458,6 +1456,7 @@
   color: #c8e6c8;
   border-bottom: none;
   margin: 0;
+  flex: 1;
 }
 
 .inv-zone-extra .zone-header .zone-count,
@@ -1470,6 +1469,97 @@
   opacity: 0.7;
   font-weight: normal;
   margin-left: 4px;
+}
+
+/* ─── Zone color variants (set via data-zone-color on .inv-zone-extra) ─────── */
+.inv-zone-extra[data-zone-color="brown"] .zone-header-extra {
+  background: linear-gradient(135deg, #3d1f0a 0%, #6b3515 100%); color: #e8c898;
+}
+.inv-zone-extra[data-zone-color="brown"] .zone-header-extra h3,
+.inv-zone-extra[data-zone-color="brown"] .zone-header-extra .zone-count { color: #e8c898; }
+
+.inv-zone-extra[data-zone-color="navy"] .zone-header-extra {
+  background: linear-gradient(135deg, #0a1f3d 0%, #153565 100%); color: #a8c8e8;
+}
+.inv-zone-extra[data-zone-color="navy"] .zone-header-extra h3,
+.inv-zone-extra[data-zone-color="navy"] .zone-header-extra .zone-count { color: #a8c8e8; }
+
+.inv-zone-extra[data-zone-color="purple"] .zone-header-extra {
+  background: linear-gradient(135deg, #2a0a3d 0%, #4a1565 100%); color: #d0a8e8;
+}
+.inv-zone-extra[data-zone-color="purple"] .zone-header-extra h3,
+.inv-zone-extra[data-zone-color="purple"] .zone-header-extra .zone-count { color: #d0a8e8; }
+
+.inv-zone-extra[data-zone-color="slate"] .zone-header-extra {
+  background: linear-gradient(135deg, #1f2a30 0%, #2e4050 100%); color: #a8c8d8;
+}
+.inv-zone-extra[data-zone-color="slate"] .zone-header-extra h3,
+.inv-zone-extra[data-zone-color="slate"] .zone-header-extra .zone-count { color: #a8c8d8; }
+
+.inv-zone-extra[data-zone-color="crimson"] .zone-header-extra {
+  background: linear-gradient(135deg, #3d0a0a 0%, #651515 100%); color: #e8a8a8;
+}
+.inv-zone-extra[data-zone-color="crimson"] .zone-header-extra h3,
+.inv-zone-extra[data-zone-color="crimson"] .zone-header-extra .zone-count { color: #e8a8a8; }
+
+.inv-zone-extra[data-zone-color="teal"] .zone-header-extra {
+  background: linear-gradient(135deg, #0a3d30 0%, #156550 100%); color: #a8e0d0;
+}
+.inv-zone-extra[data-zone-color="teal"] .zone-header-extra h3,
+.inv-zone-extra[data-zone-color="teal"] .zone-header-extra .zone-count { color: #a8e0d0; }
+
+/* ─── Zone drag handle ───────────────────────────────────────────────────────── */
+.zone-drag-handle {
+  cursor: grab;
+  opacity: 0.5;
+  font-size: 0.85em;
+  padding: 0 4px;
+  flex-shrink: 0;
+  user-select: none;
+}
+.zone-drag-handle:hover { opacity: 1; }
+.zone-dragging { opacity: 0.45; }
+.zone-drop-target {
+  box-shadow: 0 0 0 2px var(--dw-accent), 0 2px 8px var(--dw-shadow);
+}
+.zone-drop-target > .zone-header-extra {
+  opacity: 0.75;
+}
+
+/* ─── Item drag-and-drop ────────────────────────────────────────────────────── */
+.item-row[draggable="true"] { cursor: grab; }
+.item-row.item-dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+.item-drop-zone.item-drag-over {
+  outline: 2px dashed var(--dw-accent);
+  outline-offset: -2px;
+  background: rgba(200, 160, 80, 0.08);
+  border-radius: 2px;
+}
+
+/* ─── Color picker (Rename Zone dialog) ─────────────────────────────────────── */
+.color-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.color-picker-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  padding: 0;
+}
+.color-picker-btn:hover { transform: scale(1.15); }
+.color-picker-btn.selected {
+  border-color: var(--dw-accent-light);
+  box-shadow: 0 0 0 1px var(--dw-border);
+  transform: scale(1.15);
 }
 
 /* ─── Zone Coin Purse ─────────────────────────────────────────────────────── */

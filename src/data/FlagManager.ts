@@ -89,12 +89,15 @@ function syncCoins(inv: CharacterInventory): void {
   ]);
 
   // Prune coins from zones that no longer exist → move to equipped
+  // NOTE: We zero out the values rather than deleting the key because Foundry uses recursive
+  // mergeObject when persisting flag updates, so deleted keys in the local object are not
+  // removed from stored data. Zeroing ensures the zone can't contribute coins on the next read.
   const equip = (inv.coinsByZone["equipped"] ??= { cp: 0, sp: 0, gp: 0, pp: 0 });
   for (const zoneId of Object.keys(inv.coinsByZone)) {
     if (!validIds.has(zoneId)) {
       const z = inv.coinsByZone[zoneId];
       equip.cp += z.cp; equip.sp += z.sp; equip.gp += z.gp; equip.pp += z.pp;
-      delete inv.coinsByZone[zoneId];
+      z.cp = 0; z.sp = 0; z.gp = 0; z.pp = 0;
     }
   }
 

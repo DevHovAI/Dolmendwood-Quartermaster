@@ -1,4 +1,4 @@
-<div class="item-row {{#if item.isSecret}}is-secret{{/if}}" data-item-id="{{item.id}}">
+<div class="item-row {{#if item.isSecret}}is-secret{{/if}}" data-item-id="{{item.id}}"{{#if isOwner}} draggable="true"{{/if}}>
   <span class="item-name">
     {{#if item.isSecret}}
     <i class="fas fa-lock secret-icon" title="Secret item"></i>

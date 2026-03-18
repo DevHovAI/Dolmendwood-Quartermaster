@@ -39,7 +39,7 @@
   <div class="shop-tag-filters">
     <span class="tag-filter-label">Tags:</span>
     {{#each allTags}}
-    <button type="button" class="tag-chip {{#if (eq (lookup ../shopState.activeTags @index) this)}}active{{/if}}"
+    <button type="button" class="tag-chip {{#if (includes ../shopState.activeTags this)}}active{{/if}}"
             data-action="toggleTag" data-tag="{{this}}">
       {{this}}
     </button>

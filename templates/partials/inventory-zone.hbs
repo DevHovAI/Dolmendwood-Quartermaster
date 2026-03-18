@@ -1,4 +1,4 @@
-<div class="inventory-zone zone-{{zone}}">
+<div class="inventory-zone zone-{{zone}} item-drop-zone" data-zone-id="{{zone}}">
   {{#each items}}
   {{> item-row item=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
   {{/each}}

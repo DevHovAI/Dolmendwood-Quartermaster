@@ -41,6 +41,8 @@ export interface ExtraZone {
   selfWeight?: number;   // weight of the container item itself (e.g. backpack = 50 coins wt)
   itemId?: string;       // ID of the inventory item that created this zone (for cleanup on deletion)
   speed?: number;        // base travel speed in ft (for animals/vehicles that affect convoy speed)
+  icon?: string;         // FA icon class, e.g. "fa-backpack"; falls back to type default
+  color?: string;        // zone header color key: "green" | "brown" | "navy" | "purple" | "slate" | "crimson" | "teal"
 }
 
 export interface ZoneCoins {

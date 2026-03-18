@@ -5,7 +5,7 @@ import { FlagManager, totalZoneCoins, addCoinsToZone } from "../data/FlagManager
 import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
-import { buildIconPickerHTML, activateIconPicker } from "../helpers/handlebars";
+import { buildIconPickerHTML, activateIconPicker, buildColorPickerHTML, activateColorPicker, ZONE_ICONS } from "../helpers/handlebars";
 import type { InventoryItem, ExtraZone, ZoneCoins } from "../types";
 
 export class PlayerInventoryApp extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -286,6 +286,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         this.render({ force: true } as Parameters<typeof this.render>[0]);
       });
     });
+
+    // Drag-and-drop: items between zones, zones reorder
+    this._setupItemDragDrop(el);
+    this._setupZoneDragDrop(el);
   }
 
   // ─── Action Handlers ──────────────────────────────────────────────────────
@@ -478,7 +482,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const inventory = FlagManager.getInventory(this.actor);
     const zone = (inventory.extraZones ?? []).find((ez) => ez.id === zoneId);
     if (!zone) return;
-    new RenameZoneDialog(this.actor, zoneId, zone.name, () => this.render()).render(true);
+    new RenameZoneDialog(this.actor, zoneId, zone.name, zone.icon, zone.color, () => this.render()).render(true);
   }
 
   private static _onMoveZoneCoins(
@@ -489,6 +493,160 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const fromZoneId = target.dataset.zoneId!;
     const inventory = FlagManager.getInventory(this.actor);
     new MoveCoinsBetweenZonesDialog(this.actor, fromZoneId, inventory, () => this.render()).render(true);
+  }
+
+  // ─── Drag-and-drop helpers ──────────────────────────────────────────────────
+
+  private async _moveItemToZone(itemId: string, newZone: string): Promise<void> {
+    const inventory = FlagManager.getInventory(this.actor);
+    const item = inventory.items.find((i) => i.id === itemId);
+    if (!item || item.zone === newZone) return;
+
+    const targetZone = (inventory.extraZones ?? []).find((ez) => ez.id === newZone);
+
+    // Enforce storage zone weight capacity
+    if (targetZone?.type === "storage" && targetZone.weightCapacity > 0) {
+      const def = CatalogManager.getDefinition(item.definitionId);
+      const itemWeight = (item.customDefinition?.weight ?? def?.weight ?? 0) * item.quantity;
+      const currentZoneWeight = inventory.items
+        .filter((i) => i.zone === newZone && i.id !== itemId)
+        .reduce((acc, i) => {
+          const d = CatalogManager.getDefinition(i.definitionId);
+          return acc + (i.customDefinition?.weight ?? d?.weight ?? 0) * i.quantity;
+        }, 0);
+      if (currentZoneWeight + itemWeight > targetZone.weightCapacity) {
+        ui.notifications?.warn(
+          `"${targetZone.name}" can hold ${targetZone.weightCapacity} wt. ` +
+          `Currently ${currentZoneWeight} wt; item is ${itemWeight} wt.`
+        );
+        return;
+      }
+    }
+
+    // Enforce belt pouch weight limit (≤ 10 wt per item)
+    if (targetZone?.isBeltPouch) {
+      const def = CatalogManager.getDefinition(item.definitionId);
+      const itemWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+      if (itemWeight > 10) {
+        ui.notifications?.warn(`Only items weighing 10 wt or less fit in a belt pouch (item weighs ${itemWeight} wt).`);
+        return;
+      }
+    }
+
+    await FlagManager.updateInventory(this.actor, (inv) => {
+      const i = inv.items.find((i) => i.id === itemId);
+      if (i) i.zone = newZone;
+      return inv;
+    });
+    this.render();
+  }
+
+  private _setupItemDragDrop(el: HTMLElement): void {
+    el.querySelectorAll<HTMLElement>(".item-row[draggable='true']").forEach((row) => {
+      row.addEventListener("dragstart", (e) => {
+        e.stopPropagation();
+        e.dataTransfer!.setData("text/plain", row.dataset.itemId!);
+        e.dataTransfer!.effectAllowed = "move";
+        row.classList.add("item-dragging");
+      });
+      row.addEventListener("dragend", () => {
+        row.classList.remove("item-dragging");
+        el.querySelectorAll(".item-drop-zone").forEach((z) => z.classList.remove("item-drag-over"));
+      });
+    });
+
+    el.querySelectorAll<HTMLElement>(".item-drop-zone").forEach((zone) => {
+      zone.addEventListener("dragover", (e) => {
+        if (e.dataTransfer?.types.includes("text/plain")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }
+      });
+      zone.addEventListener("dragenter", (e) => {
+        if (e.dataTransfer?.types.includes("text/plain")) {
+          e.preventDefault();
+          zone.classList.add("item-drag-over");
+        }
+      });
+      zone.addEventListener("dragleave", (e) => {
+        if (!zone.contains(e.relatedTarget as Node))
+          zone.classList.remove("item-drag-over");
+      });
+      zone.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        zone.classList.remove("item-drag-over");
+        if (!e.dataTransfer?.types.includes("text/plain")) return;
+        const itemId = e.dataTransfer.getData("text/plain");
+        const newZone = zone.dataset.zoneId!;
+        if (itemId && newZone) await this._moveItemToZone(itemId, newZone);
+      });
+    });
+  }
+
+  private _setupZoneDragDrop(el: HTMLElement): void {
+    el.querySelectorAll<HTMLElement>(".zone-drag-handle").forEach((handle) => {
+      handle.addEventListener("dragstart", (e) => {
+        e.stopPropagation();
+        const section = handle.closest<HTMLElement>(".inv-zone-section");
+        if (!section) return;
+        e.dataTransfer!.setData("application/qm-zone", section.dataset.zoneDragId!);
+        e.dataTransfer!.effectAllowed = "move";
+        section.classList.add("zone-dragging");
+      });
+      handle.addEventListener("dragend", () => {
+        el.querySelectorAll(".inv-zone-section").forEach((s) =>
+          s.classList.remove("zone-dragging", "zone-drop-target")
+        );
+      });
+    });
+
+    el.querySelectorAll<HTMLElement>(".inv-zone-section.inv-zone-extra").forEach((section) => {
+      section.addEventListener("dragover", (e) => {
+        if (e.dataTransfer?.types.includes("application/qm-zone")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }
+      });
+      section.addEventListener("dragenter", (e) => {
+        if (e.dataTransfer?.types.includes("application/qm-zone")) {
+          e.preventDefault();
+          section.classList.add("zone-drop-target");
+        }
+      });
+      section.addEventListener("dragleave", (e) => {
+        if (!section.contains(e.relatedTarget as Node))
+          section.classList.remove("zone-drop-target");
+      });
+      section.addEventListener("drop", async (e) => {
+        if (!e.dataTransfer?.types.includes("application/qm-zone")) return;
+        e.preventDefault();
+        section.classList.remove("zone-drop-target");
+        const draggedId = e.dataTransfer.getData("application/qm-zone");
+        const targetId = section.dataset.zoneDragId;
+        if (!targetId || draggedId === targetId) return;
+        await this._reorderZone(draggedId, targetId);
+      });
+    });
+  }
+
+  private async _reorderZone(draggedId: string, targetId: string): Promise<void> {
+    const inventory = FlagManager.getInventory(this.actor);
+    const zones = inventory.extraZones ?? [];
+    const dragged = zones.find((z) => z.id === draggedId);
+    const target = zones.find((z) => z.id === targetId);
+    // Only allow reordering within the same zone type
+    if ((dragged?.type ?? "vehicle") !== (target?.type ?? "vehicle")) return;
+    await FlagManager.updateInventory(this.actor, (inv) => {
+      const zs = inv.extraZones ?? [];
+      const fromIdx = zs.findIndex((z) => z.id === draggedId);
+      const toIdx = zs.findIndex((z) => z.id === targetId);
+      if (fromIdx === -1 || toIdx === -1) return inv;
+      const [moved] = zs.splice(fromIdx, 1);
+      zs.splice(toIdx, 0, moved);
+      inv.extraZones = zs;
+      return inv;
+    });
+    this.render();
   }
 }
 
@@ -938,7 +1096,14 @@ class AddExtraZoneDialog extends Dialog {
 // ─── Rename Zone Dialog (owner) ──────────────────────────────────────────────
 
 class RenameZoneDialog extends Dialog {
-  constructor(actor: Actor, zoneId: string, currentName: string, onComplete: () => void) {
+  constructor(
+    actor: Actor,
+    zoneId: string,
+    currentName: string,
+    currentIcon: string | undefined,
+    currentColor: string | undefined,
+    onComplete: () => void
+  ) {
     super({
       title: "Rename Storage Zone",
       content: `
@@ -946,6 +1111,14 @@ class RenameZoneDialog extends Dialog {
           <div class="form-group">
             <label>Zone Name</label>
             <input type="text" id="rename-zone-name" value="${currentName}" />
+          </div>
+          <div class="form-group">
+            <label>Icon</label>
+            ${buildIconPickerHTML(currentIcon ?? "fa-backpack", ZONE_ICONS)}
+          </div>
+          <div class="form-group">
+            <label>Color</label>
+            ${buildColorPickerHTML(currentColor ?? "green")}
           </div>
         </form>
       `,
@@ -955,9 +1128,11 @@ class RenameZoneDialog extends Dialog {
           callback: async (html: JQuery) => {
             const name = (html.find("#rename-zone-name").val() as string).trim();
             if (!name) return;
+            const icon = (html.find("#custom-icon-value").val() as string) || "fa-backpack";
+            const color = (html.find("#zone-color-value").val() as string) || "green";
             await FlagManager.updateInventory(actor, (inv) => {
               const zone = (inv.extraZones ?? []).find((ez) => ez.id === zoneId);
-              if (zone) zone.name = name;
+              if (zone) { zone.name = name; zone.icon = icon; zone.color = color; }
               return inv;
             });
             onComplete();
@@ -967,6 +1142,12 @@ class RenameZoneDialog extends Dialog {
       },
       default: "rename",
     });
+  }
+
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    activateIconPicker(html);
+    activateColorPicker(html);
   }
 }
 
