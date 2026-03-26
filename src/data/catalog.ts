@@ -11,21 +11,6 @@ function id(name: string): string {
 export const CATALOG: ItemDefinition[] = [
   // ─── ARMOUR ───────────────────────────────────────────────────────────────
   {
-    id: "unarmoured",
-    name: "Unarmoured",
-    category: "Armour",
-    subcategory: "Armour",
-    size: "normal",
-    cannotBeStowed: false,
-    unit: "piece",
-    cost: { amount: 0, currency: "gp" },
-    weight: 0,
-    description: "Standard clothing. AC 10.",
-    qualities: ["AC 10"],
-    tags: [],
-    isCustom: false,
-  },
-  {
     id: "leather-armour",
     name: "Leather Armour",
     category: "Armour",
