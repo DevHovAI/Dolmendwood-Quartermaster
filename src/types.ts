@@ -15,7 +15,7 @@ export interface ItemDefinition {
   isCustom: boolean;
   maxUses?: number;       // if set, item instances track remaining uses (e.g. arrows, oil)
   grantsZone?: { name: string; maxSlots: number; weightCapacity: number; speed?: number };  // purchasing this item auto-adds a named storage zone
-  grantsStorageZone?: { name: string; weightCapacity: number; isBeltPouch?: boolean };  // weight mode: purchasing creates a storage zone that counts toward character weight
+  grantsStorageZone?: {name: string; weightCapacity: number; isBeltPouch?: boolean; allowedItemTags?: string[]; };  // weight mode: purchasing creates a storage zone that counts toward character weight
   coinCapacity?: number;  // max coins this item can hold (display counter, no structural change)
 }
 
@@ -38,6 +38,7 @@ export interface ExtraZone {
   weightCapacity: number; // weight mode capacity (in coins)
   type?: "vehicle" | "storage";  // undefined = "vehicle" for backward compat
   isBeltPouch?: boolean; // storage zone that acts as the tiny/belt-pouch zone in weight mode
+  allowedItemTags?: string[];
   selfWeight?: number;   // weight of the container item itself (e.g. backpack = 50 coins wt)
   itemId?: string;       // ID of the inventory item that created this zone (for cleanup on deletion)
   speed?: number;        // base travel speed in ft (for animals/vehicles that affect convoy speed)
