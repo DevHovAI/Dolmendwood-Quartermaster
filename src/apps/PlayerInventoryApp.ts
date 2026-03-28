@@ -112,9 +112,12 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         const zoneCoins = coinsByZone[ez.id] ?? { cp: 0, sp: 0, gp: 0, pp: 0 };
         const coinWeight = zoneCoins.cp + zoneCoins.sp + zoneCoins.gp + zoneCoins.pp;
         const usedWeight = zoneItems.reduce((acc, i) => {
-          const def = CatalogManager.getDefinition(i.definitionId);
-          return acc + (i.customDefinition?.weight ?? def?.weight ?? 0) * i.quantity;
-        }, 0) + coinWeight;
+        const def = CatalogManager.getDefinition(i.definitionId);
+        const baseWeight = i.customDefinition?.weight ?? def?.weight ?? 0;
+        const usesRatio =
+          (def?.maxUses && i.uses !== undefined) ? i.uses / def.maxUses : 1;
+        return acc + baseWeight * usesRatio * i.quantity;
+      }, 0) + coinWeight;
 
         // Find the animal item definition that granted this zone
         let animalDescription: string | undefined;
@@ -156,9 +159,12 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
           ...ez,
           items: enriched(zoneItems),
           usedWeight: zoneItems.reduce((acc, i) => {
-            const def = CatalogManager.getDefinition(i.definitionId);
-            return acc + (i.customDefinition?.weight ?? def?.weight ?? 0) * i.quantity;
-          }, 0) + coinWeight,
+        const def = CatalogManager.getDefinition(i.definitionId);
+        const baseWeight = i.customDefinition?.weight ?? def?.weight ?? 0;
+        const usesRatio =
+          (def?.maxUses && i.uses !== undefined) ? i.uses / def.maxUses : 1;
+        return acc + baseWeight * usesRatio * i.quantity;
+      }, 0) + coinWeight,
         };
       });
 
@@ -216,14 +222,33 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
 
         // Enforce storage zone capacity in weight mode
         const targetZone = (inventory.extraZones ?? []).find((ez) => ez.id === newZone);
+        if (targetZone?.allowedItemTags?.length && item) {
+            const def = CatalogManager.getDefinition(item.definitionId);
+            const itemTags = item.customDefinition?.tags ?? def?.tags ?? [];
+            const allowed = itemTags.some((tag) =>
+              targetZone.allowedItemTags!.includes(tag)
+            );
+          
+            if (!allowed) {
+              ui.notifications?.warn(
+                `"${targetZone.name}" can only store items tagged: ${targetZone.allowedItemTags.join(", ")}.`
+              );
+              sel.value = item.zone;
+              return;
+            }
+          }
         if (targetZone?.type === "storage" && targetZone.weightCapacity > 0 && item) {
           const def = CatalogManager.getDefinition(item.definitionId);
-          const itemWeight = (item.customDefinition?.weight ?? def?.weight ?? 0) * item.quantity;
+          const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+          const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
+          const itemWeight = baseWeight * usesRatio * item.quantity;
           const currentZoneWeight = inventory.items
             .filter((i) => i.zone === newZone && i.id !== itemId)
             .reduce((acc, i) => {
               const d = CatalogManager.getDefinition(i.definitionId);
-              return acc + (i.customDefinition?.weight ?? d?.weight ?? 0) * i.quantity;
+              const baseWeight = i.customDefinition?.weight ?? d?.weight ?? 0;
+              const usesRatio = (d?.maxUses && i.uses !== undefined) ? i.uses / d.maxUses : 1;
+              return acc + baseWeight * usesRatio * i.quantity;
             }, 0);
           if (currentZoneWeight + itemWeight > targetZone.weightCapacity) {
             ui.notifications?.warn(
@@ -238,7 +263,9 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         // Enforce belt pouch weight limit (≤ 10 wt)
         if (targetZone?.isBeltPouch && item) {
           const def = CatalogManager.getDefinition(item.definitionId);
-          const itemWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+          const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+          const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
+          const itemWeight = baseWeight * usesRatio;
           if (itemWeight > 10) {
             ui.notifications?.warn(`Only items weighing 10 wt or less fit in a belt pouch (item weighs ${itemWeight} wt).`);
             sel.value = item.zone;
@@ -504,15 +531,33 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
 
     const targetZone = (inventory.extraZones ?? []).find((ez) => ez.id === newZone);
 
+    if (targetZone?.allowedItemTags?.length && item) {
+        const def = CatalogManager.getDefinition(item.definitionId);
+        const itemTags = item.customDefinition?.tags ?? def?.tags ?? [];
+        const allowed = itemTags.some((tag) =>
+          targetZone.allowedItemTags!.includes(tag)
+        );
+        if (!allowed) {
+          ui.notifications?.warn(
+            `"${targetZone.name}" can only store items tagged: ${targetZone.allowedItemTags.join(", ")}.`
+          );
+          return;
+        }
+      }
+    
     // Enforce storage zone weight capacity
     if (targetZone?.type === "storage" && targetZone.weightCapacity > 0) {
       const def = CatalogManager.getDefinition(item.definitionId);
-      const itemWeight = (item.customDefinition?.weight ?? def?.weight ?? 0) * item.quantity;
+      const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+      const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
+      const itemWeight = baseWeight * usesRatio * item.quantity;
       const currentZoneWeight = inventory.items
         .filter((i) => i.zone === newZone && i.id !== itemId)
         .reduce((acc, i) => {
           const d = CatalogManager.getDefinition(i.definitionId);
-          return acc + (i.customDefinition?.weight ?? d?.weight ?? 0) * i.quantity;
+          const baseWeight = i.customDefinition?.weight ?? d?.weight ?? 0;
+          const usesRatio = (d?.maxUses && i.uses !== undefined) ? i.uses / d.maxUses : 1;
+          return acc + baseWeight * usesRatio * i.quantity;
         }, 0);
       if (currentZoneWeight + itemWeight > targetZone.weightCapacity) {
         ui.notifications?.warn(
@@ -526,7 +571,9 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     // Enforce belt pouch weight limit (≤ 10 wt per item)
     if (targetZone?.isBeltPouch) {
       const def = CatalogManager.getDefinition(item.definitionId);
-      const itemWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+      const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+      const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
+      const itemWeight = baseWeight * usesRatio;
       if (itemWeight > 10) {
         ui.notifications?.warn(`Only items weighing 10 wt or less fit in a belt pouch (item weighs ${itemWeight} wt).`);
         return;
@@ -760,47 +807,71 @@ class AddItemDialog extends Dialog {
                 });
                 return inv;
               });
-            } else {
-              // Catalog item
-              const definitionId = html.find("#add-item-select").val() as string;
-              const def = CatalogManager.getDefinition(definitionId);
-              if (!def) return;
-              
-              await FlagManager.updateInventory(actor, (inv) => {
-                // 👉 Prüfen, ob Item stapelbar ist (z.B. durch maxUses oder Tags)
-                const isStackable = def.maxUses !== undefined || def.tags.includes("ammo");
-              
-                if (isStackable) {
-                  const existing = inv.items.find(
-                    (i) =>
-                      i.definitionId === definitionId &&
-                      i.zone === selectedZone &&
-                      !i.customDefinition
-                  );
-              
-                  if (existing) {
-                    // 👉 Menge erhöhen statt neues Item
-                    existing.quantity += qty;
-                    return inv;
-                  }
-                }
-              
-                // 👉 Neues Item anlegen (fallback)
-                inv.items.push({
-                  id: foundry.utils.randomID(),
-                  definitionId,
-                  name: def.name,
-                  quantity: qty,
-                  zone: selectedZone,
-                  isSecret: false,
-                  notes: "",
-                  uses: def.maxUses !== undefined ? def.maxUses : undefined,
-                });
-              
-                return inv;
-              });
-            }
-            onComplete();
+} else {
+  // Catalog item
+  const definitionId = html.find("#add-item-select").val() as string;
+  const def = CatalogManager.getDefinition(definitionId);
+  if (!def) return;
+
+  await FlagManager.updateInventory(actor, (inv) => {
+    const isStackableAmmo =
+      def.category === "Ammunition" &&
+      typeof def.maxUses === "number" &&
+      def.tags.includes("stackable");
+
+    if (isStackableAmmo) {
+      let remaining = qty;
+
+      const matchingStacks = inv.items.filter((i) =>
+        i.definitionId === definitionId &&
+        i.zone === selectedZone &&
+        !i.customDefinition
+      );
+
+      for (const stack of matchingStacks) {
+        const currentUses = stack.uses ?? 0;
+        const freeSpace = def.maxUses - currentUses;
+        if (freeSpace <= 0) continue;
+
+        const toAdd = Math.min(freeSpace, remaining);
+        stack.uses = currentUses + toAdd;
+        remaining -= toAdd;
+
+        if (remaining <= 0) return inv;
+      }
+
+      while (remaining > 0) {
+        const toAdd = Math.min(def.maxUses, remaining);
+        inv.items.push({
+          id: foundry.utils.randomID(),
+          definitionId,
+          name: def.name,
+          quantity: 1,
+          zone: selectedZone,
+          isSecret: false,
+          notes: "",
+          uses: toAdd,
+        });
+        remaining -= toAdd;
+      }
+
+      return inv;
+    }
+
+    inv.items.push({
+      id: foundry.utils.randomID(),
+      definitionId,
+      name: def.name,
+      quantity: qty,
+      zone: selectedZone,
+      isSecret: false,
+      notes: "",
+    });
+
+    return inv;
+  });
+}
+onComplete();
           },
         },
         cancel: { label: "Cancel" },
@@ -984,6 +1055,7 @@ class GiveItemDialog extends Dialog {
                 isSecret: false,
                 notes: "",
                 customDefinition: item.customDefinition,
+                uses: item.uses,
               },
             });
 
