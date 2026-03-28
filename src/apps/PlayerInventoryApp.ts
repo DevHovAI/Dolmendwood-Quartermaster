@@ -765,7 +765,27 @@ class AddItemDialog extends Dialog {
               const definitionId = html.find("#add-item-select").val() as string;
               const def = CatalogManager.getDefinition(definitionId);
               if (!def) return;
+              
               await FlagManager.updateInventory(actor, (inv) => {
+                // 👉 Prüfen, ob Item stapelbar ist (z.B. durch maxUses oder Tags)
+                const isStackable = def.maxUses !== undefined || def.tags.includes("ammo");
+              
+                if (isStackable) {
+                  const existing = inv.items.find(
+                    (i) =>
+                      i.definitionId === definitionId &&
+                      i.zone === selectedZone &&
+                      !i.customDefinition
+                  );
+              
+                  if (existing) {
+                    // 👉 Menge erhöhen statt neues Item
+                    existing.quantity += qty;
+                    return inv;
+                  }
+                }
+              
+                // 👉 Neues Item anlegen (fallback)
                 inv.items.push({
                   id: foundry.utils.randomID(),
                   definitionId,
@@ -774,7 +794,9 @@ class AddItemDialog extends Dialog {
                   zone: selectedZone,
                   isSecret: false,
                   notes: "",
+                  uses: def.maxUses !== undefined ? def.maxUses : undefined,
                 });
+              
                 return inv;
               });
             }
