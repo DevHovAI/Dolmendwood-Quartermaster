@@ -1303,7 +1303,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: [],
     tags: [],
     isCustom: false,
-    maxUses: 9999999,
+    maxUses: 2,
   },
   {
     id: "pole-10ft",
@@ -2011,7 +2011,7 @@ export const CATALOG: ItemDefinition[] = [
     qualities: ["Riding horse", "Load: 3,500 coins", "Alignment"],
     tags: [],
     isCustom: false,
-    grantsZone: { name: "Pack Horse", maxSlots: 35, weightCapacity: 3500, speed: 80 },
+    grantsZone: { name: "Yellow-flank", maxSlots: 35, weightCapacity: 3500, speed: 80 },
   },
 
   // Hounds
