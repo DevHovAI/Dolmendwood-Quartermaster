@@ -8,6 +8,22 @@ import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker, buildColorPickerHTML, activateColorPicker, ZONE_ICONS } from "../helpers/handlebars";
 import type { InventoryItem, ExtraZone, ZoneCoins } from "../types";
 
+/** Compute effective weight for an item, scaling by remaining uses when applicable. */
+function itemEffectiveWeight(item: InventoryItem): number {
+  const def = CatalogManager.getDefinition(item.definitionId);
+  const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+  const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
+  return baseWeight * usesRatio;
+}
+
+/** Check whether an item's tags allow it into a zone with allowedItemTags. Returns true if zone has no tag restriction. */
+function isItemAllowedInZone(item: InventoryItem, zone: ExtraZone): boolean {
+  if (!zone.allowedItemTags?.length) return true;
+  const def = CatalogManager.getDefinition(item.definitionId);
+  const itemTags = item.customDefinition?.tags ?? def?.tags ?? [];
+  return itemTags.some((tag) => zone.allowedItemTags!.includes(tag));
+}
+
 export class PlayerInventoryApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
 ) {
@@ -112,21 +128,21 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         const zoneCoins = coinsByZone[ez.id] ?? { cp: 0, sp: 0, gp: 0, pp: 0 };
         const coinWeight = zoneCoins.cp + zoneCoins.sp + zoneCoins.gp + zoneCoins.pp;
         const usedWeight = zoneItems.reduce((acc, i) => {
-        const def = CatalogManager.getDefinition(i.definitionId);
-        const baseWeight = i.customDefinition?.weight ?? def?.weight ?? 0;
-        const usesRatio =
-          (def?.maxUses && i.uses !== undefined) ? i.uses / def.maxUses : 1;
-        return acc + baseWeight * usesRatio * i.quantity;
-      }, 0) + coinWeight;
+          return acc + itemEffectiveWeight(i) * i.quantity;
+        }, 0) + coinWeight;
 
         // Find the animal item definition that granted this zone
         let animalDescription: string | undefined;
         let animalSubcategory: string | undefined;
+        let animalType: string | undefined; // first quality, e.g. "War Horse", "Draft horse"
         for (const item of inventory.items) {
           const def = CatalogManager.getDefinition(item.definitionId);
-          if (def?.grantsZone?.name === ez.name) {
+          if (!def?.grantsZone) continue;
+          // Match by itemId (preferred), fall back to name for legacy zones without itemId
+          if ((ez.itemId && item.id === ez.itemId) || (!ez.itemId && def.grantsZone.name === ez.name)) {
             animalDescription = def.description;
             animalSubcategory = def.subcategory;
+            animalType = def.qualities?.[0];
             break;
           }
         }
@@ -145,6 +161,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
           usedWeight,
           animalDescription,
           animalSubcategory,
+          animalType,
           speedInfo,
         };
       });
@@ -159,12 +176,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
           ...ez,
           items: enriched(zoneItems),
           usedWeight: zoneItems.reduce((acc, i) => {
-        const def = CatalogManager.getDefinition(i.definitionId);
-        const baseWeight = i.customDefinition?.weight ?? def?.weight ?? 0;
-        const usesRatio =
-          (def?.maxUses && i.uses !== undefined) ? i.uses / def.maxUses : 1;
-        return acc + baseWeight * usesRatio * i.quantity;
-      }, 0) + coinWeight,
+            return acc + itemEffectiveWeight(i) * i.quantity;
+          }, 0) + coinWeight,
         };
       });
 
@@ -210,77 +223,6 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     _options: Partial<ApplicationV2Options>
   ): void {
     const el = this.element;
-
-    // Zone change dropdowns
-    el.querySelectorAll<HTMLSelectElement>(".item-zone-select").forEach((select) => {
-      select.addEventListener("change", async (e) => {
-        const sel = e.target as HTMLSelectElement;
-        const itemId = sel.dataset.itemId!;
-        const newZone = sel.value as InventoryItem["zone"];
-        const inventory = FlagManager.getInventory(this.actor);
-        const item = inventory.items.find((i) => i.id === itemId);
-
-        // Enforce storage zone capacity in weight mode
-        const targetZone = (inventory.extraZones ?? []).find((ez) => ez.id === newZone);
-        if (targetZone?.allowedItemTags?.length && item) {
-            const def = CatalogManager.getDefinition(item.definitionId);
-            const itemTags = item.customDefinition?.tags ?? def?.tags ?? [];
-            const allowed = itemTags.some((tag) =>
-              targetZone.allowedItemTags!.includes(tag)
-            );
-          
-            if (!allowed) {
-              ui.notifications?.warn(
-                `"${targetZone.name}" can only store items tagged: ${targetZone.allowedItemTags.join(", ")}.`
-              );
-              sel.value = item.zone;
-              return;
-            }
-          }
-        if (targetZone?.type === "storage" && targetZone.weightCapacity > 0 && item) {
-          const def = CatalogManager.getDefinition(item.definitionId);
-          const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
-          const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
-          const itemWeight = baseWeight * usesRatio * item.quantity;
-          const currentZoneWeight = inventory.items
-            .filter((i) => i.zone === newZone && i.id !== itemId)
-            .reduce((acc, i) => {
-              const d = CatalogManager.getDefinition(i.definitionId);
-              const baseWeight = i.customDefinition?.weight ?? d?.weight ?? 0;
-              const usesRatio = (d?.maxUses && i.uses !== undefined) ? i.uses / d.maxUses : 1;
-              return acc + baseWeight * usesRatio * i.quantity;
-            }, 0);
-          if (currentZoneWeight + itemWeight > targetZone.weightCapacity) {
-            ui.notifications?.warn(
-              `"${targetZone.name}" can hold ${targetZone.weightCapacity} wt. ` +
-              `Currently ${currentZoneWeight} wt; item is ${itemWeight} wt.`
-            );
-            sel.value = item.zone; // reset select to current zone
-            return;
-          }
-        }
-
-        // Enforce belt pouch weight limit (≤ 10 wt)
-        if (targetZone?.isBeltPouch && item) {
-          const def = CatalogManager.getDefinition(item.definitionId);
-          const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
-          const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
-          const itemWeight = baseWeight * usesRatio;
-          if (itemWeight > 10) {
-            ui.notifications?.warn(`Only items weighing 10 wt or less fit in a belt pouch (item weighs ${itemWeight} wt).`);
-            sel.value = item.zone;
-            return;
-          }
-        }
-
-        await FlagManager.updateInventory(this.actor, (inv) => {
-          const i = inv.items.find((i) => i.id === itemId);
-          if (i) i.zone = newZone;
-          return inv;
-        });
-        this.render();
-      });
-    });
 
     // Notes editing
     el.querySelectorAll<HTMLTextAreaElement>(".item-notes-input").forEach((input) => {
@@ -531,34 +473,19 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
 
     const targetZone = (inventory.extraZones ?? []).find((ez) => ez.id === newZone);
 
-    if (targetZone?.allowedItemTags?.length && item) {
-        const def = CatalogManager.getDefinition(item.definitionId);
-        const itemTags = item.customDefinition?.tags ?? def?.tags ?? [];
-        const allowed = itemTags.some((tag) =>
-          targetZone.allowedItemTags!.includes(tag)
-        );
-        if (!allowed) {
-          ui.notifications?.warn(
-            `"${targetZone.name}" can only store items tagged: ${targetZone.allowedItemTags.join(", ")}.`
-          );
-          return;
-        }
-      }
-    
+    if (targetZone && !isItemAllowedInZone(item, targetZone)) {
+      ui.notifications?.warn(
+        `"${targetZone.name}" can only store items tagged: ${targetZone.allowedItemTags!.join(", ")}.`
+      );
+      return;
+    }
+
     // Enforce storage zone weight capacity
     if (targetZone?.type === "storage" && targetZone.weightCapacity > 0) {
-      const def = CatalogManager.getDefinition(item.definitionId);
-      const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
-      const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
-      const itemWeight = baseWeight * usesRatio * item.quantity;
+      const itemWeight = itemEffectiveWeight(item) * item.quantity;
       const currentZoneWeight = inventory.items
         .filter((i) => i.zone === newZone && i.id !== itemId)
-        .reduce((acc, i) => {
-          const d = CatalogManager.getDefinition(i.definitionId);
-          const baseWeight = i.customDefinition?.weight ?? d?.weight ?? 0;
-          const usesRatio = (d?.maxUses && i.uses !== undefined) ? i.uses / d.maxUses : 1;
-          return acc + baseWeight * usesRatio * i.quantity;
-        }, 0);
+        .reduce((acc, i) => acc + itemEffectiveWeight(i) * i.quantity, 0);
       if (currentZoneWeight + itemWeight > targetZone.weightCapacity) {
         ui.notifications?.warn(
           `"${targetZone.name}" can hold ${targetZone.weightCapacity} wt. ` +
@@ -570,12 +497,9 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
 
     // Enforce belt pouch weight limit (≤ 10 wt per item)
     if (targetZone?.isBeltPouch) {
-      const def = CatalogManager.getDefinition(item.definitionId);
-      const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
-      const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
-      const itemWeight = baseWeight * usesRatio;
-      if (itemWeight > 10) {
-        ui.notifications?.warn(`Only items weighing 10 wt or less fit in a belt pouch (item weighs ${itemWeight} wt).`);
+      const weight = itemEffectiveWeight(item);
+      if (weight > 10) {
+        ui.notifications?.warn(`Only items weighing 10 wt or less fit in a belt pouch (item weighs ${weight} wt).`);
         return;
       }
     }
@@ -599,6 +523,35 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       row.addEventListener("dragend", () => {
         row.classList.remove("item-dragging");
         el.querySelectorAll(".item-drop-zone").forEach((z) => z.classList.remove("item-drag-over"));
+        el.querySelectorAll(".item-row").forEach((r) => r.classList.remove("item-reorder-target"));
+      });
+
+      // Item-on-item drop for reordering within a zone
+      row.addEventListener("dragover", (e) => {
+        if (e.dataTransfer?.types.includes("text/plain")) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }
+      });
+      row.addEventListener("dragenter", (e) => {
+        if (e.dataTransfer?.types.includes("text/plain")) {
+          e.preventDefault();
+          row.classList.add("item-reorder-target");
+        }
+      });
+      row.addEventListener("dragleave", (e) => {
+        if (!row.contains(e.relatedTarget as Node))
+          row.classList.remove("item-reorder-target");
+      });
+      row.addEventListener("drop", async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        row.classList.remove("item-reorder-target");
+        if (!e.dataTransfer?.types.includes("text/plain")) return;
+        const draggedId = e.dataTransfer.getData("text/plain");
+        const targetId = row.dataset.itemId!;
+        if (!draggedId || draggedId === targetId) return;
+        await this._reorderItem(draggedId, targetId);
       });
     });
 
@@ -628,6 +581,31 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         if (itemId && newZone) await this._moveItemToZone(itemId, newZone);
       });
     });
+  }
+
+  private async _reorderItem(draggedId: string, targetId: string): Promise<void> {
+    const inventory = FlagManager.getInventory(this.actor);
+    const draggedItem = inventory.items.find((i) => i.id === draggedId);
+    const targetItem = inventory.items.find((i) => i.id === targetId);
+    if (!draggedItem || !targetItem) return;
+
+    // If different zones, treat as a zone move instead
+    if (draggedItem.zone !== targetItem.zone) {
+      await this._moveItemToZone(draggedId, targetItem.zone);
+      return;
+    }
+
+    await FlagManager.updateInventory(this.actor, (inv) => {
+      const fromIdx = inv.items.findIndex((i) => i.id === draggedId);
+      const toIdx = inv.items.findIndex((i) => i.id === targetId);
+      if (fromIdx === -1 || toIdx === -1) return inv;
+      const [moved] = inv.items.splice(fromIdx, 1);
+      // After removal, indices shift down by 1 for items after fromIdx
+      const insertIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
+      inv.items.splice(insertIdx, 0, moved);
+      return inv;
+    });
+    this.render();
   }
 
   private _setupZoneDragDrop(el: HTMLElement): void {
@@ -807,71 +785,71 @@ class AddItemDialog extends Dialog {
                 });
                 return inv;
               });
-} else {
-  // Catalog item
-  const definitionId = html.find("#add-item-select").val() as string;
-  const def = CatalogManager.getDefinition(definitionId);
-  if (!def) return;
+            } else {
+              // Catalog item
+              const definitionId = html.find("#add-item-select").val() as string;
+              const def = CatalogManager.getDefinition(definitionId);
+              if (!def) return;
 
-  await FlagManager.updateInventory(actor, (inv) => {
-    const isStackableAmmo =
-      def.category === "Ammunition" &&
-      typeof def.maxUses === "number" &&
-      def.tags.includes("stackable");
+              await FlagManager.updateInventory(actor, (inv) => {
+                const isStackableAmmo =
+                  def.category === "Ammunition" &&
+                  typeof def.maxUses === "number" &&
+                  def.tags.includes("stackable");
 
-    if (isStackableAmmo) {
-      let remaining = qty;
+                if (isStackableAmmo) {
+                  let remaining = qty;
 
-      const matchingStacks = inv.items.filter((i) =>
-        i.definitionId === definitionId &&
-        i.zone === selectedZone &&
-        !i.customDefinition
-      );
+                  const matchingStacks = inv.items.filter((i) =>
+                    i.definitionId === definitionId &&
+                    i.zone === selectedZone &&
+                    !i.customDefinition
+                  );
 
-      for (const stack of matchingStacks) {
-        const currentUses = stack.uses ?? 0;
-        const freeSpace = def.maxUses - currentUses;
-        if (freeSpace <= 0) continue;
+                  for (const stack of matchingStacks) {
+                    const currentUses = stack.uses ?? 0;
+                    const freeSpace = def.maxUses - currentUses;
+                    if (freeSpace <= 0) continue;
 
-        const toAdd = Math.min(freeSpace, remaining);
-        stack.uses = currentUses + toAdd;
-        remaining -= toAdd;
+                    const toAdd = Math.min(freeSpace, remaining);
+                    stack.uses = currentUses + toAdd;
+                    remaining -= toAdd;
 
-        if (remaining <= 0) return inv;
-      }
+                    if (remaining <= 0) return inv;
+                  }
 
-      while (remaining > 0) {
-        const toAdd = Math.min(def.maxUses, remaining);
-        inv.items.push({
-          id: foundry.utils.randomID(),
-          definitionId,
-          name: def.name,
-          quantity: 1,
-          zone: selectedZone,
-          isSecret: false,
-          notes: "",
-          uses: toAdd,
-        });
-        remaining -= toAdd;
-      }
+                  while (remaining > 0) {
+                    const toAdd = Math.min(def.maxUses, remaining);
+                    inv.items.push({
+                      id: foundry.utils.randomID(),
+                      definitionId,
+                      name: def.name,
+                      quantity: 1,
+                      zone: selectedZone,
+                      isSecret: false,
+                      notes: "",
+                      uses: toAdd,
+                    });
+                    remaining -= toAdd;
+                  }
 
-      return inv;
-    }
+                  return inv;
+                }
 
-    inv.items.push({
-      id: foundry.utils.randomID(),
-      definitionId,
-      name: def.name,
-      quantity: qty,
-      zone: selectedZone,
-      isSecret: false,
-      notes: "",
-    });
+                inv.items.push({
+                  id: foundry.utils.randomID(),
+                  definitionId,
+                  name: def.name,
+                  quantity: qty,
+                  zone: selectedZone,
+                  isSecret: false,
+                  notes: "",
+                });
 
-    return inv;
-  });
-}
-onComplete();
+                return inv;
+              });
+            }
+            onComplete();
           },
         },
         cancel: { label: "Cancel" },

@@ -3,7 +3,7 @@
     {{#if item.isSecret}}
     <i class="fas fa-lock secret-icon" title="Secret item"></i>
     {{else if item.def}}
-    <i class="fas {{itemIcon item.def.category}} item-cat-icon" title="{{item.def.category}}"></i>
+    <i class="fas {{itemIcon item.def.category item.def.subcategory}} item-cat-icon" title="{{item.def.category}}"></i>
     {{else}}
     <i class="fas {{#if item.customDefinition.icon}}{{item.customDefinition.icon}}{{else}}fa-sack{{/if}} item-cat-icon" title="Custom item"></i>
     {{/if}}
@@ -59,29 +59,8 @@
   {{/if}}
 
   {{#if isOwner}}
-  <select class="item-zone-select" data-item-id="{{item.id}}" title="Move to zone">
-    {{#if (eq encMode "weight")}}
-    <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
-    {{#each extraZones}}
-    {{!-- Show belt pouch zones only if item fits (≤ 10 wt) or item is already in this zone --}}
-    {{#if (or (eq ../item.zone this.id) (or (not this.isBeltPouch) (canUseTinyZone ../item ../encMode)))}}
-    <option value="{{this.id}}" {{#if (eq ../item.zone this.id)}}selected{{/if}}>{{this.name}}</option>
-    {{/if}}
-    {{/each}}
-    {{else}}
-    {{#if (or (canUseTinyZone item encMode) (eq item.zone "tiny"))}}
-    <option value="tiny" {{#if (eq item.zone "tiny")}}selected{{/if}}>Belt Pouch</option>
-    {{/if}}
-    <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
-    <option value="stowed" {{#if (eq item.zone "stowed")}}selected{{/if}}>Stowed</option>
-    {{#each extraZones}}
-    <option value="{{this.id}}" {{#if (eq ../item.zone this.id)}}selected{{/if}}>{{this.name}}</option>
-    {{/each}}
-    {{/if}}
-  </select>
-
   <textarea class="item-notes-input" data-item-id="{{item.id}}"
-            placeholder="Notes…" title="Notes" rows="2">{{item.notes}}</textarea>
+            placeholder="Notes…" title="Notes" rows="1">{{item.notes}}</textarea>
   {{/if}}
 
   {{#if isOwner}}

@@ -1,6 +1,17 @@
 import { TEMPLATES } from "../constants";
 import { speedColorClass } from "../data/EncumbranceCalculator";
 
+/** Map Animals & Vehicles subcategory to a Font Awesome icon class. */
+export function subcategoryToIcon(subcategory?: string): string {
+  switch ((subcategory ?? "").toLowerCase()) {
+    case "horses":          return "fa-horse";
+    case "hounds":          return "fa-dog";
+    case "land vehicles":   return "fa-caravan";
+    case "water vehicles":  return "fa-ship";
+    default:                return "fa-horse";
+  }
+}
+
 // ─── Icon Picker Utilities ────────────────────────────────────────────────────
 
 export const ITEM_ICONS: { icon: string; label: string }[] = [
@@ -238,8 +249,14 @@ export function registerHandlebarsHelpers(): void {
   });
 
   // Category → Font Awesome icon class for inventory items
-  Handlebars.registerHelper("itemIcon", (category: string) => {
-    switch ((category ?? "").toLowerCase()) {
+  // Accepts optional subcategory for finer-grained icons (Animals & Vehicles)
+  Handlebars.registerHelper("itemIcon", (category: string, subcategoryOrOptions?: string | { hash?: unknown }) => {
+    const subcategory = typeof subcategoryOrOptions === "string" ? subcategoryOrOptions : undefined;
+    const cat = (category ?? "").toLowerCase();
+    if (cat === "animals & vehicles") {
+      return subcategoryToIcon(subcategory);
+    }
+    switch (cat) {
       case "adventuring gear": return "fa-compass";
       case "ammunition":       return "fa-bullseye";
       case "armour":           return "fa-shield-halved";
@@ -256,7 +273,6 @@ export function registerHandlebarsHelpers(): void {
       case "tools":            return "fa-wrench";
       case "weapons":          return "fa-gavel";
       case "pipeleaf":         return "fa-leaf";
-      case "animals & vehicles": return "fa-horse";
       default:                 return "fa-sack";
     }
   });

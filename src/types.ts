@@ -42,6 +42,7 @@ export interface ExtraZone {
   selfWeight?: number;   // weight of the container item itself (e.g. backpack = 50 coins wt)
   itemId?: string;       // ID of the inventory item that created this zone (for cleanup on deletion)
   speed?: number;        // base travel speed in ft (for animals/vehicles that affect convoy speed)
+  isVehicle?: boolean;   // true for carts, wagons, boats — cannot be overloaded (unlike animals)
   icon?: string;         // FA icon class, e.g. "fa-backpack"; falls back to type default
   color?: string;        // zone header color key: "green" | "brown" | "navy" | "purple" | "slate" | "crimson" | "teal"
 }
@@ -88,8 +89,9 @@ export interface AnimalSpeedInfo {
   baseSpeed: number;
   usedWeight: number;
   capacity: number;
-  isOverloaded: boolean;    // usedWeight > capacity && <= capacity * 2
-  isOverCapacity: boolean;  // usedWeight > capacity * 2
+  isOverloaded: boolean;    // animals only: usedWeight > capacity && <= capacity * 2
+  isOverCapacity: boolean;  // animals only: usedWeight > capacity * 2
+  isOverWeight: boolean;    // vehicles only: usedWeight > capacity (informational, no speed penalty)
   effectiveSpeed: number;   // baseSpeed, halved if overloaded, 0 if over capacity
 }
 

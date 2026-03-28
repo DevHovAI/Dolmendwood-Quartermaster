@@ -147,9 +147,9 @@
     {{!-- Animal info (type, description, speed) --}}
     {{#if this.animalSubcategory}}
     <div class="animal-info-row">
-      <span class="animal-type-badge">{{this.animalSubcategory}}</span>
+      {{#if this.animalType}}<span class="animal-type-badge">{{this.animalType}}</span>{{/if}}
       {{#if this.speedInfo}}
-      <span class="animal-speed-badge {{#if this.speedInfo.isOverCapacity}}speed-red{{else if this.speedInfo.isOverloaded}}speed-orange{{else if (gte this.speedInfo.effectiveSpeed 40)}}speed-green{{else if (gte this.speedInfo.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
+      <span class="animal-speed-badge {{#if this.speedInfo.isOverCapacity}}speed-red{{else if this.speedInfo.isOverloaded}}speed-orange{{else if this.speedInfo.isOverWeight}}speed-orange{{else if (gte this.speedInfo.effectiveSpeed 40)}}speed-green{{else if (gte this.speedInfo.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
             title="Load: {{this.speedInfo.usedWeight}} / {{this.speedInfo.capacity}} wt">
         <i class="fas fa-running"></i>
         {{#if this.speedInfo.isOverCapacity}}
@@ -157,6 +157,7 @@
         {{else}}
           {{this.speedInfo.effectiveSpeed}}ft
           {{#if this.speedInfo.isOverloaded}}<i class="fas fa-exclamation-triangle" title="Overloaded — half speed"></i>{{/if}}
+          {{#if this.speedInfo.isOverWeight}}<i class="fas fa-weight-hanging" title="Over cargo capacity"></i>{{/if}}
         {{/if}}
       </span>
       {{/if}}

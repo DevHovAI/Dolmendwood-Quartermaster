@@ -2,6 +2,7 @@ import { MODULE_ID, SOCKET_NAME, SOCKET_EVENTS, SETTINGS } from "../constants";
 import { FlagManager, deductCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { processInnPurchase } from "../data/innPurchase";
+import { subcategoryToIcon } from "../helpers/handlebars";
 import type {
   SocketPayload,
   GMGrantPayload,
@@ -158,13 +159,18 @@ export class SocketHandler {
       });
 
       if (def?.grantsZone) {
+        const pushedItem = inv.items[inv.items.length - 1];
+        const isVehicleSub = ["land vehicles", "water vehicles"].includes((def.subcategory ?? "").toLowerCase());
         inv.extraZones ??= [];
         inv.extraZones.push({
           id: foundry.utils.randomID(),
           name: def.grantsZone.name,
           maxSlots: def.grantsZone.maxSlots,
           weightCapacity: def.grantsZone.weightCapacity ?? 0,
+          itemId: pushedItem?.id,
+          icon: subcategoryToIcon(def.subcategory),
           ...(def.grantsZone.speed !== undefined ? { speed: def.grantsZone.speed } : {}),
+          ...(isVehicleSub ? { isVehicle: true } : {}),
         });
       }
 
@@ -184,6 +190,7 @@ export class SocketHandler {
             selfWeight: def.weight ?? 0,
             itemId: pushed?.id,
             ...(def.grantsStorageZone.isBeltPouch ? { isBeltPouch: true } : {}),
+            ...(def.grantsStorageZone.allowedItemTags?.length ? { allowedItemTags: def.grantsStorageZone.allowedItemTags } : {}),
           });
         }
       }

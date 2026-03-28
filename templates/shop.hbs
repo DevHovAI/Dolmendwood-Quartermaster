@@ -88,7 +88,7 @@
           <div class="shop-item {{#if this.isHidden}}shop-item-hidden{{/if}} {{#if this.isLocalCustom}}shop-item-custom{{/if}}" data-item-id="{{this.id}}">
             <div class="shop-item-info">
               <span class="shop-item-name">
-                <i class="fas {{itemIcon this.category}} shop-item-icon" title="{{this.category}}"></i>
+                <i class="fas {{itemIcon this.category this.subcategory}} shop-item-icon" title="{{this.category}}"></i>
                 {{this.name}}
                 {{#if this.isHidden}}<span class="shop-hidden-badge" title="Hidden from players"><i class="fas fa-eye-slash"></i></span>{{/if}}
                 {{#if this.isLocalCustom}}<span class="shop-custom-badge" title="Custom shop item"><i class="fas fa-plus-circle"></i></span>{{/if}}

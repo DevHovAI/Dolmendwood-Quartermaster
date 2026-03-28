@@ -214,13 +214,15 @@ function calculateWeightEncumbrance(
     }, 0) + coinWeight;
 
     const capacity = ez.weightCapacity;
-    const isOverCapacity = capacity > 0 && usedWeight > capacity * 2;
-    const isOverloaded   = capacity > 0 && usedWeight > capacity && !isOverCapacity;
+    // Vehicles (carts, wagons, boats) cannot be overloaded — only animals can
+    const isOverCapacity = !ez.isVehicle && capacity > 0 && usedWeight > capacity * 2;
+    const isOverloaded   = !ez.isVehicle && capacity > 0 && usedWeight > capacity && !isOverCapacity;
+    const isOverWeight   = !!ez.isVehicle && capacity > 0 && usedWeight > capacity;
     let effectiveSpeed = ez.speed;
     if (isOverCapacity) effectiveSpeed = 0;
     else if (isOverloaded) effectiveSpeed = Math.floor(ez.speed / 2);
 
-    animalSpeeds.push({ zoneName: ez.name, baseSpeed: ez.speed, usedWeight, capacity, isOverloaded, isOverCapacity, effectiveSpeed });
+    animalSpeeds.push({ zoneName: ez.name, baseSpeed: ez.speed, usedWeight, capacity, isOverloaded, isOverCapacity, isOverWeight, effectiveSpeed });
   }
 
   let convoySpeed: number | null = null;
