@@ -170,13 +170,14 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
           ...extraZones.map((ez) => ({ id: ez.id, name: ez.name })),
         ];
         const knownZoneIds = new Set(allZoneDefs.map((z) => z.id));
+        const extraZoneIds = new Set(extraZones.map((ez) => ez.id));
         const zoneSections = allZoneDefs
           .map((z) => ({
             id: z.id,
             name: z.name,
             items: visibleItems.filter((i) => i.zone === z.id),
           }))
-          .filter((s) => s.items.length > 0);
+          .filter((s) => s.items.length > 0 || extraZoneIds.has(s.id));
 
         // Items whose zone doesn't match any known zone (orphaned / unassigned)
         const unassignedItems = visibleItems.filter((i) => !knownZoneIds.has(i.zone));

@@ -87,17 +87,54 @@ export class SocketHandler {
     }
   }
 
+  private static readonly AMMO_CONTAINER_MAP: Record<string, { containerId: string; maxUses: number }> = {
+    "arrow-single":   { containerId: "arrows-quiver",  maxUses: 20 },
+    "quarrel-single": { containerId: "quarrels-case",   maxUses: 20 },
+  };
+
   private static async onGMGrant(data: GMGrantPayload): Promise<void> {
     const actor = (game as Game).actors?.get(data.actorId);
     if (!actor) return;
-    const item = {
-      ...data.item,
-      id: foundry.utils.randomID(),
-    };
-    await FlagManager.updateInventory(actor, (inv) => {
-      inv.items.push(item);
-      return inv;
-    });
+
+    const ammoInfo = SocketHandler.AMMO_CONTAINER_MAP[data.item.definitionId];
+    if (ammoInfo) {
+      // Single ammo grant: fill existing containers or create new ones
+      await FlagManager.updateInventory(actor, (inv) => {
+        let remaining = data.item.quantity;
+        for (const item of inv.items) {
+          if (item.definitionId !== ammoInfo.containerId) continue;
+          const currentUses = item.uses ?? ammoInfo.maxUses;
+          const freeSpace = ammoInfo.maxUses - currentUses;
+          if (freeSpace <= 0) continue;
+          const toAdd = Math.min(freeSpace, remaining);
+          item.uses = currentUses + toAdd;
+          remaining -= toAdd;
+          if (remaining <= 0) return inv;
+        }
+        const containerDef = CatalogManager.getDefinition(ammoInfo.containerId);
+        while (remaining > 0) {
+          const toAdd = Math.min(ammoInfo.maxUses, remaining);
+          inv.items.push({
+            id: foundry.utils.randomID(),
+            definitionId: ammoInfo.containerId,
+            name: containerDef?.name ?? ammoInfo.containerId,
+            quantity: 1,
+            zone: data.item.zone,
+            isSecret: false,
+            notes: "",
+            uses: toAdd,
+          });
+          remaining -= toAdd;
+        }
+        return inv;
+      });
+    } else {
+      const item = { ...data.item, id: foundry.utils.randomID() };
+      await FlagManager.updateInventory(actor, (inv) => {
+        inv.items.push(item);
+        return inv;
+      });
+    }
     const tx: Transaction = {
       id: foundry.utils.randomID(),
       timestamp: Date.now(),
@@ -156,11 +193,7 @@ export class SocketHandler {
       if (!canAfford && !data.gmOverride) return inv;
 
       // Single ammo purchase: add to existing container or create a new one
-      const AMMO_CONTAINER_MAP: Record<string, { containerId: string; maxUses: number }> = {
-        "arrow-single":  { containerId: "arrows-quiver",  maxUses: 20 },
-        "quarrel-single": { containerId: "quarrels-case", maxUses: 20 },
-      };
-      const ammoInfo = AMMO_CONTAINER_MAP[data.definitionId];
+      const ammoInfo = SocketHandler.AMMO_CONTAINER_MAP[data.definitionId];
       if (ammoInfo) {
         let remaining = data.quantity;
         // Fill existing containers that have space
