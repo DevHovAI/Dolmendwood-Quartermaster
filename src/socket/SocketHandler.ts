@@ -8,9 +8,12 @@ import type {
   GMGrantPayload,
   GMRemovePayload,
   GiveCoinsPayload,
+  GiveZonePayload,
   PurchasePayload,
   InnPurchasePayload,
   Transaction,
+  ExtraZone,
+  InventoryItem,
 } from "../types";
 
 export class SocketHandler {
@@ -61,6 +64,12 @@ export class SocketHandler {
       case SOCKET_EVENTS.GIVE_COINS:
         if (g.user?.isGM) {
           SocketHandler.onGiveCoins(payload.data as GiveCoinsPayload);
+        }
+        break;
+
+      case SOCKET_EVENTS.GIVE_ZONE:
+        if (g.user?.isGM) {
+          SocketHandler.onGiveZone(payload.data as GiveZonePayload);
         }
         break;
 
@@ -145,6 +154,44 @@ export class SocketHandler {
       inv.coinsByZone ??= { equipped: { ...inv.coins } };
       const canAfford = deductCoins(inv.coinsByZone, costCp);
       if (!canAfford && !data.gmOverride) return inv;
+
+      // Single ammo purchase: add to existing container or create a new one
+      const AMMO_CONTAINER_MAP: Record<string, { containerId: string; maxUses: number }> = {
+        "arrow-single":  { containerId: "arrows-quiver",  maxUses: 20 },
+        "quarrel-single": { containerId: "quarrels-case", maxUses: 20 },
+      };
+      const ammoInfo = AMMO_CONTAINER_MAP[data.definitionId];
+      if (ammoInfo) {
+        let remaining = data.quantity;
+        // Fill existing containers that have space
+        for (const item of inv.items) {
+          if (item.definitionId !== ammoInfo.containerId) continue;
+          const currentUses = item.uses ?? ammoInfo.maxUses;
+          const freeSpace = ammoInfo.maxUses - currentUses;
+          if (freeSpace <= 0) continue;
+          const toAdd = Math.min(freeSpace, remaining);
+          item.uses = currentUses + toAdd;
+          remaining -= toAdd;
+          if (remaining <= 0) return inv;
+        }
+        // Create new containers for remaining ammo
+        const containerDef = CatalogManager.getDefinition(ammoInfo.containerId);
+        while (remaining > 0) {
+          const toAdd = Math.min(ammoInfo.maxUses, remaining);
+          inv.items.push({
+            id: foundry.utils.randomID(),
+            definitionId: ammoInfo.containerId,
+            name: containerDef?.name ?? ammoInfo.containerId,
+            quantity: 1,
+            zone: data.zone,
+            isSecret: false,
+            notes: "",
+            uses: toAdd,
+          });
+          remaining -= toAdd;
+        }
+        return inv;
+      }
 
       const isCustomShopItem = !CatalogManager.getDefinition(data.definitionId) && !!data.customDef;
       inv.items.push({
@@ -248,6 +295,66 @@ export class SocketHandler {
         { actorId: data.fromActorId, cp: -data.cp, sp: -data.sp, gp: -data.gp, pp: -data.pp },
         { actorId: data.toActorId, cp: data.cp, sp: data.sp, gp: data.gp, pp: data.pp },
       ],
+    };
+    await FlagManager.appendTransaction(tx);
+    SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+  }
+
+  private static async onGiveZone(data: GiveZonePayload): Promise<void> {
+    const g = game as Game;
+    const fromActor = g.actors?.get(data.fromActorId);
+    const toActor = g.actors?.get(data.toActorId);
+    if (!fromActor || !toActor) return;
+
+    let movedZone: ExtraZone | undefined;
+    let movedItems: InventoryItem[] = [];
+    let movedCoins = { cp: 0, sp: 0, gp: 0, pp: 0 };
+
+    // Remove zone, its items, and its coins from the giver
+    await FlagManager.updateInventory(fromActor, (inv) => {
+      const zoneIdx = (inv.extraZones ?? []).findIndex((ez) => ez.id === data.zoneId);
+      if (zoneIdx === -1) return inv;
+      [movedZone] = inv.extraZones!.splice(zoneIdx, 1);
+      movedItems = inv.items.filter((i) => i.zone === data.zoneId);
+      inv.items = inv.items.filter((i) => i.zone !== data.zoneId);
+      if (inv.coinsByZone?.[data.zoneId]) {
+        movedCoins = { ...inv.coinsByZone[data.zoneId] };
+        delete inv.coinsByZone[data.zoneId];
+      }
+      return inv;
+    });
+
+    if (!movedZone) return;
+
+    // Add zone, items, and coins to the recipient with a new zone ID
+    const newZoneId = foundry.utils.randomID();
+    await FlagManager.updateInventory(toActor, (inv) => {
+      inv.extraZones ??= [];
+      inv.extraZones.push({ ...movedZone!, id: newZoneId });
+      for (const item of movedItems) {
+        inv.items.push({ ...item, id: foundry.utils.randomID(), zone: newZoneId });
+      }
+      if (movedCoins.cp + movedCoins.sp + movedCoins.gp + movedCoins.pp > 0) {
+        inv.coinsByZone ??= { equipped: { ...inv.coins } };
+        inv.coinsByZone[newZoneId] = { ...movedCoins };
+      }
+      return inv;
+    });
+
+    const itemNames = movedItems.map((i) => ({ definitionId: i.definitionId, name: i.name, quantity: i.quantity }));
+    const tx: Transaction = {
+      id: foundry.utils.randomID(),
+      timestamp: Date.now(),
+      type: "trade",
+      fromActorId: data.fromActorId,
+      toActorId: data.toActorId,
+      items: itemNames,
+      coinsDelta: movedCoins.cp + movedCoins.sp + movedCoins.gp + movedCoins.pp > 0
+        ? [
+            { actorId: data.fromActorId, cp: -movedCoins.cp, sp: -movedCoins.sp, gp: -movedCoins.gp, pp: -movedCoins.pp },
+            { actorId: data.toActorId, cp: movedCoins.cp, sp: movedCoins.sp, gp: movedCoins.gp, pp: movedCoins.pp },
+          ]
+        : [],
     };
     await FlagManager.appendTransaction(tx);
     SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});

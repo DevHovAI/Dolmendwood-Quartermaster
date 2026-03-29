@@ -343,6 +343,13 @@
   line-height: 1.4;
 }
 
+.item-qualities {
+  display: block;
+  font-size: 0.8em;
+  color: #665533;
+  white-space: normal;
+}
+
 .item-description {
   display: block;
   font-size: 0.78em;
@@ -1318,6 +1325,10 @@
 .animal-info-row .animal-speed-badge.speed-yellow { background: rgba(180,150,0,0.75); color: #2a2000; }
 .animal-info-row .animal-speed-badge.speed-orange { background: rgba(200,100,0,0.75); }
 .animal-info-row .animal-speed-badge.speed-red { background: rgba(180,30,30,0.75); }
+.animal-qualities {
+  color: #665533;
+  font-size: 0.92em;
+}
 .animal-description {
   color: var(--dw-tertiary);
   font-style: italic;
@@ -1513,6 +1524,23 @@
 }
 .zone-drop-target > .zone-header-extra {
   opacity: 0.75;
+}
+
+/* ─── Dropped zones (left behind) ──────────────────────────────────────────── */
+.zone-dropped {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+  position: relative;
+}
+.zone-dropped::after {
+  content: "Left behind";
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 0.75em;
+  font-style: italic;
+  color: #999;
+  pointer-events: none;
 }
 
 /* ─── Item drag-and-drop ────────────────────────────────────────────────────── */

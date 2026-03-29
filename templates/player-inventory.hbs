@@ -21,7 +21,7 @@
     {{#each encumbrance.animalSpeeds}}
     <span class="animal-speed-badge {{#if this.isOverCapacity}}speed-red{{else if this.isOverloaded}}speed-orange{{else if (gte this.effectiveSpeed 40)}}speed-green{{else if (gte this.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
           title="{{this.zoneName}}: {{this.usedWeight}} / {{this.capacity}} wt{{#if this.isOverCapacity}} — over capacity!{{else if this.isOverloaded}} — overloaded (half speed){{/if}}">
-      <i class="fas fa-horse"></i> {{this.zoneName}}: {{#if this.isOverCapacity}}—{{else}}{{this.effectiveSpeed}}ft{{/if}}
+      <i class="fas {{#if this.zoneIcon}}{{this.zoneIcon}}{{else}}fa-horse{{/if}}"></i> {{this.zoneName}}: {{#if this.isOverCapacity}}—{{else}}{{this.effectiveSpeed}}ft{{/if}}
       {{#if this.isOverloaded}}<i class="fas fa-exclamation-triangle"></i>{{/if}}
       {{#if this.isOverCapacity}}<i class="fas fa-times-circle"></i>{{/if}}
     </span>
@@ -120,7 +120,7 @@
   {{!-- Storage Zones (weight mode: backpack, sack, etc.) --}}
   {{#if (eq encMode "weight")}}
   {{#each storageZones}}
-  <section class="inv-zone-section inv-zone-extra" data-zone-drag-id="{{this.id}}" data-zone-color="{{this.color}}">
+  <section class="inv-zone-section inv-zone-extra item-drop-zone {{#if this.isDropped}}zone-dropped{{/if}}" data-zone-drag-id="{{this.id}}" data-zone-color="{{this.color}}" data-zone-id="{{this.id}}">
     <div class="zone-header zone-header-extra">
       {{#if ../isOwner}}<i class="fas fa-grip-vertical zone-drag-handle" draggable="true" title="Drag to reorder"></i>{{/if}}
       <h3><i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-backpack{{/if}}"></i> {{this.name}} {{#if this.selfWeight}}<span class="zone-self-weight" title="Container weight">({{this.selfWeight}} wt)</span>{{/if}}</h3>
@@ -134,7 +134,7 @@
 
   {{!-- Vehicle/Animal Zones --}}
   {{#each vehicleZones}}
-  <section class="inv-zone-section inv-zone-extra" data-zone-drag-id="{{this.id}}" data-zone-color="{{this.color}}">
+  <section class="inv-zone-section inv-zone-extra item-drop-zone {{#if this.isDropped}}zone-dropped{{/if}}" data-zone-drag-id="{{this.id}}" data-zone-color="{{this.color}}" data-zone-id="{{this.id}}">
     <div class="zone-header zone-header-extra">
       {{#if ../isOwner}}<i class="fas fa-grip-vertical zone-drag-handle" draggable="true" title="Drag to reorder"></i>{{/if}}
       <h3><i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-horse{{/if}}"></i> {{this.name}}</h3>
@@ -147,7 +147,7 @@
     {{!-- Animal info (type, description, speed) --}}
     {{#if this.animalSubcategory}}
     <div class="animal-info-row">
-      {{#if this.animalType}}<span class="animal-type-badge">{{this.animalType}}</span>{{/if}}
+      {{#if this.animalItemName}}<span class="animal-type-badge">{{this.animalItemName}}</span>{{/if}}
       {{#if this.speedInfo}}
       <span class="animal-speed-badge {{#if this.speedInfo.isOverCapacity}}speed-red{{else if this.speedInfo.isOverloaded}}speed-orange{{else if this.speedInfo.isOverWeight}}speed-orange{{else if (gte this.speedInfo.effectiveSpeed 40)}}speed-green{{else if (gte this.speedInfo.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
             title="Load: {{this.speedInfo.usedWeight}} / {{this.speedInfo.capacity}} wt">
@@ -161,6 +161,7 @@
         {{/if}}
       </span>
       {{/if}}
+      {{#if this.animalQualities.length}}<span class="animal-qualities">{{#each this.animalQualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>{{/if}}
       {{#if this.animalDescription}}<span class="animal-description">{{this.animalDescription}}</span>{{/if}}
     </div>
     {{/if}}

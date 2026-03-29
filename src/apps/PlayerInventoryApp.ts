@@ -61,6 +61,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       deleteExtraZone: PlayerInventoryApp._onDeleteExtraZone,
       renameExtraZone: PlayerInventoryApp._onRenameExtraZone,
       moveZoneCoins: PlayerInventoryApp._onMoveZoneCoins,
+      toggleDropZone: PlayerInventoryApp._onToggleDropZone,
+      giveZone: PlayerInventoryApp._onGiveZone,
     },
   };
 
@@ -134,7 +136,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         // Find the animal item definition that granted this zone
         let animalDescription: string | undefined;
         let animalSubcategory: string | undefined;
-        let animalType: string | undefined; // first quality, e.g. "War Horse", "Draft horse"
+        let animalItemName: string | undefined;
+        let animalQualities: string[] = [];
         for (const item of inventory.items) {
           const def = CatalogManager.getDefinition(item.definitionId);
           if (!def?.grantsZone) continue;
@@ -142,7 +145,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
           if ((ez.itemId && item.id === ez.itemId) || (!ez.itemId && def.grantsZone.name === ez.name)) {
             animalDescription = def.description;
             animalSubcategory = def.subcategory;
-            animalType = def.qualities?.[0];
+            animalItemName = def.name;
+            animalQualities = def.qualities ?? [];
             break;
           }
         }
@@ -161,7 +165,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
           usedWeight,
           animalDescription,
           animalSubcategory,
-          animalType,
+          animalItemName,
+          animalQualities,
           speedInfo,
         };
       });
@@ -462,6 +467,32 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const fromZoneId = target.dataset.zoneId!;
     const inventory = FlagManager.getInventory(this.actor);
     new MoveCoinsBetweenZonesDialog(this.actor, fromZoneId, inventory, () => this.render()).render(true);
+  }
+
+  private static async _onToggleDropZone(
+    this: PlayerInventoryApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const zoneId = target.dataset.zoneId!;
+    await FlagManager.updateInventory(this.actor, (inv) => {
+      const zone = (inv.extraZones ?? []).find((ez) => ez.id === zoneId);
+      if (zone) zone.isDropped = !zone.isDropped;
+      return inv;
+    });
+    this.render();
+  }
+
+  private static _onGiveZone(
+    this: PlayerInventoryApp,
+    _event: Event,
+    target: HTMLElement
+  ): void {
+    const zoneId = target.dataset.zoneId!;
+    const inventory = FlagManager.getInventory(this.actor);
+    const zone = (inventory.extraZones ?? []).find((ez) => ez.id === zoneId);
+    if (!zone) return;
+    new GiveZoneDialog(this.actor, zoneId, () => this.render()).render(true);
   }
 
   // ─── Drag-and-drop helpers ──────────────────────────────────────────────────
@@ -792,50 +823,6 @@ class AddItemDialog extends Dialog {
               if (!def) return;
 
               await FlagManager.updateInventory(actor, (inv) => {
-                const isStackableAmmo =
-                  def.category === "Ammunition" &&
-                  typeof def.maxUses === "number" &&
-                  def.tags.includes("stackable");
-
-                if (isStackableAmmo) {
-                  let remaining = qty;
-
-                  const matchingStacks = inv.items.filter((i) =>
-                    i.definitionId === definitionId &&
-                    i.zone === selectedZone &&
-                    !i.customDefinition
-                  );
-
-                  for (const stack of matchingStacks) {
-                    const currentUses = stack.uses ?? 0;
-                    const freeSpace = def.maxUses - currentUses;
-                    if (freeSpace <= 0) continue;
-
-                    const toAdd = Math.min(freeSpace, remaining);
-                    stack.uses = currentUses + toAdd;
-                    remaining -= toAdd;
-
-                    if (remaining <= 0) return inv;
-                  }
-
-                  while (remaining > 0) {
-                    const toAdd = Math.min(def.maxUses, remaining);
-                    inv.items.push({
-                      id: foundry.utils.randomID(),
-                      definitionId,
-                      name: def.name,
-                      quantity: 1,
-                      zone: selectedZone,
-                      isSecret: false,
-                      notes: "",
-                      uses: toAdd,
-                    });
-                    remaining -= toAdd;
-                  }
-
-                  return inv;
-                }
-
                 inv.items.push({
                   id: foundry.utils.randomID(),
                   definitionId,
@@ -845,7 +832,6 @@ class AddItemDialog extends Dialog {
                   isSecret: false,
                   notes: "",
                 });
-
                 return inv;
               });
             }
@@ -1047,8 +1033,69 @@ class GiveItemDialog extends Dialog {
   }
 }
 
-// ─── Give Coins Dialog ────────────────────────────────────────────────────────
+// ─── Give Zone Dialog ─────────────────────────────────────────────────────────
 
+class GiveZoneDialog extends Dialog {
+  constructor(fromActor: Actor, zoneId: string, onComplete: () => void) {
+    const g = game as Game;
+    const partyMembers = (g.actors?.contents ?? []).filter((actor) =>
+      actor.id !== fromActor.id &&
+      (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
+    );
+
+    const inventory = FlagManager.getInventory(fromActor);
+    const zone = (inventory.extraZones ?? []).find((ez) => ez.id === zoneId);
+    if (!zone) {
+      super({ title: "Give Zone", content: "<p>Zone not found.</p>", buttons: { ok: { label: "OK" } }, default: "ok" });
+      return;
+    }
+
+    if (partyMembers.length === 0) {
+      super({ title: "Give Zone", content: "<p>No other party members to give to.</p>", buttons: { ok: { label: "OK" } }, default: "ok" });
+      return;
+    }
+
+    const memberOptions = partyMembers
+      .map((a) => `<option value="${a.id}">${a.name}</option>`)
+      .join("");
+
+    const itemCount = inventory.items.filter((i) => i.zone === zoneId).length;
+
+    super({
+      title: `Give ${zone.name}`,
+      content: `
+        <form>
+          <div class="form-group">
+            <label>Give to</label>
+            <select id="give-zone-target">${memberOptions}</select>
+          </div>
+          <p style="font-size:0.9em;color:#888;margin-top:4px;">
+            This will transfer the zone with all its contents (${itemCount} item${itemCount !== 1 ? "s" : ""}) and coins.
+          </p>
+        </form>
+      `,
+      buttons: {
+        give: {
+          label: "Give",
+          callback: (html: JQuery) => {
+            const toActorId = html.find("#give-zone-target").val() as string;
+            if (!toActorId) return;
+            SocketHandler.emit(SOCKET_EVENTS.GIVE_ZONE, {
+              fromActorId: fromActor.id,
+              toActorId,
+              zoneId,
+            });
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "give",
+    });
+  }
+}
+
+// ─── Give Coins Dialog ────────────────────────────────────────────────────────
 
 class GiveCoinsDialog extends Dialog {
   constructor(fromActor: Actor, onComplete: () => void) {

@@ -154,6 +154,7 @@ function calculateWeightEncumbrance(
 
     const extraZone = extraZoneMap.get(item.zone);
     if (extraZone) {
+      if (extraZone.isDropped) continue; // dropped zones excluded entirely
       if (!extraZone.type || extraZone.type === "vehicle") continue; // vehicle zones excluded from character weight
       // storage zone — items count toward character weight
       // Scale weight by remaining uses ratio for consumable items
@@ -188,6 +189,7 @@ function calculateWeightEncumbrance(
     } else {
       const ez = extraZoneMap.get(zoneId);
       if (!ez || !ez.type || ez.type === "vehicle") continue; // vehicle zones excluded
+      if (ez.isDropped) continue; // dropped zones excluded
       if (ez.isBeltPouch) tinyWeight += coinWeight;
       else stowedWeight += coinWeight;
     }
@@ -201,6 +203,7 @@ function calculateWeightEncumbrance(
   for (const ez of inventory.extraZones ?? []) {
     if (ez.type && ez.type !== "vehicle") continue; // storage zones are not animals
     if (!ez.speed) continue;
+    if (ez.isDropped) continue; // dropped zones excluded from convoy speed
 
     const zoneItems = inventory.items.filter((i) => i.zone === ez.id);
     const coinWeight =
@@ -222,7 +225,7 @@ function calculateWeightEncumbrance(
     if (isOverCapacity) effectiveSpeed = 0;
     else if (isOverloaded) effectiveSpeed = Math.floor(ez.speed / 2);
 
-    animalSpeeds.push({ zoneName: ez.name, baseSpeed: ez.speed, usedWeight, capacity, isOverloaded, isOverCapacity, isOverWeight, effectiveSpeed });
+    animalSpeeds.push({ zoneName: ez.name, zoneIcon: ez.icon, baseSpeed: ez.speed, usedWeight, capacity, isOverloaded, isOverCapacity, isOverWeight, effectiveSpeed });
   }
 
   let convoySpeed: number | null = null;

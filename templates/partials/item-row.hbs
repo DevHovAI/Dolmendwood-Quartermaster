@@ -3,7 +3,7 @@
     {{#if item.isSecret}}
     <i class="fas fa-lock secret-icon" title="Secret item"></i>
     {{else if item.def}}
-    <i class="fas {{itemIcon item.def.category item.def.subcategory}} item-cat-icon" title="{{item.def.category}}"></i>
+    <i class="fas {{#if item.def.icon}}{{item.def.icon}}{{else}}{{itemIcon item.def.category item.def.subcategory}}{{/if}} item-cat-icon" title="{{item.def.category}}"></i>
     {{else}}
     <i class="fas {{#if item.customDefinition.icon}}{{item.customDefinition.icon}}{{else}}fa-sack{{/if}} item-cat-icon" title="Custom item"></i>
     {{/if}}
@@ -22,6 +22,7 @@
       {{/if}}
     {{/if}}
     {{#if item.def.cannotBeStowed}}<span class="badge badge-cannot-stow" title="Cannot be stowed">Carried</span>{{/if}}
+    {{#if item.def.qualities.length}}<span class="item-qualities">{{#each item.def.qualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>{{/if}}
     {{#if item.def.description}}<span class="item-description">{{item.def.description}}</span>{{/if}}
     {{#if item.customDefinition.description}}<span class="item-description">{{item.customDefinition.description}}</span>{{/if}}
   </span>

@@ -1,12 +1,22 @@
-<div class="inventory-zone zone-extra item-drop-zone" data-zone-id="{{zone.id}}">
+<div class="inventory-zone zone-extra">
   {{#each zone.items}}
   {{> item-row item=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
   {{/each}}
   <div class="zone-footer-btns">
     {{#if isOwner}}
+    <button type="button" class="icon-btn" data-action="toggleDropZone"
+            data-zone-id="{{zone.id}}" title="{{#if zone.isDropped}}Pick up zone{{else}}Drop zone (leave behind){{/if}}">
+      <i class="fas {{#if zone.isDropped}}fa-hand-holding{{else}}fa-arrow-down{{/if}}"></i>
+    </button>
     <button type="button" class="rename-zone-btn icon-btn" data-action="renameExtraZone"
             data-zone-id="{{zone.id}}" title="Rename zone">
       <i class="fas fa-pencil"></i>
+    </button>
+    {{/if}}
+    {{#if canGive}}
+    <button type="button" class="icon-btn give-btn" data-action="giveZone"
+            data-zone-id="{{zone.id}}" title="Give zone to another player">
+      <i class="fas fa-share"></i> Give
     </button>
     {{/if}}
     {{#if isGM}}

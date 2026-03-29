@@ -43,6 +43,7 @@ export interface ExtraZone {
   itemId?: string;       // ID of the inventory item that created this zone (for cleanup on deletion)
   speed?: number;        // base travel speed in ft (for animals/vehicles that affect convoy speed)
   isVehicle?: boolean;   // true for carts, wagons, boats — cannot be overloaded (unlike animals)
+  isDropped?: boolean;   // zone is "left behind" — greyed out, excluded from weight and speed
   icon?: string;         // FA icon class, e.g. "fa-backpack"; falls back to type default
   color?: string;        // zone header color key: "green" | "brown" | "navy" | "purple" | "slate" | "crimson" | "teal"
 }
@@ -86,6 +87,7 @@ export interface Transaction {
 
 export interface AnimalSpeedInfo {
   zoneName: string;
+  zoneIcon?: string;        // FA icon class from the zone (e.g. "fa-horse", "fa-caravan")
   baseSpeed: number;
   usedWeight: number;
   capacity: number;
@@ -135,6 +137,12 @@ export interface GMGrantPayload {
 export interface GMRemovePayload {
   actorId: string;
   itemId: string;
+}
+
+export interface GiveZonePayload {
+  fromActorId: string;
+  toActorId: string;
+  zoneId: string;
 }
 
 export interface GiveCoinsPayload {
