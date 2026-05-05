@@ -28,7 +28,6 @@ export const SOCKET_EVENTS = {
   PURCHASE_ITEM: "purchaseItem",
   GM_GRANT: "gmGrant",
   GM_REMOVE: "gmRemove",
-  GM_DECREMENT: "gmDecrement",
   GIVE_COINS: "giveCoins",
   GIVE_ZONE: "giveZone",
   REQUEST_REFRESH: "requestRefresh",

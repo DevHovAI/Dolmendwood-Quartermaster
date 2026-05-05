@@ -292,7 +292,6 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     target: HTMLElement
   ): Promise<void> {
     const itemId = target.dataset.itemId!;
-    const isGM = (game as Game).user?.isGM ?? false;
     const inventory = FlagManager.getInventory(this.actor);
     const item = inventory.items.find((i) => i.id === itemId);
     if (!item) return;
@@ -304,24 +303,16 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         content: `<p>Use the last <strong>${item.name}</strong>? This will remove it from inventory.</p>`,
       });
       if (!confirmed) return;
-      if (isGM) {
-        await FlagManager.updateInventory(this.actor, (inv) => {
-          inv.items = inv.items.filter((i) => i.id !== itemId);
-          return inv;
-        });
-      } else {
-        SocketHandler.emit(SOCKET_EVENTS.GM_REMOVE, { actorId: this.actor.id, itemId });
-      }
+      await FlagManager.updateInventory(this.actor, (inv) => {
+        inv.items = inv.items.filter((i) => i.id !== itemId);
+        return inv;
+      });
     } else {
-      if (isGM) {
-        await FlagManager.updateInventory(this.actor, (inv) => {
-          const i = inv.items.find((i) => i.id === itemId);
-          if (i) i.quantity -= 1;
-          return inv;
-        });
-      } else {
-        SocketHandler.emit(SOCKET_EVENTS.GM_DECREMENT, { actorId: this.actor.id, itemId });
-      }
+      await FlagManager.updateInventory(this.actor, (inv) => {
+        const i = inv.items.find((i) => i.id === itemId);
+        if (i) i.quantity -= 1;
+        return inv;
+      });
     }
     this.render();
   }

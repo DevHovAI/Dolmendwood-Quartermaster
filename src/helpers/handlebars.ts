@@ -279,7 +279,7 @@ export function registerHandlebarsHelpers(): void {
 }
 
 export async function registerHandlebarsPartials(): Promise<void> {
-  await loadTemplates({
+  await foundry.applications.handlebars.loadTemplates({
     "transaction-log": TEMPLATES.PARTIALS.TRANSACTION_LOG,
     "inventory-zone": TEMPLATES.PARTIALS.INVENTORY_ZONE,
     "item-row": TEMPLATES.PARTIALS.ITEM_ROW,

@@ -7,7 +7,6 @@ import type {
   SocketPayload,
   GMGrantPayload,
   GMRemovePayload,
-  GMDecrementPayload,
   GiveCoinsPayload,
   GiveZonePayload,
   PurchasePayload,
@@ -50,12 +49,6 @@ export class SocketHandler {
       case SOCKET_EVENTS.GM_REMOVE:
         if (g.user?.isGM) {
           SocketHandler.onGMRemove(payload.data as GMRemovePayload);
-        }
-        break;
-
-      case SOCKET_EVENTS.GM_DECREMENT:
-        if (g.user?.isGM) {
-          SocketHandler.onGMDecrement(payload.data as GMDecrementPayload);
         }
         break;
 
@@ -218,17 +211,6 @@ export class SocketHandler {
       };
       await FlagManager.appendTransaction(tx);
     }
-    SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
-  }
-
-  private static async onGMDecrement(data: GMDecrementPayload): Promise<void> {
-    const actor = (game as Game).actors?.get(data.actorId);
-    if (!actor) return;
-    await FlagManager.updateInventory(actor, (inv) => {
-      const item = inv.items.find((i) => i.id === data.itemId);
-      if (item) item.quantity = Math.max(1, item.quantity - 1);
-      return inv;
-    });
     SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
   }
 
