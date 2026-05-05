@@ -456,12 +456,19 @@
   font-family: inherit;
   flex-shrink: 1;
   flex-grow: 1;
-  resize: vertical;
+  resize: none;
   line-height: 1.3;
+  height: 1.6em;
+  min-height: 1.6em;
+  overflow: hidden;
 }
 
 .item-notes-input:focus {
   outline: 1px solid var(--dw-accent);
+  height: auto;
+  min-height: 2.4em;
+  overflow: auto;
+  resize: vertical;
 }
 
 .icon-btn {

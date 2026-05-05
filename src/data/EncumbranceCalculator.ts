@@ -47,7 +47,8 @@ function calculateSlotEncumbrance(
   for (const item of inventory.items) {
     const def = catalogMap.get(item.definitionId);
     // Zone-only items (animals/vehicles with grantsZone) don't count toward encumbrance
-    if (def?.grantsZone && def?.category === "Animals & Vehicles") continue;
+    const effectiveDefSlot = def ?? item.customDefinition;
+    if (effectiveDefSlot?.grantsZone && (effectiveDefSlot?.category === "Animals & Vehicles" || item.customDefinition?.grantsZone)) continue;
     const size: ItemDefinition["size"] =
       item.customDefinition?.size ?? def?.size ?? "normal";
     const qty = item.quantity;
@@ -150,7 +151,8 @@ function calculateWeightEncumbrance(
   for (const item of inventory.items) {
     const def = catalogMap.get(item.definitionId);
     // Animals/vehicles with grantsZone don't count toward character weight
-    if (def?.grantsZone && def?.category === "Animals & Vehicles") continue;
+    const effectiveDef = def ?? item.customDefinition;
+    if (effectiveDef?.grantsZone && (effectiveDef?.category === "Animals & Vehicles" || item.customDefinition?.grantsZone)) continue;
 
     const extraZone = extraZoneMap.get(item.zone);
     if (extraZone) {

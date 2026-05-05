@@ -139,6 +139,11 @@ export interface GMRemovePayload {
   itemId: string;
 }
 
+export interface GMDecrementPayload {
+  actorId: string;
+  itemId: string;
+}
+
 export interface GiveZonePayload {
   fromActorId: string;
   toActorId: string;

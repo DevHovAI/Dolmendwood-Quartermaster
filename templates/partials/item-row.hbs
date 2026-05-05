@@ -33,6 +33,11 @@
     <span class="item-qty">{{item.quantity}}</span>
     <button type="button" data-action="incrementQty" data-item-id="{{item.id}}" class="qty-btn">+</button>
   </div>
+  {{else if isOwner}}
+  <div class="item-qty-controls">
+    <button type="button" data-action="decrementQty" data-item-id="{{item.id}}" class="qty-btn" title="Use / consume one">−</button>
+    <span class="item-qty">{{item.quantity}}</span>
+  </div>
   {{else}}
   <span class="item-qty-readonly">×{{item.quantity}}</span>
   {{/if}}
@@ -68,6 +73,13 @@
   <button type="button" data-action="toggleSecret" data-item-id="{{item.id}}"
           class="icon-btn secret-btn" title="{{#if item.isSecret}}Make visible{{else}}Make secret{{/if}}">
     <i class="fas {{#if item.isSecret}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
+  </button>
+  {{/if}}
+
+  {{#if isOwner}}
+  <button type="button" data-action="renameItem" data-item-id="{{item.id}}"
+          class="icon-btn rename-btn" title="Rename item">
+    <i class="fas fa-pen"></i>
   </button>
   {{/if}}
 

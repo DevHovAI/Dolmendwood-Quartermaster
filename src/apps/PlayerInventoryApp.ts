@@ -63,6 +63,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       moveZoneCoins: PlayerInventoryApp._onMoveZoneCoins,
       toggleDropZone: PlayerInventoryApp._onToggleDropZone,
       giveZone: PlayerInventoryApp._onGiveZone,
+      addCustomAnimal: PlayerInventoryApp._onAddCustomAnimal,
+      renameItem: PlayerInventoryApp._onRenameItem,
     },
   };
 
@@ -103,7 +105,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const visibleItems = inventory.items.filter((item) => {
       if (item.isSecret && !isGM && !isOwner) return false;
       const def = CatalogManager.getDefinition(item.definitionId);
-      if (def?.grantsZone && def?.category === "Animals & Vehicles") return false;
+      const effectiveDef = def ?? item.customDefinition;
+      if (effectiveDef?.grantsZone && (effectiveDef?.category === "Animals & Vehicles" || item.customDefinition?.grantsZone)) return false;
       if (def?.grantsStorageZone && encMode === "weight") return false;
       return true;
     });
@@ -140,13 +143,14 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         let animalQualities: string[] = [];
         for (const item of inventory.items) {
           const def = CatalogManager.getDefinition(item.definitionId);
-          if (!def?.grantsZone) continue;
+          const effectiveDef = def ?? (item.customDefinition as import("../types").ItemDefinition | undefined);
+          if (!effectiveDef?.grantsZone) continue;
           // Match by itemId (preferred), fall back to name for legacy zones without itemId
-          if ((ez.itemId && item.id === ez.itemId) || (!ez.itemId && def.grantsZone.name === ez.name)) {
-            animalDescription = def.description;
-            animalSubcategory = def.subcategory;
-            animalItemName = def.name;
-            animalQualities = def.qualities ?? [];
+          if ((ez.itemId && item.id === ez.itemId) || (!ez.itemId && effectiveDef.grantsZone.name === ez.name)) {
+            animalDescription = effectiveDef.description;
+            animalSubcategory = effectiveDef.subcategory;
+            animalItemName = effectiveDef.name ?? item.name;
+            animalQualities = effectiveDef.qualities ?? [];
             break;
           }
         }
@@ -288,11 +292,37 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     target: HTMLElement
   ): Promise<void> {
     const itemId = target.dataset.itemId!;
-    await FlagManager.updateInventory(this.actor, (inv) => {
-      const item = inv.items.find((i) => i.id === itemId);
-      if (item) item.quantity = Math.max(1, item.quantity - 1);
-      return inv;
-    });
+    const isGM = (game as Game).user?.isGM ?? false;
+    const inventory = FlagManager.getInventory(this.actor);
+    const item = inventory.items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    if (item.quantity <= 1) {
+      // Last one — confirm removal
+      const confirmed = await Dialog.confirm({
+        title: "Remove Item",
+        content: `<p>Use the last <strong>${item.name}</strong>? This will remove it from inventory.</p>`,
+      });
+      if (!confirmed) return;
+      if (isGM) {
+        await FlagManager.updateInventory(this.actor, (inv) => {
+          inv.items = inv.items.filter((i) => i.id !== itemId);
+          return inv;
+        });
+      } else {
+        SocketHandler.emit(SOCKET_EVENTS.GM_REMOVE, { actorId: this.actor.id, itemId });
+      }
+    } else {
+      if (isGM) {
+        await FlagManager.updateInventory(this.actor, (inv) => {
+          const i = inv.items.find((i) => i.id === itemId);
+          if (i) i.quantity -= 1;
+          return inv;
+        });
+      } else {
+        SocketHandler.emit(SOCKET_EVENTS.GM_DECREMENT, { actorId: this.actor.id, itemId });
+      }
+    }
     this.render();
   }
 
@@ -493,6 +523,24 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const zone = (inventory.extraZones ?? []).find((ez) => ez.id === zoneId);
     if (!zone) return;
     new GiveZoneDialog(this.actor, zoneId, () => this.render()).render(true);
+  }
+
+  private static _onAddCustomAnimal(this: PlayerInventoryApp): void {
+    if (!(game as Game).user?.isGM) return;
+    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+    new AddCustomAnimalDialog(this.actor, encMode, () => this.render()).render(true);
+  }
+
+  private static async _onRenameItem(
+    this: PlayerInventoryApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const itemId = target.dataset.itemId!;
+    const inventory = FlagManager.getInventory(this.actor);
+    const item = inventory.items.find((i) => i.id === itemId);
+    if (!item) return;
+    new RenameItemDialog(this.actor, itemId, item.name, () => this.render()).render(true);
   }
 
   // ─── Drag-and-drop helpers ──────────────────────────────────────────────────
@@ -1306,8 +1354,8 @@ class GrantCoinsDialog extends Dialog {
             const cp = Math.max(0, parseInt(html.find("#grant-cp").val() as string, 10) || 0);
             if (pp + gp + sp + cp === 0) return;
             await FlagManager.updateInventory(toActor, (inv) => {
-              inv.coinsByZone ??= { equipped: { ...inv.coins } };
-              addCoinsToZone(inv.coinsByZone, { cp, sp, gp, pp });
+              inv.coinsByZone ??= { stowed: { ...inv.coins } };
+              addCoinsToZone(inv.coinsByZone, { cp, sp, gp, pp }, "stowed");
               return inv;
             });
             ui.notifications?.info(`Granted coins to ${toActor.name}.`);
@@ -1410,6 +1458,164 @@ class MoveCoinsBetweenZonesDialog extends Dialog {
         cancel: { label: "Cancel" },
       },
       default: "move",
+    });
+  }
+}
+
+// ─── Add Custom Animal Dialog (GM only) ─────────────────────────────────────
+
+class AddCustomAnimalDialog extends Dialog {
+  constructor(actor: Actor, encMode: "slots" | "weight", onComplete: () => void) {
+    const iconOptions = [
+      { value: "fa-horse", label: "Horse" },
+      { value: "fa-dog", label: "Dog / Wolf" },
+      { value: "fa-cat", label: "Cat" },
+      { value: "fa-crow", label: "Bird" },
+      { value: "fa-dragon", label: "Dragon" },
+      { value: "fa-spider", label: "Spider" },
+      { value: "fa-paw", label: "Paw (generic)" },
+      { value: "fa-caravan", label: "Cart / Vehicle" },
+      { value: "fa-ship", label: "Boat" },
+    ];
+    const iconOptionsHtml = iconOptions.map(
+      (o) => `<option value="${o.value}">${o.label}</option>`
+    ).join("");
+
+    super({
+      title: "Add Custom Animal / Vehicle",
+      content: `
+        <form>
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="animal-name" placeholder="e.g. Alden the Wolf" />
+          </div>
+          <div class="form-group">
+            <label>Type / Subcategory</label>
+            <input type="text" id="animal-subcategory" placeholder="e.g. Wolves, Horses, Land Vehicles" />
+          </div>
+          <div class="form-group">
+            <label>Icon</label>
+            <select id="animal-icon">${iconOptionsHtml}</select>
+          </div>
+          <div class="form-group">
+            <label>Speed (ft)</label>
+            <input type="number" id="animal-speed" value="40" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Weight Capacity (coin wt)</label>
+            <input type="number" id="animal-weight-cap" value="0" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Slot Capacity</label>
+            <input type="number" id="animal-slot-cap" value="0" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Qualities (comma-separated)</label>
+            <input type="text" id="animal-qualities" placeholder="e.g. Loyal, Fast, Night Vision" />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="animal-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+          </div>
+        </form>
+      `,
+      buttons: {
+        add: {
+          label: "Add Animal",
+          callback: async (html: JQuery) => {
+            const name = (html.find("#animal-name").val() as string).trim();
+            if (!name) { ui.notifications?.warn("Name is required."); return; }
+            const subcategory = (html.find("#animal-subcategory").val() as string).trim();
+            const icon = html.find("#animal-icon").val() as string;
+            const speed = Math.max(0, parseInt(html.find("#animal-speed").val() as string, 10) || 0);
+            const weightCapacity = Math.max(0, parseInt(html.find("#animal-weight-cap").val() as string, 10) || 0);
+            const maxSlots = Math.max(0, parseInt(html.find("#animal-slot-cap").val() as string, 10) || 0);
+            const qualitiesRaw = (html.find("#animal-qualities").val() as string).trim();
+            const qualities = qualitiesRaw ? qualitiesRaw.split(",").map((q) => q.trim()).filter(Boolean) : [];
+            const description = (html.find("#animal-desc").val() as string).trim();
+
+            const isVehicleSub = ["land vehicles", "water vehicles"].includes(subcategory.toLowerCase());
+
+            await FlagManager.updateInventory(actor, (inv) => {
+              const itemId = foundry.utils.randomID();
+              const customDef: Partial<import("../types").ItemDefinition> = {
+                isCustom: true,
+                icon,
+                category: "Animals & Vehicles",
+                subcategory,
+                size: "normal",
+                weight: 0,
+                qualities,
+                grantsZone: { name, maxSlots, weightCapacity, speed },
+              };
+              if (description) customDef.description = description;
+
+              inv.items.push({
+                id: itemId,
+                definitionId: "",
+                name,
+                quantity: 1,
+                zone: "equipped",
+                isSecret: false,
+                notes: "",
+                customDefinition: customDef,
+              });
+
+              inv.extraZones ??= [];
+              inv.extraZones.push({
+                id: foundry.utils.randomID(),
+                name,
+                maxSlots,
+                weightCapacity,
+                itemId,
+                icon,
+                ...(speed > 0 ? { speed } : {}),
+                ...(isVehicleSub ? { isVehicle: true } : {}),
+              });
+
+              return inv;
+            });
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "add",
+    });
+  }
+}
+
+// ─── Rename Item Dialog ─────────────────────────────────────────────────────
+
+class RenameItemDialog extends Dialog {
+  constructor(actor: Actor, itemId: string, currentName: string, onComplete: () => void) {
+    super({
+      title: "Rename Item",
+      content: `
+        <form>
+          <div class="form-group">
+            <label>New Name</label>
+            <input type="text" id="rename-item-name" value="${currentName.replace(/"/g, "&quot;")}" />
+          </div>
+        </form>
+      `,
+      buttons: {
+        rename: {
+          label: "Rename",
+          callback: async (html: JQuery) => {
+            const newName = (html.find("#rename-item-name").val() as string).trim();
+            if (!newName) return;
+            await FlagManager.updateInventory(actor, (inv) => {
+              const item = inv.items.find((i) => i.id === itemId);
+              if (item) item.name = newName;
+              return inv;
+            });
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "rename",
     });
   }
 }

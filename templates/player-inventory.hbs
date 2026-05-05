@@ -96,7 +96,6 @@
       {{/if}}
     </div>
     {{> inventory-zone items=zones.equipped zone="equipped" canEdit=canEdit canGive=canGive isGM=isGM isOwner=isOwner canAddItem=canAddItem extraZones=extraZones encMode=encMode}}
-    {{> zone-coin-purse zoneId="equipped" zoneCoins=(lookup coinsByZone "equipped") canEdit=canEdit isOwner=isOwner}}
   </section>
 
   {{!-- Stowed Zone (slot mode only) --}}
@@ -170,11 +169,18 @@
   </section>
   {{/each}}
 
-  {{!-- GM button to add a new storage zone (slot mode only) --}}
-  {{#if (and isGM (neq encMode "weight"))}}
-  <button type="button" data-action="addExtraZone" class="btn-add-extra-zone">
-    <i class="fas fa-plus"></i> Add Storage Zone
-  </button>
+  {{!-- GM buttons to add zones --}}
+  {{#if isGM}}
+  <div class="gm-zone-buttons">
+    {{#if (neq encMode "weight")}}
+    <button type="button" data-action="addExtraZone" class="btn-add-extra-zone">
+      <i class="fas fa-plus"></i> Add Storage Zone
+    </button>
+    {{/if}}
+    <button type="button" data-action="addCustomAnimal" class="btn-add-extra-zone">
+      <i class="fas fa-paw"></i> Add Custom Animal / Vehicle
+    </button>
+  </div>
   {{/if}}
 
   {{!-- Party Gear & Wealth summary --}}

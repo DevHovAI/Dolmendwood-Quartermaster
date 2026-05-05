@@ -378,11 +378,23 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     target: HTMLElement
   ): void {
     const definitionId = target.dataset.itemId!;
-    const def = CatalogManager.getDefinition(definitionId);
-    if (!def || !this.selectedActorId) {
+    if (!this.selectedActorId) {
       ui.notifications?.warn("Select a party member first.");
       return;
     }
+
+    const g = game as Game;
+    const catalogDef = CatalogManager.getDefinition(definitionId);
+    const localCustomItems = this.localName
+      ? ((g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {})[this.localName] ?? []
+      : [];
+    const def = catalogDef ?? localCustomItems.find((i) => i.id === definitionId);
+    if (!def) {
+      ui.notifications?.warn("Item not found.");
+      return;
+    }
+
+    const isLocalCustom = !catalogDef;
 
     SocketHandler.emit(SOCKET_EVENTS.GM_GRANT, {
       actorId: this.selectedActorId,
@@ -393,6 +405,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
         zone: "stowed" as InventoryItem["zone"],
         isSecret: false,
         notes: "",
+        ...(isLocalCustom ? { customDefinition: def as Partial<ItemDefinition> } : {}),
       },
     });
     ui.notifications?.info(`Granted ${def.name}.`);

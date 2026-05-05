@@ -114,13 +114,13 @@
               </button>
               {{/unless}}
               {{#if @root.isGM}}
-              {{#unless this.isLocalCustom}}
               {{#unless this.isHidden}}
               <button type="button" data-action="grantItem" data-item-id="{{this.id}}"
                       class="btn-grant" title="Grant item (no cost)">
                 <i class="fas fa-gift"></i> Grant
               </button>
               {{/unless}}
+              {{#unless this.isLocalCustom}}
               <button type="button"
                       data-action="{{#if @root.isLocalShop}}toggleLocalHideItem{{else}}toggleHideItem{{/if}}"
                       data-item-id="{{this.id}}"

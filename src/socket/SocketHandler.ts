@@ -7,6 +7,7 @@ import type {
   SocketPayload,
   GMGrantPayload,
   GMRemovePayload,
+  GMDecrementPayload,
   GiveCoinsPayload,
   GiveZonePayload,
   PurchasePayload,
@@ -49,6 +50,12 @@ export class SocketHandler {
       case SOCKET_EVENTS.GM_REMOVE:
         if (g.user?.isGM) {
           SocketHandler.onGMRemove(payload.data as GMRemovePayload);
+        }
+        break;
+
+      case SOCKET_EVENTS.GM_DECREMENT:
+        if (g.user?.isGM) {
+          SocketHandler.onGMDecrement(payload.data as GMDecrementPayload);
         }
         break;
 
@@ -129,9 +136,48 @@ export class SocketHandler {
         return inv;
       });
     } else {
-      const item = { ...data.item, id: foundry.utils.randomID() };
+      const grantedItem: InventoryItem = { ...data.item, id: foundry.utils.randomID() };
+      const def = CatalogManager.getDefinition(grantedItem.definitionId) ?? (grantedItem.customDefinition as import("../types").ItemDefinition | undefined);
+
       await FlagManager.updateInventory(actor, (inv) => {
-        inv.items.push(item);
+        inv.items.push(grantedItem);
+
+        // Create extra zones for animals/vehicles
+        if (def?.grantsZone) {
+          const isVehicleSub = ["land vehicles", "water vehicles"].includes((def.subcategory ?? "").toLowerCase());
+          inv.extraZones ??= [];
+          inv.extraZones.push({
+            id: foundry.utils.randomID(),
+            name: def.grantsZone.name,
+            maxSlots: def.grantsZone.maxSlots,
+            weightCapacity: def.grantsZone.weightCapacity ?? 0,
+            itemId: grantedItem.id,
+            icon: subcategoryToIcon(def.subcategory),
+            ...(def.grantsZone.speed !== undefined ? { speed: def.grantsZone.speed } : {}),
+            ...(isVehicleSub ? { isVehicle: true } : {}),
+          });
+        }
+
+        // Create storage zones for containers (weight mode)
+        if (def?.grantsStorageZone) {
+          const encMode = (game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots";
+          if (encMode === "weight") {
+            grantedItem.zone = "equipped";
+            inv.extraZones ??= [];
+            inv.extraZones.push({
+              id: foundry.utils.randomID(),
+              name: def.grantsStorageZone.name,
+              maxSlots: 0,
+              weightCapacity: def.grantsStorageZone.weightCapacity,
+              type: "storage" as const,
+              selfWeight: def.weight ?? 0,
+              itemId: grantedItem.id,
+              ...(def.grantsStorageZone.isBeltPouch ? { isBeltPouch: true } : {}),
+              ...(def.grantsStorageZone.allowedItemTags?.length ? { allowedItemTags: def.grantsStorageZone.allowedItemTags } : {}),
+            });
+          }
+        }
+
         return inv;
       });
     }
@@ -141,7 +187,7 @@ export class SocketHandler {
       type: "gm_grant",
       fromActorId: "shop",
       toActorId: data.actorId,
-      items: [{ definitionId: item.definitionId, name: item.name, quantity: item.quantity }],
+      items: [{ definitionId: data.item.definitionId, name: data.item.name, quantity: data.item.quantity }],
       coinsDelta: [],
     };
     await FlagManager.appendTransaction(tx);
@@ -172,6 +218,17 @@ export class SocketHandler {
       };
       await FlagManager.appendTransaction(tx);
     }
+    SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+  }
+
+  private static async onGMDecrement(data: GMDecrementPayload): Promise<void> {
+    const actor = (game as Game).actors?.get(data.actorId);
+    if (!actor) return;
+    await FlagManager.updateInventory(actor, (inv) => {
+      const item = inv.items.find((i) => i.id === data.itemId);
+      if (item) item.quantity = Math.max(1, item.quantity - 1);
+      return inv;
+    });
     SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
   }
 
