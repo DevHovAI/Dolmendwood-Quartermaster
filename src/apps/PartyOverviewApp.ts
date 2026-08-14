@@ -4,6 +4,7 @@ import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { ShopApp } from "./ShopApp";
 import { PlayerInventoryApp } from "./PlayerInventoryApp";
+import type { PartyConvoy } from "../types";
 
 export interface PartySummaryCoin {
   pp: number; gp: number; sp: number; cp: number;
@@ -23,6 +24,48 @@ export interface PartySummary {
   totalCp: number;
   totalGpStr: string;
   hasItems: boolean;
+}
+
+/**
+ * Slowest marching speed across the party: every member's own speed (which already
+ * accounts for their own animals) plus every animal/vehicle they lead. The party can
+ * only move as fast as its slowest part. Returns null if there is nobody to compare.
+ */
+export function buildPartyConvoy(
+  partyActors: Actor[],
+  encMode: "slots" | "weight" = "slots"
+): PartyConvoy | null {
+  let best: PartyConvoy | null = null;
+
+  const consider = (candidate: PartyConvoy) => {
+    if (!best || candidate.speed < best.speed) best = candidate;
+  };
+
+  for (const actor of partyActors) {
+    const inv = FlagManager.getInventory(actor);
+    const enc = calculateEncumbrance(inv, CatalogManager.getMap(), encMode);
+    const name = actor.name ?? "Unknown";
+
+    consider({
+      speed: enc.footSpeed,
+      slowestName: name,
+      slowestKind: "character",
+      slowestOwner: name,
+    });
+
+    for (const animal of enc.animalSpeeds) {
+      // An animal that can't move at all doesn't set the pace — it gets left behind
+      if (animal.isOverCapacity) continue;
+      consider({
+        speed: animal.effectiveSpeed,
+        slowestName: animal.zoneName,
+        slowestKind: "animal",
+        slowestOwner: name,
+      });
+    }
+  }
+
+  return best;
 }
 
 export function buildPartySummary(

@@ -382,13 +382,10 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
 
   for (const app of instances.values()) {
     const appId = (app as { id?: string }).id ?? "";
-    if (appId === "dolmenwood-party-overview") {
+    // Inventory windows show a party-wide convoy speed, so any member's change is
+    // relevant to all of them — re-render regardless of which actor was updated.
+    if (appId === "dolmenwood-party-overview" || appId === "dolmenwood-player-inventory") {
       (app as { render?: () => void }).render?.();
-    } else if (appId === "dolmenwood-player-inventory") {
-      const playerApp = app as PlayerInventoryApp & { actor?: Actor };
-      if (playerApp.actor?.id === actor.id) {
-        playerApp.render();
-      }
     }
   }
 });

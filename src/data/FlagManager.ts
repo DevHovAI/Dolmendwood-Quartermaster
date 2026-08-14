@@ -1,5 +1,6 @@
 import { MODULE_ID, FLAGS } from "../constants";
 import { CatalogManager } from "./CatalogManager";
+import { getEncumbranceMode, reconcileZones, type EncumbranceMode } from "./zoneGrants";
 import type { CharacterInventory, ZoneCoins, Transaction } from "../types";
 
 function defaultInventory(actorId: string): CharacterInventory {
@@ -67,7 +68,7 @@ export function addCoinsToZone(
  * Ensures coinsByZone exists (migrating from legacy coins if needed),
  * clamps all values, prunes orphaned zone entries, and syncs inv.coins total.
  */
-function syncCoins(inv: CharacterInventory): void {
+function syncCoins(inv: CharacterInventory, encMode: EncumbranceMode = "slots"): void {
   // One-time migration: if coinsByZone has never been set, seed it from the legacy coins total.
   // After this runs once, coinsByZone is always present and inv.coins becomes a derived total.
   // We use inv.coinsByZone == null (not just falsy) to avoid re-migrating if explicitly set to {}.
@@ -101,6 +102,16 @@ function syncCoins(inv: CharacterInventory): void {
     }
   }
 
+  // Weight mode has no addressable "tiny" zone — the belt pouch is an extra zone with
+  // isBeltPouch — so coins left there would be unreachable in the UI. Fold them into equipped.
+  if (encMode === "weight") {
+    const tiny = inv.coinsByZone["tiny"];
+    if (tiny) {
+      equip.cp += tiny.cp; equip.sp += tiny.sp; equip.gp += tiny.gp; equip.pp += tiny.pp;
+      tiny.cp = 0; tiny.sp = 0; tiny.gp = 0; tiny.pp = 0;
+    }
+  }
+
   // Clamp all values to non-negative integers
   for (const z of Object.values(inv.coinsByZone)) {
     z.cp = Math.max(0, Math.round(z.cp ?? 0));
@@ -131,7 +142,11 @@ export class FlagManager {
   ): Promise<void> {
     const current = this.getInventory(actor);
     const updated = updater(structuredClone(current));
-    syncCoins(updated);
+    const encMode = getEncumbranceMode();
+    // Repair zone-granting items that lost (or never got) their zone before the
+    // coin pass runs, so their zones count as valid coin targets.
+    reconcileZones(updated, encMode);
+    syncCoins(updated, encMode);
     await this.setInventory(actor, updated);
   }
 

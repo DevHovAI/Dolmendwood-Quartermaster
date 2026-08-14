@@ -1,8 +1,8 @@
-import { MODULE_ID, SOCKET_NAME, SOCKET_EVENTS, SETTINGS } from "../constants";
+import { SOCKET_NAME, SOCKET_EVENTS } from "../constants";
 import { FlagManager, deductCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { processInnPurchase } from "../data/innPurchase";
-import { subcategoryToIcon } from "../helpers/handlebars";
+import { addItemWithZones, getEncumbranceMode } from "../data/zoneGrants";
 import type {
   SocketPayload,
   GMGrantPayload,
@@ -133,44 +133,8 @@ export class SocketHandler {
       const def = CatalogManager.getDefinition(grantedItem.definitionId) ?? (grantedItem.customDefinition as import("../types").ItemDefinition | undefined);
 
       await FlagManager.updateInventory(actor, (inv) => {
-        inv.items.push(grantedItem);
-
-        // Create extra zones for animals/vehicles
-        if (def?.grantsZone) {
-          const isVehicleSub = ["land vehicles", "water vehicles"].includes((def.subcategory ?? "").toLowerCase());
-          inv.extraZones ??= [];
-          inv.extraZones.push({
-            id: foundry.utils.randomID(),
-            name: def.grantsZone.name,
-            maxSlots: def.grantsZone.maxSlots,
-            weightCapacity: def.grantsZone.weightCapacity ?? 0,
-            itemId: grantedItem.id,
-            icon: subcategoryToIcon(def.subcategory),
-            ...(def.grantsZone.speed !== undefined ? { speed: def.grantsZone.speed } : {}),
-            ...(isVehicleSub ? { isVehicle: true } : {}),
-          });
-        }
-
-        // Create storage zones for containers (weight mode)
-        if (def?.grantsStorageZone) {
-          const encMode = (game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots";
-          if (encMode === "weight") {
-            grantedItem.zone = "equipped";
-            inv.extraZones ??= [];
-            inv.extraZones.push({
-              id: foundry.utils.randomID(),
-              name: def.grantsStorageZone.name,
-              maxSlots: 0,
-              weightCapacity: def.grantsStorageZone.weightCapacity,
-              type: "storage" as const,
-              selfWeight: def.weight ?? 0,
-              itemId: grantedItem.id,
-              ...(def.grantsStorageZone.isBeltPouch ? { isBeltPouch: true } : {}),
-              ...(def.grantsStorageZone.allowedItemTags?.length ? { allowedItemTags: def.grantsStorageZone.allowedItemTags } : {}),
-            });
-          }
-        }
-
+        // Creates the animal/vehicle or container zone this item grants, if any
+        addItemWithZones(inv, grantedItem, getEncumbranceMode(), def);
         return inv;
       });
     }
@@ -266,53 +230,22 @@ export class SocketHandler {
       }
 
       const isCustomShopItem = !CatalogManager.getDefinition(data.definitionId) && !!data.customDef;
-      inv.items.push({
-        id: foundry.utils.randomID(),
-        definitionId: data.definitionId,
-        name: def?.name ?? data.definitionId,
-        quantity: data.quantity,
-        zone: data.zone,
-        isSecret: false,
-        notes: "",
-        ...(isCustomShopItem ? { customDefinition: data.customDef } : {}),
-      });
-
-      if (def?.grantsZone) {
-        const pushedItem = inv.items[inv.items.length - 1];
-        const isVehicleSub = ["land vehicles", "water vehicles"].includes((def.subcategory ?? "").toLowerCase());
-        inv.extraZones ??= [];
-        inv.extraZones.push({
+      // Creates the animal/vehicle or container zone this item grants, if any
+      addItemWithZones(
+        inv,
+        {
           id: foundry.utils.randomID(),
-          name: def.grantsZone.name,
-          maxSlots: def.grantsZone.maxSlots,
-          weightCapacity: def.grantsZone.weightCapacity ?? 0,
-          itemId: pushedItem?.id,
-          icon: subcategoryToIcon(def.subcategory),
-          ...(def.grantsZone.speed !== undefined ? { speed: def.grantsZone.speed } : {}),
-          ...(isVehicleSub ? { isVehicle: true } : {}),
-        });
-      }
-
-      if (def?.grantsStorageZone) {
-        const encMode = (game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots";
-        if (encMode === "weight") {
-          // Override the container item's zone to "equipped" — it lives on the character
-          const pushed = inv.items[inv.items.length - 1];
-          if (pushed) pushed.zone = "equipped";
-          inv.extraZones ??= [];
-          inv.extraZones.push({
-            id: foundry.utils.randomID(),
-            name: def.grantsStorageZone.name,
-            maxSlots: 0,
-            weightCapacity: def.grantsStorageZone.weightCapacity,
-            type: "storage" as const,
-            selfWeight: def.weight ?? 0,
-            itemId: pushed?.id,
-            ...(def.grantsStorageZone.isBeltPouch ? { isBeltPouch: true } : {}),
-            ...(def.grantsStorageZone.allowedItemTags?.length ? { allowedItemTags: def.grantsStorageZone.allowedItemTags } : {}),
-          });
-        }
-      }
+          definitionId: data.definitionId,
+          name: def?.name ?? data.definitionId,
+          quantity: data.quantity,
+          zone: data.zone,
+          isSecret: false,
+          notes: "",
+          ...(isCustomShopItem ? { customDefinition: data.customDef } : {}),
+        },
+        getEncumbranceMode(),
+        def
+      );
 
       return inv;
     });

@@ -130,6 +130,7 @@ function calculateSlotEncumbrance(
     equippedWeight: 0,
     stowedWeight: 0,
     tinyWeight: 0,
+    footSpeed: finalSpeed,
     animalSpeeds: [],
     convoySpeed: null,
   };
@@ -198,7 +199,8 @@ function calculateWeightEncumbrance(
   }
 
   const totalWeight = equippedWeight + stowedWeight + tinyWeight;
-  let finalSpeed = getSpeedForWeight(totalWeight);
+  const footSpeed = getSpeedForWeight(totalWeight);
+  let finalSpeed: 40 | 30 | 20 | 10 = footSpeed;
 
   // ── Animal / convoy speed ───────────────────────────────────────────────────
   const animalSpeeds: AnimalSpeedInfo[] = [];
@@ -255,6 +257,7 @@ function calculateWeightEncumbrance(
     freeTinySlots: 0,
     tinyOverflow: 0,
     coinSlots: 0,
+    footSpeed,
     animalSpeeds,
     convoySpeed,
   };

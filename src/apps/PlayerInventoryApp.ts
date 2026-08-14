@@ -1,8 +1,9 @@
 import { TEMPLATES, SOCKET_EVENTS, SETTINGS, MODULE_ID } from "../constants";
 import { ShopApp } from "./ShopApp";
-import { buildPartySummary } from "./PartyOverviewApp";
+import { buildPartySummary, buildPartyConvoy } from "./PartyOverviewApp";
 import { FlagManager, totalZoneCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
+import { addItemWithZones } from "../data/zoneGrants";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker, buildColorPickerHTML, activateColorPicker, ZONE_ICONS } from "../helpers/handlebars";
@@ -200,6 +201,14 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
     );
     const partySummary = buildPartySummary(allPartyActors, isGM, g.user ?? null, undefined, encMode);
+    const partyConvoy = buildPartyConvoy(allPartyActors, encMode);
+
+    // Coins parked in "stowed" would be unreachable in weight mode when the Unsorted
+    // section is hidden for having no items — keep it open while it holds money.
+    const stowedCoins = coinsByZone["stowed"];
+    const showUnsorted =
+      zones.stowed.length > 0 ||
+      stowedCoins.cp + stowedCoins.sp + stowedCoins.gp + stowedCoins.pp > 0;
 
     return {
       actor: this.actor,
@@ -223,6 +232,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       canGive: isOwner && !isGM,
       partyMembers,
       partySummary,
+      partyConvoy,
+      showUnsorted,
       transactions: isGM ? FlagManager.getTransactions() : [],
     };
   }
@@ -862,15 +873,22 @@ class AddItemDialog extends Dialog {
               if (!def) return;
 
               await FlagManager.updateInventory(actor, (inv) => {
-                inv.items.push({
-                  id: foundry.utils.randomID(),
-                  definitionId,
-                  name: def.name,
-                  quantity: qty,
-                  zone: selectedZone,
-                  isSecret: false,
-                  notes: "",
-                });
+                // Containers/animals must get their zone here too — pushing the bare
+                // item would leave an invisible, undeletable entry that still weighs.
+                addItemWithZones(
+                  inv,
+                  {
+                    id: foundry.utils.randomID(),
+                    definitionId,
+                    name: def.name,
+                    quantity: qty,
+                    zone: selectedZone,
+                    isSecret: false,
+                    notes: "",
+                  },
+                  encMode,
+                  def
+                );
                 return inv;
               });
             }
@@ -1345,8 +1363,10 @@ class GrantCoinsDialog extends Dialog {
             const cp = Math.max(0, parseInt(html.find("#grant-cp").val() as string, 10) || 0);
             if (pp + gp + sp + cp === 0) return;
             await FlagManager.updateInventory(toActor, (inv) => {
-              inv.coinsByZone ??= { stowed: { ...inv.coins } };
-              addCoinsToZone(inv.coinsByZone, { cp, sp, gp, pp }, "stowed");
+              // syncCoins guarantees coinsByZone and seeds it into "equipped"; seeding
+              // it into "stowed" here would move a legacy purse to a different zone.
+              inv.coinsByZone ??= { equipped: { ...inv.coins } };
+              addCoinsToZone(inv.coinsByZone, { cp, sp, gp, pp }, "equipped");
               return inv;
             });
             ui.notifications?.info(`Granted coins to ${toActor.name}.`);

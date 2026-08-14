@@ -117,8 +117,17 @@ export interface EncumbranceResult {
   stowedWeight: number;
   tinyWeight: number;                  // weight in belt pouch (capacity: 50)
   // Animal/convoy speed
+  footSpeed: 40 | 30 | 20 | 10;        // speed from carried load alone, before any animal clamp
   animalSpeeds: AnimalSpeedInfo[];
   convoySpeed: number | null;          // null = no animals with speed; otherwise min effective speed
+}
+
+// Slowest marching speed across the whole party — computed per render, never stored
+export interface PartyConvoy {
+  speed: number;
+  slowestName: string;                 // character or animal/vehicle that sets the pace
+  slowestKind: "character" | "animal";
+  slowestOwner: string;                // character carrying the slow animal (= slowestName for characters)
 }
 
 // Socket message payload

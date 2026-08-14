@@ -13,11 +13,13 @@
   {{!-- Encumbrance bars --}}
   {{> encumbrance-bar encumbrance=encumbrance encMode=encMode}}
 
-  {{!-- Convoy speed indicator (weight mode, when animals are present) --}}
-  {{#if (eq encMode "weight")}}
-  {{#if encumbrance.animalSpeeds.length}}
+  {{!-- Convoy speed: own marching pace, own animals, and the party-wide slowest --}}
   <div class="convoy-speed-bar">
     <span class="convoy-label"><i class="fas fa-route"></i> Convoy Speed:</span>
+    <span class="own-speed-badge {{speedColor encumbrance.finalSpeed}}" title="Your own marching pace, including your animals">
+      <i class="fas fa-person-walking"></i> You: {{encumbrance.finalSpeed}}ft
+    </span>
+    {{#if (eq encMode "weight")}}
     {{#each encumbrance.animalSpeeds}}
     <span class="animal-speed-badge {{#if this.isOverCapacity}}speed-red{{else if this.isOverloaded}}speed-orange{{else if (gte this.effectiveSpeed 40)}}speed-green{{else if (gte this.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
           title="{{this.zoneName}}: {{this.usedWeight}} / {{this.capacity}} wt{{#if this.isOverCapacity}} — over capacity!{{else if this.isOverloaded}} — overloaded (half speed){{/if}}">
@@ -26,14 +28,15 @@
       {{#if this.isOverCapacity}}<i class="fas fa-times-circle"></i>{{/if}}
     </span>
     {{/each}}
-    {{#if encumbrance.convoySpeed}}
-    <span class="convoy-final {{#if (gte encumbrance.convoySpeed 40)}}speed-green{{else if (gte encumbrance.convoySpeed 30)}}speed-yellow{{else if (gte encumbrance.convoySpeed 20)}}speed-orange{{else}}speed-red{{/if}}">
-      → {{encumbrance.convoySpeed}}ft
+    {{/if}}
+    {{#if partyConvoy}}
+    <span class="convoy-final {{#if (gte partyConvoy.speed 40)}}speed-green{{else if (gte partyConvoy.speed 30)}}speed-yellow{{else if (gte partyConvoy.speed 20)}}speed-orange{{else}}speed-red{{/if}}"
+          title="Slowest in the party: {{partyConvoy.slowestName}}{{#if (eq partyConvoy.slowestKind "animal")}} ({{partyConvoy.slowestOwner}}){{/if}}">
+      <i class="fas fa-users"></i> Party: {{partyConvoy.speed}}ft
+      <span class="convoy-slowest">— {{partyConvoy.slowestName}}</span>
     </span>
     {{/if}}
   </div>
-  {{/if}}
-  {{/if}}
 
   {{!-- Coins — total summary only; per-zone purses appear in each zone section below --}}
   <section class="inv-coins">
@@ -55,13 +58,14 @@
 
   {{!-- Weight mode: Unsorted FIRST (before Equipped), then Equipped --}}
   {{#if (eq encMode "weight")}}
-  {{#if zones.stowed.length}}
+  {{#if showUnsorted}}
   <section class="inv-zone-section inv-zone-unsorted">
     <div class="zone-header">
       <h3><i class="fas fa-exclamation-triangle"></i> Unsorted</h3>
       <span class="zone-count" style="color:orange;">Move to a container</span>
     </div>
     {{> inventory-zone items=zones.stowed zone="stowed" canEdit=canEdit canGive=canGive isGM=isGM isOwner=isOwner canAddItem=false extraZones=extraZones encMode=encMode}}
+    {{> zone-coin-purse zoneId="stowed" zoneCoins=(lookup coinsByZone "stowed") canEdit=canEdit isOwner=isOwner}}
   </section>
   {{/if}}
   {{/if}}
@@ -96,6 +100,7 @@
       {{/if}}
     </div>
     {{> inventory-zone items=zones.equipped zone="equipped" canEdit=canEdit canGive=canGive isGM=isGM isOwner=isOwner canAddItem=canAddItem extraZones=extraZones encMode=encMode}}
+    {{> zone-coin-purse zoneId="equipped" zoneCoins=(lookup coinsByZone "equipped") canEdit=canEdit isOwner=isOwner}}
   </section>
 
   {{!-- Stowed Zone (slot mode only) --}}

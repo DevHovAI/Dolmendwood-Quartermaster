@@ -1289,6 +1289,22 @@
 .convoy-speed-bar .animal-speed-badge.speed-yellow { background: rgba(180,150,0,0.55); }
 .convoy-speed-bar .animal-speed-badge.speed-orange { background: rgba(200,100,0,0.55); }
 .convoy-speed-bar .animal-speed-badge.speed-red { background: rgba(180,30,30,0.55); }
+.convoy-speed-bar .own-speed-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.88em;
+  font-weight: bold;
+  color: #fff;
+  background: rgba(60,70,110,0.45);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.convoy-speed-bar .own-speed-badge.speed-green { background: rgba(40,140,40,0.55); }
+.convoy-speed-bar .own-speed-badge.speed-yellow { background: rgba(180,150,0,0.55); }
+.convoy-speed-bar .own-speed-badge.speed-orange { background: rgba(200,100,0,0.55); }
+.convoy-speed-bar .own-speed-badge.speed-red { background: rgba(180,30,30,0.55); }
 .convoy-final {
   font-weight: bold;
   font-size: 1em;
@@ -1297,6 +1313,12 @@
   background: rgba(0,0,0,0.2);
   border: 1px solid rgba(255,255,255,0.2);
   color: #fff;
+  margin-left: auto;
+}
+.convoy-final .convoy-slowest {
+  font-weight: normal;
+  opacity: 0.8;
+  font-size: 0.9em;
 }
 .convoy-final.speed-green { background: rgba(40,140,40,0.7); }
 .convoy-final.speed-yellow { background: rgba(180,150,0,0.7); }
