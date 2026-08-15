@@ -1,0 +1,46 @@
+/**
+ * Global aliases for type names this module used under the old v9 types.
+ * fvtt-types exposes the same concepts under namespaced names; aliasing them
+ * here keeps the call sites unchanged.
+ */
+import type { DeepPartial as FvttDeepPartial } from "@league-of-foundry-developers/foundry-vtt-types/utils";
+import type { ShopState, Transaction, ItemDefinition, CharacterInventory } from "./types";
+import type { InnQuality } from "./data/innData";
+
+declare global {
+  type DeepPartial<T extends object> = FvttDeepPartial<T>;
+  /** Static DEFAULT_OPTIONS / constructor options. */
+  type ApplicationV2Options = foundry.applications.api.ApplicationV2.Configuration;
+  /** Per-render options — what _prepareContext and _onRender actually receive. */
+  type ApplicationV2RenderOptions = foundry.applications.api.ApplicationV2.RenderOptions;
+  /** Context object handed to _onRender. */
+  type ApplicationV2RenderContext = foundry.applications.api.ApplicationV2.RenderContext;
+  type SceneControl = foundry.applications.ui.SceneControls.Control;
+  type SceneControlTool = foundry.applications.ui.SceneControls.Tool;
+  type ModuleData = Module;
+
+  /**
+   * Declare this module's world settings so game.settings.get/set are typed.
+   * Without this, fvtt-types only accepts the "core" namespace.
+   * Keys must stay in sync with SETTINGS in constants.ts.
+   */
+  interface SettingConfig {
+    "dolmenwood-party-inventory.shopState": ShopState;
+    "dolmenwood-party-inventory.transactionLog": Transaction[];
+    "dolmenwood-party-inventory.innState": { name: string; quality: InnQuality };
+    "dolmenwood-party-inventory.localHidden": Record<string, string[]>;
+    "dolmenwood-party-inventory.localCustomItems": Record<string, ItemDefinition[]>;
+    "dolmenwood-party-inventory.encumbranceMode": "slots" | "weight";
+  }
+
+  /** Declare the actor flag this module writes, so getFlag/setFlag are typed. */
+  interface FlagConfig {
+    Actor: {
+      "dolmenwood-party-inventory": {
+        inventory: CharacterInventory;
+      };
+    };
+  }
+}
+
+export {};

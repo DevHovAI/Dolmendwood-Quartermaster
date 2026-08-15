@@ -79,7 +79,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   };
 
   override async _prepareContext(
-    _options: Partial<ApplicationV2Options>
+    _options: DeepPartial<ApplicationV2RenderOptions> & { isFirstRender: boolean }
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
     const shopState = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
@@ -215,18 +215,21 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     };
   }
 
-  override render(...args: Parameters<InstanceType<typeof foundry.applications.api.ApplicationV2>["render"]>): unknown {
+  override render(
+    options?: boolean | DeepPartial<ApplicationV2RenderOptions>,
+    _options?: DeepPartial<ApplicationV2RenderOptions>
+  ): Promise<this> {
     const current = this.element?.querySelector<HTMLElement>(".shop-catalog")?.scrollTop;
     // Ignore a zero read: the browser clamps scrollTop to 0 while the catalog is
     // being replaced, and overwriting the saved value with that loses the position.
     if (current) this._scrollTop = current;
-    return super.render(...args);
+    return super.render(options as boolean, _options);
   }
 
-  override _onRender(
-    _context: Record<string, unknown>,
-    _options: Partial<ApplicationV2Options>
-  ): void {
+  override async _onRender(
+    _context: DeepPartial<ApplicationV2RenderContext>,
+    _options: DeepPartial<ApplicationV2RenderOptions>
+  ): Promise<void> {
     const el = this.element;
 
     // Restore scroll position on the next frame. Setting it synchronously here
@@ -241,7 +244,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       "change",
       (e) => {
         this.selectedActorId = (e.target as HTMLSelectElement).value || null;
-        this.render();
+        this.render(false);
       }
     );
 
@@ -249,7 +252,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     const searchEl = el.querySelector<HTMLInputElement>("#shop-search");
     searchEl?.addEventListener("input", (e) => {
       this.searchText = (e.target as HTMLInputElement).value;
-      this.render();
+      this.render(false);
     });
     // Restore cursor to end after re-render (render() recreates the DOM)
     if (searchEl && this.searchText) {
@@ -263,7 +266,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
   private static _onToggleAffordable(this: ShopApp): void {
     this.showAffordableOnly = !this.showAffordableOnly;
-    this.render();
+    this.render(false);
   }
 
   private static async _onToggleTag(
@@ -283,7 +286,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     }
     await g.settings.set(MODULE_ID, SETTINGS.SHOP_STATE, shopState);
     this._scrollTop = scrollTop;
-    this.render();
+    this.render(false);
   }
 
   private static async _onPurchaseItem(
@@ -442,7 +445,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     }
     await g.settings.set(MODULE_ID, SETTINGS.SHOP_STATE, shopState);
     this._scrollTop = scrollTop;
-    this.render();
+    this.render(false);
   }
 
   private static async _onToggleLocalHideItem(
@@ -465,12 +468,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     }
     await g.settings.set(MODULE_ID, SETTINGS.LOCAL_HIDDEN, localHiddenMap);
     this._scrollTop = scrollTop;
-    this.render();
+    this.render(false);
   }
 
   private static _onAddToShop(this: ShopApp): void {
     if (!this.localName) return;
-    new AddToShopDialog(this.localName, () => this.render()).render(true);
+    new AddToShopDialog(this.localName, () => this.render(false)).render(true);
   }
 
   private static async _onRemoveFromShop(
@@ -485,7 +488,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     if (!all[this.localName]) return;
     all[this.localName] = all[this.localName].filter((i) => i.id !== itemId);
     await g.settings.set(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, all);
-    this.render();
+    this.render(false);
   }
 
   private static _onAddCustomItem(this: ShopApp): void {
@@ -693,10 +696,14 @@ class AddToShopDialog extends Dialog {
               subcategory,
               cost: { amount: priceAmount, currency },
               size: "normal",
+              cannotBeStowed: false,
+              unit: "piece",
+              qualities: [],
               weight: 10,
               icon,
               tags: [],
               isCustom: true,
+              description: "",
               ...(description ? { description } : {}),
             };
             if (encMode === "weight") {

@@ -11,22 +11,31 @@ import { INN_CATEGORIES } from "./data/innData";
 import type { InnQuality } from "./data/innData";
 import "../styles/module.css";
 
+/**
+ * Hooks.on for hook names that are not in fvtt-types' typed registry
+ * (Foundry fires them, the type definitions just do not list them).
+ */
+const onUntypedHook = Hooks.on as unknown as (
+  hook: string,
+  fn: (...args: any[]) => unknown
+) => number;
+
 // ─── Module Initialization ────────────────────────────────────────────────────
 
 Hooks.once("init", () => {
   console.log(`${MODULE_ID} | Initializing`);
 
   // Register world-scoped settings
-  game.settings.register(MODULE_ID, SETTINGS.SHOP_STATE, {
+  game.settings!.register(MODULE_ID, SETTINGS.SHOP_STATE, {
     name: "Shop State",
     hint: "Active tags and available items for the shop panel.",
     scope: "world",
     config: false,
     type: Object,
     default: { activeTags: [], availableItems: [] },
-  });
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
-  game.settings.register(MODULE_ID, FLAGS.TRANSACTION_LOG, {
+  game.settings!.register(MODULE_ID, FLAGS.TRANSACTION_LOG, {
     name: "Transaction Log",
     scope: "world",
     config: false,
@@ -34,28 +43,28 @@ Hooks.once("init", () => {
     default: [],
   });
 
-  game.settings.register(MODULE_ID, SETTINGS.INN_STATE, {
+  game.settings!.register(MODULE_ID, SETTINGS.INN_STATE, {
     scope: "world",
     config: false,
     type: Object,
     default: { name: "The Wayward Boar", quality: "common" },
   });
 
-  game.settings.register(MODULE_ID, SETTINGS.LOCAL_HIDDEN, {
+  game.settings!.register(MODULE_ID, SETTINGS.LOCAL_HIDDEN, {
     scope: "world",
     config: false,
     type: Object,
     default: {},
   });
 
-  game.settings.register(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, {
+  game.settings!.register(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, {
     scope: "world",
     config: false,
     type: Object,
     default: {},
   });
 
-  game.settings.register(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE, {
+  game.settings!.register(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE, {
     name: "Encumbrance System",
     hint: "Slot Encumbrance tracks gear slots (equipped ≤10, stowed ≤16). Weight Encumbrance tracks total item weight in coins (max 1,600).",
     scope: "world",
@@ -66,7 +75,7 @@ Hooks.once("init", () => {
       weight: "Weight Encumbrance",
     },
     default: "slots",
-  } as Parameters<typeof game.settings.register>[2]);
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   // Register Handlebars helpers (synchronous)
   registerHandlebarsHelpers();
@@ -132,7 +141,7 @@ Hooks.once("ready", async () => {
     return htmlOrEl as HTMLElement;
   }
 
-  Hooks.on("renderNoteConfig", (app: object & { document?: { getFlag?: (m: string, k: string) => unknown } }, htmlOrEl: unknown) => {
+  Hooks.on("renderNoteConfig", (app: object, htmlOrEl: unknown) => {
     const el = toNoteEl(htmlOrEl);
     const note = (app as { document?: { getFlag?: (m: string, k: string) => unknown } }).document;
 
@@ -250,17 +259,17 @@ Hooks.once("ready", async () => {
     footer.before(wrapper);
 
     // Toggle visibility on checkbox change
-    el.querySelector("#note-is-inn")?.addEventListener("change", function () {
+    el.querySelector("#note-is-inn")?.addEventListener("change", function (this: HTMLInputElement) {
       (el.querySelector("#note-inn-fields") as HTMLElement).style.display =
-        (this as HTMLInputElement).checked ? "" : "none";
+        this.checked ? "" : "none";
     });
-    el.querySelector("#note-is-shop")?.addEventListener("change", function () {
+    el.querySelector("#note-is-shop")?.addEventListener("change", function (this: HTMLInputElement) {
       (el.querySelector("#note-shop-fields") as HTMLElement).style.display =
-        (this as HTMLInputElement).checked ? "" : "none";
+        this.checked ? "" : "none";
     });
-    el.querySelector("#note-is-market")?.addEventListener("change", function () {
+    el.querySelector("#note-is-market")?.addEventListener("change", function (this: HTMLInputElement) {
       (el.querySelector("#note-market-fields") as HTMLElement).style.display =
-        (this as HTMLInputElement).checked ? "" : "none";
+        this.checked ? "" : "none";
     });
 
     // Helper: read current field values from the DOM into the WeakMap cache.
@@ -312,7 +321,7 @@ Hooks.once("ready", async () => {
 
   // Save flags when the Note config closes.
   // closeNoteConfig fires with (app, options) in v13 — no HTML, but we have the WeakMap cache.
-  Hooks.on("closeNoteConfig", async (app: object & { document?: { setFlag?: (m: string, k: string, v: unknown) => Promise<void>; unsetFlag?: (m: string, k: string) => Promise<void> } }) => {
+  Hooks.on("closeNoteConfig", async (app: object) => {
     const flags = pendingNoteFlags.get(app);
     if (!flags) return;
     const note = (app as { document?: { setFlag?: (m: string, k: string, v: unknown) => Promise<void>; unsetFlag?: (m: string, k: string) => Promise<void> } }).document;
@@ -339,7 +348,8 @@ Hooks.once("ready", async () => {
   // In v13 the hook arg may be the NoteDocument directly OR a Note placeable —
   // we try getFlag on both to handle either case.
   // Hook name "activateNote" covers v11–v13; if it still doesn't fire, also try "clickNote".
-  const handleNoteClick = (noteOrDoc: unknown): boolean | void => {
+  // Returns false to cancel the default note behaviour, true to let it continue.
+  const handleNoteClick = (noteOrDoc: unknown): boolean => {
     const asDoc = noteOrDoc as { getFlag?: (m: string, k: string) => unknown; document?: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> } };
     // Try direct getFlag first (NoteDocument), then .document.getFlag (Note placeable)
     const getFlag = (key: string) =>
@@ -357,12 +367,14 @@ Hooks.once("ready", async () => {
 
     const shopData = getFlag("shop") as { name?: string; categories?: string[]; priceFactor?: number } | undefined;
     if (shopData) { openShop(shopData.name, shopData.categories ?? [], shopData.priceFactor); return false; }
+    return true;
   };
 
   // Keep activateNote/clickNote as fallbacks for future Foundry versions that may fix the hook.
   // In v13, they never fire for notes without a linked journal entry (handled in "init" above).
+  // clickNote is not part of the typed hook registry, hence onUntypedHook.
   Hooks.on("activateNote", handleNoteClick);
-  Hooks.on("clickNote",    handleNoteClick);
+  onUntypedHook("clickNote", handleNoteClick);
 
   // Auto-open player's own inventory (non-GM players)
   const g = game as Game;
@@ -392,7 +404,7 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
 
 // Add a button to the sidebar (scene controls) for all users
 // In Foundry v13, controls is Record<string, SceneControl> and tools is Record<string, SceneControlTool>
-Hooks.on("getSceneControlButtons", (controls: Record<string, SceneControl>) => {
+onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>) => {
   const g = game as Game;
   const isGM = g.user?.isGM ?? false;
 

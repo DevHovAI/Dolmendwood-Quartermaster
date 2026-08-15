@@ -175,7 +175,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
   };
 
   override async _prepareContext(
-    _options: Partial<ApplicationV2Options>
+    _options: DeepPartial<ApplicationV2RenderOptions> & { isFirstRender: boolean }
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
 
@@ -263,10 +263,10 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     };
   }
 
-  override _onRender(
-    _context: Record<string, unknown>,
-    _options: Partial<ApplicationV2Options>
-  ): void {
+  override async _onRender(
+    _context: DeepPartial<ApplicationV2RenderContext>,
+    _options: DeepPartial<ApplicationV2RenderOptions>
+  ): Promise<void> {
     // Column click opens player inventory
     this.element
       .querySelectorAll<HTMLElement>(".player-column[data-actor-id]")

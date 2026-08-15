@@ -51,7 +51,7 @@ export class MarketApp extends foundry.applications.api.HandlebarsApplicationMix
   };
 
   override async _prepareContext(
-    _options: Partial<ApplicationV2Options>
+    _options: DeepPartial<ApplicationV2RenderOptions> & { isFirstRender: boolean }
   ): Promise<Record<string, unknown>> {
     const flag = this.getFlag();
     return {
@@ -209,9 +209,9 @@ class MarketEntryDialog extends Dialog {
             if (!name) return;
             const description = (html.find("#entry-desc").val() as string).trim();
             const cats: string[] = [];
-            html.find(".entry-cat:checked").each((_: number, el: Element) =>
-              cats.push((el as HTMLInputElement).value)
-            );
+            html.find(".entry-cat:checked").each((_: number, el: Element) => {
+              cats.push((el as HTMLInputElement).value);
+            });
             const icon = (html.find("#custom-icon-value").val() as string) || defaultIcon;
             const priceFactor = Math.max(1, parseInt(html.find("#entry-price-factor").val() as string, 10) || 100);
             const newEntry: MarketEntry = {

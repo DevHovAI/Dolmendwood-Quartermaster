@@ -14,6 +14,7 @@ import type {
   Transaction,
   ExtraZone,
   InventoryItem,
+  ItemDefinition,
 } from "../types";
 
 export class SocketHandler {
@@ -199,7 +200,8 @@ export class SocketHandler {
     const actor = (game as Game).actors?.get(data.actorId);
     if (!actor) return;
 
-    const def = CatalogManager.getDefinition(data.definitionId) ?? (data.customDef as typeof def | undefined);
+    const def: ItemDefinition | undefined =
+      CatalogManager.getDefinition(data.definitionId) ?? (data.customDef as ItemDefinition | undefined);
 
     await FlagManager.updateInventory(actor, (inv) => {
       const costCp =

@@ -65,7 +65,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
   }
 
   override async _prepareContext(
-    _options: Partial<ApplicationV2Options>
+    _options: DeepPartial<ApplicationV2RenderOptions> & { isFirstRender: boolean }
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
     const inventory = FlagManager.getInventory(this.actor);
@@ -223,10 +223,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     };
   }
 
-  override _onRender(
-    _context: Record<string, unknown>,
-    _options: Partial<ApplicationV2Options>
-  ): void {
+  override async _onRender(
+    _context: DeepPartial<ApplicationV2RenderContext>,
+    _options: DeepPartial<ApplicationV2RenderOptions>
+  ): Promise<void> {
     const el = this.element;
 
     // Notes editing
@@ -257,7 +257,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
           inv.coinsByZone[zoneId][currency] = value;
           return inv;
         });
-        this.render({ force: true } as Parameters<typeof this.render>[0]);
+        this.render(true);
       });
     });
 

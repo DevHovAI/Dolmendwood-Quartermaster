@@ -58,7 +58,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   }
 
   override async _prepareContext(
-    _options: Partial<ApplicationV2Options>
+    _options: DeepPartial<ApplicationV2RenderOptions> & { isFirstRender: boolean }
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
     const isGM = g.user?.isGM ?? false;
@@ -134,15 +134,18 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     };
   }
 
-  override render(...args: Parameters<InstanceType<typeof foundry.applications.api.ApplicationV2>["render"]>): unknown {
+  override render(
+    options?: boolean | DeepPartial<ApplicationV2RenderOptions>,
+    _options?: DeepPartial<ApplicationV2RenderOptions>
+  ): Promise<this> {
     this._scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? 0;
-    return super.render(...args);
+    return super.render(options as boolean, _options);
   }
 
-  override _onRender(
-    _context: Record<string, unknown>,
-    _options: Partial<ApplicationV2Options>
-  ): void {
+  override async _onRender(
+    _context: DeepPartial<ApplicationV2RenderContext>,
+    _options: DeepPartial<ApplicationV2RenderOptions>
+  ): Promise<void> {
     const el = this.element;
 
     const wc = el.querySelector<HTMLElement>(".window-content");
@@ -151,14 +154,14 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     // Actor selector
     el.querySelector<HTMLSelectElement>("#inn-actor-select")?.addEventListener("change", (e) => {
       this.selectedActorId = (e.target as HTMLSelectElement).value;
-      this.render();
+      this.render(false);
     });
 
     // Inn name edit (GM only)
     el.querySelector<HTMLInputElement>("#inn-name-input")?.addEventListener("change", async (e) => {
       this.innName = (e.target as HTMLInputElement).value.trim() || "The Wayward Boar";
       await this._saveState();
-      this.render();
+      this.render(false);
     });
   }
 
@@ -178,7 +181,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   ): Promise<void> {
     this.quality = target.dataset.quality as InnQuality;
     await this._saveState();
-    this.render();
+    this.render(false);
   }
 
   private static async _onToggleLocalHideInnItem(
@@ -198,7 +201,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       localHiddenMap[key].splice(idx, 1);
     }
     await g.settings?.set(MODULE_ID, SETTINGS.LOCAL_HIDDEN, localHiddenMap);
-    this.render();
+    this.render(false);
   }
 
   private static async _onPurchaseInnItem(
@@ -252,6 +255,6 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     SocketHandler.emitOrHandle(SOCKET_EVENTS.INN_PURCHASE, payload);
 
     ui.notifications?.info(`${actor.name} paid for ${item.name}. Enjoy!`);
-    this.render();
+    this.render(false);
   }
 }
