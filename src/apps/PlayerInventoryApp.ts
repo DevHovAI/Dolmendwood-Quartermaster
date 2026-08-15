@@ -42,7 +42,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       resizable: true,
     },
     position: {
-      width: 520,
+      // Capped so the window cannot open wider than the viewport on small screens
+      width: Math.min(1040, window.innerWidth - 80),
       height: 700,
     },
     classes: ["dolmenwood-party-inventory", "player-inventory"],
@@ -429,11 +430,17 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
   }
 
   private static _onOpenShop(this: PlayerInventoryApp): void {
-    const existing = foundry.applications?.instances?.get("dolmenwood-shop");
+    // Buy for the character whose inventory we came from, not for whoever the
+    // shop would otherwise default to. Also re-targets an already-open shop.
+    const actorId = this.actor.id ?? null;
+    const existing = foundry.applications?.instances?.get("dolmenwood-shop") as ShopApp | undefined;
     if (existing) {
-      (existing as { render: (o: unknown) => void }).render({ force: true });
+      existing.setActor(actorId);
+      (existing as unknown as { render: (o: unknown) => void }).render({ force: true });
     } else {
-      new ShopApp().render(true);
+      const app = new ShopApp();
+      app.setActor(actorId);
+      app.render(true);
     }
   }
 
@@ -1066,7 +1073,7 @@ class GiveItemDialog extends Dialog {
             const safeZone = (["tiny", "equipped", "stowed"] as string[]).includes(item.zone)
               ? item.zone as "tiny" | "equipped" | "stowed"
               : "stowed";
-            SocketHandler.emit(SOCKET_EVENTS.GM_GRANT, {
+            SocketHandler.emitOrHandle(SOCKET_EVENTS.GM_GRANT, {
               actorId: toActorId,
               item: {
                 definitionId: item.definitionId,
@@ -1137,7 +1144,7 @@ class GiveZoneDialog extends Dialog {
           callback: (html: JQuery) => {
             const toActorId = html.find("#give-zone-target").val() as string;
             if (!toActorId) return;
-            SocketHandler.emit(SOCKET_EVENTS.GIVE_ZONE, {
+            SocketHandler.emitOrHandle(SOCKET_EVENTS.GIVE_ZONE, {
               fromActorId: fromActor.id,
               toActorId,
               zoneId,
@@ -1214,7 +1221,7 @@ class GiveCoinsDialog extends Dialog {
             const sp = Math.min(inv.coins.sp, Math.max(0, parseInt(html.find("#give-sp").val() as string, 10) || 0));
             const cp = Math.min(inv.coins.cp, Math.max(0, parseInt(html.find("#give-cp").val() as string, 10) || 0));
             if (pp + gp + sp + cp === 0) return;
-            SocketHandler.emit(SOCKET_EVENTS.GIVE_COINS, {
+            SocketHandler.emitOrHandle(SOCKET_EVENTS.GIVE_COINS, {
               fromActorId: fromActor.id,
               toActorId,
               cp, sp, gp, pp,

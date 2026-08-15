@@ -158,13 +158,13 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
       resizable: true,
     },
     position: {
-      width: 960,
+      // Capped so the window cannot open wider than the viewport on small screens
+      width: Math.min(1200, window.innerWidth - 80),
       height: 780,
     },
     classes: ["dolmenwood-party-inventory", "party-overview"],
     actions: {
       openShop: PartyOverviewApp._onOpenShop,
-      openPlayerInventory: PartyOverviewApp._onOpenPlayerInventory,
     },
   };
 
@@ -285,16 +285,6 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
 
   private static _onOpenShop(this: PartyOverviewApp): void {
     new ShopApp().render(true);
-  }
-
-  private static _onOpenPlayerInventory(
-    this: PartyOverviewApp,
-    _event: Event,
-    target: HTMLElement
-  ): void {
-    const actorId = target.dataset.actorId!;
-    const actor = (game as Game).actors?.get(actorId);
-    if (actor) new PlayerInventoryApp(actor).render(true);
   }
 
 }

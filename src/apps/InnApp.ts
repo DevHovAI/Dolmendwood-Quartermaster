@@ -1,7 +1,6 @@
 import { TEMPLATES, SOCKET_EVENTS, MODULE_ID, SETTINGS } from "../constants";
 type LocalHiddenMap = Record<string, string[]>;
 import { FlagManager } from "../data/FlagManager";
-import { processInnPurchase } from "../data/innPurchase";
 import { SocketHandler } from "../socket/SocketHandler";
 import { INN_MENU, INN_CATEGORIES, filterByQuality } from "../data/innData";
 import type { InnQuality } from "../data/innData";
@@ -250,12 +249,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     };
     const payload: InnPurchasePayload = { actorId, itemName: item.name, totalCost };
 
-    if (g.user?.isGM) {
-      await processInnPurchase(payload);
-      SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
-    } else {
-      SocketHandler.emit(SOCKET_EVENTS.INN_PURCHASE, payload);
-    }
+    SocketHandler.emitOrHandle(SOCKET_EVENTS.INN_PURCHASE, payload);
 
     ui.notifications?.info(`${actor.name} paid for ${item.name}. Enjoy!`);
     this.render();

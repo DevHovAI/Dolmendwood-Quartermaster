@@ -1,10 +1,8 @@
 <div class="player-inventory">
-  {{!-- Header with actor name and speed --}}
+  {{!-- Header with actor name. Speed is shown by the encumbrance bar and the
+        convoy bar below — a third copy here was the same finalSpeed value. --}}
   <div class="inv-header">
     <h2 class="actor-name">{{actor.name}}</h2>
-    <div class="header-speed {{speedColor encumbrance.finalSpeed}}">
-      {{encumbrance.finalSpeed}}ft
-    </div>
     <button type="button" data-action="openShop" class="btn-toolbar btn-shop" title="Open Shop">
       <i class="fas fa-store"></i> Shop
     </button>

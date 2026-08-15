@@ -2329,6 +2329,7 @@ export const CATALOG: ItemDefinition[] = [
   },
   {
     id: "riding-saddle-bags",
+    icon: "fa-sack",
     name: "Riding Saddle Bags",
     category: "Animals & Vehicles",
     subcategory: "Accessories",
@@ -2345,6 +2346,7 @@ export const CATALOG: ItemDefinition[] = [
   {
     id: "dog-armour",
     name: "Dog Armour",
+    icon: "fa-dog",
     category: "Animals & Vehicles",
     subcategory: "Accessories",
     size: "normal",
@@ -2360,7 +2362,7 @@ export const CATALOG: ItemDefinition[] = [
   {
     id: "dog-feed-1-day",
     name: "Dog Food",
-    icon: "fa-dog",
+    icon: "fa-bone",
     category: "Animals & Vehicles",
     subcategory: "Accessories",
     size: "tiny",

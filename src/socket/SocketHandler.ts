@@ -25,7 +25,10 @@ export class SocketHandler {
   }
 
   /**
-   * Emit a socket event to all clients (including ourselves, handled locally too).
+   * Emit a socket event to the OTHER connected clients.
+   * Foundry never delivers a message back to its own sender, so this alone does
+   * not run the handler on this client — use emitOrHandle for GM-authoritative
+   * actions that the GM may trigger themself.
    */
   static emit(event: string, data: unknown): void {
     const payload: SocketPayload = {
@@ -36,53 +39,67 @@ export class SocketHandler {
     (game as Game).socket!.emit(SOCKET_NAME, payload);
   }
 
+  /**
+   * Route a GM-authoritative action to whoever is allowed to perform the write.
+   * On a player client the action is emitted so the GM carries it out; on the GM
+   * client it runs directly, because the GM would never receive its own message.
+   */
+  static emitOrHandle(event: string, data: unknown): void {
+    if ((game as Game).user?.isGM) {
+      void SocketHandler.runGMAction(event, data).then(() => SocketHandler.onRequestRefresh());
+    } else {
+      SocketHandler.emit(event, data);
+    }
+  }
+
   private static handleIncoming(payload: SocketPayload): void {
-    const g = game as Game;
-    switch (payload.event) {
+    if (payload.event === SOCKET_EVENTS.REQUEST_REFRESH) {
+      SocketHandler.onRequestRefresh();
+      return;
+    }
+    // Every remaining event writes to an actor, which only the GM may do
+    if (!(game as Game).user?.isGM) return;
+    void SocketHandler.runGMAction(payload.event, payload.data)
+      .then(() => SocketHandler.onRequestRefresh());
+  }
+
+  // Serializes GM writes. updateInventory is read-modify-write, so two actions
+  // running concurrently would read the same state and the later write would
+  // silently discard the earlier one.
+  private static queue: Promise<unknown> = Promise.resolve();
+
+  private static runGMAction(event: string, data: unknown): Promise<void> {
+    const next = SocketHandler.queue.then(() => SocketHandler.dispatchGMAction(event, data));
+    SocketHandler.queue = next.catch(() => undefined);
+    return next;
+  }
+
+  private static async dispatchGMAction(event: string, data: unknown): Promise<void> {
+    switch (event) {
       case SOCKET_EVENTS.GM_GRANT:
-        // Only the GM actually writes to the actor — this runs on the GM client
-        if (g.user?.isGM) {
-          SocketHandler.onGMGrant(payload.data as GMGrantPayload);
-        }
+        await SocketHandler.onGMGrant(data as GMGrantPayload);
         break;
 
       case SOCKET_EVENTS.GM_REMOVE:
-        if (g.user?.isGM) {
-          SocketHandler.onGMRemove(payload.data as GMRemovePayload);
-        }
-        break;
-
-      case SOCKET_EVENTS.PURCHASE_ITEM:
-        // Purchase is processed by the GM to ensure authoritative write
-        if (g.user?.isGM) {
-          void SocketHandler.processPurchase(payload.data as PurchasePayload).then(() => {
-            SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
-          });
-        }
+        await SocketHandler.onGMRemove(data as GMRemovePayload);
         break;
 
       case SOCKET_EVENTS.GIVE_COINS:
-        if (g.user?.isGM) {
-          SocketHandler.onGiveCoins(payload.data as GiveCoinsPayload);
-        }
+        await SocketHandler.onGiveCoins(data as GiveCoinsPayload);
         break;
 
       case SOCKET_EVENTS.GIVE_ZONE:
-        if (g.user?.isGM) {
-          SocketHandler.onGiveZone(payload.data as GiveZonePayload);
-        }
+        await SocketHandler.onGiveZone(data as GiveZonePayload);
         break;
 
-      case SOCKET_EVENTS.REQUEST_REFRESH:
-        SocketHandler.onRequestRefresh();
+      case SOCKET_EVENTS.PURCHASE_ITEM:
+        await SocketHandler.processPurchase(data as PurchasePayload);
+        SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
         break;
 
       case SOCKET_EVENTS.INN_PURCHASE:
-        if (g.user?.isGM) {
-          void processInnPurchase(payload.data as InnPurchasePayload).then(() => {
-            SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
-          });
-        }
+        await processInnPurchase(data as InnPurchasePayload);
+        SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
         break;
     }
   }
@@ -366,8 +383,11 @@ export class SocketHandler {
   }
 
   private static onRequestRefresh(): void {
-    // Re-render any open module application windows
-    for (const app of Object.values(foundry.applications?.instances ?? {})) {
+    // Re-render any open module application windows.
+    // instances is a Map — Object.values() on it always yields an empty array.
+    const instances = foundry.applications?.instances;
+    if (!instances) return;
+    for (const app of instances.values()) {
       const id = (app as { id?: string }).id ?? "";
       if (id.startsWith("dolmenwood-")) {
         (app as { render?: () => void }).render?.();

@@ -32,6 +32,17 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     this.priceFactor = priceFactor;
   }
 
+  /**
+   * Pre-select the character the shop buys for. Used when the shop is opened
+   * from a specific inventory, so the GM does not land on whichever party member
+   * happens to come first in the actor directory.
+   * Ignored for players — they can only ever buy for their own character.
+   */
+  setActor(actorId: string | null): void {
+    if (!(game as Game).user?.isGM) return;
+    this.selectedActorId = actorId;
+  }
+
   override get title(): string {
     return this.localName ?? "Shop";
   }
@@ -362,12 +373,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       ...(isLocalCustom ? { customDef: def as Partial<ItemDefinition> } : {}),
     };
 
-    if (isGM) {
-      await SocketHandler.processPurchase(payload);
-      SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
-    } else {
-      SocketHandler.emit(SOCKET_EVENTS.PURCHASE_ITEM, payload);
-    }
+    SocketHandler.emitOrHandle(SOCKET_EVENTS.PURCHASE_ITEM, payload);
 
     ui.notifications?.info(`Purchased ${def.name} for ${actor.name}.`);
   }
@@ -396,7 +402,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
     const isLocalCustom = !catalogDef;
 
-    SocketHandler.emit(SOCKET_EVENTS.GM_GRANT, {
+    SocketHandler.emitOrHandle(SOCKET_EVENTS.GM_GRANT, {
       actorId: this.selectedActorId,
       item: {
         definitionId,
@@ -560,7 +566,7 @@ class AddCustomShopItemDialog extends Dialog {
             }
             if (description) customDef.description = description;
 
-            SocketHandler.emit(SOCKET_EVENTS.GM_GRANT, {
+            SocketHandler.emitOrHandle(SOCKET_EVENTS.GM_GRANT, {
               actorId,
               item: {
                 definitionId: "",

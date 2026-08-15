@@ -14,7 +14,9 @@
   <div class="party-grid" style="grid-template-columns: repeat({{members.length}}, 1fr);">
     {{#each members}}
     <div class="player-column" data-actor-id="{{this.actorId}}">
-      {{!-- Player header --}}
+      {{!-- Name, bars and coins stay pinned while the item list scrolls --}}
+      <div class="player-col-sticky">
+      {{!-- Player header. No inventory button — clicking the column opens it. --}}
       <div class="player-col-header">
         <span class="player-name">{{this.actor.name}}</span>
         <span class="player-speed {{speedColor this.encumbrance.finalSpeed}}">
@@ -25,11 +27,6 @@
           {{/if}}
           {{/if}}
         </span>
-        <button type="button" data-action="openPlayerInventory"
-                data-actor-id="{{this.actorId}}" class="icon-btn open-inv-btn"
-                title="Open {{this.actor.name}}'s inventory">
-          <i class="fas fa-backpack"></i>
-        </button>
       </div>
 
       {{!-- Encumbrance bars --}}
@@ -79,6 +76,7 @@
       <div class="player-coins">
         {{> coin-display inventory=this.inventory encumbrance=this.encumbrance canEdit=false}}
       </div>
+      </div>{{!-- /.player-col-sticky --}}
 
       {{!-- Item list grouped by zone --}}
       <div class="player-items-compact">
