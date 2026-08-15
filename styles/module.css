@@ -1631,8 +1631,8 @@
    width and wins without needing !important. The width below is only a fallback
    for a non-flex context. */
 .zone-coin-input {
-  flex: 0 0 96px;
-  width: 96px;
+  flex: 0 0 48px;
+  width: 48px;
   padding: 2px 4px;
   font-size: 0.8em;
   border: 1px solid rgba(255,255,255,0.2);

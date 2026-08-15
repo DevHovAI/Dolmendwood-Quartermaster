@@ -3,27 +3,11 @@ import { ShopApp } from "./ShopApp";
 import { buildPartySummary, buildPartyConvoy } from "./PartyOverviewApp";
 import { FlagManager, totalZoneCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
-import { addItemWithZones } from "../data/zoneGrants";
+import { addItemWithZones, itemEffectiveWeight, zoneRejection } from "../data/zoneGrants";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
-import { buildIconPickerHTML, activateIconPicker, buildColorPickerHTML, activateColorPicker, ZONE_ICONS } from "../helpers/handlebars";
+import { buildIconPickerHTML, activateIconPicker, buildColorPickerHTML, activateColorPicker, buildZoneOptionsHTML, ZONE_ICONS } from "../helpers/handlebars";
 import type { InventoryItem, ExtraZone, ZoneCoins } from "../types";
-
-/** Compute effective weight for an item, scaling by remaining uses when applicable. */
-function itemEffectiveWeight(item: InventoryItem): number {
-  const def = CatalogManager.getDefinition(item.definitionId);
-  const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
-  const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
-  return baseWeight * usesRatio;
-}
-
-/** Check whether an item's tags allow it into a zone with allowedItemTags. Returns true if zone has no tag restriction. */
-function isItemAllowedInZone(item: InventoryItem, zone: ExtraZone): boolean {
-  if (!zone.allowedItemTags?.length) return true;
-  const def = CatalogManager.getDefinition(item.definitionId);
-  const itemTags = item.customDefinition?.tags ?? def?.tags ?? [];
-  return itemTags.some((tag) => zone.allowedItemTags!.includes(tag));
-}
 
 export class PlayerInventoryApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -559,37 +543,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const item = inventory.items.find((i) => i.id === itemId);
     if (!item || item.zone === newZone) return;
 
-    const targetZone = (inventory.extraZones ?? []).find((ez) => ez.id === newZone);
-
-    if (targetZone && !isItemAllowedInZone(item, targetZone)) {
-      ui.notifications?.warn(
-        `"${targetZone.name}" can only store items tagged: ${targetZone.allowedItemTags!.join(", ")}.`
-      );
+    const rejection = zoneRejection(inventory, newZone, item, itemId);
+    if (rejection) {
+      ui.notifications?.warn(rejection);
       return;
-    }
-
-    // Enforce storage zone weight capacity
-    if (targetZone?.type === "storage" && targetZone.weightCapacity > 0) {
-      const itemWeight = itemEffectiveWeight(item) * item.quantity;
-      const currentZoneWeight = inventory.items
-        .filter((i) => i.zone === newZone && i.id !== itemId)
-        .reduce((acc, i) => acc + itemEffectiveWeight(i) * i.quantity, 0);
-      if (currentZoneWeight + itemWeight > targetZone.weightCapacity) {
-        ui.notifications?.warn(
-          `"${targetZone.name}" can hold ${targetZone.weightCapacity} wt. ` +
-          `Currently ${currentZoneWeight} wt; item is ${itemWeight} wt.`
-        );
-        return;
-      }
-    }
-
-    // Enforce belt pouch weight limit (≤ 10 wt per item)
-    if (targetZone?.isBeltPouch) {
-      const weight = itemEffectiveWeight(item);
-      if (weight > 10) {
-        ui.notifications?.warn(`Only items weighing 10 wt or less fit in a belt pouch (item weighs ${weight} wt).`);
-        return;
-      }
     }
 
     await FlagManager.updateInventory(this.actor, (inv) => {
@@ -797,11 +754,11 @@ class AddItemDialog extends Dialog {
               </select>
             </div>`;
 
-    const zoneOptions = encMode === "weight"
-      ? `<option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>`
-      : `<option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>
-              <option value="stowed" ${zone === "stowed" ? "selected" : ""}>Stowed</option>
-              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Belt Pouch</option>`;
+    const zoneOptions = buildZoneOptionsHTML(
+      FlagManager.getInventory(actor).extraZones ?? [],
+      encMode,
+      zone
+    );
 
     super({
       title: "Add Item to Inventory",
@@ -860,17 +817,20 @@ class AddItemDialog extends Dialog {
                 customDef.size = html.find("#add-custom-size").val() as "tiny" | "normal" | "large";
               }
               if (customDesc) customDef.description = customDesc;
+              const newItem: InventoryItem = {
+                id: foundry.utils.randomID(),
+                definitionId: "",
+                name: customName,
+                quantity: qty,
+                zone: selectedZone,
+                isSecret: false,
+                notes: "",
+                customDefinition: customDef,
+              };
+              const rejection = zoneRejection(FlagManager.getInventory(actor), selectedZone, newItem);
+              if (rejection) { ui.notifications?.warn(rejection); return; }
               await FlagManager.updateInventory(actor, (inv) => {
-                inv.items.push({
-                  id: foundry.utils.randomID(),
-                  definitionId: "",
-                  name: customName,
-                  quantity: qty,
-                  zone: selectedZone,
-                  isSecret: false,
-                  notes: "",
-                  customDefinition: customDef,
-                });
+                inv.items.push(newItem);
                 return inv;
               });
             } else {
@@ -879,23 +839,22 @@ class AddItemDialog extends Dialog {
               const def = CatalogManager.getDefinition(definitionId);
               if (!def) return;
 
+              const newItem: InventoryItem = {
+                id: foundry.utils.randomID(),
+                definitionId,
+                name: def.name,
+                quantity: qty,
+                zone: selectedZone,
+                isSecret: false,
+                notes: "",
+              };
+              const rejection = zoneRejection(FlagManager.getInventory(actor), selectedZone, newItem);
+              if (rejection) { ui.notifications?.warn(rejection); return; }
+
               await FlagManager.updateInventory(actor, (inv) => {
                 // Containers/animals must get their zone here too — pushing the bare
                 // item would leave an invisible, undeletable entry that still weighs.
-                addItemWithZones(
-                  inv,
-                  {
-                    id: foundry.utils.randomID(),
-                    definitionId,
-                    name: def.name,
-                    quantity: qty,
-                    zone: selectedZone,
-                    isSecret: false,
-                    notes: "",
-                  },
-                  encMode,
-                  def
-                );
+                addItemWithZones(inv, newItem, encMode, def);
                 return inv;
               });
             }
@@ -934,11 +893,11 @@ class AddCustomItemDialog extends Dialog {
               <option value="large">Large (2 slots)</option>
             </select>
           </div>`;
-    const zoneOptions = encMode === "weight"
-      ? `<option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>`
-      : `<option value="equipped" ${zone === "equipped" ? "selected" : ""}>Equipped</option>
-              <option value="stowed" ${zone === "stowed" ? "selected" : ""}>Stowed</option>
-              <option value="tiny" ${zone === "tiny" ? "selected" : ""}>Belt Pouch</option>`;
+    const zoneOptions = buildZoneOptionsHTML(
+      FlagManager.getInventory(actor).extraZones ?? [],
+      encMode,
+      zone
+    );
     super({
       title: "Add Custom Item",
       content: `
@@ -986,17 +945,20 @@ class AddCustomItemDialog extends Dialog {
               customDef.size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
             }
             if (description) customDef.description = description;
+            const newItem: InventoryItem = {
+              id: foundry.utils.randomID(),
+              definitionId: "",
+              name,
+              quantity: qty,
+              zone: selectedZone,
+              isSecret: false,
+              notes: "",
+              customDefinition: customDef,
+            };
+            const rejection = zoneRejection(FlagManager.getInventory(actor), selectedZone, newItem);
+            if (rejection) { ui.notifications?.warn(rejection); return; }
             await FlagManager.updateInventory(actor, (inv) => {
-              inv.items.push({
-                id: foundry.utils.randomID(),
-                definitionId: "",
-                name,
-                quantity: qty,
-                zone: selectedZone,
-                isSecret: false,
-                notes: "",
-                customDefinition: customDef,
-              });
+              inv.items.push(newItem);
               return inv;
             });
             onComplete();
@@ -1370,10 +1332,12 @@ class GrantCoinsDialog extends Dialog {
             const cp = Math.max(0, parseInt(html.find("#grant-cp").val() as string, 10) || 0);
             if (pp + gp + sp + cp === 0) return;
             await FlagManager.updateInventory(toActor, (inv) => {
-              // syncCoins guarantees coinsByZone and seeds it into "equipped"; seeding
-              // it into "stowed" here would move a legacy purse to a different zone.
+              // Seed from the legacy total into "equipped" — seeding into "stowed"
+              // would relocate an existing purse. The grant itself lands in
+              // "stowed", which is the Unsorted section in weight mode: granted
+              // coins should not silently count as carried on the body.
               inv.coinsByZone ??= { equipped: { ...inv.coins } };
-              addCoinsToZone(inv.coinsByZone, { cp, sp, gp, pp }, "equipped");
+              addCoinsToZone(inv.coinsByZone, { cp, sp, gp, pp }, "stowed");
               return inv;
             });
             ui.notifications?.info(`Granted coins to ${toActor.name}.`);

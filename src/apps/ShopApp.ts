@@ -3,8 +3,9 @@ type LocalHiddenMap = Record<string, string[]>;
 import { CatalogManager } from "../data/CatalogManager";
 import { FlagManager } from "../data/FlagManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
+import { zoneRejection } from "../data/zoneGrants";
 import { SocketHandler } from "../socket/SocketHandler";
-import { buildIconPickerHTML, activateIconPicker } from "../helpers/handlebars";
+import { buildIconPickerHTML, activateIconPicker, buildZoneOptionsHTML } from "../helpers/handlebars";
 import type { ItemDefinition, ShopState, InventoryItem, PurchasePayload } from "../types";
 
 export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -22,7 +23,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   private localCategories: string[] = [];
   /** Price multiplier in percent (100 = normal, 200 = double price) */
   private priceFactor = 100;
-  /** Saved scroll position of .window-content — restored after each re-render */
+  /** Saved scroll position of .shop-catalog — restored after each re-render */
   private _scrollTop = 0;
 
   /** Configure this shop instance from a Note marker */
@@ -215,7 +216,10 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   }
 
   override render(...args: Parameters<InstanceType<typeof foundry.applications.api.ApplicationV2>["render"]>): unknown {
-    this._scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? 0;
+    const current = this.element?.querySelector<HTMLElement>(".shop-catalog")?.scrollTop;
+    // Ignore a zero read: the browser clamps scrollTop to 0 while the catalog is
+    // being replaced, and overwriting the saved value with that loses the position.
+    if (current) this._scrollTop = current;
     return super.render(...args);
   }
 
@@ -225,9 +229,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   ): void {
     const el = this.element;
 
-    // Restore scroll position after re-render
-    const wc = el.querySelector<HTMLElement>(".window-content");
-    if (wc) wc.scrollTop = this._scrollTop;
+    // Restore scroll position on the next frame. Setting it synchronously here
+    // lands while the replaced catalog is still collapsing/laying out, so the
+    // browser clamps the value and the window snaps to the top. The expanded
+    // state of the categories is restored by ApplicationV2 itself via data-sync.
+    const wc = el.querySelector<HTMLElement>(".shop-catalog");
+    if (wc) requestAnimationFrame(() => { wc.scrollTop = this._scrollTop; });
 
     // Target actor selector
     el.querySelector<HTMLSelectElement>("#shop-target-actor")?.addEventListener(
@@ -264,7 +271,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     _event: Event,
     target: HTMLElement
   ): Promise<void> {
-    const scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? this._scrollTop;
+    const scrollTop = this.element?.querySelector<HTMLElement>(".shop-catalog")?.scrollTop ?? this._scrollTop;
     const tag = target.dataset.tag!;
     const g = game as Game;
     const shopState = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
@@ -422,7 +429,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     _event: Event,
     target: HTMLElement
   ): Promise<void> {
-    const scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? this._scrollTop;
+    const scrollTop = this.element?.querySelector<HTMLElement>(".shop-catalog")?.scrollTop ?? this._scrollTop;
     const itemId = target.dataset.itemId!;
     const g = game as Game;
     const shopState = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
@@ -444,7 +451,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     target: HTMLElement
   ): Promise<void> {
     if (!this.localName) return;
-    const scrollTop = this.element?.querySelector<HTMLElement>(".window-content")?.scrollTop ?? this._scrollTop;
+    const scrollTop = this.element?.querySelector<HTMLElement>(".shop-catalog")?.scrollTop ?? this._scrollTop;
     const itemId = target.dataset.itemId!;
     const g = game as Game;
     const localHiddenMap = (g.settings.get(MODULE_ID, SETTINGS.LOCAL_HIDDEN) as LocalHiddenMap) ?? {};
@@ -508,11 +515,11 @@ class AddCustomShopItemDialog extends Dialog {
               <option value="large">Large (2 slots)</option>
             </select>
           </div>`;
-    const zoneOptions = encMode === "weight"
-      ? `<option value="equipped">Equipped</option>`
-      : `<option value="equipped">Equipped</option>
-              <option value="stowed" selected>Stowed</option>
-              <option value="tiny">Belt Pouch</option>`;
+    const targetActor = (game as Game).actors?.get(actorId);
+    const zoneOptions = buildZoneOptionsHTML(
+      targetActor ? FlagManager.getInventory(targetActor).extraZones ?? [] : [],
+      encMode
+    );
     super({
       title: "Grant Custom Item",
       content: `
@@ -565,6 +572,16 @@ class AddCustomShopItemDialog extends Dialog {
               customDef.size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
             }
             if (description) customDef.description = description;
+
+            // Same zone rules as moving an item by hand
+            if (targetActor) {
+              const rejection = zoneRejection(
+                FlagManager.getInventory(targetActor),
+                zone,
+                { id: "", definitionId: "", name, quantity: qty, zone, isSecret, notes: "", customDefinition: customDef }
+              );
+              if (rejection) { ui.notifications?.warn(rejection); return; }
+            }
 
             SocketHandler.emitOrHandle(SOCKET_EVENTS.GM_GRANT, {
               actorId,

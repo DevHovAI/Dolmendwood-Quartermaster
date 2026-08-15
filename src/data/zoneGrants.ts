@@ -187,3 +187,65 @@ export function reconcileZones(inv: CharacterInventory, encMode: EncumbranceMode
     if (zone) inv.extraZones.push(zone);
   }
 }
+
+// ─── Zone placement rules ─────────────────────────────────────────────────────
+
+/** Compute effective weight for an item, scaling by remaining uses when applicable. */
+export function itemEffectiveWeight(item: InventoryItem): number {
+  const def = CatalogManager.getDefinition(item.definitionId);
+  const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+  const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
+  return baseWeight * usesRatio;
+}
+
+/** Check whether an item's tags allow it into a zone with allowedItemTags. Returns true if zone has no tag restriction. */
+export function isItemAllowedInZone(item: InventoryItem, zone: ExtraZone): boolean {
+  if (!zone.allowedItemTags?.length) return true;
+  const def = CatalogManager.getDefinition(item.definitionId);
+  const itemTags = item.customDefinition?.tags ?? def?.tags ?? [];
+  return itemTags.some((tag) => zone.allowedItemTags!.includes(tag));
+}
+
+/**
+ * Why an item may not be placed into a zone, or null when it may.
+ * Shared by drag-and-drop moves and by the add-item dialogs so both enforce the
+ * same rules. Built-in zones (equipped/stowed/tiny) are unrestricted; only extra
+ * zones carry constraints.
+ * `ignoreItemId` omits an item from the zone's weight sum — used when that item
+ * is the one being moved.
+ */
+export function zoneRejection(
+  inventory: CharacterInventory,
+  zoneId: string,
+  item: InventoryItem,
+  ignoreItemId?: string
+): string | null {
+  const zone = (inventory.extraZones ?? []).find((ez) => ez.id === zoneId);
+  if (!zone) return null;
+
+  if (!isItemAllowedInZone(item, zone)) {
+    return `"${zone.name}" can only store items tagged: ${zone.allowedItemTags!.join(", ")}.`;
+  }
+
+  if (zone.type === "storage" && zone.weightCapacity > 0) {
+    const itemWeight = itemEffectiveWeight(item) * item.quantity;
+    const currentZoneWeight = inventory.items
+      .filter((i) => i.zone === zoneId && i.id !== ignoreItemId)
+      .reduce((acc, i) => acc + itemEffectiveWeight(i) * i.quantity, 0);
+    if (currentZoneWeight + itemWeight > zone.weightCapacity) {
+      return (
+        `"${zone.name}" can hold ${zone.weightCapacity} wt. ` +
+        `Currently ${currentZoneWeight} wt; item is ${itemWeight} wt.`
+      );
+    }
+  }
+
+  if (zone.isBeltPouch) {
+    const weight = itemEffectiveWeight(item);
+    if (weight > 10) {
+      return `Only items weighing 10 wt or less fit in a belt pouch (item weighs ${weight} wt).`;
+    }
+  }
+
+  return null;
+}

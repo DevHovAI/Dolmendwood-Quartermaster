@@ -105,6 +105,48 @@ export function activateColorPicker(html: JQuery): void {
   });
 }
 
+/** Escape a value for safe interpolation into dialog HTML. Zone names are user input. */
+export function escapeHTML(value: string): string {
+  return value.replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!)
+  );
+}
+
+/**
+ * Build the <option> list of zones an item can be placed into: the built-in
+ * zones for the active encumbrance mode, followed by every extra zone
+ * (containers, animals, vehicles). Zones that have been left behind are omitted.
+ */
+export function buildZoneOptionsHTML(
+  extraZones: { id: string; name: string; isDropped?: boolean }[],
+  encMode: "slots" | "weight",
+  selected = "stowed"
+): string {
+  const options =
+    encMode === "weight"
+      ? [
+          { value: "stowed", label: "Unsorted" },
+          { value: "equipped", label: "Equipped" },
+        ]
+      : [
+          { value: "equipped", label: "Equipped" },
+          { value: "stowed", label: "Stowed" },
+          { value: "tiny", label: "Belt Pouch" },
+        ];
+
+  for (const zone of extraZones) {
+    if (zone.isDropped) continue;
+    options.push({ value: zone.id, label: zone.name });
+  }
+
+  return options
+    .map(
+      (o) =>
+        `<option value="${escapeHTML(o.value)}"${o.value === selected ? " selected" : ""}>${escapeHTML(o.label)}</option>`
+    )
+    .join("\n              ");
+}
+
 export function buildIconPickerHTML(selectedIcon = "fa-sack", icons = ITEM_ICONS): string {
   const buttons = icons.map(
     (i) =>

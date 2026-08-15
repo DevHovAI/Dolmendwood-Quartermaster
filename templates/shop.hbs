@@ -74,7 +74,8 @@
   {{!-- Item Catalog grouped by category → subcategory --}}
   <div class="shop-catalog">
     {{#each grouped}}
-    <details class="shop-category">
+    {{!-- data-sync: ApplicationV2 preserves the open state of details across re-renders --}}
+    <details class="shop-category" data-sync="{{@key}}">
       <summary class="shop-category-name">{{@key}}</summary>
       <div class="shop-category-body">
         {{#each this}}
