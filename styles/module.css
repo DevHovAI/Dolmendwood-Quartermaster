@@ -1625,7 +1625,13 @@
   flex-wrap: wrap;
 }
 
+/* Foundry core styles these as `body.game .app input[type="number"] { width:
+   calc(100% - 2px) }`, which outranks any plain class selector. These inputs are
+   flex items, though, and core sets no flex on them — so flex-basis decides the
+   width and wins without needing !important. The width below is only a fallback
+   for a non-flex context. */
 .zone-coin-input {
+  flex: 0 0 96px;
   width: 96px;
   padding: 2px 4px;
   font-size: 0.8em;
