@@ -14,11 +14,17 @@ import "../styles/module.css";
 /**
  * Hooks.on for hook names that are not in fvtt-types' typed registry
  * (Foundry fires them, the type definitions just do not list them).
+ *
+ * The cast is applied to Hooks itself, not to Hooks.on: the implementation
+ * reads private static fields through `this`, so detaching the method into a
+ * variable would make `this` undefined and throw on the first call.
  */
-const onUntypedHook = Hooks.on as unknown as (
-  hook: string,
-  fn: (...args: any[]) => unknown
-) => number;
+function onUntypedHook(hook: string, fn: (...args: any[]) => unknown): number {
+  const hooks = Hooks as unknown as {
+    on(hook: string, fn: (...args: any[]) => unknown): number;
+  };
+  return hooks.on(hook, fn);
+}
 
 // ─── Module Initialization ────────────────────────────────────────────────────
 
