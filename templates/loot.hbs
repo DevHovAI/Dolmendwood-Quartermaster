@@ -1,0 +1,92 @@
+<div class="loot-window">
+
+  {{#if isGM}}
+  <div class="loot-status {{#if released}}is-released{{else}}is-staged{{/if}}">
+    {{#if released}}
+    <i class="fas fa-lock-open"></i>
+    <span>Released — the whole party can see and take from this.</span>
+    {{else}}
+    <i class="fas fa-eye-slash"></i>
+    <span>Staged — only you can see this. Fill it, then release it.</span>
+    {{/if}}
+    <button type="button" data-action="toggleRelease" class="loot-release-btn">
+      {{#if released}}<i class="fas fa-lock"></i> Take back{{else}}<i class="fas fa-gift"></i> Release to party{{/if}}
+    </button>
+  </div>
+  {{/if}}
+
+  {{#if isGM}}
+  <div class="loot-toolbar">
+    <button type="button" data-action="addItem"><i class="fas fa-plus"></i> Add item</button>
+    <button type="button" data-action="addCustomItem"><i class="fas fa-wand-magic-sparkles"></i> Custom</button>
+    <button type="button" data-action="editCoins"><i class="fas fa-coins"></i> Coins</button>
+    <span class="loot-toolbar-spacer"></span>
+    {{#if pinnedSceneName}}
+    <span class="loot-pinned-note" title="Already placed in “{{pinnedSceneName}}”">
+      <i class="fas fa-map-pin"></i> {{pinnedSceneName}}
+    </span>
+    {{else}}
+    <button type="button" data-action="placeOnMap" class="icon-btn"
+            title="Place this box on the current scene"><i class="fas fa-map-location-dot"></i></button>
+    {{/if}}
+    <button type="button" data-action="renameBox" class="icon-btn" title="Edit name and icon"><i class="fas fa-pen"></i></button>
+    <button type="button" data-action="deleteBox" class="icon-btn loot-danger" title="Delete this box"><i class="fas fa-trash"></i></button>
+  </div>
+  {{/if}}
+
+  <div class="loot-body">
+    {{#if isEmpty}}
+    <p class="loot-empty"><em>Picked clean.</em></p>
+    {{/if}}
+
+    {{#each items}}
+    <div class="loot-row" data-item-id="{{this.id}}">
+      <i class="fas {{this.icon}} loot-row-icon"></i>
+      <span class="loot-row-name">
+        {{this.name}}
+        {{#if (gt this.count 1)}}<span class="loot-row-count">×{{this.count}}</span>{{/if}}
+        {{#if (eq ../encMode "weight")}}
+        <span class="item-size-badge item-weight-badge" title="Weight per unit">{{this.weight}} wt</span>
+        {{else}}
+        {{#if this.size}}<span class="item-size-badge size-{{this.size}}">{{sizeLabel this.size}}</span>{{/if}}
+        {{/if}}
+        {{#if this.def.description}}<span class="item-description">{{this.def.description}}</span>{{/if}}
+      </span>
+      {{#if ../canTake}}
+      <button type="button" data-action="takeItem" data-item-id="{{this.id}}" class="loot-take-btn">
+        <i class="fas fa-hand"></i> Take
+      </button>
+      {{/if}}
+      {{#if ../isGM}}
+      <button type="button" data-action="deleteItem" data-item-id="{{this.id}}"
+              class="icon-btn loot-danger" title="Remove from box">
+        <i class="fas fa-trash"></i>
+      </button>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+
+  {{#if hasCoins}}
+  <div class="loot-purse">
+    <i class="fas fa-coins loot-purse-icon"></i>
+    <span class="loot-purse-coins">
+      {{#if coins.pp}}<span class="coin coin-pp">{{coins.pp}} pp</span>{{/if}}
+      {{#if coins.gp}}<span class="coin coin-gp">{{coins.gp}} gp</span>{{/if}}
+      {{#if coins.sp}}<span class="coin coin-sp">{{coins.sp}} sp</span>{{/if}}
+      {{#if coins.cp}}<span class="coin coin-cp">{{coins.cp}} cp</span>{{/if}}
+    </span>
+    {{#if canSplit}}
+    <button type="button" data-action="splitCoins" class="loot-take-btn" title="Divide evenly among the party">
+      <i class="fas fa-scale-balanced"></i> Split
+    </button>
+    {{/if}}
+    {{#if canTake}}
+    <button type="button" data-action="takeCoins" class="loot-take-btn">
+      <i class="fas fa-hand"></i> Take
+    </button>
+    {{/if}}
+  </div>
+  {{/if}}
+
+</div>

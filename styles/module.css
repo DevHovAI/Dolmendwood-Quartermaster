@@ -2391,3 +2391,322 @@
   background: var(--dw-accent-light);
   border-color: var(--dw-accent);
 }
+
+/* ── Loot boxes ────────────────────────────────────────────────────────────── */
+
+.loot-window,
+.loot-browser-window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--dw-bg-parchment);
+  color: var(--dw-text);
+  overflow: hidden;
+}
+
+/* The staging banner is the one place the two phases are visible at all, so it
+   carries the state rather than a subtle icon somewhere in the header. */
+.loot-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 0.85em;
+  border-bottom: 1px solid var(--dw-border-light);
+}
+
+.loot-status.is-staged {
+  background: rgba(122, 80, 48, 0.14);
+  color: var(--dw-secondary);
+}
+
+.loot-status.is-released {
+  background: rgba(11, 99, 83, 0.14);
+  color: var(--speed-green);
+}
+
+.loot-status span {
+  flex: 1;
+}
+
+.loot-release-btn {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 3px 10px;
+  font-size: 0.9em;
+  white-space: nowrap;
+  background: var(--dw-bg-dark);
+  border: 1px solid var(--dw-border);
+  border-radius: 3px;
+  color: var(--dw-primary);
+  cursor: pointer;
+}
+
+.loot-release-btn:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.loot-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--dw-border-light);
+  background: rgba(200, 160, 80, 0.06);
+}
+
+.loot-toolbar button {
+  width: auto;
+  padding: 3px 8px;
+  font-size: 0.85em;
+  white-space: nowrap;
+  background: var(--dw-bg-dark);
+  border: 1px solid var(--dw-border);
+  border-radius: 3px;
+  color: var(--dw-primary);
+  cursor: pointer;
+}
+
+.loot-toolbar button:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.loot-toolbar-spacer {
+  flex: 1;
+}
+
+.loot-pinned-note {
+  font-size: 0.8em;
+  color: var(--dw-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+
+.loot-danger:hover {
+  color: var(--speed-red);
+}
+
+.loot-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 6px;
+}
+
+.loot-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--dw-tertiary);
+}
+
+.loot-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 6px;
+  border-bottom: 1px solid rgba(160, 100, 30, 0.12);
+  font-size: 0.9em;
+}
+
+.loot-row:nth-child(even) {
+  background: rgba(200, 160, 80, 0.06);
+}
+
+.loot-row-icon {
+  margin-top: 2px;
+  color: var(--dw-tertiary);
+}
+
+.loot-row-name {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.loot-row-count {
+  font-weight: bold;
+  color: var(--dw-secondary);
+}
+
+.loot-take-btn {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 2px 8px;
+  font-size: 0.85em;
+  white-space: nowrap;
+  background: var(--dw-bg-dark);
+  border: 1px solid var(--dw-border);
+  border-radius: 3px;
+  color: var(--dw-primary);
+  cursor: pointer;
+}
+
+.loot-take-btn:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.loot-purse {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-top: 1px solid var(--dw-border-light);
+  background: rgba(200, 160, 80, 0.1);
+}
+
+.loot-purse-icon {
+  color: var(--dw-accent);
+}
+
+.loot-purse-coins {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+/* ── Loot browser ──────────────────────────────────────────────────────────── */
+
+.loot-browser-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 6px;
+}
+
+/* Foundry core styles every <button> with `height: var(--button-size)`,
+   `min-height: var(--button-size)` and `padding: 0 0.5rem` — a fixed single-line
+   box. This row is a button holding two lines, so without releasing the height
+   the name and the item count are squeezed against its edges. */
+.loot-browser-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  text-align: left;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  color: var(--dw-text);
+  cursor: pointer;
+}
+
+.loot-browser-row:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.loot-browser-row.is-staged {
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+/* An icon in the module's own idiom rather than an actor portrait: a loot box
+   is not a creature, and a generic chest photo says less than the glyph the GM
+   picked for it. */
+.loot-browser-icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--dw-border);
+  border-radius: 3px;
+  background: var(--dw-bg-dark);
+  color: var(--dw-secondary);
+  font-size: 1.1em;
+}
+
+.loot-browser-row:hover .loot-browser-icon {
+  border-color: var(--dw-accent);
+  color: var(--dw-primary);
+}
+
+.loot-browser-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.loot-browser-name {
+  font-weight: bold;
+  line-height: 1.3;
+}
+
+.loot-browser-meta {
+  font-size: 0.8em;
+  line-height: 1.3;
+  color: var(--dw-tertiary);
+}
+
+.loot-browser-badge {
+  flex: 0 0 auto;
+  font-size: 0.75em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: rgba(122, 80, 48, 0.18);
+  color: var(--dw-secondary);
+  white-space: nowrap;
+}
+
+/* ── Split dialog ──────────────────────────────────────────────────────────── */
+
+.loot-split-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  border-bottom: 1px solid rgba(160, 100, 30, 0.12);
+}
+
+.loot-split-name {
+  flex: 0 0 30%;
+  font-weight: bold;
+}
+
+.loot-split-share {
+  flex: 1;
+  font-size: 0.85em;
+  text-align: right;
+}
+
+.loot-split-remainder,
+.loot-load-hint {
+  margin: 8px 0 0;
+  font-size: 0.85em;
+  color: var(--dw-secondary);
+}
+
+/* Coins weigh one unit each, so a share can genuinely slow someone down —
+   the warning colour is the point of showing the preview at all. */
+.loot-load.ok {
+  color: var(--dw-tertiary);
+}
+
+.loot-load.warn {
+  color: var(--speed-red);
+  font-weight: bold;
+}
+
+.dw-loot-message h3 {
+  margin: 0 0 4px;
+}
+
+.dw-loot-message ul {
+  margin: 0 0 6px;
+  padding-left: 18px;
+}

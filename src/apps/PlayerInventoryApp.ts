@@ -1624,12 +1624,27 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
 
 // ─── Add Item Dialog ──────────────────────────────────────────────────────────
 
-class AddItemDialog extends Dialog {
+/**
+ * `fixedZone` drops the Zone picker and pins the item to the zone it was opened
+ * for. A loot box is a single pile — offering it "Equipped" or "Unsorted" would
+ * be asking a question that has no meaning there.
+ */
+export interface AddItemOptions {
+  fixedZone?: boolean;
+}
+
+export class AddItemDialog extends Dialog {
   private actor: Actor;
   private zone: InventoryItem["zone"];
   private onComplete: () => void;
 
-  constructor(actor: Actor, zone: InventoryItem["zone"], encMode: "slots" | "weight", onComplete: () => void) {
+  constructor(
+    actor: Actor,
+    zone: InventoryItem["zone"],
+    encMode: "slots" | "weight",
+    onComplete: () => void,
+    dialogOptions: AddItemOptions = {}
+  ) {
     const catalogItems = CatalogManager.getAllDefinitions();
     const optionsByCategory: Record<string, string> = {};
     for (const item of catalogItems) {
@@ -1656,11 +1671,15 @@ class AddItemDialog extends Dialog {
               </select>
             </div>`;
 
-    const zoneOptions = buildZoneOptionsHTML(
-      FlagManager.getInventory(actor).extraZones ?? [],
-      encMode,
-      zone
-    );
+    // A hidden input rather than nothing, so the read below stays one code path
+    const zoneField = dialogOptions.fixedZone
+      ? `<input type="hidden" id="add-item-zone" value="${zone}" />`
+      : `<div class="form-group">
+            <label>Zone</label>
+            <select id="add-item-zone">
+              ${buildZoneOptionsHTML(FlagManager.getInventory(actor).extraZones ?? [], encMode, zone)}
+            </select>
+          </div>`;
 
     super({
       title: "Add Item to Inventory",
@@ -1674,12 +1693,7 @@ class AddItemDialog extends Dialog {
             <label>Quantity</label>
             <input type="number" id="add-item-qty" value="1" min="1" />
           </div>
-          <div class="form-group">
-            <label>Zone</label>
-            <select id="add-item-zone">
-              ${zoneOptions}
-            </select>
-          </div>
+          ${zoneField}
           <hr/>
           <details>
             <summary>Add Custom Item Instead</summary>
@@ -1785,8 +1799,14 @@ class AddItemDialog extends Dialog {
 
 // ─── Add Custom Item Dialog (player-facing) ───────────────────────────────────
 
-class AddCustomItemDialog extends Dialog {
-  constructor(actor: Actor, zone: InventoryItem["zone"], encMode: "slots" | "weight", onComplete: () => void) {
+export class AddCustomItemDialog extends Dialog {
+  constructor(
+    actor: Actor,
+    zone: InventoryItem["zone"],
+    encMode: "slots" | "weight",
+    onComplete: () => void,
+    dialogOptions: AddItemOptions = {}
+  ) {
     const sizeOrWeightField = encMode === "weight"
       ? `<div class="form-group">
             <label>Weight (coin wt)</label>
@@ -1800,11 +1820,14 @@ class AddCustomItemDialog extends Dialog {
               <option value="large">Large (2 slots)</option>
             </select>
           </div>`;
-    const zoneOptions = buildZoneOptionsHTML(
-      FlagManager.getInventory(actor).extraZones ?? [],
-      encMode,
-      zone
-    );
+    const zoneField = dialogOptions.fixedZone
+      ? `<input type="hidden" id="custom-zone" value="${zone}" />`
+      : `<div class="form-group">
+            <label>Zone</label>
+            <select id="custom-zone">
+              ${buildZoneOptionsHTML(FlagManager.getInventory(actor).extraZones ?? [], encMode, zone)}
+            </select>
+          </div>`;
     super({
       title: "Add Custom Item",
       content: `
@@ -1814,12 +1837,7 @@ class AddCustomItemDialog extends Dialog {
             <input type="text" id="custom-name" placeholder="Item name" />
           </div>
           ${sizeOrWeightField}
-          <div class="form-group">
-            <label>Zone</label>
-            <select id="custom-zone">
-              ${zoneOptions}
-            </select>
-          </div>
+          ${zoneField}
           <div class="form-group">
             <label>Quantity</label>
             <input type="number" id="custom-qty" value="1" min="1" />
@@ -2012,7 +2030,7 @@ function giveZoneOptionHTML(o: ZoneOption): string {
  * Fill a zone `<select>` with the recipient's zones that can hold `items`,
  * keeping the previous choice when it is still valid.
  */
-function populateGiveZoneSelect(select: JQuery, toActor: Actor | null, items: InventoryItem[]): void {
+export function populateGiveZoneSelect(select: JQuery, toActor: Actor | null, items: InventoryItem[]): void {
   const previous = select.val() as string | undefined;
   const options = toActor
     ? zonesAcceptingItems(FlagManager.getInventory(toActor), items, getEncumbranceMode())
@@ -2038,7 +2056,7 @@ export function splittableCount(items: InventoryItem[]): number {
   return count > 1 ? count : 0;
 }
 
-function amountFieldHTML(available: number, id: string): string {
+export function amountFieldHTML(available: number, id: string): string {
   if (available === 0) return "";
   return `
     <div class="form-group">

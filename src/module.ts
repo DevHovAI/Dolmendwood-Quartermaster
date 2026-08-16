@@ -1,13 +1,15 @@
 import { MODULE_ID, SETTINGS, FLAGS, SOCKET_EVENTS } from "./constants";
-import { registerHandlebarsHelpers, registerHandlebarsPartials } from "./helpers/handlebars";
+import { registerHandlebarsHelpers, registerHandlebarsPartials, escapeHTML } from "./helpers/handlebars";
 import { SocketHandler } from "./socket/SocketHandler";
 import { PartyOverviewApp } from "./apps/PartyOverviewApp";
 import { PlayerInventoryApp } from "./apps/PlayerInventoryApp";
 import { ShopApp } from "./apps/ShopApp";
 import { InnApp } from "./apps/InnApp";
 import { MarketApp } from "./apps/MarketApp";
+import { openLootBrowser, openLootFromNote, activateLootChatButtons } from "./apps/LootApp";
 import { CatalogManager } from "./data/CatalogManager";
-import { verifySharedActorOwnership } from "./data/sharedStore";
+import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
+import { isLootActor, removeLootNotes } from "./data/lootStore";
 import { INN_CATEGORIES } from "./data/innData";
 import type { InnQuality } from "./data/innData";
 import "../styles/module.css";
@@ -101,6 +103,20 @@ Hooks.once("init", () => {
     default: false,
   });
 
+  // The shared store and every released loot box must be owned by all players so
+  // they can write to them, which also lands them in the Actors tab. They are
+  // reached through the module's own windows, so hiding the sidebar entries costs
+  // nothing — but it is a setting, because an actor vanishing from the sidebar
+  // with no visible switch is baffling when something goes wrong.
+  game.settings!.register(MODULE_ID, SETTINGS.HIDE_MANAGED_ACTORS, {
+    name: "Hide Quartermaster actors from the sidebar",
+    hint: "Keeps the shared Party Stores actor and all loot boxes out of the Actors tab, for the GM as well. They stay reachable: the shared store has its own card in the Party Overview, and every loot box is listed in the Loot window. Turn this off to get the sidebar entries back.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
   // Register Handlebars helpers (synchronous)
   registerHandlebarsHelpers();
 
@@ -123,6 +139,8 @@ Hooks.once("init", () => {
       if (innFlag) { openInn(innFlag.name, innFlag.quality, innFlag.categories, innFlag.priceFactor); return; }
       const shopFlag = getFlag("shop") as { name?: string; categories?: string[]; priceFactor?: number } | undefined;
       if (shopFlag) { openShop(shopFlag.name, shopFlag.categories ?? [], shopFlag.priceFactor); return; }
+      const lootFlag = getFlag("loot");
+      if (lootFlag) { void openLootFromNote(this.document as Parameters<typeof openLootFromNote>[0]); return; }
       return _origClick.call(this, event);
     };
   }
@@ -149,6 +167,7 @@ Hooks.once("ready", async () => {
       openShop: (name?: string, categories?: string[], priceFactor?: number) => openShop(name, categories, priceFactor),
       openInn: (name?: string, quality?: InnQuality, categories?: string[], priceFactor?: number) => openInn(name, quality, categories, priceFactor),
       openMarket: (noteDoc: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }) => openMarket(noteDoc),
+      openLoot: () => openLootBrowser(),
     };
   }
 
@@ -156,7 +175,7 @@ Hooks.once("ready", async () => {
 
   // Cache of pending flag values keyed on the app instance.
   // Updated on every input change; read by closeNoteConfig (which fires without HTML in v13).
-  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality; categories: string[]; priceFactor: number } | false; shop?: { name: string; categories: string[]; priceFactor: number } | false; market?: { name: string } | false };
+  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality; categories: string[]; priceFactor: number } | false; shop?: { name: string; categories: string[]; priceFactor: number } | false; market?: { name: string } | false; loot?: { name: string } | false };
   const pendingNoteFlags = new WeakMap<object, PendingNoteFlags>();
 
   // v13 ApplicationV2 passes an HTMLElement as the second arg; old Application passed jQuery.
@@ -278,11 +297,46 @@ Hooks.once("ready", async () => {
         </div>
       </fieldset>`;
 
+    // ── Loot fieldset ─────────────────────────────────────────────────────────
+    // The note's loot name identifies the box, so the actor is created on the
+    // first double-click rather than here — a note marked and never opened
+    // leaves nothing behind.
+    const existingLoot = note?.getFlag?.(MODULE_ID, "loot") as { name?: string } | undefined;
+    const isLoot = !!existingLoot;
+    const lootName = existingLoot?.name ?? "";
+    // A note with no linked journal entry does not work as a marker at all: it
+    // never reaches the double-click handler, and players cannot see it either,
+    // because Foundry ties note visibility to journal-entry permission. Verified
+    // the hard way — linking an entry made both work at once.
+    const hasEntry = !!(note as { entryId?: string | null } | undefined)?.entryId;
+    const lootEntryWarning = hasEntry
+      ? ""
+      : `<p class="notification warning" style="margin:4px 0 0;font-size:0.85em;">
+           This note has no journal entry, so it will not open anything and players
+           cannot see it. Link a blank journal entry — releasing the box then grants
+           the party access to it automatically.
+         </p>`;
+    const lootHtml = `
+      <fieldset style="margin:8px 0;padding:8px;border:1px solid #7a5030;">
+        <legend style="font-weight:bold;padding:0 4px;">Quartermaster Loot</legend>
+        <div class="form-group">
+          <label><input type="checkbox" id="note-is-loot" ${isLoot ? "checked" : ""} /> Mark as Loot Box</label>
+        </div>
+        <div id="note-loot-fields" style="${isLoot ? "" : "display:none;"}">
+          <div class="form-group">
+            <label>Box Name</label>
+            <input type="text" id="note-loot-name" value="${escapeHTML(lootName)}" placeholder="e.g. Barrow Hoard" />
+          </div>
+          <p class="hint" style="margin:4px 0 0;font-size:0.85em;color:#666;">The box is created when you first open it, and stays hidden from players until you release it.</p>
+          ${lootEntryWarning}
+        </div>
+      </fieldset>`;
+
     // Inject before footer
     const footer = el.querySelector("footer");
     if (!footer) return;
     const wrapper = document.createElement("div");
-    wrapper.innerHTML = innHtml + shopHtml + marketHtml;
+    wrapper.innerHTML = innHtml + shopHtml + marketHtml + lootHtml;
     footer.before(wrapper);
 
     // Toggle visibility on checkbox change
@@ -292,6 +346,10 @@ Hooks.once("ready", async () => {
     });
     el.querySelector("#note-is-shop")?.addEventListener("change", function (this: HTMLInputElement) {
       (el.querySelector("#note-shop-fields") as HTMLElement).style.display =
+        this.checked ? "" : "none";
+    });
+    el.querySelector("#note-is-loot")?.addEventListener("change", function (this: HTMLInputElement) {
+      (el.querySelector("#note-loot-fields") as HTMLElement).style.display =
         this.checked ? "" : "none";
     });
     el.querySelector("#note-is-market")?.addEventListener("change", function (this: HTMLInputElement) {
@@ -335,6 +393,14 @@ Hooks.once("ready", async () => {
         flags.market = false;
       }
 
+      const lootChecked = (el.querySelector("#note-is-loot") as HTMLInputElement | null)?.checked ?? false;
+      if (lootChecked) {
+        const name = ((el.querySelector("#note-loot-name") as HTMLInputElement | null)?.value ?? "").trim() || "Loot";
+        flags.loot = { name };
+      } else {
+        flags.loot = false;
+      }
+
       return flags;
     };
 
@@ -368,6 +434,18 @@ Hooks.once("ready", async () => {
       await note.unsetFlag(MODULE_ID, "market");
     }
 
+    // Unmarking a note never deletes the loot actor — the hoard outlives the pin.
+    // The recorded actorId is preserved across a rename, the same way the market
+    // keeps its entries: only the name is editable in this dialog.
+    if (flags.loot) {
+      const existingLoot = (note as { getFlag?: (m: string, k: string) => unknown }).getFlag?.(MODULE_ID, "loot") as { actorId?: string } | undefined;
+      const lootFlag: { name: string; actorId?: string } = { name: flags.loot.name };
+      if (existingLoot?.actorId) lootFlag.actorId = existingLoot.actorId;
+      await note.setFlag(MODULE_ID, "loot", lootFlag);
+    } else if (flags.loot === false) {
+      await note.unsetFlag(MODULE_ID, "loot");
+    }
+
     pendingNoteFlags.delete(app);
   });
 
@@ -394,6 +472,13 @@ Hooks.once("ready", async () => {
 
     const shopData = getFlag("shop") as { name?: string; categories?: string[]; priceFactor?: number } | undefined;
     if (shopData) { openShop(shopData.name, shopData.categories ?? [], shopData.priceFactor); return false; }
+
+    const lootData = getFlag("loot");
+    if (lootData) {
+      const doc = (asDoc.document ?? asDoc) as Parameters<typeof openLootFromNote>[0];
+      void openLootFromNote(doc);
+      return false;
+    }
     return true;
   };
 
@@ -413,7 +498,10 @@ Hooks.once("ready", async () => {
 // Re-render open module windows when actor flags change
 Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
   const flagDiff = (diff.flags as Record<string, unknown> | undefined)?.[MODULE_ID];
-  if (!flagDiff) return;
+  // Releasing a loot box changes only `ownership`, not a flag — without this the
+  // players' clients would never notice the hoard becoming available.
+  const ownershipChanged = "ownership" in diff;
+  if (!flagDiff && !ownershipChanged) return;
 
   // Re-render any open window that belongs to this actor or the party overview
   const instances = foundry.applications?.instances;
@@ -424,6 +512,9 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
     // Inventory windows show a party-wide convoy speed, so any member's change is
     // relevant to all of them — re-render regardless of which actor was updated.
     if (appId === "dolmenwood-party-overview" || appId === "dolmenwood-player-inventory") {
+      (app as { render?: () => void }).render?.();
+    }
+    if (appId === "dolmenwood-loot-browser" || appId === `dolmenwood-loot-${actor.id}`) {
       (app as { render?: () => void }).render?.();
     }
   }
@@ -457,6 +548,77 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     button: true,
     onChange: () => openInn(),
   } as SceneControlTool;
+
+  (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-loot"] = {
+    name: "dolmenwood-loot",
+    title: "Loot",
+    icon: "fas fa-treasure-chest",
+    order: existingToolCount + 2,
+    button: true,
+    onChange: () => openLootBrowser(),
+  } as SceneControlTool;
+});
+
+/**
+ * Keep the module's own actors out of the Actors sidebar — for the GM too.
+ *
+ * Both the shared store and every released loot box carry
+ * `ownership.default = OWNER` because that is what lets players write to them
+ * without a GM — and that same ownership is what puts them in the sidebar. The
+ * entries are removed from the rendered list rather than the permission being
+ * lowered, since lowering it would break the writes the design depends on.
+ *
+ * Nothing becomes unreachable: the shared store has its own card in the Party
+ * Overview, and every loot box (staged ones included) is listed in the Loot
+ * window. Turning the setting off brings the sidebar entries back.
+ */
+function hideManagedActorsFromDirectory(element: HTMLElement): void {
+  const g = game as Game;
+  if (!g.settings.get(MODULE_ID, SETTINGS.HIDE_MANAGED_ACTORS)) return;
+
+  const hiddenIds = new Set<string>();
+  const sharedId = getSharedActorId();
+  if (sharedId) hiddenIds.add(sharedId);
+  for (const actor of g.actors?.contents ?? []) {
+    if (isLootActor(actor) && actor.id) hiddenIds.add(actor.id);
+  }
+  if (hiddenIds.size === 0) return;
+
+  for (const id of hiddenIds) {
+    element
+      .querySelectorAll(`[data-entry-id="${id}"], [data-document-id="${id}"], [data-actor-id="${id}"]`)
+      .forEach((entry) => entry.closest("li")?.remove());
+  }
+}
+
+/**
+ * A deleted loot box must take its map pin with it, or the pin stays behind
+ * pointing at an actor that no longer exists. Hooked on the deletion rather than
+ * done in the delete button, so a box removed straight from the sidebar is
+ * cleaned up too. The deleted document still carries its id, name and flags here.
+ */
+Hooks.on("deleteActor", (actor: Actor) => {
+  if (!isLootActor(actor)) return;
+  void removeLootNotes(actor);
+});
+
+onUntypedHook("renderActorDirectory", (_app: unknown, htmlOrEl: unknown) => {
+  const el =
+    htmlOrEl instanceof HTMLElement
+      ? htmlOrEl
+      : (htmlOrEl as { get?: (n: number) => HTMLElement } | undefined)?.get?.(0);
+  if (el) hideManagedActorsFromDirectory(el);
+});
+
+// The Open button on a released-loot chat card. renderChatMessageHTML is the
+// v13 hook; renderChatMessage is kept for older cores, where the second arg is
+// jQuery rather than an element.
+onUntypedHook("renderChatMessageHTML", (_message: unknown, element: unknown) => {
+  if (element instanceof HTMLElement) activateLootChatButtons(element);
+});
+onUntypedHook("renderChatMessage", (_message: unknown, html: unknown) => {
+  const el = (html as { get?: (n: number) => HTMLElement } | undefined)?.get?.(0);
+  if (el) activateLootChatButtons(el);
 });
 
 // ─── Module API Functions ─────────────────────────────────────────────────────

@@ -33,13 +33,26 @@ declare global {
     "dolmenwood-party-inventory.encumbranceMode": "slots" | "weight";
     "dolmenwood-party-inventory.sharedActorId": string;
     "dolmenwood-party-inventory.hideDroppedZones": boolean;
+    "dolmenwood-party-inventory.hideManagedActors": boolean;
   }
 
-  /** Declare the actor flag this module writes, so getFlag/setFlag are typed. */
+  /** Declare the flags this module writes, so getFlag/setFlag are typed. */
   interface FlagConfig {
     Actor: {
       "dolmenwood-party-inventory": {
         inventory: CharacterInventory;
+        /** Present only on loot boxes. Legacy boxes carry a bare `true`. */
+        loot: true | { icon?: string };
+      };
+    };
+    JournalEntry: {
+      "dolmenwood-party-inventory": {
+        /**
+         * Marks a journal entry the module created purely as a map note's
+         * permission vehicle, so deleting the loot box may clean it up. Entries
+         * the GM made themselves carry no such flag and are left alone.
+         */
+        lootEntry: true;
       };
     };
   }

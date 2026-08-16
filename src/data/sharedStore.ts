@@ -1,5 +1,6 @@
 import { MODULE_ID, SETTINGS, SHARED_ACTOR_NAME, SHARED_ACTOR_IMG } from "../constants";
 import { FlagManager } from "./FlagManager";
+import { isLootActor } from "./lootStore";
 import type { ExtraZone } from "../types";
 
 /**
@@ -85,13 +86,18 @@ export async function verifySharedActorOwnership(): Promise<void> {
 
 // ─── Party lists ───────────────────────────────────────────────────────────────
 
-/** Every actor a non-GM player owns — the shared actor excluded. */
+/**
+ * Every actor a non-GM player owns — the shared actor and every loot box
+ * excluded. Both are owned by everyone by design, so without this filter a
+ * released hoard would join the party as a member.
+ */
 export function getPartyActors(): Actor[] {
   const g = game as Game;
   const sharedId = getSharedActorId();
   return (g.actors?.contents ?? []).filter(
     (actor) =>
       actor.id !== sharedId &&
+      !isLootActor(actor) &&
       (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
   );
 }

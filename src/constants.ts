@@ -3,12 +3,18 @@ export const MODULE_ID = "dolmenwood-party-inventory" as const;
 export const FLAGS = {
   INVENTORY: "inventory",
   TRANSACTION_LOG: "transactionLog",
+  // Marks an actor as a loot box. Loot boxes are many and disposable, so they
+  // are found by this flag rather than tracked in a world setting the way the
+  // single shared store is.
+  LOOT: "loot",
 } as const;
 
 export const TEMPLATES = {
   PARTY_OVERVIEW: `modules/${MODULE_ID}/templates/party-overview.hbs`,
   PLAYER_INVENTORY: `modules/${MODULE_ID}/templates/player-inventory.hbs`,
   SHOP: `modules/${MODULE_ID}/templates/shop.hbs`,
+  LOOT: `modules/${MODULE_ID}/templates/loot.hbs`,
+  LOOT_BROWSER: `modules/${MODULE_ID}/templates/loot-browser.hbs`,
   INN: `modules/${MODULE_ID}/templates/inn.hbs`,
   MARKET: `modules/${MODULE_ID}/templates/market.hbs`,
   PARTIALS: {
@@ -46,6 +52,7 @@ export const SETTINGS = {
   LOCAL_CUSTOM_ITEMS: "localCustomItems", // Record<shopName, ItemDefinition[]>
   SHARED_ACTOR_ID: "sharedActorId", // Actor holding the party's shared containers ("" = not created yet)
   HIDE_DROPPED_ZONES: "hideDroppedZones", // per-user: collapse zones left behind
+  HIDE_MANAGED_ACTORS: "hideManagedActors", // hide the shared store and loot boxes from players' Actors tab
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in
@@ -55,6 +62,11 @@ export const GENERIC_SHOP_KEY = "__generic_shop__" as const;
 // Name and portrait of the auto-created actor that holds shared containers
 export const SHARED_ACTOR_NAME = "Party Stores" as const;
 export const SHARED_ACTOR_IMG = "icons/containers/bags/pack-leather-brown.webp" as const;
+
+// Loot boxes: portrait and the zone every item and coin in a box lives in.
+// One zone, because a hoard is a pile — nothing about it is worn or stowed.
+export const LOOT_ACTOR_IMG = "icons/containers/chest/chest-worn-oak-tan.webp" as const;
+export const LOOT_ZONE = "equipped" as const;
 
 export const SOCKET_NAME = `module.${MODULE_ID}` as const;
 

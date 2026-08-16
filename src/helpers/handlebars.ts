@@ -74,6 +74,46 @@ export const ZONE_ICONS: { icon: string; label: string }[] = [
   { icon: "fa-ship",      label: "Boat / Ship" },
 ];
 
+/**
+ * Icons a loot box can wear. Everything here except fa-crown is already used
+ * elsewhere in the module, so it is known to render in Foundry's icon set.
+ */
+export const LOOT_ICONS: { icon: string; label: string }[] = [
+  { icon: "fa-treasure-chest", label: "Treasure chest" },
+  { icon: "fa-box",            label: "Crate / Box" },
+  { icon: "fa-sack",           label: "Sack" },
+  { icon: "fa-coins",          label: "Coin hoard" },
+  { icon: "fa-gem",            label: "Gems" },
+  { icon: "fa-crown",          label: "Regalia" },
+  { icon: "fa-skull",          label: "Remains / Cursed" },
+  { icon: "fa-hat-wizard",     label: "Magical cache" },
+  { icon: "fa-scroll",         label: "Scrolls" },
+  { icon: "fa-flask",          label: "Potions" },
+  { icon: "fa-book",           label: "Library" },
+  { icon: "fa-star",           label: "Special" },
+];
+
+/**
+ * The same twelve choices as artwork, because a map note renders an image and
+ * cannot show a Font Awesome glyph. Every path is a file Foundry ships, checked
+ * against the installed icon library — a wrong path shows as a broken texture on
+ * the canvas, which is worse than a generic one.
+ */
+export const LOOT_ICON_ARTWORK: Record<string, string> = {
+  "fa-treasure-chest": "icons/containers/chest/chest-oak-steel-brown.webp",
+  "fa-box":            "icons/containers/boxes/crate-heavy-brown.webp",
+  "fa-sack":           "icons/containers/bags/sack-cloth-brown.webp",
+  "fa-coins":          "icons/commodities/currency/coins-assorted-mix-copper-silver-gold.webp",
+  "fa-gem":            "icons/commodities/gems/gem-cluster-red.webp",
+  "fa-crown":          "icons/equipment/head/crown-gold-red.webp",
+  "fa-skull":          "icons/svg/skull.svg",
+  "fa-hat-wizard":     "icons/equipment/head/hat-belted-purple.webp",
+  "fa-scroll":         "icons/sundries/scrolls/scroll-bound-brown-tan.webp",
+  "fa-flask":          "icons/consumables/potions/bottle-conical-corked-blue.webp",
+  "fa-book":           "icons/sundries/books/book-backed-blue-gold.webp",
+  "fa-star":           "icons/magic/symbols/runes-star-blue.webp",
+};
+
 export const ZONE_COLORS: { key: string; label: string; bg: string; text: string }[] = [
   { key: "green",   label: "Green (default)",  bg: "linear-gradient(135deg, #1a3d1a 0%, #2e6b2e 100%)", text: "#c8e6c8" },
   { key: "brown",   label: "Brown",            bg: "linear-gradient(135deg, #3d1f0a 0%, #6b3515 100%)", text: "#e8c898" },

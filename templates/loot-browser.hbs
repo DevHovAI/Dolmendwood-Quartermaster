@@ -1,0 +1,35 @@
+<div class="loot-browser-window">
+
+  {{#if isGM}}
+  <div class="loot-toolbar">
+    <button type="button" data-action="newBox"><i class="fas fa-plus"></i> New loot box</button>
+  </div>
+  {{/if}}
+
+  {{#if isEmpty}}
+  <p class="loot-empty">
+    {{#if isGM}}<em>No loot boxes yet.</em>{{else}}<em>Nothing has been handed out yet.</em>{{/if}}
+  </p>
+  {{/if}}
+
+  <div class="loot-browser-list">
+    {{#each boxes}}
+    <button type="button" class="loot-browser-row {{#unless this.released}}is-staged{{/unless}}"
+            data-action="openBox" data-actor-id="{{this.id}}">
+      <span class="loot-browser-icon"><i class="fas {{this.icon}}"></i></span>
+      <span class="loot-browser-text">
+        <span class="loot-browser-name">{{this.name}}</span>
+        <span class="loot-browser-meta">
+          {{this.itemCount}} item{{#unless (eq this.itemCount 1)}}s{{/unless}}{{#if this.coinCount}} · {{this.coinCount}} coins{{/if}}
+        </span>
+      </span>
+      {{#unless this.released}}
+      <span class="loot-browser-badge" title="Not released to the party yet">
+        <i class="fas fa-eye-slash"></i> Staged
+      </span>
+      {{/unless}}
+    </button>
+    {{/each}}
+  </div>
+
+</div>
