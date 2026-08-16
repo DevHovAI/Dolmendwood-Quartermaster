@@ -55,7 +55,7 @@ function requireActiveGM(): boolean {
   const g = game as Game;
   if (g.user?.isGM) return true;
   if ((g.users?.contents ?? []).some((u) => u.isGM && u.active)) return true;
-  ui.notifications?.warn("No GM is connected — items can only be handed over while a GM is online.");
+  ui.notifications?.warn("No GM is connected — handovers only work while a GM is online.");
   return false;
 }
 
@@ -2253,6 +2253,10 @@ class GiveCoinsDialog extends Dialog {
             const sp = Math.min(inv.coins.sp, Math.max(0, parseInt(html.find("#give-sp").val() as string, 10) || 0));
             const cp = Math.min(inv.coins.cp, Math.max(0, parseInt(html.find("#give-cp").val() as string, 10) || 0));
             if (pp + gp + sp + cp === 0) return;
+            // Both sides of the transfer are actor writes, so this is a GM
+            // action like giving an item. With no GM connected the message goes
+            // nowhere and nothing at all happens — silently, until now.
+            if (!requireActiveGM()) return;
             SocketHandler.emitOrHandle(SOCKET_EVENTS.GIVE_COINS, {
               fromActorId: fromActor.id,
               toActorId,

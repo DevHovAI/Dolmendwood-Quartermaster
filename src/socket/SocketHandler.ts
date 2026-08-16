@@ -298,11 +298,19 @@ export class SocketHandler {
     if (!fromActor || !toActor) return;
 
     const costCp = data.cp + data.sp * 10 + data.gp * 100 + data.pp * 500;
+    // The dialog clamps against what the giver had when it was opened, so by the
+    // time Give is clicked the money may be gone. Without this check the target
+    // would still be credited and the coins would be minted out of nothing.
+    let paid = false;
     await FlagManager.updateInventory(fromActor, (inv) => {
       inv.coinsByZone ??= { equipped: { ...inv.coins } };
-      deductCoins(inv.coinsByZone, costCp);
+      paid = deductCoins(inv.coinsByZone, costCp);
       return inv;
     });
+    if (!paid) {
+      ui.notifications?.warn(`${fromActor.name} no longer has that much money.`);
+      return;
+    }
 
     await FlagManager.updateInventory(toActor, (inv) => {
       inv.coinsByZone ??= { equipped: { ...inv.coins } };
