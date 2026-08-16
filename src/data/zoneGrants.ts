@@ -2,7 +2,13 @@ import { MODULE_ID, SETTINGS } from "../constants";
 import { CatalogManager } from "./CatalogManager";
 import { subcategoryToIcon } from "../helpers/handlebars";
 import { effectiveWeightCapacity, effectiveMaxSlots } from "./zoneCapacity";
-import { stackUnits, findStackTarget, mergeInto } from "./consumables";
+import {
+  stackUnits,
+  findStackTarget,
+  mergeInto,
+  ammoContainerCapacity,
+  splitAmmoContainer,
+} from "./consumables";
 import type { CharacterInventory, ExtraZone, InventoryItem, ItemDefinition } from "../types";
 
 export type EncumbranceMode = "slots" | "weight";
@@ -125,6 +131,14 @@ export function addItemWithZones(
   }
 
   if (!definitionGrantsZone(def, encMode)) {
+    // Quivers and quarrel cases are distinct objects with their own fill level,
+    // so buying three means three rows rather than one row of three.
+    const capacity = ammoContainerCapacity(item.definitionId);
+    if (capacity !== undefined && item.quantity > 1) {
+      const rows = splitAmmoContainer(item, capacity);
+      inv.items.push(...rows);
+      return rows;
+    }
     inv.items.push(item);
     return [item];
   }

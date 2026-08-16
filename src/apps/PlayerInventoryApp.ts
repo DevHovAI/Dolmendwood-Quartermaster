@@ -14,6 +14,7 @@ import type { ZoneOption } from "../data/zoneGrants";
 import { effectiveWeightCapacity, effectiveMaxSlots } from "../data/zoneCapacity";
 import {
   isBundle,
+  isAmmoContainer,
   stackUnits,
   setStackUnits,
   displayQuantity,
@@ -81,6 +82,9 @@ function enrichItems(items: InventoryItem[]) {
       def,
       effectiveWeight,
       isBundle: bundle,
+      // A quiver holds one fill level and a row holds one quiver, so its
+      // quantity is always 1 and printing it would only add noise
+      isAmmoContainer: isAmmoContainer(item.definitionId),
       units: bundle ? stackUnits(item, def!.maxUses!) : item.quantity,
       unitWeight: bundle ? effectiveWeight / def!.maxUses! : effectiveWeight,
     };

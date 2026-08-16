@@ -1,4 +1,4 @@
-import type { InventoryItem, ItemDefinition } from "../types";
+import type { CharacterInventory, InventoryItem, ItemDefinition } from "../types";
 
 /**
  * Consumables come in two shapes, and they want different handling.
@@ -18,12 +18,54 @@ export const AMMO_CONTAINER_MAP: Record<string, { containerId: string; maxUses: 
   "quarrel-single": { containerId: "quarrels-case", maxUses: 20 },
 };
 
-const AMMO_CONTAINER_IDS = new Set(
-  Object.values(AMMO_CONTAINER_MAP).map((a) => a.containerId)
+/** Container definition id → how many pieces it holds when full. */
+const AMMO_CONTAINER_CAPACITY: Record<string, number> = Object.fromEntries(
+  Object.values(AMMO_CONTAINER_MAP).map((a) => [a.containerId, a.maxUses])
 );
 
 export function isAmmoContainer(definitionId: string): boolean {
-  return AMMO_CONTAINER_IDS.has(definitionId);
+  return definitionId in AMMO_CONTAINER_CAPACITY;
+}
+
+/** How many pieces this container holds, or undefined if it is not one. */
+export function ammoContainerCapacity(definitionId: string): number | undefined {
+  return AMMO_CONTAINER_CAPACITY[definitionId];
+}
+
+/**
+ * One row = one container. `uses` holds a single fill level, so a row with
+ * quantity 3 cannot say how full each of the three quivers is — the display
+ * would have to show a count and a fill level that do not belong together.
+ * Splitting keeps the total piece count exactly as stackUnits reads it: full
+ * containers first, one open remainder last.
+ */
+export function splitAmmoContainer(item: InventoryItem, maxUses: number): InventoryItem[] {
+  const count = Math.max(1, item.quantity);
+  let remaining = stackUnits(item, maxUses);
+  const rows: InventoryItem[] = [];
+  for (let i = 0; i < count; i++) {
+    const row = i === 0 ? item : { ...item, id: foundry.utils.randomID() };
+    row.quantity = 1;
+    row.uses = Math.max(0, Math.min(maxUses, remaining));
+    remaining -= row.uses;
+    rows.push(row);
+  }
+  return rows;
+}
+
+/**
+ * Split any stacked quiver or quarrel case in an inventory into one row each.
+ * Runs on every write so rows that predate the rule heal themselves; new ones
+ * are already split by addItemWithZones.
+ */
+export function reconcileAmmoContainers(inv: CharacterInventory): void {
+  const extra: InventoryItem[] = [];
+  for (const item of inv.items) {
+    const maxUses = AMMO_CONTAINER_CAPACITY[item.definitionId];
+    if (maxUses === undefined || item.quantity <= 1) continue;
+    extra.push(...splitAmmoContainer(item, maxUses).slice(1));
+  }
+  inv.items.push(...extra);
 }
 
 /** True for consumables counted as one running total of loose units. */

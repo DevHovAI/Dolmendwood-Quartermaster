@@ -27,6 +27,9 @@
     {{#if item.customDefinition.description}}<span class="item-description">{{item.customDefinition.description}}</span>{{/if}}
   </span>
 
+  {{!-- A quiver or quarrel case is one object per row, so its quantity is
+        always 1 and only the fill level below is worth showing --}}
+  {{#unless item.isAmmoContainer}}
   {{#if item.isBundle}}
   {{!-- Bundles count loose units, so one control replaces quantity + uses --}}
   {{#if isOwner}}
@@ -52,6 +55,7 @@
   {{else}}
   <span class="item-qty-readonly">×{{item.quantity}}</span>
   {{/if}}
+  {{/unless}}
 
   {{#if item.def.coinCapacity}}
   <div class="item-coin-capacity" title="Coins stored in this container">
