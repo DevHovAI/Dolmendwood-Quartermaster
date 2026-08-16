@@ -43,8 +43,20 @@ export class CatalogManager {
     return [...new Set(source.map((d) => d.subcategory))];
   }
 
+  /**
+   * Tags that describe how an item behaves rather than what a shopper would
+   * browse by. They stay on the items — zone rules read them through
+   * `allowedItemTags` — but they are not offered as shop filters, where they
+   * only add a chip that filters nothing (`filterByTags` always lets untagged
+   * items through, and nearly everything is untagged).
+   */
+  private static readonly STRUCTURAL_TAGS = new Set(["ammo-single"]);
+
+  /** Tags worth offering as shop filters. */
   static getAllTags(): string[] {
-    return [...new Set(CATALOG.flatMap((d) => d.tags))].sort();
+    return [...new Set(CATALOG.flatMap((d) => d.tags))]
+      .filter((t) => !CatalogManager.STRUCTURAL_TAGS.has(t))
+      .sort();
   }
 
   /** Group catalog items by category, then subcategory */

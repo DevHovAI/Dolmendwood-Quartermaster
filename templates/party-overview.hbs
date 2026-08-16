@@ -2,6 +2,14 @@
   {{!-- Toolbar --}}
   <div class="party-toolbar">
     <h2><i class="fas fa-users"></i> Party Inventory</h2>
+    {{!-- Marching pace of the whole group, set by its slowest part --}}
+    {{#if partyConvoy}}
+    <span class="convoy-final {{speedColor partyConvoy.speed}}"
+          title="Set by the slowest part of the party: {{partyConvoy.slowestName}}{{#if (eq partyConvoy.slowestKind "animal")}} (with {{partyConvoy.slowestOwner}}){{/if}}">
+      <i class="fas fa-route"></i> Party: {{speedLabel partyConvoy.speed}}
+      <span class="convoy-slowest">— {{partyConvoy.slowestName}}</span>
+    </span>
+    {{/if}}
     <div class="toolbar-buttons">
       <button type="button" data-action="openShop" class="btn-toolbar btn-shop">
         <i class="fas fa-store"></i> Open Shop
@@ -9,9 +17,9 @@
     </div>
   </div>
 
-  {{#if members.length}}
+  {{#if hasColumns}}
   {{!-- Party Grid --}}
-  <div class="party-grid" style="grid-template-columns: repeat({{members.length}}, 1fr);">
+  <div class="party-grid" style="grid-template-columns: {{gridTemplate}};">
     {{#each members}}
     <div class="player-column" data-actor-id="{{this.actorId}}">
       {{!-- Name, bars and coins stay pinned while the item list scrolls --}}
@@ -20,7 +28,7 @@
       <div class="player-col-header">
         <span class="player-name">{{this.actor.name}}</span>
         <span class="player-speed {{speedColor this.encumbrance.finalSpeed}}">
-          {{this.encumbrance.finalSpeed}}ft
+          {{speedLabel this.encumbrance.finalSpeed}}
           {{#if (eq ../encMode "slots")}}
           {{#if (neq this.encumbrance.bottleneck "none")}}
           <i class="fas fa-exclamation-triangle" title="Bottleneck: {{bottleneckLabel this.encumbrance.bottleneck}}"></i>
@@ -100,6 +108,35 @@
       </div>
     </div>
     {{/each}}
+
+    {{!-- Shared party store: narrower card, no encumbrance bars — it carries
+          nothing itself, it only holds what the party put in it. --}}
+    {{#if sharedMember}}
+    <div class="player-column shared-column" data-actor-id="{{sharedMember.actorId}}">
+      <div class="player-col-sticky">
+        <div class="player-col-header">
+          <span class="player-name"><i class="fas fa-people-group"></i> {{sharedMember.actor.name}}</span>
+        </div>
+        <div class="player-coins">
+          {{> coin-display inventory=sharedMember.inventory encumbrance=sharedMember.encumbrance canEdit=false}}
+        </div>
+      </div>
+
+      <div class="player-items-compact">
+        {{#each sharedMember.zoneSections}}
+        <div class="zone-section-compact">
+          <div class="zone-section-compact-header">{{this.name}}</div>
+          {{#each this.items}}
+          <div class="item-compact">
+            <span class="item-compact-name">{{this.name}}</span>
+            <span class="item-compact-qty">×{{this.quantity}}</span>
+          </div>
+          {{/each}}
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
   </div>
 
   {{!-- Party Gear & Wealth summary --}}

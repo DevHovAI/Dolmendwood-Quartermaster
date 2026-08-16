@@ -31,6 +31,8 @@ declare global {
     "dolmenwood-party-inventory.localHidden": Record<string, string[]>;
     "dolmenwood-party-inventory.localCustomItems": Record<string, ItemDefinition[]>;
     "dolmenwood-party-inventory.encumbranceMode": "slots" | "weight";
+    "dolmenwood-party-inventory.sharedActorId": string;
+    "dolmenwood-party-inventory.hideDroppedZones": boolean;
   }
 
   /** Declare the actor flag this module writes, so getFlag/setFlag are typed. */

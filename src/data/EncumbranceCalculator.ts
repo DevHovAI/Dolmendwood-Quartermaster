@@ -1,5 +1,7 @@
 import { EQUIPPED_SPEED_TIERS, STOWED_SPEED_TIERS, WEIGHT_SPEED_TIERS } from "../constants";
-import type { CharacterInventory, EncumbranceResult, ItemDefinition, AnimalSpeedInfo } from "../types";
+import { effectiveWeightCapacity } from "./zoneCapacity";
+import { stackUnits } from "./consumables";
+import type { CharacterInventory, EncumbranceResult, ItemDefinition, AnimalSpeedInfo, InventoryItem } from "../types";
 
 function getSpeedForSlots(
   slots: number,
@@ -11,11 +13,29 @@ function getSpeedForSlots(
   return 10;
 }
 
-function getSpeedForWeight(weight: number): 40 | 30 | 20 | 10 {
+/**
+ * Weight of a whole inventory row — the calculator's own copy of
+ * zoneGrants.itemStackWeight, which it cannot import (that module reaches
+ * helpers/handlebars, which imports this one).
+ */
+function stackWeight(
+  item: InventoryItem,
+  catalogMap: ReadonlyMap<string, ItemDefinition>
+): number {
+  const def = catalogMap.get(item.definitionId);
+  const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+  const maxUses = def?.maxUses;
+  if (maxUses && maxUses > 0) {
+    return (baseWeight / maxUses) * stackUnits(item, maxUses);
+  }
+  return baseWeight * item.quantity;
+}
+
+function getSpeedForWeight(weight: number): 40 | 30 | 20 | 10 | 0 {
   for (const [max, speed] of WEIGHT_SPEED_TIERS) {
     if (weight <= max) return speed;
   }
-  return 10; // > 1600 coins: cannot move, show as 10 (slowest)
+  return 0; // beyond 1600 coins nothing moves — 0, not the slowest tier
 }
 
 /**
@@ -149,30 +169,44 @@ function calculateWeightEncumbrance(
   // Build a map of extra zone id → zone object
   const extraZoneMap = new Map((inventory.extraZones ?? []).map((z) => [z.id, z]));
 
+  // A container item (the backpack itself) is pinned to "equipped" and does not
+  // live inside its own zone, so excluding the zone's *contents* still left its
+  // 50 wt on the character. Dropping a pack means putting the pack down too.
+  const droppedContainerItemIds = new Set<string>();
+  for (const zone of inventory.extraZones ?? []) {
+    if (!zone.isDropped) continue;
+    if (zone.itemId) {
+      droppedContainerItemIds.add(zone.itemId);
+      continue;
+    }
+    // Zones predating the itemId link: match by the zone name the definition
+    // grants, the same fallback reconcileZones uses.
+    const match = inventory.items.find((i) => {
+      const d = catalogMap.get(i.definitionId) ?? i.customDefinition;
+      return (d?.grantsStorageZone?.name ?? d?.grantsZone?.name) === zone.name;
+    });
+    if (match) droppedContainerItemIds.add(match.id);
+  }
+
   for (const item of inventory.items) {
     const def = catalogMap.get(item.definitionId);
     // Animals/vehicles with grantsZone don't count toward character weight
     const effectiveDef = def ?? item.customDefinition;
     if (effectiveDef?.grantsZone && (effectiveDef?.category === "Animals & Vehicles" || item.customDefinition?.grantsZone)) continue;
+    if (droppedContainerItemIds.has(item.id)) continue;
 
     const extraZone = extraZoneMap.get(item.zone);
     if (extraZone) {
       if (extraZone.isDropped) continue; // dropped zones excluded entirely
       if (!extraZone.type || extraZone.type === "vehicle") continue; // vehicle zones excluded from character weight
       // storage zone — items count toward character weight
-      // Scale weight by remaining uses ratio for consumable items
-      const baseW = item.customDefinition?.weight ?? def?.weight ?? 0;
-      const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
-      const w = baseW * usesRatio * item.quantity;
+      const w = stackWeight(item, catalogMap);
       if (extraZone.isBeltPouch) tinyWeight += w;
       else stowedWeight += w;
       continue;
     }
 
-    // Scale weight by remaining uses ratio for consumable items
-    const baseW = item.customDefinition?.weight ?? def?.weight ?? 0;
-    const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
-    const w = baseW * usesRatio * item.quantity;
+    const w = stackWeight(item, catalogMap);
     if (item.zone === "tiny") tinyWeight += w;
     else if (item.zone === "equipped") equippedWeight += w;
     else stowedWeight += w; // "stowed" and any unknown zone
@@ -200,7 +234,8 @@ function calculateWeightEncumbrance(
 
   const totalWeight = equippedWeight + stowedWeight + tinyWeight;
   const footSpeed = getSpeedForWeight(totalWeight);
-  let finalSpeed: 40 | 30 | 20 | 10 = footSpeed;
+  // Not one of the tiers: a half-speed animal lands on 15, a stuck one on 0
+  let finalSpeed: number = footSpeed;
 
   // ── Animal / convoy speed ───────────────────────────────────────────────────
   const animalSpeeds: AnimalSpeedInfo[] = [];
@@ -215,14 +250,15 @@ function calculateWeightEncumbrance(
       (inventory.coinsByZone?.[ez.id]?.sp ?? 0) +
       (inventory.coinsByZone?.[ez.id]?.gp ?? 0) +
       (inventory.coinsByZone?.[ez.id]?.pp ?? 0);
-    const usedWeight = zoneItems.reduce((acc, i) => {
-      const def = catalogMap.get(i.definitionId);
-      return acc + (i.customDefinition?.weight ?? def?.weight ?? 0) * i.quantity;
-    }, 0) + coinWeight;
+    // This branch ignored remaining uses entirely, so a half-empty quiver on a
+    // pack horse was billed as a full one
+    const usedWeight = zoneItems.reduce((acc, i) => acc + stackWeight(i, catalogMap), 0) + coinWeight;
 
-    const capacity = ez.weightCapacity;
-    // Vehicles (carts, wagons, boats) cannot be overloaded — only animals can
-    const isOverCapacity = !ez.isVehicle && capacity > 0 && usedWeight > capacity * 2;
+    // Doubling the draught team doubles what the vehicle can haul
+    const capacity = effectiveWeightCapacity(ez);
+    // A vehicle past its cargo rating simply cannot be pulled; an animal past
+    // its own carries on at half speed until double, and stops beyond that.
+    const isOverCapacity = capacity > 0 && usedWeight > (ez.isVehicle ? capacity : capacity * 2);
     const isOverloaded   = !ez.isVehicle && capacity > 0 && usedWeight > capacity && !isOverCapacity;
     const isOverWeight   = !!ez.isVehicle && capacity > 0 && usedWeight > capacity;
     let effectiveSpeed = ez.speed;
@@ -232,13 +268,13 @@ function calculateWeightEncumbrance(
     animalSpeeds.push({ zoneName: ez.name, zoneIcon: ez.icon, baseSpeed: ez.speed, usedWeight, capacity, isOverloaded, isOverCapacity, isOverWeight, effectiveSpeed });
   }
 
+  // An animal or vehicle that cannot move holds everyone up — it counts here
+  // exactly like a slow one. The way out is to unload it or leave it behind,
+  // and a zone marked as dropped never reaches this loop at all.
   let convoySpeed: number | null = null;
   if (animalSpeeds.length > 0) {
-    const notOverCapacity = animalSpeeds.filter((a) => !a.isOverCapacity);
-    if (notOverCapacity.length > 0) {
-      convoySpeed = Math.min(...notOverCapacity.map((a) => a.effectiveSpeed));
-      if (convoySpeed < finalSpeed) finalSpeed = Math.max(10, convoySpeed) as 40 | 30 | 20 | 10;
-    }
+    convoySpeed = Math.min(...animalSpeeds.map((a) => a.effectiveSpeed));
+    if (convoySpeed < finalSpeed) finalSpeed = convoySpeed;
   }
 
   return {
@@ -264,11 +300,10 @@ function calculateWeightEncumbrance(
 }
 
 /** Speed in ft to a CSS color class name */
-export function speedColorClass(speed: 40 | 30 | 20 | 10): string {
-  switch (speed) {
-    case 40: return "speed-green";
-    case 30: return "speed-yellow";
-    case 20: return "speed-orange";
-    case 10: return "speed-red";
-  }
+/** Thresholds, not exact tiers — halved animal speeds land between them. */
+export function speedColorClass(speed: number): string {
+  if (speed >= 40) return "speed-green";
+  if (speed >= 30) return "speed-yellow";
+  if (speed >= 20) return "speed-orange";
+  return "speed-red";
 }

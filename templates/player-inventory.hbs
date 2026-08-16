@@ -3,25 +3,52 @@
         convoy bar below — a third copy here was the same finalSpeed value. --}}
   <div class="inv-header">
     <h2 class="actor-name">{{actor.name}}</h2>
+    {{!-- Only worth showing once something has actually been left behind --}}
+    {{#if droppedCount}}
+    <button type="button" data-action="toggleDroppedVisibility" class="btn-toolbar btn-dropped-toggle"
+            title="{{#if hideDropped}}Show the {{droppedCount}} zone(s) left behind{{else}}Fold away the {{droppedCount}} zone(s) left behind{{/if}}">
+      <i class="fas {{#if hideDropped}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
+      {{#if hideDropped}}Show{{else}}Hide{{/if}} left behind ({{droppedCount}})
+    </button>
+    {{/if}}
     <button type="button" data-action="openShop" class="btn-toolbar btn-shop" title="Open Shop">
       <i class="fas fa-store"></i> Shop
     </button>
   </div>
 
-  {{!-- Encumbrance bars --}}
+  {{!-- Encumbrance bars. The shared store carries nothing itself — a load bar
+        against the personal 1,600 wt cap would be meaningless there. --}}
+  {{#unless isSharedStore}}
   {{> encumbrance-bar encumbrance=encumbrance encMode=encMode}}
+  {{/unless}}
 
-  {{!-- Convoy speed: own marching pace, own animals, and the party-wide slowest --}}
+  {{!-- Convoy speed: own marching pace, own animals, and the party-wide slowest.
+        "You" is the pace from carried load alone (footSpeed) — the animals get
+        their own badges, so using finalSpeed here would just repeat whichever
+        animal is slowest. --}}
   <div class="convoy-speed-bar">
     <span class="convoy-label"><i class="fas fa-route"></i> Convoy Speed:</span>
-    <span class="own-speed-badge {{speedColor encumbrance.finalSpeed}}" title="Your own marching pace, including your animals">
-      <i class="fas fa-person-walking"></i> You: {{encumbrance.finalSpeed}}ft
+    {{#unless isSharedStore}}
+    <span class="own-speed-badge {{speedColor encumbrance.footSpeed}}" title="Your marching pace from what you carry yourself — animals are listed separately">
+      <i class="fas fa-person-walking"></i> You: {{speedLabel encumbrance.footSpeed}}
     </span>
+    {{/unless}}
     {{#if (eq encMode "weight")}}
     {{#each encumbrance.animalSpeeds}}
     <span class="animal-speed-badge {{#if this.isOverCapacity}}speed-red{{else if this.isOverloaded}}speed-orange{{else if (gte this.effectiveSpeed 40)}}speed-green{{else if (gte this.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
           title="{{this.zoneName}}: {{this.usedWeight}} / {{this.capacity}} wt{{#if this.isOverCapacity}} — over capacity!{{else if this.isOverloaded}} — overloaded (half speed){{/if}}">
-      <i class="fas {{#if this.zoneIcon}}{{this.zoneIcon}}{{else}}fa-horse{{/if}}"></i> {{this.zoneName}}: {{#if this.isOverCapacity}}—{{else}}{{this.effectiveSpeed}}ft{{/if}}
+      <i class="fas {{#if this.zoneIcon}}{{this.zoneIcon}}{{else}}fa-horse{{/if}}"></i> {{this.zoneName}}: {{#if this.isOverCapacity}}—{{else}}{{speedLabel this.effectiveSpeed}}{{/if}}
+      {{#if this.isOverloaded}}<i class="fas fa-exclamation-triangle"></i>{{/if}}
+      {{#if this.isOverCapacity}}<i class="fas fa-times-circle"></i>{{/if}}
+    </span>
+    {{/each}}
+    {{!-- Shared animals pull the party too, so they belong in this bar even
+          though they are stored on another actor --}}
+    {{#each sharedAnimalSpeeds}}
+    <span class="animal-speed-badge is-shared {{#if this.isOverCapacity}}speed-red{{else if this.isOverloaded}}speed-orange{{else if (gte this.effectiveSpeed 40)}}speed-green{{else if (gte this.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
+          title="Shared — {{this.zoneName}}: {{this.usedWeight}} / {{this.capacity}} wt{{#if this.isOverCapacity}} — over capacity!{{else if this.isOverloaded}} — overloaded (half speed){{/if}}">
+      <i class="fas fa-people-group"></i>
+      <i class="fas {{#if this.zoneIcon}}{{this.zoneIcon}}{{else}}fa-horse{{/if}}"></i> {{this.zoneName}}: {{#if this.isOverCapacity}}—{{else}}{{speedLabel this.effectiveSpeed}}{{/if}}
       {{#if this.isOverloaded}}<i class="fas fa-exclamation-triangle"></i>{{/if}}
       {{#if this.isOverCapacity}}<i class="fas fa-times-circle"></i>{{/if}}
     </span>
@@ -30,7 +57,7 @@
     {{#if partyConvoy}}
     <span class="convoy-final {{#if (gte partyConvoy.speed 40)}}speed-green{{else if (gte partyConvoy.speed 30)}}speed-yellow{{else if (gte partyConvoy.speed 20)}}speed-orange{{else}}speed-red{{/if}}"
           title="Slowest in the party: {{partyConvoy.slowestName}}{{#if (eq partyConvoy.slowestKind "animal")}} ({{partyConvoy.slowestOwner}}){{/if}}">
-      <i class="fas fa-users"></i> Party: {{partyConvoy.speed}}ft
+      <i class="fas fa-users"></i> Party: {{speedLabel partyConvoy.speed}}
       <span class="convoy-slowest">— {{partyConvoy.slowestName}}</span>
     </span>
     {{/if}}
@@ -122,55 +149,26 @@
   {{!-- Storage Zones (weight mode: backpack, sack, etc.) --}}
   {{#if (eq encMode "weight")}}
   {{#each storageZones}}
-  <section class="inv-zone-section inv-zone-extra item-drop-zone {{#if this.isDropped}}zone-dropped{{/if}}" data-zone-drag-id="{{this.id}}" data-zone-color="{{this.color}}" data-zone-id="{{this.id}}">
-    <div class="zone-header zone-header-extra">
-      {{#if ../isOwner}}<i class="fas fa-grip-vertical zone-drag-handle" draggable="true" title="Drag to reorder"></i>{{/if}}
-      <h3><i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-backpack{{/if}}"></i> {{this.name}} {{#if this.selfWeight}}<span class="zone-self-weight" title="Container weight">({{this.selfWeight}} wt)</span>{{/if}}</h3>
-      <span class="zone-count">{{this.usedWeight}} / {{this.weightCapacity}} wt</span>
-    </div>
-    {{> extra-zone zone=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
-    {{> zone-coin-purse zoneId=this.id zoneCoins=(lookup ../coinsByZone this.id) canEdit=../canEdit isOwner=../isOwner}}
-  </section>
+  {{> zone-section zone=this zoneCoins=(lookup ../coinsByZone this.id) canEdit=../canEdit canGive=../canGive canGiveZone=../canGiveZone canShare=../canShare isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
   {{/each}}
   {{/if}}
 
   {{!-- Vehicle/Animal Zones --}}
   {{#each vehicleZones}}
-  <section class="inv-zone-section inv-zone-extra item-drop-zone {{#if this.isDropped}}zone-dropped{{/if}}" data-zone-drag-id="{{this.id}}" data-zone-color="{{this.color}}" data-zone-id="{{this.id}}">
-    <div class="zone-header zone-header-extra">
-      {{#if ../isOwner}}<i class="fas fa-grip-vertical zone-drag-handle" draggable="true" title="Drag to reorder"></i>{{/if}}
-      <h3><i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-horse{{/if}}"></i> {{this.name}}</h3>
-      {{#if (eq ../encMode "weight")}}
-      <span class="zone-count">{{this.usedWeight}} / {{this.weightCapacity}} wt</span>
-      {{else}}
-      <span class="zone-count">{{this.usedSlots}} / {{this.maxSlots}} slots</span>
-      {{/if}}
-    </div>
-    {{!-- Animal info (type, description, speed) --}}
-    {{#if this.animalSubcategory}}
-    <div class="animal-info-row">
-      {{#if this.animalItemName}}<span class="animal-type-badge">{{this.animalItemName}}</span>{{/if}}
-      {{#if this.speedInfo}}
-      <span class="animal-speed-badge {{#if this.speedInfo.isOverCapacity}}speed-red{{else if this.speedInfo.isOverloaded}}speed-orange{{else if this.speedInfo.isOverWeight}}speed-orange{{else if (gte this.speedInfo.effectiveSpeed 40)}}speed-green{{else if (gte this.speedInfo.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
-            title="Load: {{this.speedInfo.usedWeight}} / {{this.speedInfo.capacity}} wt">
-        <i class="fas fa-running"></i>
-        {{#if this.speedInfo.isOverCapacity}}
-          Overloaded! (cannot move)
-        {{else}}
-          {{this.speedInfo.effectiveSpeed}}ft
-          {{#if this.speedInfo.isOverloaded}}<i class="fas fa-exclamation-triangle" title="Overloaded — half speed"></i>{{/if}}
-          {{#if this.speedInfo.isOverWeight}}<i class="fas fa-weight-hanging" title="Over cargo capacity"></i>{{/if}}
-        {{/if}}
-      </span>
-      {{/if}}
-      {{#if this.animalQualities.length}}<span class="animal-qualities">{{#each this.animalQualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>{{/if}}
-      {{#if this.animalDescription}}<span class="animal-description">{{this.animalDescription}}</span>{{/if}}
-    </div>
-    {{/if}}
-    {{> extra-zone zone=this canEdit=../canEdit canGive=../canGive isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
-    {{> zone-coin-purse zoneId=this.id zoneCoins=(lookup ../coinsByZone this.id) canEdit=../canEdit isOwner=../isOwner}}
-  </section>
+  {{> zone-section zone=this zoneCoins=(lookup ../coinsByZone this.id) canEdit=../canEdit canGive=../canGive canGiveZone=../canGiveZone canShare=../canShare isGM=../isGM isOwner=../isOwner extraZones=../extraZones encMode=../encMode}}
   {{/each}}
+
+  {{!-- Shared party store: stored on a separate actor, shown in every inventory.
+        Its contents never count toward this character's own weight or slots. --}}
+  {{#if hasSharedZones}}
+  <div class="shared-store-header">
+    <h3><i class="fas fa-people-group"></i> {{sharedActorName}}</h3>
+    <span class="shared-store-hint">Shared with the whole party — does not count toward your load</span>
+  </div>
+  {{#each sharedZones}}
+  {{> zone-section zone=this zoneCoins=(lookup ../sharedCoinsByZone this.id) canEdit=../canEdit canGive=false canGiveZone=../sharedIsOwner canShare=../sharedIsOwner isGM=../isGM isOwner=../sharedIsOwner extraZones=../extraZones encMode=../encMode}}
+  {{/each}}
+  {{/if}}
 
   {{!-- GM buttons to add zones --}}
   {{#if isGM}}

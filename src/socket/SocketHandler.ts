@@ -3,16 +3,19 @@ import { FlagManager, deductCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { processInnPurchase } from "../data/innPurchase";
 import { addItemWithZones, getEncumbranceMode } from "../data/zoneGrants";
+import { transferZone } from "../data/zoneTransfer";
+import { ensureSharedActor } from "../data/sharedStore";
+import { AMMO_CONTAINER_MAP } from "../data/consumables";
 import type {
   SocketPayload,
   GMGrantPayload,
   GMRemovePayload,
   GiveCoinsPayload,
   GiveZonePayload,
+  ShareZonePayload,
   PurchasePayload,
   InnPurchasePayload,
   Transaction,
-  ExtraZone,
   InventoryItem,
   ItemDefinition,
 } from "../types";
@@ -93,6 +96,10 @@ export class SocketHandler {
         await SocketHandler.onGiveZone(data as GiveZonePayload);
         break;
 
+      case SOCKET_EVENTS.SHARE_ZONE:
+        await SocketHandler.onShareZone(data as ShareZonePayload);
+        break;
+
       case SOCKET_EVENTS.PURCHASE_ITEM:
         await SocketHandler.processPurchase(data as PurchasePayload);
         SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
@@ -105,16 +112,11 @@ export class SocketHandler {
     }
   }
 
-  private static readonly AMMO_CONTAINER_MAP: Record<string, { containerId: string; maxUses: number }> = {
-    "arrow-single":   { containerId: "arrows-quiver",  maxUses: 20 },
-    "quarrel-single": { containerId: "quarrels-case",   maxUses: 20 },
-  };
-
   private static async onGMGrant(data: GMGrantPayload): Promise<void> {
     const actor = (game as Game).actors?.get(data.actorId);
     if (!actor) return;
 
-    const ammoInfo = SocketHandler.AMMO_CONTAINER_MAP[data.item.definitionId];
+    const ammoInfo = AMMO_CONTAINER_MAP[data.item.definitionId];
     if (ammoInfo) {
       // Single ammo grant: fill existing containers or create new ones
       await FlagManager.updateInventory(actor, (inv) => {
@@ -215,7 +217,7 @@ export class SocketHandler {
       if (!canAfford && !data.gmOverride) return inv;
 
       // Single ammo purchase: add to existing container or create a new one
-      const ammoInfo = SocketHandler.AMMO_CONTAINER_MAP[data.definitionId];
+      const ammoInfo = AMMO_CONTAINER_MAP[data.definitionId];
       if (ammoInfo) {
         let remaining = data.quantity;
         // Fill existing containers that have space
@@ -329,62 +331,56 @@ export class SocketHandler {
     const fromActor = g.actors?.get(data.fromActorId);
     const toActor = g.actors?.get(data.toActorId);
     if (!fromActor || !toActor) return;
+    await SocketHandler.moveZoneAndLog(fromActor, toActor, data.zoneId);
+  }
 
-    let movedZone: ExtraZone | undefined;
-    let movedItems: InventoryItem[] = [];
-    let movedCoins = { cp: 0, sp: 0, gp: 0, pp: 0 };
+  /**
+   * Share a zone with the whole party. Reaches the GM only when the shared actor
+   * does not exist yet — creating an actor is a GM-only operation. Once it
+   * exists, players write to it themselves (they are OWNER) and never get here.
+   */
+  private static async onShareZone(data: ShareZonePayload): Promise<void> {
+    const g = game as Game;
+    const fromActor = g.actors?.get(data.fromActorId);
+    if (!fromActor) return;
+    const shared = await ensureSharedActor();
+    if (!shared) return;
+    await SocketHandler.moveZoneAndLog(fromActor, shared, data.zoneId, { clearSecret: true });
+  }
 
-    // Remove zone, its items, and its coins from the giver
-    await FlagManager.updateInventory(fromActor, (inv) => {
-      const zoneIdx = (inv.extraZones ?? []).findIndex((ez) => ez.id === data.zoneId);
-      if (zoneIdx === -1) return inv;
-      [movedZone] = inv.extraZones!.splice(zoneIdx, 1);
-      movedItems = inv.items.filter((i) => i.zone === data.zoneId);
-      inv.items = inv.items.filter((i) => i.zone !== data.zoneId);
-      if (inv.coinsByZone?.[data.zoneId]) {
-        movedCoins = { ...inv.coinsByZone[data.zoneId] };
-        delete inv.coinsByZone[data.zoneId];
-      }
-      return inv;
-    });
+  /** transferZone plus the transaction-log entry both callers need. */
+  static async moveZoneAndLog(
+    fromActor: Actor,
+    toActor: Actor,
+    zoneId: string,
+    options: { clearSecret?: boolean } = {}
+  ): Promise<void> {
+    const result = await transferZone(fromActor, toActor, zoneId, options);
+    if (!result) return;
 
-    if (!movedZone) return;
-
-    // Add zone, items, and coins to the recipient with a new zone ID
-    const newZoneId = foundry.utils.randomID();
-    await FlagManager.updateInventory(toActor, (inv) => {
-      inv.extraZones ??= [];
-      inv.extraZones.push({ ...movedZone!, id: newZoneId });
-      for (const item of movedItems) {
-        inv.items.push({ ...item, id: foundry.utils.randomID(), zone: newZoneId });
-      }
-      if (movedCoins.cp + movedCoins.sp + movedCoins.gp + movedCoins.pp > 0) {
-        inv.coinsByZone ??= { equipped: { ...inv.coins } };
-        inv.coinsByZone[newZoneId] = { ...movedCoins };
-      }
-      return inv;
-    });
-
-    const itemNames = movedItems.map((i) => ({ definitionId: i.definitionId, name: i.name, quantity: i.quantity }));
+    const { items: movedItems, coins: movedCoins } = result;
+    const hasCoins = movedCoins.cp + movedCoins.sp + movedCoins.gp + movedCoins.pp > 0;
     const tx: Transaction = {
       id: foundry.utils.randomID(),
       timestamp: Date.now(),
       type: "trade",
-      fromActorId: data.fromActorId,
-      toActorId: data.toActorId,
-      items: itemNames,
-      coinsDelta: movedCoins.cp + movedCoins.sp + movedCoins.gp + movedCoins.pp > 0
+      fromActorId: fromActor.id ?? "",
+      toActorId: toActor.id ?? "",
+      items: movedItems.map((i) => ({ definitionId: i.definitionId, name: i.name, quantity: i.quantity })),
+      coinsDelta: hasCoins
         ? [
-            { actorId: data.fromActorId, cp: -movedCoins.cp, sp: -movedCoins.sp, gp: -movedCoins.gp, pp: -movedCoins.pp },
-            { actorId: data.toActorId, cp: movedCoins.cp, sp: movedCoins.sp, gp: movedCoins.gp, pp: movedCoins.pp },
+            { actorId: fromActor.id ?? "", cp: -movedCoins.cp, sp: -movedCoins.sp, gp: -movedCoins.gp, pp: -movedCoins.pp },
+            { actorId: toActor.id ?? "", cp: movedCoins.cp, sp: movedCoins.sp, gp: movedCoins.gp, pp: movedCoins.pp },
           ]
         : [],
     };
-    await FlagManager.appendTransaction(tx);
+    // The log lives in a world setting, which only a GM may write. Players can
+    // reach this directly when sharing into the shared actor they own.
+    if ((game as Game).user?.isGM) await FlagManager.appendTransaction(tx);
     SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
   }
 
-  private static onRequestRefresh(): void {
+  static onRequestRefresh(): void {
     // Re-render any open module application windows.
     // instances is a Map — Object.values() on it always yields an empty array.
     const instances = foundry.applications?.instances;

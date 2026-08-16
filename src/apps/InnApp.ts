@@ -1,6 +1,7 @@
 import { TEMPLATES, SOCKET_EVENTS, MODULE_ID, SETTINGS } from "../constants";
 type LocalHiddenMap = Record<string, string[]>;
 import { FlagManager } from "../data/FlagManager";
+import { getPartyActors } from "../data/sharedStore";
 import { SocketHandler } from "../socket/SocketHandler";
 import { INN_MENU, INN_CATEGORIES, filterByQuality } from "../data/innData";
 import type { InnQuality } from "../data/innData";
@@ -72,9 +73,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
     // Actor selector — pick from party members (all non-GM-owned actors if GM, own character if player)
     const actors = isGM
-      ? (g.actors?.contents ?? []).filter((a) =>
-          (g.users?.contents ?? []).some((u) => !u.isGM && a.testUserPermission(u, "OWNER"))
-        )
+      ? getPartyActors()
       : [g.user?.character].filter(Boolean) as Actor[];
 
     if (!this.selectedActorId && actors.length > 0) {

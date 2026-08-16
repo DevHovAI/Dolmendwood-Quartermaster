@@ -4,6 +4,8 @@ import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { ShopApp } from "./ShopApp";
 import { PlayerInventoryApp } from "./PlayerInventoryApp";
+import { getPartyActors, getSharedActor, isSharedActor } from "../data/sharedStore";
+import { displayQuantity } from "../data/consumables";
 import type { PartyConvoy } from "../types";
 
 export interface PartySummaryCoin {
@@ -46,16 +48,21 @@ export function buildPartyConvoy(
     const enc = calculateEncumbrance(inv, CatalogManager.getMap(), encMode);
     const name = actor.name ?? "Unknown";
 
-    consider({
-      speed: enc.footSpeed,
-      slowestName: name,
-      slowestKind: "character",
-      slowestOwner: name,
-    });
+    // The shared store is a container, not a marcher — only the animals and
+    // vehicles parked in it affect the pace, never its own carried weight.
+    if (!isSharedActor(actor)) {
+      consider({
+        speed: enc.footSpeed,
+        slowestName: name,
+        slowestKind: "character",
+        slowestOwner: name,
+      });
+    }
 
     for (const animal of enc.animalSpeeds) {
-      // An animal that can't move at all doesn't set the pace — it gets left behind
-      if (animal.isOverCapacity) continue;
+      // A stuck animal or vehicle holds the whole party up. Leaving it behind
+      // is the deliberate act of marking the zone dropped, which keeps it out
+      // of animalSpeeds entirely — so anything reaching here still travels.
       consider({
         speed: animal.effectiveSpeed,
         slowestName: animal.zoneName,
@@ -109,7 +116,9 @@ export function buildPartySummary(
 
       allItems.push({
         name: item.name,
-        quantity: item.quantity,
+        // Bundles are counted in loose units, or the summary would disagree
+        // with the number shown in the inventory
+        quantity: displayQuantity(item, def),
         category: def?.category ?? "Custom",
         ownerName: actor.name ?? "Unknown",
         isSecret: item.isSecret,
@@ -179,25 +188,29 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
 
-    // Auto-detect: all actors owned by a non-GM player
-    const partyActors = (g.actors?.contents ?? []).filter((actor) =>
-      (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
-    );
+    // Auto-detect: all actors owned by a non-GM player, minus the shared store
+    const partyActors = getPartyActors();
+    const sharedActor = getSharedActor();
 
     const encMode = (g.settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
 
-    const members = partyActors
-      .map((actor) => {
+    const buildMember = (actor: Actor) => {
+      {
         const inventory = FlagManager.getInventory(actor);
         const encumbrance = calculateEncumbrance(inventory, CatalogManager.getMap(), encMode);
 
         // Filter items for display: hide animals and (weight mode) container items
-        const visibleItems = inventory.items.filter((item) => {
-          const def = CatalogManager.getDefinition(item.definitionId);
-          if (def?.grantsZone && def?.category === "Animals & Vehicles") return false;
-          if (encMode === "weight" && def?.grantsStorageZone) return false;
-          return true;
-        });
+        const visibleItems = inventory.items
+          .filter((item) => {
+            const def = CatalogManager.getDefinition(item.definitionId);
+            if (def?.grantsZone && def?.category === "Animals & Vehicles") return false;
+            if (encMode === "weight" && def?.grantsStorageZone) return false;
+            return true;
+          })
+          .map((item) => ({
+            ...item,
+            quantity: displayQuantity(item, CatalogManager.getDefinition(item.definitionId)),
+          }));
 
         // Build zone sections for the compact column
         const extraZones = inventory.extraZones ?? [];
@@ -236,13 +249,17 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
           encumbrance,
           isOwner: actor.isOwner,
         };
-      })
-      .filter(Boolean);
+      }
+    };
 
-    // Party-wide totals
+    const members = partyActors.map(buildMember);
+    // The shared store gets a narrower card at the end of the row: same zone
+    // list, but no encumbrance bars — it carries nothing itself.
+    const sharedMember = sharedActor ? buildMember(sharedActor) : null;
+
+    // Party-wide totals — the shared purse is party money and counts
     const partyTotals = { cp: 0, sp: 0, gp: 0, pp: 0 };
-    for (const member of members) {
-      if (!member) continue;
+    for (const member of [...members, ...(sharedMember ? [sharedMember] : [])]) {
       partyTotals.cp += member.inventory.coins.cp;
       partyTotals.sp += member.inventory.coins.sp;
       partyTotals.gp += member.inventory.coins.gp;
@@ -251,10 +268,19 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
 
     const isGM = g.user?.isGM ?? false;
     const currentUser = g.user ?? null;
-    const partySummary = buildPartySummary(partyActors, isGM, currentUser, partyTotals, encMode);
+    const summaryActors = sharedActor ? [...partyActors, sharedActor] : partyActors;
+    const partySummary = buildPartySummary(summaryActors, isGM, currentUser, partyTotals, encMode);
+    // Marching pace of the whole group — the per-member speeds alone never say
+    // how fast the party actually travels.
+    const partyConvoy = buildPartyConvoy(summaryActors, encMode);
 
     return {
       members,
+      sharedMember,
+      partyConvoy,
+      hasColumns: members.length > 0 || !!sharedMember,
+      // The shared card is deliberately narrower than a character column
+      gridTemplate: [...members.map(() => "1fr"), ...(sharedMember ? ["0.7fr"] : [])].join(" "),
       partyTotals,
       partySummary,
       isGM,

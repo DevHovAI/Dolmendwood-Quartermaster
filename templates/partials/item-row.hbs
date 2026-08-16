@@ -27,7 +27,18 @@
     {{#if item.customDefinition.description}}<span class="item-description">{{item.customDefinition.description}}</span>{{/if}}
   </span>
 
-  {{#if canEdit}}
+  {{#if item.isBundle}}
+  {{!-- Bundles count loose units, so one control replaces quantity + uses --}}
+  {{#if isOwner}}
+  <div class="item-qty-controls" title="{{item.units}} left · a bundle of {{item.def.maxUses}} weighs {{item.def.weight}} wt, so each one is {{item.unitWeight}} wt">
+    <button type="button" data-action="decrementUnits" data-item-id="{{item.id}}" class="qty-btn" title="Use / consume one">−</button>
+    <span class="item-qty">{{item.units}}</span>
+    <button type="button" data-action="incrementUnits" data-item-id="{{item.id}}" class="qty-btn" title="Add one">+</button>
+  </div>
+  {{else}}
+  <span class="item-qty-readonly" title="{{item.units}} left">×{{item.units}}</span>
+  {{/if}}
+  {{else if canEdit}}
   <div class="item-qty-controls">
     <button type="button" data-action="decrementQty" data-item-id="{{item.id}}" class="qty-btn">−</button>
     <span class="item-qty">{{item.quantity}}</span>
@@ -49,7 +60,9 @@
   </div>
   {{/if}}
 
-  {{#if item.def.maxUses}}
+  {{!-- Quivers and quarrel cases keep the container/uses view; bundles fold it
+        into the single unit counter above --}}
+  {{#if item.def.maxUses}}{{#unless item.isBundle}}
   <div class="item-uses-controls">
     {{#if isOwner}}
     <button type="button" data-action="decrementUses" data-item-id="{{item.id}}"
@@ -62,7 +75,7 @@
             class="qty-btn" title="Restore one" {{#if (eq item.uses item.def.maxUses)}}disabled{{/if}}>+</button>
     {{/if}}
   </div>
-  {{/if}}
+  {{/unless}}{{/if}}
 
   {{#if isOwner}}
   <textarea class="item-notes-input" data-item-id="{{item.id}}"

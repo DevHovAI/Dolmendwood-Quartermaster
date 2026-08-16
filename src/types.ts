@@ -42,7 +42,8 @@ export interface ExtraZone {
   selfWeight?: number;   // weight of the container item itself (e.g. backpack = 50 coins wt)
   itemId?: string;       // ID of the inventory item that created this zone (for cleanup on deletion)
   speed?: number;        // base travel speed in ft (for animals/vehicles that affect convoy speed)
-  isVehicle?: boolean;   // true for carts, wagons, boats — cannot be overloaded (unlike animals)
+  isVehicle?: boolean;   // true for carts, wagons, boats
+  doubleTeam?: boolean;  // land vehicle hitched to twice the draught animals — doubles cargo capacity
   isDropped?: boolean;   // zone is "left behind" — greyed out, excluded from weight and speed
   icon?: string;         // FA icon class, e.g. "fa-backpack"; falls back to type default
   color?: string;        // zone header color key: "green" | "brown" | "navy" | "purple" | "slate" | "crimson" | "teal"
@@ -100,12 +101,14 @@ export interface AnimalSpeedInfo {
 // Derived encumbrance result — never stored, always calculated
 export interface EncumbranceResult {
   mode: "slots" | "weight";
-  finalSpeed: 40 | 30 | 20 | 10;
+  // Speeds are plain numbers, not the tier union: a half-speed animal produces
+  // 15, and 0 means the load cannot be moved at all.
+  finalSpeed: number;
   // Slot mode fields
   equippedSlots: number;
   stowedSlots: number;
-  equippedSpeed: 40 | 30 | 20 | 10;
-  stowedSpeed: 40 | 30 | 20 | 10;
+  equippedSpeed: number;
+  stowedSpeed: number;
   bottleneck: "equipped" | "stowed" | "both" | "none";
   tinyCount: number;
   freeTinySlots: number;               // max(0, 10 - tinyCount)
@@ -117,7 +120,7 @@ export interface EncumbranceResult {
   stowedWeight: number;
   tinyWeight: number;                  // weight in belt pouch (capacity: 50)
   // Animal/convoy speed
-  footSpeed: 40 | 30 | 20 | 10;        // speed from carried load alone, before any animal clamp
+  footSpeed: number;                   // speed from carried load alone, before any animal clamp; 0 = over max load
   animalSpeeds: AnimalSpeedInfo[];
   convoySpeed: number | null;          // null = no animals with speed; otherwise min effective speed
 }
@@ -151,6 +154,11 @@ export interface GMRemovePayload {
 export interface GiveZonePayload {
   fromActorId: string;
   toActorId: string;
+  zoneId: string;
+}
+
+export interface ShareZonePayload {
+  fromActorId: string;
   zoneId: string;
 }
 

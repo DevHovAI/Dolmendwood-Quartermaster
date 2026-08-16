@@ -7,6 +7,7 @@ import { ShopApp } from "./apps/ShopApp";
 import { InnApp } from "./apps/InnApp";
 import { MarketApp } from "./apps/MarketApp";
 import { CatalogManager } from "./data/CatalogManager";
+import { verifySharedActorOwnership } from "./data/sharedStore";
 import { INN_CATEGORIES } from "./data/innData";
 import type { InnQuality } from "./data/innData";
 import "../styles/module.css";
@@ -83,6 +84,23 @@ Hooks.once("init", () => {
     default: "slots",
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
+  // ID of the actor holding shared party containers; "" until one is created
+  game.settings!.register(MODULE_ID, SETTINGS.SHARED_ACTOR_ID, {
+    scope: "world",
+    config: false,
+    type: String,
+    default: "",
+  });
+
+  // Per-user view preference — one player folding away a cached stash should
+  // not fold it away for everyone else
+  game.settings!.register(MODULE_ID, SETTINGS.HIDE_DROPPED_ZONES, {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
   // Register Handlebars helpers (synchronous)
   registerHandlebarsHelpers();
 
@@ -118,6 +136,9 @@ Hooks.once("ready", async () => {
 
   // Initialize socket handler
   SocketHandler.initialize();
+
+  // Players can only write to the shared store while it is owned by everyone
+  await verifySharedActorOwnership();
 
   // Expose module API on the module object for macro access
   const mod = (game as Game).modules.get(MODULE_ID);

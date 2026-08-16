@@ -1,9 +1,10 @@
-import { MODULE_ID, TEMPLATES, SETTINGS, SOCKET_EVENTS } from "../constants";
+import { MODULE_ID, TEMPLATES, SETTINGS, SOCKET_EVENTS, GENERIC_SHOP_KEY } from "../constants";
 type LocalHiddenMap = Record<string, string[]>;
 import { CatalogManager } from "../data/CatalogManager";
 import { FlagManager } from "../data/FlagManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { zoneRejection } from "../data/zoneGrants";
+import { getPartyActors } from "../data/sharedStore";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker, buildZoneOptionsHTML } from "../helpers/handlebars";
 import type { ItemDefinition, ShopState, InventoryItem, PurchasePayload } from "../types";
@@ -25,6 +26,22 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   private priceFactor = 100;
   /** Saved scroll position of .shop-catalog — restored after each re-render */
   private _scrollTop = 0;
+
+  /**
+   * Storage key for this shop's own stock. A map-note shop keys by its name;
+   * the generic shop opened from the toolbar uses a reserved key so it can be
+   * stocked the same way instead of being the one shop the GM cannot fill.
+   */
+  private get shopKey(): string {
+    return this.localName ?? GENERIC_SHOP_KEY;
+  }
+
+  /** The GM-defined items stocked in this shop. */
+  private customItems(): ItemDefinition[] {
+    const all =
+      ((game as Game).settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {};
+    return all[this.shopKey] ?? [];
+  }
 
   /** Configure this shop instance from a Note marker */
   setConfig(name: string, categories: string[], priceFactor = 100): void {
@@ -83,9 +100,9 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
     const shopState = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
-    const partyMembers = (g.actors?.contents ?? []).filter((actor) =>
-      (g.users?.contents ?? []).some((user) => !user.isGM && actor.testUserPermission(user, "OWNER"))
-    );
+    // The shared store is deliberately not a purchase target: the shop always
+    // deducts coins from the selected character.
+    const partyMembers = getPartyActors();
 
     const isGM = g.user?.isGM ?? false;
 
@@ -175,22 +192,27 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       sub.items.push(item);
     };
 
+    const withPriceFactor = (cost: ItemDefinition["cost"]) =>
+      factor === 100
+        ? cost
+        : { amount: Math.max(1, Math.round(cost.amount * factor / 100)), currency: cost.currency };
+
     for (const item of items) {
-      const adjustedCost = factor === 100 ? item.cost : {
-        amount: Math.max(1, Math.round(item.cost.amount * factor / 100)),
-        currency: item.cost.currency,
-      };
-      addToGrouped({ ...item, cost: adjustedCost, isHidden: isGM && activeHiddenItems.includes(item.id) });
+      addToGrouped({
+        ...item,
+        cost: withPriceFactor(item.cost),
+        isHidden: isGM && activeHiddenItems.includes(item.id),
+      });
     }
 
-    // Append GM-added custom items for this local shop
-    if (this.localName) {
-      const localCustomItems = ((g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {})[this.localName] ?? [];
-      for (const item of localCustomItems) {
-        const q = this.searchText.toLowerCase();
-        if (this.searchText && !item.name.toLowerCase().includes(q) && !item.category.toLowerCase().includes(q)) continue;
-        addToGrouped({ ...item, isLocalCustom: true, isHidden: false });
-      }
+    // Append the GM's own items for this shop. The generic shop stores them
+    // under a reserved key, so stocking it works exactly like a map-note shop.
+    // The price factor applies here too — the purchase dialog always charges
+    // the adjusted price, so listing the raw one would misquote it.
+    for (const item of this.customItems()) {
+      const q = this.searchText.toLowerCase();
+      if (this.searchText && !item.name.toLowerCase().includes(q) && !item.category.toLowerCase().includes(q)) continue;
+      addToGrouped({ ...item, cost: withPriceFactor(item.cost), isLocalCustom: true, isHidden: false });
     }
 
     return {
@@ -297,10 +319,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     const definitionId = target.dataset.itemId!;
     const g = game as Game;
     const catalogDef = CatalogManager.getDefinition(definitionId);
-    const localCustomItems = this.localName
-      ? ((g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {})[this.localName] ?? []
-      : [];
-    const def = catalogDef ?? localCustomItems.find((i) => i.id === definitionId);
+    const def = catalogDef ?? this.customItems().find((i) => i.id === definitionId);
     if (!def || !this.selectedActorId) return;
     const actor = g.actors?.get(this.selectedActorId);
     if (!actor) return;
@@ -401,10 +420,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
     const g = game as Game;
     const catalogDef = CatalogManager.getDefinition(definitionId);
-    const localCustomItems = this.localName
-      ? ((g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {})[this.localName] ?? []
-      : [];
-    const def = catalogDef ?? localCustomItems.find((i) => i.id === definitionId);
+    const def = catalogDef ?? this.customItems().find((i) => i.id === definitionId);
     if (!def) {
       ui.notifications?.warn("Item not found.");
       return;
@@ -472,8 +488,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   }
 
   private static _onAddToShop(this: ShopApp): void {
-    if (!this.localName) return;
-    new AddToShopDialog(this.localName, () => this.render(false)).render(true);
+    new AddToShopDialog(this.shopKey, () => this.render(false)).render(true);
   }
 
   private static async _onRemoveFromShop(
@@ -481,12 +496,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     _event: Event,
     target: HTMLElement
   ): Promise<void> {
-    if (!this.localName) return;
     const itemId = target.dataset.itemId!;
     const g = game as Game;
+    const key = this.shopKey;
     const all = (g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {};
-    if (!all[this.localName]) return;
-    all[this.localName] = all[this.localName].filter((i) => i.id !== itemId);
+    if (!all[key]) return;
+    all[key] = all[key].filter((i) => i.id !== itemId);
     await g.settings.set(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, all);
     this.render(false);
   }

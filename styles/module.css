@@ -13,17 +13,39 @@
   --dw-border-light:  #c0903c;
   --dw-shadow:        rgba(20, 8, 0, 0.18);
 
-  /* Speed tier colors */
-  --speed-green:  #2a6e32;
-  --speed-yellow: #a07b00;
-  --speed-orange: #b85500;
-  --speed-red:    #b01a00;
+  /* ── Speed tiers, tuned for red-green colour blindness ───────────────────
+     The old scale put green #2a6e32 and orange #b85500 only ΔE 2.7 apart under
+     protanopia — the same colour to anyone red-green weak. Two changes fix it:
+     the "fast" end moved from green to TEAL, which survives both protan and
+     deutan simulation, and the four steps now step clearly in lightness, so
+     they still rank correctly when the hues collapse. Verified with the
+     dataviz palette validator: worst adjacent pair now ΔE ~12 (target ≥ 8).
 
-  /* Speed tier backgrounds */
-  --speed-green-bg:  #d4edda;
-  --speed-yellow-bg: #fff3cd;
-  --speed-orange-bg: #ffe5b4;
-  --speed-red-bg:    #f8d7da;
+     Two variants, because the same tier is drawn two ways:
+       --speed-*       ink, dark enough to read on parchment
+       --speed-*-fill  filled badge or bar, white text on top
+     Ink cannot be both parchment-legible and CVD-separable in the amber/orange
+     pair — contrast forces both dark, and dark amber IS dark orange to a
+     deuteranope. That is acceptable here only because every speed colour sits
+     next to its own number, so colour never carries the value alone. */
+  --speed-green:  #0b6353;
+  --speed-yellow: #8f7000;
+  --speed-orange: #93300a;
+  --speed-red:    #6e1024;
+
+  --speed-green-fill:  #0d7f68;
+  --speed-yellow-fill: #e0a800;
+  --speed-orange-fill: #c0430e;
+  --speed-red-fill:    #6e1024;
+
+  /* White text fails on the amber fill (2.15:1), so that one chip inks dark */
+  --speed-yellow-ink: #2a2000;
+
+  /* Speed tier backgrounds (pale, for dark text) */
+  --speed-green-bg:  #cfe9e0;
+  --speed-yellow-bg: #fdefc3;
+  --speed-orange-bg: #ffdcc6;
+  --speed-red-bg:    #f6d2d8;
 }
 
 /* ─── Base Window ───────────────────────────────────────────────────────────── */
@@ -119,10 +141,10 @@
   pointer-events: none;
 }
 
-.enc-fill.speed-green  { background: linear-gradient(to right, var(--speed-green), #3a8e45); }
-.enc-fill.speed-yellow { background: linear-gradient(to right, var(--speed-yellow), #c09a10); }
-.enc-fill.speed-orange { background: linear-gradient(to right, var(--speed-orange), #d06010); }
-.enc-fill.speed-red    { background: linear-gradient(to right, var(--speed-red), #cc2200); }
+.enc-fill.speed-green  { background: linear-gradient(to right, var(--speed-green), var(--speed-green-fill)); }
+.enc-fill.speed-yellow { background: linear-gradient(to right, var(--speed-yellow), var(--speed-yellow-fill)); }
+.enc-fill.speed-orange { background: linear-gradient(to right, var(--speed-orange), var(--speed-orange-fill)); }
+.enc-fill.speed-red    { background: linear-gradient(to right, var(--speed-red), var(--speed-red-fill)); }
 
 .enc-slots {
   min-width: 26px;
@@ -594,6 +616,20 @@
   color: var(--dw-secondary);
 }
 
+/* Secondary next to Shop — a view toggle, not an action */
+.btn-dropped-toggle {
+  background: transparent;
+  color: var(--dw-secondary);
+  box-shadow: none;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.btn-dropped-toggle:hover {
+  background: var(--dw-bg-dark);
+  opacity: 1;
+}
+
 .party-grid {
   display: grid;
   gap: 8px;
@@ -653,6 +689,17 @@
   background: rgba(0,0,0,0.25);
 }
 
+/* The speed-* classes carry dark ink meant for parchment, but this badge sits
+   on the dark header gradient. Tint the background instead and keep the text
+   white — the same treatment the convoy badges use. */
+.player-col-header .player-speed {
+  color: #fff;
+}
+.player-col-header .player-speed.speed-green  { background: var(--speed-green-fill); }
+.player-col-header .player-speed.speed-yellow { background: var(--speed-yellow-fill); }
+.player-col-header .player-speed.speed-orange { background: var(--speed-orange-fill); }
+.player-col-header .player-speed.speed-red    { background: var(--speed-red-fill); }
+
 
 .player-bars {
   padding: 6px 8px;
@@ -703,10 +750,10 @@
   pointer-events: none;
 }
 
-.bar-fill.speed-green  { background: linear-gradient(to right, var(--speed-green), #3a8e45); }
-.bar-fill.speed-yellow { background: linear-gradient(to right, var(--speed-yellow), #c09a10); }
-.bar-fill.speed-orange { background: linear-gradient(to right, var(--speed-orange), #d06010); }
-.bar-fill.speed-red    { background: linear-gradient(to right, var(--speed-red), #cc2200); }
+.bar-fill.speed-green  { background: linear-gradient(to right, var(--speed-green), var(--speed-green-fill)); }
+.bar-fill.speed-yellow { background: linear-gradient(to right, var(--speed-yellow), var(--speed-yellow-fill)); }
+.bar-fill.speed-orange { background: linear-gradient(to right, var(--speed-orange), var(--speed-orange-fill)); }
+.bar-fill.speed-red    { background: linear-gradient(to right, var(--speed-red), var(--speed-red-fill)); }
 
 .bar-val {
   min-width: 18px;
@@ -1275,10 +1322,10 @@
   background: rgba(100,80,40,0.4);
   border: 1px solid rgba(255,255,255,0.15);
 }
-.convoy-speed-bar .animal-speed-badge.speed-green { background: rgba(40,140,40,0.55); }
-.convoy-speed-bar .animal-speed-badge.speed-yellow { background: rgba(180,150,0,0.55); }
-.convoy-speed-bar .animal-speed-badge.speed-orange { background: rgba(200,100,0,0.55); }
-.convoy-speed-bar .animal-speed-badge.speed-red { background: rgba(180,30,30,0.55); }
+.convoy-speed-bar .animal-speed-badge.speed-green { background: var(--speed-green-fill); }
+.convoy-speed-bar .animal-speed-badge.speed-yellow { background: var(--speed-yellow-fill); }
+.convoy-speed-bar .animal-speed-badge.speed-orange { background: var(--speed-orange-fill); }
+.convoy-speed-bar .animal-speed-badge.speed-red { background: var(--speed-red-fill); }
 .convoy-speed-bar .own-speed-badge {
   display: inline-flex;
   align-items: center;
@@ -1291,10 +1338,10 @@
   background: rgba(60,70,110,0.45);
   border: 1px solid rgba(255,255,255,0.15);
 }
-.convoy-speed-bar .own-speed-badge.speed-green { background: rgba(40,140,40,0.55); }
-.convoy-speed-bar .own-speed-badge.speed-yellow { background: rgba(180,150,0,0.55); }
-.convoy-speed-bar .own-speed-badge.speed-orange { background: rgba(200,100,0,0.55); }
-.convoy-speed-bar .own-speed-badge.speed-red { background: rgba(180,30,30,0.55); }
+.convoy-speed-bar .own-speed-badge.speed-green { background: var(--speed-green-fill); }
+.convoy-speed-bar .own-speed-badge.speed-yellow { background: var(--speed-yellow-fill); }
+.convoy-speed-bar .own-speed-badge.speed-orange { background: var(--speed-orange-fill); }
+.convoy-speed-bar .own-speed-badge.speed-red { background: var(--speed-red-fill); }
 .convoy-final {
   font-weight: bold;
   font-size: 1em;
@@ -1305,15 +1352,24 @@
   color: #fff;
   margin-left: auto;
 }
+/* Same badge in the party overview toolbar. It sits on parchment there, so it
+   relies on the tinted .speed-* background for contrast — the base
+   rgba(0,0,0,0.2) would leave white text on a light ground. */
+.party-toolbar .convoy-final {
+  margin-left: 0;
+  border-color: rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+}
+
 .convoy-final .convoy-slowest {
   font-weight: normal;
   opacity: 0.8;
   font-size: 0.9em;
 }
-.convoy-final.speed-green { background: rgba(40,140,40,0.7); }
-.convoy-final.speed-yellow { background: rgba(180,150,0,0.7); }
-.convoy-final.speed-orange { background: rgba(200,100,0,0.7); }
-.convoy-final.speed-red { background: rgba(180,30,30,0.7); }
+.convoy-final.speed-green { background: var(--speed-green-fill); }
+.convoy-final.speed-yellow { background: var(--speed-yellow-fill); }
+.convoy-final.speed-orange { background: var(--speed-orange-fill); }
+.convoy-final.speed-red { background: var(--speed-red-fill); }
 
 /* Animal info row in vehicle zone header */
 .animal-info-row {
@@ -1340,10 +1396,21 @@
   font-weight: bold;
   color: #fff;
 }
-.animal-info-row .animal-speed-badge.speed-green { background: rgba(40,140,40,0.7); }
-.animal-info-row .animal-speed-badge.speed-yellow { background: rgba(180,150,0,0.75); color: #2a2000; }
-.animal-info-row .animal-speed-badge.speed-orange { background: rgba(200,100,0,0.75); }
-.animal-info-row .animal-speed-badge.speed-red { background: rgba(180,30,30,0.75); }
+.animal-info-row .animal-speed-badge.speed-green { background: var(--speed-green-fill); }
+.animal-info-row .animal-speed-badge.speed-yellow { background: var(--speed-yellow-fill); }
+.animal-info-row .animal-speed-badge.speed-orange { background: var(--speed-orange-fill); }
+.animal-info-row .animal-speed-badge.speed-red { background: var(--speed-red-fill); }
+
+/* White on the amber fill is only 2.15:1, so every filled amber chip inks dark.
+   Being the odd one out is itself a cue: the second tier becomes the only light
+   chip in the row, which still reads when the hues collapse. */
+.player-col-header .player-speed.speed-yellow,
+.convoy-speed-bar .animal-speed-badge.speed-yellow,
+.convoy-speed-bar .own-speed-badge.speed-yellow,
+.convoy-final.speed-yellow,
+.animal-info-row .animal-speed-badge.speed-yellow {
+  color: var(--speed-yellow-ink);
+}
 .animal-qualities {
   color: #665533;
   font-size: 0.92em;
@@ -1483,6 +1550,31 @@
   color: #9fcf9f;
 }
 
+/* Double-team toggle in a land vehicle's header, next to the capacity it changes */
+.zone-team-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  font-size: 0.75em;
+  font-weight: bold;
+  line-height: 1.5;
+  width: auto;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.zone-team-toggle:hover { border-color: rgba(255, 255, 255, 0.6); }
+
+.zone-team-toggle.active {
+  background: rgba(40, 140, 40, 0.65);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
 .zone-self-weight {
   font-size: 0.75em;
   opacity: 0.7;
@@ -1526,6 +1618,170 @@
 }
 .inv-zone-extra[data-zone-color="teal"] .zone-header-extra h3,
 .inv-zone-extra[data-zone-color="teal"] .zone-header-extra .zone-count { color: #a8e0d0; }
+
+/* ─── Multi-select ───────────────────────────────────────────────────────────
+   Click rows to select, right-click for the action menu. */
+.item-row.item-selected {
+  background: rgba(120, 170, 255, 0.18);
+  box-shadow: inset 3px 0 0 #5a8fd8;
+}
+
+/* Floats over the window content instead of sitting in the flow — inserting it
+   above the zones pushed everything down the moment the first item was picked.
+   The app root is absolutely positioned by Foundry, so it is the containing
+   block; anchoring to the bottom also keeps it clear of the header. */
+.qm-selection-bar {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  /* Not full width: the window's resize grip sits in the bottom-right corner */
+  width: fit-content;
+  max-width: calc(100% - 56px);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid #5a8fd8;
+  border-radius: 5px;
+  background: var(--dw-bg-parchment);
+  /* Sits on the window frame, outside .window-content — it inherits Foundry's
+     light chrome text, which is invisible on parchment. State the ink here. */
+  color: var(--dw-text);
+  box-shadow: 0 3px 12px rgba(20, 8, 0, 0.4);
+  font-size: 0.82em;
+}
+
+.qm-sel-count { white-space: nowrap; }
+
+.qm-selection-bar button {
+  width: auto;
+  padding: 2px 8px;
+  font-size: 0.95em;
+  line-height: 1.5;
+  cursor: pointer;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+  background: var(--dw-bg-dark);
+  color: var(--dw-text);
+  flex: 0 0 auto;
+}
+
+.qm-selection-bar button:hover { border-color: #5a8fd8; }
+
+/* Appended to <body>, so it must carry its own colours rather than inherit the
+   sheet's — it lives outside .dolmenwood-party-inventory. */
+.qm-context-menu {
+  position: fixed;
+  z-index: 10000;
+  min-width: 190px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid #6b5535;
+  border-radius: 5px;
+  background: #1c1710;
+  color: #e8dcc0;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  font-size: 0.85em;
+}
+
+.qm-menu-header {
+  padding: 4px 8px 2px;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
+}
+
+.qm-menu-header:empty { padding: 0; border-top: 1px solid #3a3126; margin: 4px 0; }
+
+.qm-context-menu .qm-menu-item {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  text-align: left;
+  cursor: pointer;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font-size: 1em;
+  line-height: 1.6;
+}
+
+.qm-context-menu .qm-menu-item:hover { background: #33291a; }
+.qm-context-menu .qm-menu-item i { width: 1.1em; margin-right: 5px; opacity: 0.75; }
+.qm-context-menu .qm-menu-danger { color: #e88; }
+.qm-context-menu .qm-menu-danger:hover { background: #4a1c1c; }
+
+/* ─── Shared party store ─────────────────────────────────────────────────────
+   Zones stored on the shared actor but rendered inside every player's window.
+   A dashed border and the amber header keep them visually separate from the
+   character's own gear, which is the whole point: what is in here is not
+   carried by anyone in particular. */
+.shared-store-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 14px 0 4px;
+  padding-top: 8px;
+  border-top: 2px dashed var(--dw-border-light);
+}
+
+.shared-store-header h3 {
+  margin: 0;
+  border-bottom: none;
+  font-size: 0.95em;
+}
+
+.shared-store-hint {
+  font-size: 0.75em;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.inv-zone-shared {
+  border: 1px dashed var(--dw-border-light);
+  border-radius: 5px;
+}
+
+/* Beats the plain .zone-header-extra green, but stays below the per-zone
+   data-zone-color variants so a chosen zone colour still wins. */
+.inv-zone-shared:not([data-zone-color]) .zone-header-extra,
+.inv-zone-shared[data-zone-color=""] .zone-header-extra {
+  background: linear-gradient(135deg, #3d2a0a 0%, #6b4d15 100%);
+  color: #e8d098;
+}
+.inv-zone-shared:not([data-zone-color]) .zone-header-extra h3,
+.inv-zone-shared:not([data-zone-color]) .zone-header-extra .zone-count,
+.inv-zone-shared[data-zone-color=""] .zone-header-extra h3,
+.inv-zone-shared[data-zone-color=""] .zone-header-extra .zone-count {
+  color: #e8d098;
+}
+
+.zone-shared-badge {
+  font-size: 0.72em;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.share-btn:hover   { color: var(--speed-yellow); border-color: var(--speed-yellow); }
+.unshare-btn:hover { color: var(--speed-yellow); border-color: var(--speed-yellow); }
+
+/* Party overview: the shared store sits at the end of the row as a narrower
+   card with no encumbrance bars. */
+.shared-column {
+  border-style: dashed;
+  min-width: 130px;
+}
+
+.shared-column .player-col-header {
+  background: linear-gradient(135deg, #3d2a0a 0%, #6b4d15 100%);
+}
 
 /* ─── Zone drag handle ───────────────────────────────────────────────────────── */
 .zone-drag-handle {

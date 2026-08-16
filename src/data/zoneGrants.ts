@@ -1,6 +1,8 @@
 import { MODULE_ID, SETTINGS } from "../constants";
 import { CatalogManager } from "./CatalogManager";
 import { subcategoryToIcon } from "../helpers/handlebars";
+import { effectiveWeightCapacity, effectiveMaxSlots } from "./zoneCapacity";
+import { stackUnits, findStackTarget, mergeInto } from "./consumables";
 import type { CharacterInventory, ExtraZone, InventoryItem, ItemDefinition } from "../types";
 
 export type EncumbranceMode = "slots" | "weight";
@@ -107,6 +109,21 @@ export function addItemWithZones(
 ): InventoryItem[] {
   const def = defOverride ?? effectiveDefinition(item);
 
+  // Identical items land on the stack already in that zone rather than opening
+  // a second row — buying a second bundle of 8 firewood reads 16, and a second
+  // rope joins the first. canStackTogether decides what "identical" means.
+  //
+  // Zone-granting items are the exception: each one must stay its own row so it
+  // maps to exactly one zone. Merging two backpacks into quantity 2 would leave
+  // the second zone orphaned.
+  if (!definitionGrantsZone(def, encMode)) {
+    const existing = findStackTarget(inv.items, item, item.zone, def);
+    if (existing) {
+      mergeInto(existing, item, def);
+      return [existing];
+    }
+  }
+
   if (!definitionGrantsZone(def, encMode)) {
     inv.items.push(item);
     return [item];
@@ -190,12 +207,30 @@ export function reconcileZones(inv: CharacterInventory, encMode: EncumbranceMode
 
 // ─── Zone placement rules ─────────────────────────────────────────────────────
 
-/** Compute effective weight for an item, scaling by remaining uses when applicable. */
+/** Weight of ONE unit of an item, scaled by remaining uses when applicable. */
 export function itemEffectiveWeight(item: InventoryItem): number {
   const def = CatalogManager.getDefinition(item.definitionId);
   const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
   const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
   return baseWeight * usesRatio;
+}
+
+/**
+ * Weight of a whole inventory row.
+ *
+ * Not `itemEffectiveWeight × quantity`: that scales *every* copy by the open
+ * bundle's ratio, so 2 bundles of firewood with 4 of 8 left came out at 200 wt
+ * instead of 300 — the full bundle got charged the partial one's discount.
+ * Counting units and multiplying by the per-unit weight is exact in every case.
+ */
+export function itemStackWeight(item: InventoryItem): number {
+  const def = CatalogManager.getDefinition(item.definitionId);
+  const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+  const maxUses = def?.maxUses;
+  if (maxUses && maxUses > 0) {
+    return (baseWeight / maxUses) * stackUnits(item, maxUses);
+  }
+  return baseWeight * item.quantity;
 }
 
 /** Check whether an item's tags allow it into a zone with allowedItemTags. Returns true if zone has no tag restriction. */
@@ -204,6 +239,126 @@ export function isItemAllowedInZone(item: InventoryItem, zone: ExtraZone): boole
   const def = CatalogManager.getDefinition(item.definitionId);
   const itemTags = item.customDefinition?.tags ?? def?.tags ?? [];
   return itemTags.some((tag) => zone.allowedItemTags!.includes(tag));
+}
+
+/** Slot cost of one unit of an item (slot mode). */
+function itemSlotCost(item: InventoryItem): number {
+  const def = CatalogManager.getDefinition(item.definitionId);
+  const size = item.customDefinition?.size ?? def?.size ?? "normal";
+  return size === "large" ? 2 : size === "normal" ? 1 : 0;
+}
+
+export interface ZoneUsage {
+  used: number;
+  /** 0 means the zone declares no limit. */
+  capacity: number;
+  unit: "wt" | "slots";
+}
+
+/** How full a zone currently is, in whichever unit the active mode counts. */
+export function zoneUsage(
+  inventory: CharacterInventory,
+  zone: ExtraZone,
+  encMode: EncumbranceMode
+): ZoneUsage {
+  const items = inventory.items.filter((i) => i.zone === zone.id);
+  if (encMode === "weight") {
+    const coins = inventory.coinsByZone?.[zone.id];
+    const coinWeight = coins ? coins.cp + coins.sp + coins.gp + coins.pp : 0;
+    return {
+      used: items.reduce((acc, i) => acc + itemStackWeight(i), 0) + coinWeight,
+      capacity: effectiveWeightCapacity(zone),
+      unit: "wt",
+    };
+  }
+  return {
+    used: items.reduce((acc, i) => acc + itemSlotCost(i) * i.quantity, 0),
+    capacity: effectiveMaxSlots(zone),
+    unit: "slots",
+  };
+}
+
+export interface ZoneOption {
+  id: string;
+  name: string;
+  /** e.g. "120 wt free" — empty when the zone declares no limit. */
+  detail: string;
+  /** Set when the zone takes the load but suffers for it. */
+  warning?: string;
+}
+
+/**
+ * Zones of `inventory` that can take *all* of `items` together, for the target
+ * picker when handing things to another character.
+ *
+ * Three kinds of zone, three rules:
+ * - Built-in zones are always offered — no hard cap, only speed tiers.
+ * - Containers (`type === "storage"`) have a real cap and are dropped from the
+ *   list when the load would not fit, cumulatively across all items.
+ * - Animals and vehicles are *never* dropped: overloading them is legal and
+ *   only costs speed, so they stay selectable and carry a warning instead.
+ *
+ * Dropped zones are left out entirely — they are not being carried.
+ */
+export function zonesAcceptingItems(
+  inventory: CharacterInventory,
+  items: InventoryItem[],
+  encMode: EncumbranceMode
+): ZoneOption[] {
+  const standard: ZoneOption[] =
+    encMode === "weight"
+      ? [
+          { id: "equipped", name: "Equipped", detail: "" },
+          { id: "stowed", name: "Unsorted", detail: "" },
+        ]
+      : [
+          { id: "equipped", name: "Equipped", detail: "" },
+          { id: "stowed", name: "Stowed", detail: "" },
+          { id: "tiny", name: "Belt Pouch", detail: "" },
+        ];
+
+  const options = [...standard];
+
+  for (const zone of inventory.extraZones ?? []) {
+    if (zone.isDropped) continue;
+    const isContainer = zone.type === "storage";
+
+    const trial = structuredClone(inventory);
+    let rejected = false;
+    for (const item of items) {
+      // Tag restrictions and the belt-pouch weight limit are hard for every
+      // kind of zone; the storage capacity check inside only fires for containers.
+      if (zoneRejection(trial, zone.id, item)) { rejected = true; break; }
+      trial.items.push({ ...item, id: foundry.utils.randomID(), zone: zone.id });
+    }
+    if (rejected) continue;
+
+    const before = zoneUsage(inventory, zone, encMode);
+    const after = zoneUsage(trial, zone, encMode);
+    const detail = before.capacity > 0
+      ? `${Math.max(0, before.capacity - before.used)} ${before.unit} free`
+      : "";
+
+    let warning: string | undefined;
+    if (!isContainer && after.capacity > 0 && after.used > after.capacity) {
+      const load = `${after.used} / ${after.capacity} ${after.unit}`;
+      // Mirrors EncumbranceCalculator, which only derives animal speed in
+      // weight mode — in slot mode maxSlots costs nothing but room.
+      if (encMode !== "weight") {
+        warning = `over capacity (${load})`;
+      } else if (zone.isVehicle) {
+        warning = `over cargo capacity — cannot be pulled (${load})`;
+      } else if (after.used > after.capacity * 2) {
+        warning = `over capacity — cannot move (${load})`;
+      } else {
+        warning = `overloaded — half speed (${load})`;
+      }
+    }
+
+    options.push({ id: zone.id, name: zone.name, detail, ...(warning ? { warning } : {}) });
+  }
+
+  return options;
 }
 
 /**
@@ -228,10 +383,10 @@ export function zoneRejection(
   }
 
   if (zone.type === "storage" && zone.weightCapacity > 0) {
-    const itemWeight = itemEffectiveWeight(item) * item.quantity;
+    const itemWeight = itemStackWeight(item);
     const currentZoneWeight = inventory.items
       .filter((i) => i.zone === zoneId && i.id !== ignoreItemId)
-      .reduce((acc, i) => acc + itemEffectiveWeight(i) * i.quantity, 0);
+      .reduce((acc, i) => acc + itemStackWeight(i), 0);
     if (currentZoneWeight + itemWeight > zone.weightCapacity) {
       return (
         `"${zone.name}" can hold ${zone.weightCapacity} wt. ` +

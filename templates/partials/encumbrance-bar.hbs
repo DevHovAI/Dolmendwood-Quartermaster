@@ -12,7 +12,7 @@
       <div class="enc-threshold" style="left: 100%"  title="Max load (1,600 coins)"></div>
     </div>
     <span class="enc-slots">{{encumbrance.totalWeight}}</span>
-    <span class="enc-speed {{speedColor encumbrance.finalSpeed}}">→ {{encumbrance.finalSpeed}}ft</span>
+    <span class="enc-speed {{speedColor encumbrance.finalSpeed}}">→ {{speedLabel encumbrance.finalSpeed}}</span>
   </div>
   <div class="enc-weight-breakdown">
     <span class="enc-breakdown-item" title="Equipped items weight">Eq: {{encumbrance.equippedWeight}}</span>
@@ -22,9 +22,10 @@
     <span class="enc-breakdown-item {{#if (gt encumbrance.tinyWeight 50)}}enc-over{{/if}}" title="Belt pouch weight (max 50)">Pouch: {{encumbrance.tinyWeight}}/50</span>
   </div>
   <div class="enc-final {{speedColor encumbrance.finalSpeed}}">
-    <strong>Speed: {{encumbrance.finalSpeed}}ft</strong>
+    <strong>Speed: {{speedLabel encumbrance.finalSpeed}}</strong>
+    {{!-- The speed already says "cannot move"; this names the reason --}}
     {{#if (gt encumbrance.totalWeight 1600)}}
-    <span class="enc-bottleneck">⚠ Cannot move!</span>
+    <span class="enc-bottleneck">⚠ Over max load (1,600)</span>
     {{/if}}
   </div>
 </div>
@@ -56,7 +57,7 @@
     <span class="enc-speed {{speedColor encumbrance.stowedSpeed}}">→ {{encumbrance.stowedSpeed}}ft</span>
   </div>
   <div class="enc-final {{speedColor encumbrance.finalSpeed}}">
-    <strong>Speed: {{encumbrance.finalSpeed}}ft</strong>
+    <strong>Speed: {{speedLabel encumbrance.finalSpeed}}</strong>
     {{#if (neq encumbrance.bottleneck "none")}}
     <span class="enc-bottleneck">⚠ {{bottleneckLabel encumbrance.bottleneck}}</span>
     {{/if}}

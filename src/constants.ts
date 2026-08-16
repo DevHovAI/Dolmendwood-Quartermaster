@@ -20,6 +20,7 @@ export const TEMPLATES = {
     PARTY_SUMMARY: `modules/${MODULE_ID}/templates/partials/party-summary.hbs`,
     EXTRA_ZONE: `modules/${MODULE_ID}/templates/partials/extra-zone.hbs`,
     ZONE_COIN_PURSE: `modules/${MODULE_ID}/templates/partials/zone-coin-purse.hbs`,
+    ZONE_SECTION: `modules/${MODULE_ID}/templates/partials/zone-section.hbs`,
   },
 } as const;
 
@@ -30,6 +31,7 @@ export const SOCKET_EVENTS = {
   GM_REMOVE: "gmRemove",
   GIVE_COINS: "giveCoins",
   GIVE_ZONE: "giveZone",
+  SHARE_ZONE: "shareZone",
   REQUEST_REFRESH: "requestRefresh",
   INN_PURCHASE: "innPurchase",
 } as const;
@@ -42,7 +44,17 @@ export const SETTINGS = {
   LOCAL_HIDDEN: "localHidden", // Record<locationName, itemId[]> — per-location hidden items
   ENCUMBRANCE_MODE: "encumbranceMode", // "slots" | "weight"
   LOCAL_CUSTOM_ITEMS: "localCustomItems", // Record<shopName, ItemDefinition[]>
+  SHARED_ACTOR_ID: "sharedActorId", // Actor holding the party's shared containers ("" = not created yet)
+  HIDE_DROPPED_ZONES: "hideDroppedZones", // per-user: collapse zones left behind
 } as const;
+
+// Key under which the generic (non-map-note) shop stores its GM-added stock in
+// SETTINGS.LOCAL_CUSTOM_ITEMS, which is otherwise keyed by shop name.
+export const GENERIC_SHOP_KEY = "__generic_shop__" as const;
+
+// Name and portrait of the auto-created actor that holds shared containers
+export const SHARED_ACTOR_NAME = "Party Stores" as const;
+export const SHARED_ACTOR_IMG = "icons/containers/bags/pack-leather-brown.webp" as const;
 
 export const SOCKET_NAME = `module.${MODULE_ID}` as const;
 

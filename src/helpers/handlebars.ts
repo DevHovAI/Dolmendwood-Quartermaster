@@ -227,10 +227,12 @@ export function registerHandlebarsHelpers(): void {
   );
 
   // Speed value → CSS class for color coding
-  Handlebars.registerHelper(
-    "speedColor",
-    (speed: 40 | 30 | 20 | 10) => speedColorClass(speed)
-  );
+  Handlebars.registerHelper("speedColor", (speed: number) => speedColorClass(speed));
+
+  // Speed value → label. The gap is a non-breaking space: without it "0ft"
+  // reads as the word "oft", and a plain space would let the unit wrap onto
+  // its own line in the narrow party columns.
+  Handlebars.registerHelper("speedLabel", (speed: number) => `${speed}\u00A0ft`);
 
   // Slot bar width as percentage for equipped (max 10 slots)
   Handlebars.registerHelper("equippedBarWidth", (slots: number) =>
@@ -330,5 +332,6 @@ export async function registerHandlebarsPartials(): Promise<void> {
     "party-summary": TEMPLATES.PARTIALS.PARTY_SUMMARY,
     "extra-zone": TEMPLATES.PARTIALS.EXTRA_ZONE,
     "zone-coin-purse": TEMPLATES.PARTIALS.ZONE_COIN_PURSE,
+    "zone-section": TEMPLATES.PARTIALS.ZONE_SECTION,
   });
 }
