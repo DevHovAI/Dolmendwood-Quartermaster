@@ -644,7 +644,10 @@
   overflow-y: auto;
   cursor: pointer;
   transition: box-shadow 0.15s, transform 0.1s;
-  min-width: 160px;
+  /* The 160px floor lives on the grid track now (see gridTemplate). Keeping a
+     min-width here as well would let the card push past its own column again,
+     which is the very thing the track minimum exists to prevent. */
+  min-width: 0;
   box-shadow: 0 2px 6px var(--dw-shadow);
   background: var(--dw-bg-parchment);
 }
@@ -669,12 +672,31 @@
   color: var(--dw-accent-light);
   padding: 5px 8px;
   display: flex;
-  align-items: center;
+  /* Top-aligned, so the speed badge sits beside the name's first line whether
+     the name runs to one line or two. */
+  align-items: flex-start;
   gap: 6px;
 }
 
+/* Names get two lines rather than being cut off at one.
+   The height is fixed at exactly two lines in every column, short name or long,
+   because a header that grows only for some columns would push their bars and
+   coin rows out of line with the rest — the same unevenness the equal column
+   widths were meant to remove.
+   `overflow: hidden` also does the load-bearing job of turning this flex item's
+   automatic minimum size from min-content into 0, so the name can shrink at all;
+   `overflow-wrap: anywhere` lets a single very long word break instead of
+   forcing the box wider. The full name stays available as a tooltip. */
 .player-name {
   flex: 1;
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+  height: 2.5em;
   font-weight: bold;
   font-size: 0.9em;
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
@@ -1776,7 +1798,8 @@
    card with no encumbrance bars. */
 .shared-column {
   border-style: dashed;
-  min-width: 130px;
+  /* Its narrower floor is on the grid track, same as the character columns. */
+  min-width: 0;
 }
 
 .shared-column .player-col-header {
@@ -2087,14 +2110,14 @@
   gap: 6px;
 }
 
-.inn-category {
+.inn-section {
   border: 1px solid var(--dw-border-light);
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 1px 3px var(--dw-shadow);
 }
 
-.inn-category-header {
+.inn-section-header {
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
   padding: 6px 10px;
@@ -2107,15 +2130,66 @@
   user-select: none;
 }
 
-.inn-category-header::-webkit-details-marker { display: none; }
+.inn-section-header::-webkit-details-marker { display: none; }
 
-.inn-category-header::before {
+.inn-section-header::before {
   content: "▾ ";
   font-size: 0.8em;
   opacity: 0.7;
 }
 
-.inn-category:not([open]) .inn-category-header::before { content: "▸ "; }
+.inn-section:not([open]) .inn-section-header::before { content: "▸ "; }
+
+/* A section whose quality differs from the house's — Chateau Shantywood keeps
+   fancy rooms above a common kitchen, and that has to be visible at a glance. */
+.inn-section-quality {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.25);
+  color: var(--dw-accent-light);
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.inn-section-tools {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(160,100,30,0.08);
+  border-bottom: 1px solid rgba(160,100,30,0.15);
+}
+
+.inn-section-text {
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--dw-bg-parchment);
+  color: var(--dw-tertiary);
+  font-style: italic;
+  font-size: 0.82em;
+  line-height: 1.4;
+  border-bottom: 1px solid rgba(160,100,30,0.12);
+}
+
+.inn-group-label {
+  padding: 4px 10px 2px;
+  background: var(--dw-bg-parchment);
+  color: var(--dw-secondary);
+  font-size: 0.78em;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.inn-empty {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--dw-bg-parchment);
+  color: var(--dw-tertiary);
+  font-style: italic;
+  font-size: 0.82em;
+}
 
 .inn-item-list { background: var(--dw-bg-parchment); }
 
@@ -2151,25 +2225,84 @@
   text-overflow: ellipsis;
 }
 
+/* Wraps rather than clipping: the dish and drink descriptions are the flavour
+   the table actually reads out, so cutting them off at one line defeats them. */
 .inn-item-desc {
   font-style: italic;
   color: var(--dw-tertiary);
   font-size: 0.85em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
 }
 
+.inn-item-tag {
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: rgba(160,100,30,0.14);
+  color: var(--dw-tertiary);
+  font-size: 0.78em;
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+/* House speciality — always on the menu, never part of the daily draw. */
+.inn-fixed-marker {
+  color: var(--dw-accent);
+  font-size: 0.8em;
+}
+
+/* A fixed, left-aligned price column.
+   Right-aligning it made the price hang off whatever came after it, and since a
+   line can carry one button (rations), three (a cask) or five (the GM's view),
+   the prices landed at a different place in every row. A fixed basis takes the
+   buttons out of the equation: price and buttons both start at the same x in
+   every row, and a line with fewer buttons simply leaves space at the end. */
+/* Right-aligned in a fixed column: the prices end at a common edge right next
+   to the buttons, so a short price no longer leaves a gap in front of them.
+   The column stays fixed-width — that is what keeps every kind of button in its
+   own column down the whole list. */
 .inn-item-cost {
+  flex: 0 0 56px;
   font-weight: bold;
   color: var(--dw-accent);
   white-space: nowrap;
-  min-width: 48px;
   text-align: right;
 }
 
+/* The pricing basis, shown beside the name. */
+.inn-item-unit {
+  font-style: italic;
+}
+
+/* Fixed-size slots, one per possible button, in a fixed order.
+   The price column alone was not enough: .inn-item-info is flex:1, so it eats
+   whatever the buttons leave over — a row with fewer buttons gave the info
+   column more room and pushed the price somewhere else. With every slot the
+   same width and always present, each kind of button sits in its own column
+   and the prices line up under one another down the whole list. */
+.inn-item-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.inn-item-actions > * {
+  flex: 0 0 26px;
+  width: 26px;
+}
+
+/* Holds a column open where this line offers no such button. */
+.inn-action-empty {
+  display: block;
+  height: 1px;
+}
+
+/* Icon-only and square, so it fills exactly one action slot. */
 .btn-inn-purchase {
-  padding: 3px 9px;
+  padding: 0;
+  height: 24px;
   font-size: 0.8em;
   background: linear-gradient(to bottom, var(--dw-accent-light), var(--dw-accent));
   border: 1px solid var(--dw-border);
@@ -2191,16 +2324,140 @@
   cursor: not-allowed;
 }
 
-/* ─── Inn Hidden Items (GM view) ─────────────────────────────────────────────── */
-.inn-item-gm-hidden {
-  opacity: 0.45;
-  background: repeating-linear-gradient(
-    135deg,
-    transparent,
-    transparent 4px,
-    rgba(160,100,30,0.06) 4px,
-    rgba(160,100,30,0.06) 5px
-  );
+/* Buying a round: same button, distinguished by tint rather than by width, so
+   the two sit side by side without pushing the price column around. */
+.btn-inn-treat {
+  background: linear-gradient(to bottom, var(--dw-bg-parchment), var(--dw-accent-light));
+}
+
+/* Bottle or cask — the only inn purchase that goes into a pack, so it reads as
+   a different kind of action rather than a third shade of the same one. */
+.btn-inn-container {
+  background: linear-gradient(to bottom, var(--dw-accent-light), var(--dw-border-light));
+  border-color: var(--dw-tertiary);
+}
+
+.btn-inn-container:hover {
+  background: linear-gradient(to bottom, var(--dw-border-light), var(--dw-accent));
+}
+
+/* ─── Inn: the day's board ───────────────────────────────────────────────────── */
+
+.inn-daybox {
+  border: 1px solid var(--dw-border-light);
+  border-radius: 6px;
+  background: var(--dw-bg-parchment);
+  margin-bottom: 8px;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.inn-daybox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
+  color: var(--dw-accent-light);
+  font-size: 0.82em;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+.inn-daybox-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* .icon-btn is parchment ink (dark brown) — on this header's dark gradient it
+   is all but invisible. Anywhere an icon button lands on a dark surface it has
+   to be repainted; the same trap already bit the party overview's speed text. */
+.inn-daybox-tools .icon-btn {
+  color: var(--dw-accent-light);
+  border-color: rgba(238,221,160,0.35);
+}
+
+.inn-daybox-tools .icon-btn:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.15);
+  border-color: var(--dw-accent);
+}
+
+/* Foundry core forces every button to a fixed single-line height and zero
+   vertical padding, so anything with an icon plus a label has to set its own. */
+.btn-new-day {
+  height: auto;
+  min-height: 0;
+  padding: 2px 8px;
+  font-size: 0.95em;
+  font-family: inherit;
+  font-weight: bold;
+  line-height: 1.4;
+  white-space: nowrap;
+  border: 1px solid var(--dw-border);
+  border-radius: 4px;
+  background: linear-gradient(to bottom, var(--dw-accent-light), var(--dw-accent));
+  color: var(--dw-primary);
+  cursor: pointer;
+}
+
+.btn-new-day:hover {
+  background: linear-gradient(to bottom, var(--dw-accent), var(--dw-border-light));
+}
+
+/* Foundry core paints every <table> from its own dark palette: a fill from
+   `--table-background-color`, striped rows from `--table-row-color-odd/even`,
+   and a thead in `--table-header-bg-color` with light text. Dropping the
+   module's dark parchment ink onto that gives dark-on-dark — the box was there
+   and simply could not be read. Every one of those has to be repainted, not
+   just the one that looks wrong: the row stripes are separate rules.
+   `.inn-daybox-table tbody tr:nth-child(even)` outweighs core's
+   `table tbody tr:nth-child(even)`, so no !important is needed. */
+.inn-daybox-table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  background: transparent;
+  font-size: 0.82em;
+}
+
+.inn-daybox-table thead {
+  background: rgba(160,100,30,0.14);
+  border: none;
+  color: var(--dw-secondary);
+}
+
+.inn-daybox-table tbody tr:nth-child(odd) { background-color: transparent; }
+.inn-daybox-table tbody tr:nth-child(even) { background-color: rgba(200,160,80,0.07); }
+
+.inn-daybox-table th {
+  padding: 3px 8px;
+  text-align: left;
+  color: var(--dw-secondary);
+  font-size: 0.9em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(160,100,30,0.25);
+}
+
+.inn-daybox-table td {
+  padding: 3px 8px;
+  border-bottom: 1px solid rgba(160,100,30,0.1);
+  color: var(--dw-text);
+}
+
+.inn-daybox-table tr:last-child td { border-bottom: none; }
+
+.inn-daybox-table .dl-name { font-weight: bold; color: var(--dw-primary); }
+
+.inn-daybox-table .dl-missing { color: var(--dw-tertiary); opacity: 0.85; }
+
+.inn-daybox-table tr.is-complete .dl-name::after {
+  content: " ✓";
+  color: var(--dw-accent);
 }
 
 /* ─── Coin Slot Rows ─────────────────────────────────────────────────────────── */

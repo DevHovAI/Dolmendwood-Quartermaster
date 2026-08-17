@@ -6,6 +6,8 @@
 import type { DeepPartial as FvttDeepPartial } from "@league-of-foundry-developers/foundry-vtt-types/utils";
 import type { ShopState, Transaction, ItemDefinition, CharacterInventory } from "./types";
 import type { InnQuality } from "./data/innData";
+import type { InnConfig } from "./data/innConfig";
+import type { InnDayLog } from "./data/innMenu";
 
 declare global {
   type DeepPartial<T extends object> = FvttDeepPartial<T>;
@@ -28,12 +30,17 @@ declare global {
     "dolmenwood-party-inventory.shopState": ShopState;
     "dolmenwood-party-inventory.transactionLog": Transaction[];
     "dolmenwood-party-inventory.innState": { name: string; quality: InnQuality };
+    "dolmenwood-party-inventory.innConfigs": Record<string, InnConfig>;
+    "dolmenwood-party-inventory.innDay": number;
+    "dolmenwood-party-inventory.innDayLog": InnDayLog;
     "dolmenwood-party-inventory.localHidden": Record<string, string[]>;
     "dolmenwood-party-inventory.localCustomItems": Record<string, ItemDefinition[]>;
     "dolmenwood-party-inventory.encumbranceMode": "slots" | "weight";
     "dolmenwood-party-inventory.sharedActorId": string;
     "dolmenwood-party-inventory.hideDroppedZones": boolean;
     "dolmenwood-party-inventory.hideManagedActors": boolean;
+    "dolmenwood-party-inventory.playerToolbarInn": boolean;
+    "dolmenwood-party-inventory.playerToolbarLoot": boolean;
   }
 
   /** Declare the flags this module writes, so getFlag/setFlag are typed. */

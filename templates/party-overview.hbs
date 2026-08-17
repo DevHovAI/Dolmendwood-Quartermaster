@@ -26,7 +26,7 @@
       <div class="player-col-sticky">
       {{!-- Player header. No inventory button — clicking the column opens it. --}}
       <div class="player-col-header">
-        <span class="player-name">{{this.actor.name}}</span>
+        <span class="player-name" title="{{this.actor.name}}">{{this.actor.name}}</span>
         <span class="player-speed {{speedColor this.encumbrance.finalSpeed}}">
           {{speedLabel this.encumbrance.finalSpeed}}
           {{#if (eq ../encMode "slots")}}
@@ -115,7 +115,7 @@
     <div class="player-column shared-column" data-actor-id="{{sharedMember.actorId}}">
       <div class="player-col-sticky">
         <div class="player-col-header">
-          <span class="player-name"><i class="fas fa-people-group"></i> {{sharedMember.actor.name}}</span>
+          <span class="player-name" title="{{sharedMember.actor.name}}"><i class="fas fa-people-group"></i> {{sharedMember.actor.name}}</span>
         </div>
         <div class="player-coins">
           {{> coin-display inventory=sharedMember.inventory encumbrance=sharedMember.encumbrance canEdit=false}}

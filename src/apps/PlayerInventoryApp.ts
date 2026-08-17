@@ -3,6 +3,7 @@ import { ShopApp } from "./ShopApp";
 import { buildPartySummary, buildPartyConvoy } from "./PartyOverviewApp";
 import { FlagManager, totalZoneCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
+import { definitionFor } from "../data/itemDefs";
 import {
   addItemWithZones,
   itemStackWeight,
@@ -14,7 +15,7 @@ import type { ZoneOption } from "../data/zoneGrants";
 import { effectiveWeightCapacity, effectiveMaxSlots } from "../data/zoneCapacity";
 import {
   isBundle,
-  isAmmoContainer,
+  isSingleContainer,
   stackUnits,
   setStackUnits,
   displayQuantity,
@@ -26,6 +27,7 @@ import {
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker, buildColorPickerHTML, activateColorPicker, buildZoneOptionsHTML, escapeHTML, ZONE_ICONS } from "../helpers/handlebars";
+import { requireActiveGM } from "../helpers/gm";
 import {
   getSharedActor,
   getPartyActors,
@@ -48,19 +50,6 @@ interface ZoneViews {
 }
 
 /**
- * Giving to another player's character removes the item locally and hands the
- * write to the GM's client over the socket. With no GM connected that message
- * goes nowhere and the item is simply gone, so check before removing anything.
- */
-function requireActiveGM(): boolean {
-  const g = game as Game;
-  if (g.user?.isGM) return true;
-  if ((g.users?.contents ?? []).some((u) => u.isGM && u.active)) return true;
-  ui.notifications?.warn("No GM is connected — handovers only work while a GM is online.");
-  return false;
-}
-
-/**
  * Catalog definition plus the display fields the item row needs.
  *
  * Module-level on purpose: this existed twice — once for the extra zones and
@@ -70,9 +59,9 @@ function requireActiveGM(): boolean {
  */
 function enrichItems(items: InventoryItem[]) {
   return items.map((item) => {
-    const def = CatalogManager.getDefinition(item.definitionId);
+    const def = definitionFor(item);
     const uses = def?.maxUses !== undefined && item.uses === undefined ? def.maxUses : item.uses;
-    const effectiveWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+    const effectiveWeight = def?.weight ?? 0;
     // Bundles show one running total of loose units instead of a bundle count
     // next to a uses counter
     const bundle = isBundle(item, def);
@@ -82,9 +71,9 @@ function enrichItems(items: InventoryItem[]) {
       def,
       effectiveWeight,
       isBundle: bundle,
-      // A quiver holds one fill level and a row holds one quiver, so its
-      // quantity is always 1 and printing it would only add noise
-      isAmmoContainer: isAmmoContainer(item.definitionId),
+      // A quiver, bottle or cask holds one fill level and a row holds one of
+      // them, so its quantity is always 1 and printing it would only add noise
+      isSingleContainer: isSingleContainer(item, def),
       units: bundle ? stackUnits(item, def!.maxUses!) : item.quantity,
       unitWeight: bundle ? effectiveWeight / def!.maxUses! : effectiveWeight,
     };
@@ -112,10 +101,9 @@ function buildZoneViews(
   // so they are filtered out of the plain item lists.
   const visibleItems = inventory.items.filter((item) => {
     if (item.isSecret && !canSeeSecret) return false;
-    const def = CatalogManager.getDefinition(item.definitionId);
-    const effectiveDef = def ?? item.customDefinition;
+    const effectiveDef = definitionFor(item);
     if (effectiveDef?.grantsZone && (effectiveDef?.category === "Animals & Vehicles" || item.customDefinition?.grantsZone)) return false;
-    if (def?.grantsStorageZone && encMode === "weight") return false;
+    if (effectiveDef?.grantsStorageZone && encMode === "weight") return false;
     return true;
   });
 
@@ -137,8 +125,7 @@ function buildZoneViews(
       let animalItemName: string | undefined;
       let animalQualities: string[] = [];
       for (const item of inventory.items) {
-        const def = CatalogManager.getDefinition(item.definitionId);
-        const effectiveDef = def ?? (item.customDefinition as import("../types").ItemDefinition | undefined);
+        const effectiveDef = definitionFor(item);
         if (!effectiveDef?.grantsZone) continue;
         // Match by itemId (preferred), fall back to name for legacy zones without itemId
         if ((ez.itemId && item.id === ez.itemId) || (!ez.itemId && effectiveDef.grantsZone.name === ez.name)) {
@@ -165,7 +152,7 @@ function buildZoneViews(
           !!ez.isVehicle && (animalSubcategory ?? "").toLowerCase() !== "water vehicles",
         items: enrichItems(zoneItems),
         usedSlots: zoneItems.reduce((acc, i) => {
-          const def = CatalogManager.getDefinition(i.definitionId);
+          const def = definitionFor(i);
           const size = i.customDefinition?.size ?? def?.size ?? "normal";
           return acc + (size === "large" ? 2 : size === "normal" ? 1 : 0) * i.quantity;
         }, 0),
@@ -704,7 +691,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const item = FlagManager.getInventory(fromActor).items.find((i) => i.id === itemId);
     if (!item || amount <= 0) return;
 
-    const def = CatalogManager.getDefinition(item.definitionId);
+    const def = definitionFor(item);
     if (amount >= displayQuantity(item, def)) {
       await this._moveItemToZone(itemId, zoneId);
       return;
@@ -789,7 +776,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
           for (const id of ids) {
             const moved = inv.items.find((i) => i.id === id);
             if (!moved) continue;
-            const def = CatalogManager.getDefinition(moved.definitionId);
+            const def = definitionFor(moved);
             const target = findStackTarget(inv.items, moved, zoneId, def);
             if (target) {
               mergeInto(target, moved, def);
@@ -819,7 +806,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
             // Depositing publishes an item — nothing in a shared container is secret
             isSecret: intoShared ? false : item.isSecret,
           };
-          const def = CatalogManager.getDefinition(arrival.definitionId);
+          const def = definitionFor(arrival);
           const target = findStackTarget(inv.items, arrival, zoneId, def);
           if (target) mergeInto(target, arrival, def);
           else inv.items.push(arrival);
@@ -856,7 +843,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     // amount > 0 means a single row is being split rather than handed over whole
     if (amount > 0 && groups.length === 1 && groups[0].items.length === 1) {
       const [{ actor, items: [item] }] = groups;
-      const def = CatalogManager.getDefinition(item.definitionId);
+      const def = definitionFor(item);
       if (amount < displayQuantity(item, def)) {
         handed.push(portionOf(item, def, amount));
         await FlagManager.updateInventory(actor, (inv) => {
@@ -984,7 +971,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const itemId = target.dataset.itemId!;
     await FlagManager.updateInventory(this._actorForItem(itemId), (inv) => {
       const item = inv.items.find((i) => i.id === itemId);
-      const def = item && CatalogManager.getDefinition(item.definitionId);
+      const def = item && definitionFor(item);
       if (!item || !def?.maxUses) return inv;
       setStackUnits(item, def.maxUses, stackUnits(item, def.maxUses) + 1);
       return inv;
@@ -1000,7 +987,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const itemId = target.dataset.itemId!;
     const owner = this._actorForItem(itemId);
     const item = FlagManager.getInventory(owner).items.find((i) => i.id === itemId);
-    const def = item && CatalogManager.getDefinition(item.definitionId);
+    const def = item && definitionFor(item);
     if (!item || !def?.maxUses) return;
 
     // Using up the last unit removes the item, so confirm it like the plain
@@ -1034,7 +1021,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     await FlagManager.updateInventory(this._actorForItem(itemId), (inv) => {
       const item = inv.items.find((i) => i.id === itemId);
       if (!item) return inv;
-      const def = CatalogManager.getDefinition(item.definitionId);
+      const def = definitionFor(item);
       const maxUses = def?.maxUses ?? 0;
       const current = item.uses ?? maxUses;
       item.uses = Math.min(maxUses, current + 1);
@@ -1052,7 +1039,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     await FlagManager.updateInventory(this._actorForItem(itemId), (inv) => {
       const item = inv.items.find((i) => i.id === itemId);
       if (!item) return inv;
-      const def = CatalogManager.getDefinition(item.definitionId);
+      const def = definitionFor(item);
       const maxUses = def?.maxUses ?? 0;
       const current = item.uses ?? maxUses;
       item.uses = Math.max(0, current - 1);
@@ -1188,7 +1175,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         inv.items = inv.items.filter((i) => i.id !== zone.itemId);
       } else if (zone) {
         inv.items = inv.items.filter((i) => {
-          const def = CatalogManager.getDefinition(i.definitionId);
+          const def = definitionFor(i);
           return !(def?.grantsStorageZone?.name === zone.name || def?.grantsZone?.name === zone.name);
         });
       }
@@ -1379,7 +1366,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       return;
     }
 
-    const def = CatalogManager.getDefinition(item.definitionId);
+    const def = definitionFor(item);
 
     if (sameActor) {
       await FlagManager.updateInventory(fromActor, (inv) => {
@@ -1923,7 +1910,7 @@ class GiveItemDialog extends Dialog {
     // Bundles are counted in loose units, so the amount is capped at units and
     // the handover is built as a portion — sending the raw quantity would have
     // handed over that many whole bundles.
-    const def = CatalogManager.getDefinition(item.definitionId);
+    const def = definitionFor(item);
     const available = displayQuantity(item, def);
 
     super({
@@ -1999,7 +1986,7 @@ class GiveItemDialog extends Dialog {
     super.activateListeners(html);
     // The target zones depend on both the recipient and how much is being
     // handed over, so the list is rebuilt whenever either changes.
-    const def = CatalogManager.getDefinition(this.item.definitionId);
+    const def = definitionFor(this.item);
     const available = displayQuantity(this.item, def);
     const refresh = () => {
       const toActor = (game as Game).actors?.get(html.find("#give-item-target").val() as string);
@@ -2051,7 +2038,7 @@ export function populateGiveZoneSelect(select: JQuery, toActor: Actor | null, it
  */
 export function splittableCount(items: InventoryItem[]): number {
   if (items.length !== 1) return 0;
-  const def = CatalogManager.getDefinition(items[0].definitionId);
+  const def = definitionFor(items[0]);
   const count = displayQuantity(items[0], def);
   return count > 1 ? count : 0;
 }

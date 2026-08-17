@@ -1,3 +1,4 @@
+import { definitionFor } from "./itemDefs";
 import type { CharacterInventory, InventoryItem, ItemDefinition } from "../types";
 
 /**
@@ -7,9 +8,14 @@ import type { CharacterInventory, InventoryItem, ItemDefinition } from "../types
  * units. Nobody cares which bundle a torch came out of, so it is counted as one
  * running total: buy a second bundle of 8 and you have 16, full stop.
  *
- * A **quiver or quarrel case** is a real object you carry, and single arrows are
- * bought to fill it. There the two levels — how many containers, how full each
- * is — are the point, so those keep the container/uses view.
+ * A **single container** — a quiver, a quarrel case, a bottle, a cask — is a
+ * real object you carry, and the units are what fills it. There the two levels
+ * (how many objects, how full each one is) are the point, so each object gets
+ * its own row showing "7/10", and it cannot be filled past its capacity.
+ *
+ * Quivers and cases are recognised by their catalog id; anything else says so on
+ * its definition with `singleContainer`, which is how the inn's bottles and
+ * casks qualify without needing a catalog entry of their own.
  */
 
 /** Single-piece ammo folds into a container that tracks the count in `uses`. */
@@ -27,9 +33,31 @@ export function isAmmoContainer(definitionId: string): boolean {
   return definitionId in AMMO_CONTAINER_CAPACITY;
 }
 
-/** How many pieces this container holds, or undefined if it is not one. */
+/** How many pieces this ammo container holds, or undefined if it is not one. */
 export function ammoContainerCapacity(definitionId: string): number | undefined {
   return AMMO_CONTAINER_CAPACITY[definitionId];
+}
+
+/**
+ * How many units one object of this kind holds — undefined when it is not a
+ * single container at all. Covers both the catalog's quivers and anything whose
+ * definition declares `singleContainer`.
+ */
+export function containerCapacity(
+  item: Pick<InventoryItem, "definitionId">,
+  def: ItemDefinition | undefined
+): number | undefined {
+  const ammo = AMMO_CONTAINER_CAPACITY[item.definitionId];
+  if (ammo !== undefined) return ammo;
+  return def?.singleContainer && def.maxUses ? def.maxUses : undefined;
+}
+
+/** True for one-object-per-row items: quivers, cases, bottles, casks. */
+export function isSingleContainer(
+  item: Pick<InventoryItem, "definitionId">,
+  def: ItemDefinition | undefined
+): boolean {
+  return containerCapacity(item, def) !== undefined;
 }
 
 /**
@@ -54,14 +82,24 @@ export function splitAmmoContainer(item: InventoryItem, maxUses: number): Invent
 }
 
 /**
- * Split any stacked quiver or quarrel case in an inventory into one row each.
+ * Split any stacked single container in an inventory into one row each.
  * Runs on every write so rows that predate the rule heal themselves; new ones
  * are already split by addItemWithZones.
  */
-export function reconcileAmmoContainers(inv: CharacterInventory): void {
+export function reconcileSingleContainers(inv: CharacterInventory): void {
   const extra: InventoryItem[] = [];
   for (const item of inv.items) {
-    const maxUses = AMMO_CONTAINER_CAPACITY[item.definitionId];
+    // Heal bottles and casks bought before the flag existed. Their definition
+    // travels with the row, so they would otherwise keep counting like bundles
+    // forever. Safe to key on maxUses alone: no other custom item can have it —
+    // the "Grant Custom Item" dialog has no field for uses at all.
+    const custom = item.customDefinition;
+    if (custom?.maxUses && custom.singleContainer === undefined) {
+      custom.singleContainer = true;
+      if (item.uses === undefined) item.uses = custom.maxUses;
+    }
+
+    const maxUses = containerCapacity(item, definitionFor(item));
     if (maxUses === undefined || item.quantity <= 1) continue;
     extra.push(...splitAmmoContainer(item, maxUses).slice(1));
   }
@@ -73,7 +111,7 @@ export function isBundle(
   item: Pick<InventoryItem, "definitionId">,
   def: ItemDefinition | undefined
 ): boolean {
-  return !!def?.maxUses && def.maxUses > 0 && !isAmmoContainer(item.definitionId);
+  return !!def?.maxUses && def.maxUses > 0 && !isSingleContainer(item, def);
 }
 
 /** The number to show and edit for an item: loose units for bundles, else the count. */

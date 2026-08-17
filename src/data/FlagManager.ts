@@ -1,7 +1,7 @@
 import { MODULE_ID, FLAGS } from "../constants";
 import { CatalogManager } from "./CatalogManager";
 import { getEncumbranceMode, reconcileZones, type EncumbranceMode } from "./zoneGrants";
-import { reconcileAmmoContainers } from "./consumables";
+import { reconcileSingleContainers } from "./consumables";
 import type { CharacterInventory, ZoneCoins, Transaction } from "../types";
 
 function defaultInventory(actorId: string): CharacterInventory {
@@ -147,7 +147,7 @@ export class FlagManager {
     // Repair zone-granting items that lost (or never got) their zone before the
     // coin pass runs, so their zones count as valid coin targets.
     reconcileZones(updated, encMode);
-    reconcileAmmoContainers(updated);
+    reconcileSingleContainers(updated);
     syncCoins(updated, encMode);
     await this.setInventory(actor, updated);
   }

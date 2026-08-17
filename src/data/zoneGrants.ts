@@ -1,12 +1,12 @@
 import { MODULE_ID, SETTINGS } from "../constants";
-import { CatalogManager } from "./CatalogManager";
+import { definitionFor } from "./itemDefs";
 import { subcategoryToIcon } from "../helpers/handlebars";
 import { effectiveWeightCapacity, effectiveMaxSlots } from "./zoneCapacity";
 import {
   stackUnits,
   findStackTarget,
   mergeInto,
-  ammoContainerCapacity,
+  containerCapacity,
   splitAmmoContainer,
 } from "./consumables";
 import type { CharacterInventory, ExtraZone, InventoryItem, ItemDefinition } from "../types";
@@ -24,11 +24,9 @@ export function getEncumbranceMode(): EncumbranceMode {
   return ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as EncumbranceMode;
 }
 
+/** Local alias — the shared resolver lives in itemDefs.ts so every module can use it. */
 function effectiveDefinition(item: InventoryItem): ItemDefinition | undefined {
-  return (
-    CatalogManager.getDefinition(item.definitionId) ??
-    (item.customDefinition as ItemDefinition | undefined)
-  );
+  return definitionFor(item);
 }
 
 /** True if this definition creates an ExtraZone in the given encumbrance mode. */
@@ -131,9 +129,9 @@ export function addItemWithZones(
   }
 
   if (!definitionGrantsZone(def, encMode)) {
-    // Quivers and quarrel cases are distinct objects with their own fill level,
-    // so buying three means three rows rather than one row of three.
-    const capacity = ammoContainerCapacity(item.definitionId);
+    // Quivers, cases, bottles and casks are distinct objects with their own fill
+    // level, so buying three means three rows rather than one row of three.
+    const capacity = containerCapacity(item, def);
     if (capacity !== undefined && item.quantity > 1) {
       const rows = splitAmmoContainer(item, capacity);
       inv.items.push(...rows);
@@ -223,8 +221,8 @@ export function reconcileZones(inv: CharacterInventory, encMode: EncumbranceMode
 
 /** Weight of ONE unit of an item, scaled by remaining uses when applicable. */
 export function itemEffectiveWeight(item: InventoryItem): number {
-  const def = CatalogManager.getDefinition(item.definitionId);
-  const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+  const def = effectiveDefinition(item);
+  const baseWeight = def?.weight ?? 0;
   const usesRatio = (def?.maxUses && item.uses !== undefined) ? item.uses / def.maxUses : 1;
   return baseWeight * usesRatio;
 }
@@ -238,8 +236,8 @@ export function itemEffectiveWeight(item: InventoryItem): number {
  * Counting units and multiplying by the per-unit weight is exact in every case.
  */
 export function itemStackWeight(item: InventoryItem): number {
-  const def = CatalogManager.getDefinition(item.definitionId);
-  const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+  const def = effectiveDefinition(item);
+  const baseWeight = def?.weight ?? 0;
   const maxUses = def?.maxUses;
   if (maxUses && maxUses > 0) {
     return (baseWeight / maxUses) * stackUnits(item, maxUses);
@@ -250,15 +248,13 @@ export function itemStackWeight(item: InventoryItem): number {
 /** Check whether an item's tags allow it into a zone with allowedItemTags. Returns true if zone has no tag restriction. */
 export function isItemAllowedInZone(item: InventoryItem, zone: ExtraZone): boolean {
   if (!zone.allowedItemTags?.length) return true;
-  const def = CatalogManager.getDefinition(item.definitionId);
-  const itemTags = item.customDefinition?.tags ?? def?.tags ?? [];
+  const itemTags = effectiveDefinition(item)?.tags ?? [];
   return itemTags.some((tag) => zone.allowedItemTags!.includes(tag));
 }
 
 /** Slot cost of one unit of an item (slot mode). */
 function itemSlotCost(item: InventoryItem): number {
-  const def = CatalogManager.getDefinition(item.definitionId);
-  const size = item.customDefinition?.size ?? def?.size ?? "normal";
+  const size = effectiveDefinition(item)?.size ?? "normal";
   return size === "large" ? 2 : size === "normal" ? 1 : 0;
 }
 

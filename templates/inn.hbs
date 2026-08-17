@@ -4,31 +4,31 @@
   <div class="inn-header">
     <div class="inn-title-row">
       {{#if isGM}}
-      <input type="text" id="inn-name-input" class="inn-name-edit" value="{{innName}}" title="Click to rename inn" />
+      <input type="text" id="inn-name-input" class="inn-name-edit" value="{{innName}}"
+             placeholder="Unnamed inn" title="Name this inn — leave empty for none" />
       {{else}}
-      <h2 class="inn-name-static">{{innName}}</h2>
+      <h2 class="inn-name-static">{{displayName}}</h2>
       {{/if}}
       {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
 
-      {{!-- Quality indicator: GM gets buttons, players see a static label --}}
-      {{#if isGM}}
+      {{!-- Quality: switchable only for the toolbar inn. A placed inn's quality
+            was decided when it was put on the map and does not change. --}}
+      {{#if canSetQuality}}
       <div class="quality-buttons">
-        <button type="button" class="quality-btn {{#if (eq quality 'poor')}}active{{/if}}"
-                data-action="setQuality" data-quality="poor">Poor</button>
-        <button type="button" class="quality-btn {{#if (eq quality 'common')}}active{{/if}}"
-                data-action="setQuality" data-quality="common">Common</button>
-        <button type="button" class="quality-btn {{#if (eq quality 'fancy')}}active{{/if}}"
-                data-action="setQuality" data-quality="fancy">Fancy</button>
+        {{#each qualities}}
+        <button type="button" class="quality-btn {{#if this.active}}active{{/if}}"
+                data-action="setQuality" data-quality="{{this.key}}">{{this.label}}</button>
+        {{/each}}
       </div>
       {{else}}
-      <span class="inn-quality-label">{{quality}}</span>
+      <span class="inn-quality-label" title="Set when this inn was placed">{{qualityLabel}}</span>
       {{/if}}
     </div>
 
-    {{!-- Character selector + wallet --}}
+    {{!-- Paying character + wallet --}}
     <div class="inn-actor-row">
       {{#if (gt actors.length 1)}}
-      <select id="inn-actor-select" class="inn-actor-select">
+      <select id="inn-actor-select" class="inn-actor-select" title="Who is paying">
         {{#each actors}}
         <option value="{{this.id}}" {{#if (eq this.id ../selectedActorId)}}selected{{/if}}>{{this.name}}</option>
         {{/each}}
@@ -43,35 +43,138 @@
     </div>
   </div>
 
-  {{!-- Menu sections — collapsible like Shop categories --}}
+  {{!-- Who has eaten and slept today --}}
+  <div class="inn-daybox">
+    <div class="inn-daybox-header">
+      <span class="inn-day-label"><i class="fas fa-sun"></i> Today</span>
+      {{#if isGM}}
+      <span class="inn-daybox-tools">
+        <button type="button" class="icon-btn" data-action="rerollMenu" title="Roll today's menu again">
+          <i class="fas fa-dice"></i>
+        </button>
+        <button type="button" class="btn-new-day" data-action="newDay" title="Start a new in-game day: clears this list and re-rolls every inn's menu">
+          <i class="fas fa-rotate"></i> New day
+        </button>
+      </span>
+      {{/if}}
+    </div>
+    {{#if dayLog.length}}
+    <table class="inn-daybox-table">
+      <thead>
+        <tr><th>Character</th><th>Lodging</th><th>Food</th></tr>
+      </thead>
+      <tbody>
+        {{#each dayLog}}
+        <tr class="{{#if this.complete}}is-complete{{/if}}">
+          <td class="dl-name">{{this.name}}</td>
+          <td class="{{#unless this.lodging}}dl-missing{{/unless}}">{{#if this.lodging}}{{this.lodging}}{{else}}—{{/if}}</td>
+          <td class="{{#unless this.food}}dl-missing{{/unless}}">{{#if this.food}}{{this.food}}{{else}}—{{/if}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="inn-empty">No party members found.</p>
+    {{/if}}
+  </div>
+
+  {{!-- The menu --}}
   <div class="inn-menu">
-    {{#each menuByCategory}}
-    <details class="inn-category" open>
-      <summary class="inn-category-header">
+    {{#each sections}}
+    <details class="inn-section" data-sync="inn-section-{{this.key}}" open>
+      <summary class="inn-section-header">
         <i class="fas {{this.icon}}"></i> {{this.label}}
+        {{#if this.showQuality}}<span class="inn-section-quality" title="This section differs from the house quality">{{this.qualityLabel}}</span>{{/if}}
       </summary>
+
+      {{#if this.canEdit}}
+      <div class="inn-section-tools">
+        <button type="button" class="icon-btn" data-action="editSection" data-section="{{this.key}}" title="Section text, how many are served, quality">
+          <i class="fas fa-sliders"></i>
+        </button>
+        <button type="button" class="icon-btn" data-action="addEntry" data-section="{{this.key}}" title="Add a line to this section">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button type="button" class="icon-btn" data-action="resetSection" data-section="{{this.key}}" title="Discard this section's changes and start over from the book">
+          <i class="fas fa-arrow-rotate-left"></i>
+        </button>
+      </div>
+      {{/if}}
+
+      {{#if this.text}}<p class="inn-section-text">{{this.text}}</p>{{/if}}
+
+      {{#each this.groups}}
+      {{#if this.label}}<div class="inn-group-label">{{this.label}}</div>{{/if}}
       <div class="inn-item-list">
-        {{#each this.items}}
-        <div class="inn-item {{#unless this.canAfford}}inn-item-unaffordable{{/unless}} {{#if this.isHidden}}inn-item-gm-hidden{{/if}}">
+        {{#each this.entries}}
+        <div class="inn-item {{#unless this.canAfford}}inn-item-unaffordable{{/unless}}">
           <div class="inn-item-info">
-            <span class="inn-item-name">{{this.name}}</span>
-            <span class="inn-item-desc">{{this.description}}</span>
+            <span class="inn-item-name">
+              {{#if this.fixed}}<i class="fas fa-star inn-fixed-marker" title="Always available"></i> {{/if}}{{this.name}}
+              {{#if this.tag}}<span class="inn-item-tag">{{this.tag}}</span>{{/if}}
+              {{!-- The pricing basis ("per person") lives beside the name, not
+                    in the price column — there it either wrapped to a second
+                    line or forced the column wide enough to push the numbers
+                    away from the buttons. --}}
+              {{#if this.unit}}<span class="inn-item-tag inn-item-unit">{{this.unit}}</span>{{/if}}
+            </span>
+            {{#if this.description}}<span class="inn-item-desc">{{this.description}}</span>{{/if}}
           </div>
+
           <span class="inn-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
-          {{#if ../../isGM}}
-          <button type="button" class="icon-btn btn-hide-item {{#if this.isHidden}}is-hidden{{/if}}"
-                  data-action="toggleLocalHideInnItem" data-item-id="{{this.id}}"
-                  title="{{#if this.isHidden}}Show for players{{else}}Hide from players{{/if}}">
-            <i class="fas fa-eye-slash"></i>
+
+          {{!-- Everything after the price sits in one column so the rows line up,
+                whether a line has one button or four --}}
+          <div class="inn-item-actions">
+          {{#if this.canEdit}}
+          <button type="button" class="icon-btn" data-action="editEntry"
+                  data-section="{{this.section}}" data-entry-id="{{this.id}}" title="Edit this line">
+            <i class="fas fa-pen"></i>
+          </button>
+          <button type="button" class="icon-btn" data-action="deleteEntry"
+                  data-section="{{this.section}}" data-entry-id="{{this.id}}" title="Remove this line">
+            <i class="fas fa-trash"></i>
           </button>
           {{/if}}
-          <button type="button" class="btn-inn-purchase" data-action="purchaseInnItem"
-                  data-item-id="{{this.id}}" {{#unless this.canAfford}}disabled title="Cannot afford"{{/unless}}>
-            Pay
+
+          {{!-- Every row renders the same slots in the same order, so a kind of
+                button always sits in the same column. A line that does not offer
+                one leaves its slot empty rather than letting the rest slide over. --}}
+
+          {{!-- Consumed on the spot: for me, or standing a round --}}
+          {{#if this.consumable}}
+          <button type="button" class="btn-inn-purchase" data-action="buyForSelf"
+                  data-section="{{this.section}}" data-entry-id="{{this.id}}"
+                  {{#unless this.canAfford}}disabled title="Cannot afford"{{else}}title="{{this.buyLabel}}"{{/unless}}>
+            <i class="fas fa-user"></i>
           </button>
+          <button type="button" class="btn-inn-purchase btn-inn-treat" data-action="buyForOther"
+                  data-section="{{this.section}}" data-entry-id="{{this.id}}"
+                  {{#unless this.canAfford}}disabled title="Cannot afford"{{else}}title="Buy for someone else — you pay"{{/unless}}>
+            <i class="fas fa-user-group"></i>
+          </button>
+          {{else}}
+          <span class="inn-action-empty"></span>
+          <span class="inn-action-empty"></span>
+          {{/if}}
+
+          {{!-- Carried away: a bottle, a cask, or goods such as rations --}}
+          {{#if this.takeAway}}
+          <button type="button" class="btn-inn-purchase btn-inn-container" data-action="buyContainer"
+                  data-section="{{this.section}}" data-entry-id="{{this.id}}"
+                  {{#unless this.takeAway.canAfford}}disabled title="Cannot afford"{{else}}title="{{this.takeAway.title}}"{{/unless}}>
+            <i class="fas {{this.takeAway.icon}}"></i>
+          </button>
+          {{else}}
+          <span class="inn-action-empty"></span>
+          {{/if}}
+          </div>
         </div>
         {{/each}}
       </div>
+      {{/each}}
+
+      {{#if this.isEmpty}}<p class="inn-empty">Nothing on offer here today.</p>{{/if}}
     </details>
     {{/each}}
   </div>

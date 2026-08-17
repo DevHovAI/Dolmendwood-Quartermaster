@@ -1,6 +1,7 @@
 import { EQUIPPED_SPEED_TIERS, STOWED_SPEED_TIERS, WEIGHT_SPEED_TIERS } from "../constants";
 import { effectiveWeightCapacity } from "./zoneCapacity";
 import { stackUnits } from "./consumables";
+import { definitionFor } from "./itemDefs";
 import type { CharacterInventory, EncumbranceResult, ItemDefinition, AnimalSpeedInfo, InventoryItem } from "../types";
 
 function getSpeedForSlots(
@@ -22,8 +23,8 @@ function stackWeight(
   item: InventoryItem,
   catalogMap: ReadonlyMap<string, ItemDefinition>
 ): number {
-  const def = catalogMap.get(item.definitionId);
-  const baseWeight = item.customDefinition?.weight ?? def?.weight ?? 0;
+  const def = definitionFor(item, catalogMap);
+  const baseWeight = def?.weight ?? 0;
   const maxUses = def?.maxUses;
   if (maxUses && maxUses > 0) {
     return (baseWeight / maxUses) * stackUnits(item, maxUses);
@@ -65,12 +66,10 @@ function calculateSlotEncumbrance(
   let tinyCount = 0;
 
   for (const item of inventory.items) {
-    const def = catalogMap.get(item.definitionId);
+    const effectiveDefSlot = definitionFor(item, catalogMap);
     // Zone-only items (animals/vehicles with grantsZone) don't count toward encumbrance
-    const effectiveDefSlot = def ?? item.customDefinition;
     if (effectiveDefSlot?.grantsZone && (effectiveDefSlot?.category === "Animals & Vehicles" || item.customDefinition?.grantsZone)) continue;
-    const size: ItemDefinition["size"] =
-      item.customDefinition?.size ?? def?.size ?? "normal";
+    const size: ItemDefinition["size"] = effectiveDefSlot?.size ?? "normal";
     const qty = item.quantity;
 
     if (item.zone === "tiny") {
@@ -182,16 +181,15 @@ function calculateWeightEncumbrance(
     // Zones predating the itemId link: match by the zone name the definition
     // grants, the same fallback reconcileZones uses.
     const match = inventory.items.find((i) => {
-      const d = catalogMap.get(i.definitionId) ?? i.customDefinition;
+      const d = definitionFor(i, catalogMap);
       return (d?.grantsStorageZone?.name ?? d?.grantsZone?.name) === zone.name;
     });
     if (match) droppedContainerItemIds.add(match.id);
   }
 
   for (const item of inventory.items) {
-    const def = catalogMap.get(item.definitionId);
+    const effectiveDef = definitionFor(item, catalogMap);
     // Animals/vehicles with grantsZone don't count toward character weight
-    const effectiveDef = def ?? item.customDefinition;
     if (effectiveDef?.grantsZone && (effectiveDef?.category === "Animals & Vehicles" || item.customDefinition?.grantsZone)) continue;
     if (droppedContainerItemIds.has(item.id)) continue;
 

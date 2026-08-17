@@ -47,17 +47,25 @@ export const SETTINGS = {
   SHOP_STATE: "shopState",
   TRANSACTION_LOG: "transactionLog",
   INN_STATE: "innState",
+  INN_CONFIGS: "innConfigs", // Record<innName, InnConfig> — each inn's own editable tables
+  INN_DAY: "innDay", // in-game day counter; bumping it re-rolls every inn's menu
+  INN_DAY_LOG: "innDayLog", // Record<actorId, {lodging?, food?}> — who has eaten and slept today
   LOCAL_HIDDEN: "localHidden", // Record<locationName, itemId[]> — per-location hidden items
   ENCUMBRANCE_MODE: "encumbranceMode", // "slots" | "weight"
   LOCAL_CUSTOM_ITEMS: "localCustomItems", // Record<shopName, ItemDefinition[]>
   SHARED_ACTOR_ID: "sharedActorId", // Actor holding the party's shared containers ("" = not created yet)
   HIDE_DROPPED_ZONES: "hideDroppedZones", // per-user: collapse zones left behind
   HIDE_MANAGED_ACTORS: "hideManagedActors", // hide the shared store and loot boxes from players' Actors tab
+  PLAYER_TOOLBAR_INN: "playerToolbarInn", // may players open the generic inn from the toolbar?
+  PLAYER_TOOLBAR_LOOT: "playerToolbarLoot", // may players open the loot browser from the toolbar?
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in
 // SETTINGS.LOCAL_CUSTOM_ITEMS, which is otherwise keyed by shop name.
 export const GENERIC_SHOP_KEY = "__generic_shop__" as const;
+
+// Same idea for the toolbar inn, which has no name to key its tables by.
+export const GENERIC_INN_KEY = "__generic_inn__" as const;
 
 // Name and portrait of the auto-created actor that holds shared containers
 export const SHARED_ACTOR_NAME = "Party Stores" as const;

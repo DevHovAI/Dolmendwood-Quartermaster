@@ -14,6 +14,14 @@ export interface ItemDefinition {
   tags: string[];
   isCustom: boolean;
   maxUses?: number;       // if set, item instances track remaining uses (e.g. arrows, oil)
+  /**
+   * One object per row with its own fill level, shown as "7/10" — the way a
+   * quiver behaves. Without it an item with maxUses is treated as a bundle: one
+   * running total of loose units that keeps counting past a single container's
+   * capacity. Quivers and quarrel cases get this from AMMO_CONTAINER_MAP by
+   * their catalog id; the inn's bottles and casks set it on their own definition.
+   */
+  singleContainer?: boolean;
   grantsZone?: { name: string; maxSlots: number; weightCapacity: number; speed?: number };  // purchasing this item auto-adds a named storage zone
   grantsStorageZone?: {name: string; weightCapacity: number; isBeltPouch?: boolean; allowedItemTags?: string[]; };  // weight mode: purchasing creates a storage zone that counts toward character weight
   coinCapacity?: number;  // max coins this item can hold (display counter, no structural change)
@@ -182,9 +190,20 @@ export interface PurchasePayload {
 }
 
 export interface InnPurchasePayload {
+  /** Who pays. */
   actorId: string;
+  /** Who it is for — the same character unless someone bought a round. */
+  forActorId: string;
   itemName: string;
+  /** Which part of the menu, so the day's log knows whether it was a bed or a meal. */
+  section: "lodging" | "food" | "beverages" | "extras";
   totalCost: { cp: number; sp: number; gp: number; pp: number };
+  /**
+   * A bottle or cask to hand over — the one inn purchase that is carried away
+   * rather than consumed on the spot. It goes to `forActorId`, and its `zone`
+   * is where the buyer chose to put it. Absent for everything else.
+   */
+  item?: InventoryItem;
 }
 
 export interface MarketEntry {

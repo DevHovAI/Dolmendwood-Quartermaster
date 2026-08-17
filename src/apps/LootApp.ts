@@ -1,5 +1,6 @@
 import { MODULE_ID, FLAGS, TEMPLATES, LOOT_ZONE } from "../constants";
 import { CatalogManager } from "../data/CatalogManager";
+import { definitionFor } from "../data/itemDefs";
 import { FlagManager } from "../data/FlagManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { addItemWithZones, getEncumbranceMode } from "../data/zoneGrants";
@@ -104,7 +105,7 @@ export class LootApp extends foundry.applications.api.HandlebarsApplicationMixin
     const released = isLootReleased(this.actor);
 
     const items = inventory.items.map((item) => {
-      const def = CatalogManager.getDefinition(item.definitionId);
+      const def = definitionFor(item);
       const effective = def ?? item.customDefinition;
       return {
         ...item,
@@ -384,7 +385,7 @@ async function postLootMessage(actor: Actor): Promise<void> {
   const lines = inv.items
     .slice(0, 8)
     .map((item) => {
-      const def = CatalogManager.getDefinition(item.definitionId);
+      const def = definitionFor(item);
       const count = displayQuantity(item, def);
       return `<li>${escapeHTML(item.name)}${count > 1 ? ` ×${count}` : ""}</li>`;
     })
@@ -536,7 +537,7 @@ class TakeLootItemDialog extends Dialog {
   private item: InventoryItem;
 
   constructor(lootActor: Actor, item: InventoryItem, targets: Actor[], onComplete: () => void) {
-    const def = CatalogManager.getDefinition(item.definitionId);
+    const def = definitionFor(item);
     const available = displayQuantity(item, def);
     const targetOptions = targets
       .map((a) => `<option value="${a.id}">${escapeHTML(a.name ?? "")}</option>`)
@@ -580,7 +581,7 @@ class TakeLootItemDialog extends Dialog {
 
   override activateListeners(html: JQuery): void {
     super.activateListeners(html);
-    const def = CatalogManager.getDefinition(this.item.definitionId);
+    const def = definitionFor(this.item);
     const available = displayQuantity(this.item, def);
     const refresh = () => {
       const toActor = (game as Game).actors?.get(html.find("#take-target").val() as string) ?? null;
@@ -608,7 +609,7 @@ async function takeLootItem(
 ): Promise<void> {
   const item = FlagManager.getInventory(lootActor).items.find((i) => i.id === itemId);
   if (!item) return;
-  const def = CatalogManager.getDefinition(item.definitionId);
+  const def = definitionFor(item);
   const taken = portionOf(item, def, amount);
   taken.zone = zoneId as InventoryItem["zone"];
   // A hoard may hold things the GM marked secret while staging; once it is in a

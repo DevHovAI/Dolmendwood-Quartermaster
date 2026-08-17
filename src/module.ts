@@ -10,7 +10,7 @@ import { openLootBrowser, openLootFromNote, activateLootChatButtons } from "./ap
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
-import { INN_CATEGORIES } from "./data/innData";
+import { INN_SECTIONS, DEFAULT_INN_NAME } from "./data/innData";
 import type { InnQuality } from "./data/innData";
 import "../styles/module.css";
 
@@ -56,7 +56,32 @@ Hooks.once("init", () => {
     scope: "world",
     config: false,
     type: Object,
-    default: { name: "The Wayward Boar", quality: "common" },
+    default: { name: "", quality: "common" },
+  });
+
+  // Each inn's own copy of the book tables, keyed by inn name. Seeded on first
+  // edit; absent means the inn still runs on the defaults for its quality.
+  game.settings!.register(MODULE_ID, SETTINGS.INN_CONFIGS, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  // In-game day. Bumping it re-rolls every inn's menu and clears the day's log,
+  // which is what the GM's "New day" button does.
+  game.settings!.register(MODULE_ID, SETTINGS.INN_DAY, {
+    scope: "world",
+    config: false,
+    type: Number,
+    default: 1,
+  });
+
+  game.settings!.register(MODULE_ID, SETTINGS.INN_DAY_LOG, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
   });
 
   game.settings!.register(MODULE_ID, SETTINGS.LOCAL_HIDDEN, {
@@ -115,6 +140,32 @@ Hooks.once("init", () => {
     config: true,
     type: Boolean,
     default: true,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // Which of the module's toolbar buttons players get. The GM's own toolbar is
+  // never affected, so these only ever decide what the players see.
+  //
+  // onChange re-renders the scene controls: the button list is built once when
+  // the controls render, so without it the change would only show up after a
+  // scene switch — which reads as the setting not working.
+  game.settings!.register(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN, {
+    name: "Players may open the Inn from the toolbar",
+    hint: "Off by default. The toolbar inn is the generic, place-less one — its quality and menu are whatever was last set up, and a player buying there pays real coins for a bed at an inn that does not exist on the map. Every actual inn is reached by double-clicking its map note. Turn this on if you want players to reach the generic inn anyway.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT, {
+    name: "Players may open Loot from the toolbar",
+    hint: "On by default. Players only ever see boxes that have been released, and it is the one route back into a half-divided hoard that does not depend on the map pin being visible or the chat message still being on screen.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   // Register Handlebars helpers (synchronous)
@@ -198,7 +249,7 @@ Hooks.once("ready", async () => {
     const innQuality = existingInn?.quality ?? "common";
     const savedInnCats = existingInn?.categories ?? [];
     const innPriceFactor = existingInn?.priceFactor ?? 100;
-    const innCategoryCheckboxes = INN_CATEGORIES
+    const innCategoryCheckboxes = INN_SECTIONS
       .map((cat) => {
         const checked = savedInnCats.includes(cat.key) ? "checked" : "";
         return `<label style="display:flex;align-items:center;gap:4px;font-size:0.85em;">
@@ -216,7 +267,7 @@ Hooks.once("ready", async () => {
         <div id="note-inn-fields" style="${isInn ? "" : "display:none;"}">
           <div class="form-group">
             <label>Inn Name</label>
-            <input type="text" id="note-inn-name" value="${innName}" placeholder="The Wayward Boar" />
+            <input type="text" id="note-inn-name" value="${innName}" placeholder="e.g. The Silver Stag" />
           </div>
           <div class="form-group">
             <label>Quality</label>
@@ -364,7 +415,7 @@ Hooks.once("ready", async () => {
 
       const innChecked = (el.querySelector("#note-is-inn") as HTMLInputElement | null)?.checked ?? false;
       if (innChecked) {
-        const name = ((el.querySelector("#note-inn-name") as HTMLInputElement | null)?.value ?? "").trim() || "The Wayward Boar";
+        const name = ((el.querySelector("#note-inn-name") as HTMLInputElement | null)?.value ?? "").trim() || DEFAULT_INN_NAME;
         const quality = ((el.querySelector("#note-inn-quality") as HTMLSelectElement | null)?.value ?? "common") as InnQuality;
         const categories: string[] = [];
         el.querySelectorAll<HTMLInputElement>(".note-inn-cat:checked").forEach((cb) => categories.push(cb.value));
@@ -520,6 +571,22 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
   }
 });
 
+/**
+ * Keep open inn windows in step with the world settings behind them.
+ *
+ * A new day, a re-roll, or an edited table is a settings write, not an actor
+ * write — so the usual refresh broadcast is the only thing telling the other
+ * clients, and it races the settings update itself. Reacting to the settings
+ * change directly removes the ordering question: by the time this fires, the
+ * new value is already in place on this client.
+ */
+onUntypedHook("updateSetting", (setting: { key?: string }) => {
+  const key = setting?.key ?? "";
+  const watched = [SETTINGS.INN_DAY, SETTINGS.INN_DAY_LOG, SETTINGS.INN_CONFIGS];
+  if (!watched.some((s) => key.endsWith(`.${s}`))) return;
+  getAppInstance("dolmenwood-inn")?.render();
+});
+
 // Add a button to the sidebar (scene controls) for all users
 // In Foundry v13, controls is Record<string, SceneControl> and tools is Record<string, SceneControlTool>
 onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>) => {
@@ -540,23 +607,28 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     onChange: isGM ? () => openPartyOverview() : () => openPlayerInventory(),
   } as SceneControlTool;
 
-  (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-inn"] = {
-    name: "dolmenwood-inn",
-    title: "Inn",
-    icon: "fas fa-beer-mug-empty",
-    order: existingToolCount + 1,
-    button: true,
-    onChange: () => openInn(),
-  } as SceneControlTool;
+  // Both buttons are always the GM's; for players they are settings.
+  if (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN)) {
+    (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-inn"] = {
+      name: "dolmenwood-inn",
+      title: "Inn",
+      icon: "fas fa-beer-mug-empty",
+      order: existingToolCount + 1,
+      button: true,
+      onChange: () => openInn(),
+    } as SceneControlTool;
+  }
 
-  (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-loot"] = {
-    name: "dolmenwood-loot",
-    title: "Loot",
-    icon: "fas fa-treasure-chest",
-    order: existingToolCount + 2,
-    button: true,
-    onChange: () => openLootBrowser(),
-  } as SceneControlTool;
+  if (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT)) {
+    (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-loot"] = {
+      name: "dolmenwood-loot",
+      title: "Loot",
+      icon: "fas fa-treasure-chest",
+      order: existingToolCount + 2,
+      button: true,
+      onChange: () => openLootBrowser(),
+    } as SceneControlTool;
+  }
 });
 
 /**
@@ -680,7 +752,7 @@ function openInn(name?: string, quality?: InnQuality, categories?: string[], pri
   if (existing) {
     if (name || quality || categories || priceFactor !== undefined) {
       (existing as unknown as InnApp).setConfig(
-        name ?? "The Wayward Boar",
+        name ?? DEFAULT_INN_NAME,
         quality ?? "common",
         categories,
         priceFactor ?? 100
@@ -690,7 +762,7 @@ function openInn(name?: string, quality?: InnQuality, categories?: string[], pri
   } else {
     const app = new InnApp();
     if (name || quality || categories || priceFactor !== undefined) {
-      app.setConfig(name ?? "The Wayward Boar", quality ?? "common", categories, priceFactor ?? 100);
+      app.setConfig(name ?? DEFAULT_INN_NAME, quality ?? "common", categories, priceFactor ?? 100);
     }
     app.render(true);
   }

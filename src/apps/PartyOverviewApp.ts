@@ -1,6 +1,7 @@
 import { TEMPLATES, SETTINGS, MODULE_ID } from "../constants";
 import { FlagManager } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
+import { definitionFor } from "../data/itemDefs";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { ShopApp } from "./ShopApp";
 import { PlayerInventoryApp } from "./PlayerInventoryApp";
@@ -108,7 +109,7 @@ export function buildPartySummary(
       // Secret items: only GM or the actor's owner can see them
       if (item.isSecret && !isGM && !userOwnsActor) continue;
 
-      const def = CatalogManager.getDefinition(item.definitionId);
+      const def = definitionFor(item);
       // Hide animal/vehicle items — they appear as zone headers, not as inventory rows
       if (def?.grantsZone && def?.category === "Animals & Vehicles") continue;
       // In weight mode, hide container items that exist only to provide a storage zone
@@ -202,14 +203,14 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
         // Filter items for display: hide animals and (weight mode) container items
         const visibleItems = inventory.items
           .filter((item) => {
-            const def = CatalogManager.getDefinition(item.definitionId);
+            const def = definitionFor(item);
             if (def?.grantsZone && def?.category === "Animals & Vehicles") return false;
             if (encMode === "weight" && def?.grantsStorageZone) return false;
             return true;
           })
           .map((item) => ({
             ...item,
-            quantity: displayQuantity(item, CatalogManager.getDefinition(item.definitionId)),
+            quantity: displayQuantity(item, definitionFor(item)),
           }));
 
         // Build zone sections for the compact column
@@ -279,8 +280,16 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
       sharedMember,
       partyConvoy,
       hasColumns: members.length > 0 || !!sharedMember,
-      // The shared card is deliberately narrower than a character column
-      gridTemplate: [...members.map(() => "1fr"), ...(sharedMember ? ["0.7fr"] : [])].join(" "),
+      // minmax(…, 1fr), not a bare 1fr: `1fr` is shorthand for `minmax(auto, 1fr)`,
+      // so a track still grows to fit its widest unbreakable content — which made
+      // the columns come out at different widths purely because of how long the
+      // characters' names are. A definite minimum takes content out of the
+      // calculation entirely, so every character column is exactly equal.
+      // The shared card is deliberately narrower than a character column.
+      gridTemplate: [
+        ...members.map(() => "minmax(160px, 1fr)"),
+        ...(sharedMember ? ["minmax(112px, 0.7fr)"] : []),
+      ].join(" "),
       partyTotals,
       partySummary,
       isGM,

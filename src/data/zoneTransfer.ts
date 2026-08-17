@@ -1,14 +1,12 @@
 import { FlagManager } from "./FlagManager";
-import { CatalogManager } from "./CatalogManager";
+import { definitionFor } from "./itemDefs";
 import type { CharacterInventory, ExtraZone, InventoryItem, ItemDefinition, ZoneCoins } from "../types";
 
 const STANDARD_ZONES = ["tiny", "equipped", "stowed"];
 
+/** Local alias — the shared resolver lives in itemDefs.ts so every module can use it. */
 function effectiveDefinition(item: InventoryItem): ItemDefinition | undefined {
-  return (
-    CatalogManager.getDefinition(item.definitionId) ??
-    (item.customDefinition as ItemDefinition | undefined)
-  );
+  return definitionFor(item);
 }
 
 /**

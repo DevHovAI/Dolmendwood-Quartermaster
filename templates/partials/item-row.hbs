@@ -23,13 +23,15 @@
     {{/if}}
     {{#if item.def.cannotBeStowed}}<span class="badge badge-cannot-stow" title="Cannot be stowed">Carried</span>{{/if}}
     {{#if item.def.qualities.length}}<span class="item-qualities">{{#each item.def.qualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>{{/if}}
+    {{!-- One block, not two: item.def is the *effective* definition, so for a
+          custom item it already IS customDefinition. Printing both rendered the
+          description twice. --}}
     {{#if item.def.description}}<span class="item-description">{{item.def.description}}</span>{{/if}}
-    {{#if item.customDefinition.description}}<span class="item-description">{{item.customDefinition.description}}</span>{{/if}}
   </span>
 
-  {{!-- A quiver or quarrel case is one object per row, so its quantity is
+  {{!-- A quiver, bottle or cask is one object per row, so its quantity is
         always 1 and only the fill level below is worth showing --}}
-  {{#unless item.isAmmoContainer}}
+  {{#unless item.isSingleContainer}}
   {{#if item.isBundle}}
   {{!-- Bundles count loose units, so one control replaces quantity + uses --}}
   {{#if isOwner}}
