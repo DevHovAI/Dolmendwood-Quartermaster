@@ -4,3 +4,7 @@ dist/
 .DS_Store
 foundryconfig.json
 .claude/
+
+# Source material and campaign notes — never publish. The repo is public and
+# the rulebooks in here are commercial products.
+docs/
