@@ -39,6 +39,22 @@ export interface InventoryItem {
   customDefinition?: Partial<ItemDefinition>;
 }
 
+/**
+ * A row that was deleted, kept so it can be put back.
+ *
+ * The item is stored exactly as it stood, `zone` included, so restoring lands
+ * it where it came from. `zoneName` is resolved at deletion time rather than on
+ * display, because the zone itself may be gone by then — deleting a backpack
+ * puts the backpack in the bin and takes its zone with it.
+ */
+export interface TrashedItem {
+  entryId: string;      // identifies the bin entry; item.id is the row's original id
+  item: InventoryItem;
+  deletedAt: number;    // epoch ms
+  deletedBy: string;    // user name at the time of deletion
+  zoneName: string;     // label of the zone it was deleted from
+}
+
 export interface ExtraZone {
   id: string;            // UUID, used as zone value on items
   name: string;          // display name (e.g. "Pack Horse")
@@ -76,6 +92,7 @@ export interface CharacterInventory {
   extraZones?: ExtraZone[];
   coinSlots?: CoinSlot[];    // legacy — no longer written; kept so old saves don't lose data on first read
   coinsByZone?: Record<string, ZoneCoins>; // per-zone coin amounts; zone IDs: "tiny"|"equipped"|"stowed"|extraZoneId
+  trash?: TrashedItem[];     // deleted rows, newest last; never counts toward encumbrance
 }
 
 export interface ShopState {

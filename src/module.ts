@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTINGS, FLAGS, SOCKET_EVENTS } from "./constants";
+import { MODULE_ID, SETTINGS, FLAGS, SOCKET_EVENTS, TRASH_LIMIT_DEFAULT } from "./constants";
 import { registerHandlebarsHelpers, registerHandlebarsPartials, escapeHTML } from "./helpers/handlebars";
 import { SocketHandler } from "./socket/SocketHandler";
 import { PartyOverviewApp } from "./apps/PartyOverviewApp";
@@ -7,6 +7,7 @@ import { ShopApp } from "./apps/ShopApp";
 import { InnApp } from "./apps/InnApp";
 import { MarketApp } from "./apps/MarketApp";
 import { openLootBrowser, openLootFromNote, activateLootChatButtons } from "./apps/LootApp";
+import { openTrash } from "./apps/TrashApp";
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
@@ -168,6 +169,26 @@ Hooks.once("init", () => {
     onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
+  game.settings!.register(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH, {
+    name: "Players may open the Trash from the toolbar",
+    hint: "On by default. Players only ever see what they deleted themselves, and they cannot restore or empty anything — that stays with the GM. Being able to look is what lets a player say which item they lost.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.TRASH_LIMIT, {
+    name: "Trash size (per inventory)",
+    hint: "How many deleted rows each character, loot box and the shared store keeps before the oldest fall out. This is an undo buffer, not an archive. Set it to 0 to switch the trash off entirely — deleting is then final again, as it was before.",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 0, max: 100, step: 5 },
+    default: TRASH_LIMIT_DEFAULT,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
   // Register Handlebars helpers (synchronous)
   registerHandlebarsHelpers();
 
@@ -219,6 +240,7 @@ Hooks.once("ready", async () => {
       openInn: (name?: string, quality?: InnQuality, categories?: string[], priceFactor?: number) => openInn(name, quality, categories, priceFactor),
       openMarket: (noteDoc: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }) => openMarket(noteDoc),
       openLoot: () => openLootBrowser(),
+      openTrash: () => openTrash(),
     };
   }
 
@@ -568,6 +590,10 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
     if (appId === "dolmenwood-loot-browser" || appId === `dolmenwood-loot-${actor.id}`) {
       (app as { render?: () => void }).render?.();
     }
+    // The trash lists every inventory at once, so any actor's write can change it.
+    if (appId === "dolmenwood-trash") {
+      (app as { render?: () => void }).render?.();
+    }
   }
 });
 
@@ -627,6 +653,17 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
       order: existingToolCount + 2,
       button: true,
       onChange: () => openLootBrowser(),
+    } as SceneControlTool;
+  }
+
+  if (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH)) {
+    (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-trash"] = {
+      name: "dolmenwood-trash",
+      title: "Trash",
+      icon: "fas fa-trash-can",
+      order: existingToolCount + 3,
+      button: true,
+      onChange: () => openTrash(),
     } as SceneControlTool;
   }
 });

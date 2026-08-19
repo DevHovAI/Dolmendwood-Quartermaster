@@ -28,6 +28,7 @@ import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker, buildColorPickerHTML, activateColorPicker, buildZoneOptionsHTML, escapeHTML, ZONE_ICONS } from "../helpers/handlebars";
 import { requireActiveGM } from "../helpers/gm";
+import { discardItem, discardItems } from "../data/trash";
 import {
   getSharedActor,
   getPartyActors,
@@ -895,14 +896,16 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
 
     const confirmed = await Dialog.confirm({
       title: "Remove Items",
-      content: `<p>Remove <strong>${count}</strong> item${count === 1 ? "" : "s"} from inventory?</p>`,
+      content:
+        `<p>Remove <strong>${count}</strong> item${count === 1 ? "" : "s"} from inventory?</p>` +
+        '<p class="qm-hint">They go to the trash, where the GM can put them back.</p>',
     });
     if (!confirmed) return;
 
     for (const group of groups) {
       const ids = new Set(group.items.map((i) => i.id));
       await FlagManager.updateInventory(group.actor, (inv) => {
-        inv.items = inv.items.filter((i) => !ids.has(i.id));
+        discardItems(inv, ids);
         return inv;
       });
     }
@@ -1056,12 +1059,14 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const itemId = target.dataset.itemId!;
     const confirmed = await Dialog.confirm({
       title: "Remove Item",
-      content: "<p>Remove this item from inventory?</p>",
+      content:
+        "<p>Remove this item from inventory?</p>" +
+        '<p class="qm-hint">It goes to the trash, where the GM can put it back.</p>',
     });
     if (!confirmed) return;
 
     await FlagManager.updateInventory(this._actorForItem(itemId), (inv) => {
-      inv.items = inv.items.filter((i) => i.id !== itemId);
+      discardItem(inv, itemId);
       return inv;
     });
     this.render();
@@ -1171,13 +1176,22 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       }
       // Remove the container item that created this zone.
       // New zones track via itemId; old zones fall back to matching by catalog zone name.
+      // The container goes to the trash, not into nothing. Restoring it brings
+      // its zone back too — reconcileZones rebuilds a zone for any granting item
+      // that has none — though the zone comes back empty, since its contents
+      // were moved out to the fallback zone here rather than deleted.
       if (zone?.itemId) {
-        inv.items = inv.items.filter((i) => i.id !== zone.itemId);
+        discardItem(inv, zone.itemId);
       } else if (zone) {
-        inv.items = inv.items.filter((i) => {
-          const def = definitionFor(i);
-          return !(def?.grantsStorageZone?.name === zone.name || def?.grantsZone?.name === zone.name);
-        });
+        const legacyIds = new Set(
+          inv.items
+            .filter((i) => {
+              const def = definitionFor(i);
+              return def?.grantsStorageZone?.name === zone.name || def?.grantsZone?.name === zone.name;
+            })
+            .map((i) => i.id)
+        );
+        discardItems(inv, legacyIds);
       }
       inv.extraZones = (inv.extraZones ?? []).filter((ez) => ez.id !== zoneId);
       return inv;

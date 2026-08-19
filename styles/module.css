@@ -2967,3 +2967,143 @@
   margin: 0 0 6px;
   padding-left: 18px;
 }
+
+/* ── Trash ────────────────────────────────────────────────────────────────────
+   The bin deliberately reads as a list of losses, not a second inventory: no
+   zones, no weights, no quantity controls. The only affordances are "put it
+   back" and "let it go", and both are the GM's. */
+
+.trash-window-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--dw-bg-parchment);
+  color: var(--dw-text);
+  overflow: hidden;
+}
+
+.trash-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--dw-border-light);
+  background: var(--dw-bg-dark);
+  flex: 0 0 auto;
+}
+
+.trash-count {
+  font-size: 0.85em;
+  color: var(--dw-tertiary);
+}
+
+.trash-danger:hover {
+  color: var(--speed-red);
+}
+
+.trash-empty {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--dw-tertiary);
+}
+
+.trash-empty i {
+  display: block;
+  font-size: 1.8em;
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+/* Players can look but not act, so the window has to say why the buttons they
+   would expect are not there. */
+.trash-hint,
+.qm-hint {
+  font-size: 0.85em;
+  color: var(--dw-tertiary);
+  font-style: italic;
+}
+
+.trash-hint {
+  margin: 0;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--dw-border-light);
+}
+
+.trash-groups {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.trash-group {
+  margin-bottom: 10px;
+}
+
+.trash-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  background: var(--dw-bg-dark);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+}
+
+.trash-group-name {
+  font-weight: 600;
+  font-size: 0.92em;
+}
+
+.trash-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-bottom: 1px solid rgba(160, 100, 30, 0.12);
+  font-size: 0.9em;
+}
+
+.trash-row:last-child {
+  border-bottom: none;
+}
+
+.trash-row-icon {
+  flex: 0 0 auto;
+  width: 18px;
+  text-align: center;
+  color: var(--dw-tertiary);
+}
+
+.trash-row-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trash-row-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trash-row-qty {
+  color: var(--dw-tertiary);
+}
+
+/* Where it came from, when, and who did it — the three things needed to decide
+   whether a deletion was the mistake someone is looking for. */
+.trash-row-meta {
+  font-size: 0.8em;
+  color: var(--dw-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trash-restore:hover {
+  color: var(--dw-accent);
+}
+

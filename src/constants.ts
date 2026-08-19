@@ -16,6 +16,7 @@ export const TEMPLATES = {
   LOOT: `modules/${MODULE_ID}/templates/loot.hbs`,
   LOOT_BROWSER: `modules/${MODULE_ID}/templates/loot-browser.hbs`,
   INN: `modules/${MODULE_ID}/templates/inn.hbs`,
+  TRASH: `modules/${MODULE_ID}/templates/trash.hbs`,
   MARKET: `modules/${MODULE_ID}/templates/market.hbs`,
   PARTIALS: {
     INVENTORY_ZONE: `modules/${MODULE_ID}/templates/partials/inventory-zone.hbs`,
@@ -58,6 +59,8 @@ export const SETTINGS = {
   HIDE_MANAGED_ACTORS: "hideManagedActors", // hide the shared store and loot boxes from players' Actors tab
   PLAYER_TOOLBAR_INN: "playerToolbarInn", // may players open the generic inn from the toolbar?
   PLAYER_TOOLBAR_LOOT: "playerToolbarLoot", // may players open the loot browser from the toolbar?
+  PLAYER_TOOLBAR_TRASH: "playerToolbarTrash", // may players open the trash from the toolbar? (read-only for them)
+  TRASH_LIMIT: "trashLimit", // how many deleted rows each actor's bin keeps before the oldest fall out
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in
@@ -75,6 +78,11 @@ export const SHARED_ACTOR_IMG = "icons/containers/bags/pack-leather-brown.webp" 
 // One zone, because a hoard is a pile — nothing about it is worn or stowed.
 export const LOOT_ACTOR_IMG = "icons/containers/chest/chest-worn-oak-tan.webp" as const;
 export const LOOT_ZONE = "equipped" as const;
+
+// How many deleted rows a single actor's bin holds. Old entries fall out the
+// bottom rather than the bin growing without limit — it is an undo buffer, not
+// an archive. The transaction log caps itself the same way.
+export const TRASH_LIMIT_DEFAULT = 30 as const;
 
 export const SOCKET_NAME = `module.${MODULE_ID}` as const;
 

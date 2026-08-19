@@ -41,6 +41,8 @@ declare global {
     "dolmenwood-party-inventory.hideManagedActors": boolean;
     "dolmenwood-party-inventory.playerToolbarInn": boolean;
     "dolmenwood-party-inventory.playerToolbarLoot": boolean;
+    "dolmenwood-party-inventory.playerToolbarTrash": boolean;
+    "dolmenwood-party-inventory.trashLimit": number;
   }
 
   /** Declare the flags this module writes, so getFlag/setFlag are typed. */

@@ -12,6 +12,34 @@ export function subcategoryToIcon(subcategory?: string): string {
   }
 }
 
+/**
+ * The icon for an item's category — the same mapping the `itemIcon` Handlebars
+ * helper exposes to templates, exported for callers that build their rows in TS.
+ */
+export function iconForItemCategory(category?: string, subcategory?: string): string {
+  const cat = (category ?? "").toLowerCase();
+  if (cat === "animals & vehicles") return subcategoryToIcon(subcategory);
+  switch (cat) {
+    case "adventuring gear": return "fa-compass";
+    case "ammunition":       return "fa-bullseye";
+    case "armour":           return "fa-shield-halved";
+    case "arrows":           return "fa-arrow-up";
+    case "camping and travel": return "fa-tent";
+    case "clothing":         return "fa-shirt";
+    case "containers":       return "fa-box";
+    case "holy items":       return "fa-cross";
+    case "light":            return "fa-lightbulb";
+    case "melee":            return "fa-hand-fist";
+    case "missile":          return "fa-crosshairs";
+    case "quarrels":         return "fa-crosshairs";
+    case "stones":           return "fa-circle";
+    case "tools":            return "fa-wrench";
+    case "weapons":          return "fa-gavel";
+    case "pipeleaf":         return "fa-leaf";
+    default:                 return "fa-sack";
+  }
+}
+
 // ─── Icon Picker Utilities ────────────────────────────────────────────────────
 
 export const ITEM_ICONS: { icon: string; label: string }[] = [
@@ -336,29 +364,7 @@ export function registerHandlebarsHelpers(): void {
   // Accepts optional subcategory for finer-grained icons (Animals & Vehicles)
   Handlebars.registerHelper("itemIcon", (category: string, subcategoryOrOptions?: string | { hash?: unknown }) => {
     const subcategory = typeof subcategoryOrOptions === "string" ? subcategoryOrOptions : undefined;
-    const cat = (category ?? "").toLowerCase();
-    if (cat === "animals & vehicles") {
-      return subcategoryToIcon(subcategory);
-    }
-    switch (cat) {
-      case "adventuring gear": return "fa-compass";
-      case "ammunition":       return "fa-bullseye";
-      case "armour":           return "fa-shield-halved";
-      case "arrows":           return "fa-arrow-up";
-      case "camping and travel": return "fa-tent";
-      case "clothing":         return "fa-shirt";
-      case "containers":       return "fa-box";
-      case "holy items":       return "fa-cross";
-      case "light":            return "fa-lightbulb";
-      case "melee":            return "fa-hand-fist";
-      case "missile":          return "fa-crosshairs";
-      case "quarrels":         return "fa-crosshairs";
-      case "stones":           return "fa-circle";
-      case "tools":            return "fa-wrench";
-      case "weapons":          return "fa-gavel";
-      case "pipeleaf":         return "fa-leaf";
-      default:                 return "fa-sack";
-    }
+    return iconForItemCategory(category, subcategory);
   });
 }
 

@@ -1,0 +1,71 @@
+<div class="trash-window-inner">
+
+  {{#if isGM}}
+  <div class="trash-toolbar">
+    <span class="trash-count">{{total}} deleted item{{#unless (eq total 1)}}s{{/unless}}</span>
+    {{#unless isEmpty}}
+    <button type="button" class="trash-danger" data-action="emptyAll">
+      <i class="fas fa-dumpster"></i> Empty all
+    </button>
+    {{/unless}}
+  </div>
+  {{/if}}
+
+  {{#if isEmpty}}
+  <p class="trash-empty">
+    <i class="fas fa-trash-can"></i>
+    {{#if isGM}}
+    <em>Nothing has been deleted.</em>
+    {{else}}
+    <em>You have not deleted anything.</em>
+    {{/if}}
+  </p>
+  {{else}}
+
+  {{#unless isGM}}
+  <p class="trash-hint">
+    <i class="fas fa-circle-info"></i>
+    These are the items you deleted. Ask your GM to put one back.
+  </p>
+  {{/unless}}
+
+  <div class="trash-groups">
+    {{#each groups}}
+    <section class="trash-group">
+      <header class="trash-group-header">
+        <span class="trash-group-name"><i class="fas {{this.icon}}"></i> {{this.actorName}}</span>
+        {{#if ../isGM}}
+        <button type="button" class="icon-btn trash-danger" data-action="emptyActor"
+                data-actor-id="{{this.actorId}}" title="Empty this trash for good">
+          <i class="fas fa-dumpster"></i>
+        </button>
+        {{/if}}
+      </header>
+
+      {{#each this.rows}}
+      <div class="trash-row">
+        <span class="trash-row-icon"><i class="fas {{this.icon}}"></i></span>
+        <span class="trash-row-text">
+          <span class="trash-row-name">
+            {{this.name}}{{#unless (eq this.quantity 1)}} <span class="trash-row-qty">&times;{{this.quantity}}</span>{{/unless}}
+            {{#if this.isSecret}}<i class="fas fa-lock secret-icon" title="Was marked secret"></i>{{/if}}
+          </span>
+          <span class="trash-row-meta">
+            from {{this.zoneName}} &middot; {{this.ago}} &middot; by {{this.deletedBy}}
+          </span>
+        </span>
+        {{#if ../../isGM}}
+        <button type="button" class="icon-btn trash-restore" data-action="restore"
+                data-actor-id="{{../actorId}}" data-entry-id="{{this.entryId}}"
+                title="Put this back">
+          <i class="fas fa-arrow-rotate-left"></i>
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+    </section>
+    {{/each}}
+  </div>
+
+  {{/if}}
+</div>

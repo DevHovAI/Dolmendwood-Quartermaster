@@ -6,6 +6,7 @@ import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { addItemWithZones, getEncumbranceMode } from "../data/zoneGrants";
 import { displayQuantity, portionOf, reduceItem } from "../data/consumables";
 import { getPartyActors } from "../data/sharedStore";
+import { discardItem } from "../data/trash";
 import {
   COIN_KEYS,
   COIN_LABELS,
@@ -191,7 +192,7 @@ export class LootApp extends foundry.applications.api.HandlebarsApplicationMixin
     const itemId = target.dataset.itemId;
     if (!itemId) return;
     await FlagManager.updateInventory(this.actor, (inv) => {
-      inv.items = inv.items.filter((i) => i.id !== itemId);
+      discardItem(inv, itemId);
       return inv;
     });
     this.rerender();
