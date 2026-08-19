@@ -2,7 +2,7 @@
       strip plus the unfolded panel as two roots lost the bar entirely. --}}
 <div class="day-bar-root">
 
-<div class="day-bar-strip">
+<div class="day-bar-strip {{#if collapsed}}is-collapsed{{/if}}">
 
   {{!-- Which procedure the day is in decides what the whole list below says, so
         it sits on its own line rather than among the ticks it governs. --}}
@@ -21,6 +21,36 @@
         <i class="fas {{this.icon}}"></i><span class="day-bar-mode-label">{{this.label}}</span>
       </button>
       {{/each}}
+    </div>
+    {{/unless}}
+    {{!-- Travel Points sit on the top line in every mode, not only in travel:
+          how far the party can still get today is asked mid-sentence, and it
+          used to be a row that appeared and vanished with the mode. --}}
+    {{#unless collapsed}}
+    <div class="day-bar-tp {{#if travelPoints.spent}}is-spent{{/if}} {{#if travelPoints.forced}}is-forced{{/if}}">
+      <button type="button" class="day-bar-tp-march {{#if travelPoints.forced}}is-forced{{/if}}"
+              data-action="toggleForcedMarch" title="{{travelPoints.forcedTitle}}">
+        <i class="fas {{#if travelPoints.forced}}fa-person-running-fast{{else}}fa-shoe-prints{{/if}}"></i>
+      </button>
+      {{#if travelPoints.hasBudget}}
+      {{!-- Counts up, not down. Declaring a forced march raises the allowance,
+            and a readout of what is left jumped by the whole difference at that
+            click — 4/8 became 8/12 without a step having been walked. What has
+            been spent does not change when the day gets longer. --}}
+      <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="-1"
+              {{#unless travelPoints.spent}}disabled{{/unless}} title="Hand a Travel Point back">&minus;</button>
+      <span class="day-bar-tp-value" title="{{travelPoints.budgetTitle}}">
+        <strong class="{{#if travelPoints.over}}is-over{{/if}}">{{travelPoints.used}}</strong>/{{travelPoints.total}} TP
+      </span>
+      <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="1"
+              {{#unless travelPoints.left}}disabled{{/unless}} title="Spend a Travel Point">+</button>
+      <button type="button" class="day-bar-tp-refresh {{#if travelPoints.stale}}is-stale{{/if}}"
+              data-action="refreshBudget" title="{{travelPoints.refreshTitle}}">
+        <i class="fas fa-rotate"></i>
+      </button>
+      {{else}}
+      <span class="day-bar-tp-value" title="{{travelPoints.budgetTitle}}">&mdash; TP</span>
+      {{/if}}
     </div>
     {{/unless}}
 
@@ -50,17 +80,17 @@
   {{#unless collapsed}}
   <div class="day-bar-row day-bar-duties">
     {{#each blocks}}
-    {{#if this.groupLabel}}
-    {{!-- Making camp is one job done in one stretch, so its steps are banded
-          together instead of sitting loose among the day's other checks. --}}
-    <div class="day-bar-group" title="{{this.groupLabel}}">
-      <span class="day-bar-group-label">{{this.groupLabel}}</span>
-      <div class="day-bar-group-items">
-        {{#each this.duties}}
-        {{> dayBarDuty}}
-        {{/each}}
-      </div>
-    </div>
+    {{#if this.groupId}}
+    {{!-- Making camp is one job done in one stretch, so it takes one tick here
+          and opens its seven steps in a window of their own. --}}
+    <button type="button" class="day-bar-duty day-bar-group-chip {{#if this.allDone}}is-done{{/if}}"
+            data-action="openGroup" data-group-id="{{this.groupId}}"
+            title="{{this.groupLabel}} — {{this.doneCount}} of {{this.total}} steps done. Click for the steps.">
+      <i class="fas {{#if this.allDone}}fa-square-check{{else}}fa-square{{/if}} day-bar-tick"></i>
+      <i class="fas {{this.groupIcon}} day-bar-duty-icon"></i>
+      <span class="day-bar-duty-label">{{this.groupLabel}}</span>
+      <span class="day-bar-group-count">{{this.doneCount}}/{{this.total}}</span>
+    </button>
     {{else}}
     {{#each this.duties}}
     {{> dayBarDuty}}
@@ -73,20 +103,6 @@
   {{#if showFoot}}
   {{#unless collapsed}}
   <div class="day-bar-row day-bar-row-foot">
-    {{#if travelPoints}}
-    {{!-- Travel Points are a budget spent down over the day, not a thing that is
-          done or not done, so they get a counter rather than a tick. --}}
-    <div class="day-bar-tp {{#if travelPoints.spent}}is-spent{{/if}}"
-         title="Travel Points left today. The budget is the party's Speed divided by 5 (Player's Book p156); unspent points are lost at nightfall.">
-      <i class="fas fa-shoe-prints"></i>
-      <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="1"
-              {{#unless travelPoints.left}}disabled{{/unless}} title="Spend a Travel Point">&minus;</button>
-      <span class="day-bar-tp-value"><strong>{{travelPoints.left}}</strong>/{{travelPoints.total}} TP</span>
-      <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="-1"
-              {{#unless travelPoints.spent}}disabled{{/unless}} title="Hand a Travel Point back">+</button>
-    </div>
-    {{/if}}
-
     {{#if hasParty}}
     <div class="day-bar-party">
       <button type="button" class="day-bar-chip {{#if allAte}}is-done{{/if}}"
@@ -126,10 +142,11 @@
   <div class="day-bar-panel-head">
     <span class="day-bar-panel-name">Character</span>
     <span class="day-bar-panel-col">Ate</span>
-    <span class="day-bar-panel-col">Slept</span>
+    <span class="day-bar-panel-col">Slept well</span>
     <span class="day-bar-panel-col">Hunger</span>
-    <span class="day-bar-panel-col">Sleep</span>
-    <span class="day-bar-panel-col">Rest</span>
+    <span class="day-bar-panel-col">No sleep</span>
+    <span class="day-bar-panel-col">No rest</span>
+    <span class="day-bar-panel-col day-bar-panel-penalty-head">Penalty</span>
   </div>
   {{#each party}}
   <div class="day-bar-panel-row">
@@ -152,19 +169,27 @@
 
     <span class="day-bar-panel-col {{#if this.hungry}}is-bad{{/if}}"
           title="{{#if this.hungry}}Days without food. -1 Attack from day one, -10 Speed from day two, 1 Constitution a day from day seven.{{else}}Fed{{/if}}">
-      {{#if this.hungry}}{{this.daysWithoutFood}}d{{else}}&mdash;{{/if}}
+      {{#if this.hungry}}{{this.daysWithoutFood}}{{else}}&mdash;{{/if}}
     </span>
 
     <span class="day-bar-panel-col {{#if this.tired}}is-bad{{/if}}"
           title="{{#if this.tired}}Days without a good night's rest. Exhausted until they get one: -1 to Attack and Damage Rolls per day, and a 1-in-6 chance of each prepared spell failing.{{else}}Rested{{/if}}">
-      {{#if this.tired}}-{{this.daysWithoutSleep}}{{else}}&mdash;{{/if}}
+      {{#if this.tired}}{{this.daysWithoutSleep}}{{else}}&mdash;{{/if}}
     </span>
 
     <button type="button" class="day-bar-panel-col day-bar-panel-rest {{#if this.overdue}}is-bad{{/if}}"
             data-action="restChar" data-actor-id="{{this.actorId}}"
-            title="Travel days since this character last rested. The counter rises on every day the party spends a Travel Point, and clears on a day it spends none and this character sleeps well. One rest day is owed per {{../restLimit}} days of travel, or -1 to Attack and Damage Rolls until taken (Player's Book p157). Click to clear it by hand.">
-      {{this.travelDaysSinceRest}}/{{../restLimit}}
+            title="Travel days since this character last rested. The counter rises on every day the party spends a Travel Point, and clears on a day it spends none and this character sleeps well. A week is six travel days and one of rest, so the seventh travel day without one costs -1 to Attack and Damage Rolls until it is taken (Player's Book p157). A forced march owes its rest day at once. Click to clear both by hand.">
+      {{this.travelDaysSinceRest}}/{{../restLimit}}{{#if this.forcedMarchesSinceRest}}<i class="fas fa-person-running-fast day-bar-forced-flag" title="Forced marches since the last rest day"></i>{{this.forcedMarchesSinceRest}}{{/if}}
     </button>
+
+    {{!-- One figure, both clocks. Hunger and exhaustion both hit the Attack Roll,
+          so adding them is what the character actually rolls with; where it comes
+          from is on hover. --}}
+    <span class="day-bar-panel-penalty {{#unless this.noPenalty}}is-bad{{/unless}}"
+          title="{{#if this.noPenalty}}No hunger or exhaustion penalty{{else}}{{this.penaltyTitle}}{{/if}}">
+      {{#if this.noPenalty}}&mdash;{{else}}{{this.penalty}}{{/if}}
+    </span>
   </div>
   {{/each}}
 </div>

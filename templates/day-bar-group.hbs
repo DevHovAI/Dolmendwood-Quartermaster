@@ -1,0 +1,30 @@
+{{!-- The steps behind one grouped tick in the day bar. A window rather than
+      seven more chips in the strip: the Camp tab was twice the width of every
+      other one, and the steps are read in order anyway. --}}
+<div class="duty-group-window">
+  <div class="duty-group-list">
+    {{#each duties}}
+    <button type="button" class="duty-group-step {{#if this.done}}is-done{{/if}}"
+            data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}">
+      <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} duty-group-tick"></i>
+      <i class="fas {{this.icon}} duty-group-icon"></i>
+      <span class="duty-group-text">
+        <span class="duty-group-label">{{this.label}}</span>
+        <span class="duty-group-hint">{{this.hint}}</span>
+      </span>
+    </button>
+    {{/each}}
+  </div>
+
+  <div class="duty-group-foot">
+    <span class="duty-group-count {{#if allDone}}is-done{{/if}}">{{doneCount}}/{{total}} done</span>
+    <button type="button" class="duty-group-btn" data-action="tickAll"
+            title="Tick every step of this group">
+      <i class="fas fa-check-double"></i> All
+    </button>
+    <button type="button" class="duty-group-btn" data-action="clearAll"
+            title="Clear every step of this group">
+      <i class="fas fa-rotate-left"></i> None
+    </button>
+  </div>
+</div>

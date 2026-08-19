@@ -3120,6 +3120,13 @@
 /* One wrapper, because a Handlebars part is rendered as a single node — the
    strip and the unfolded panel as two roots lost the bar entirely. */
 .day-bar-root {
+  /* One width for the strip and the panel, fixed rather than shrink-to-fit.
+     Both used to size themselves to their contents, so switching Travel to
+     Camp or a character going hungry made the whole bar jump around under the
+     cursor. Wide enough for the longest row either of them can hold: four mode
+     tabs plus the Travel Point counter above, and the full penalty line beside
+     six columns below. */
+  --day-bar-width: 800px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3138,6 +3145,11 @@ body > #dolmenwood-day-bar {
 
 .day-bar-strip,
 .day-bar-panel {
+  box-sizing: border-box;
+  width: var(--day-bar-width);
+  /* The one concession to a narrow screen or a large interface scale: shrink
+     rather than run off the edge. Both still match each other. */
+  max-width: calc(100vw - 16px);
   pointer-events: all;
   background: var(--dw-bg-parchment);
   border: 1px solid var(--dw-border);
@@ -3152,7 +3164,6 @@ body > #dolmenwood-day-bar {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-width: 92vw;
   padding: 4px 8px;
 }
 
@@ -3277,31 +3288,25 @@ body > #dolmenwood-day-bar {
 }
 
 /* ── Grouped duties ──
-   Making camp is one job done in one stretch, so its steps get a band with a
-   name on it rather than sitting loose among the day's other checks. */
+   Making camp is one job done in one stretch, and seven chips for it made the
+   Camp tab twice the width of every other one. It gets one tick with a tally,
+   and the steps open in a window. */
 
-.day-bar-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 5px 2px 6px;
+.day-bar-group-chip {
+  border-style: dashed;
+  border-color: var(--dw-border-light);
   background: rgba(160, 100, 30, 0.09);
-  border: 1px dashed var(--dw-border-light);
-  border-radius: 4px;
 }
 
-.day-bar-group-label {
+.day-bar-group-count {
+  margin-left: 1px;
   color: var(--dw-tertiary);
-  font-size: 0.8em;
-  font-variant: small-caps;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
 }
 
-.day-bar-group-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
+.day-bar-group-chip.is-done .day-bar-group-count {
+  color: var(--speed-green);
 }
 
 /* ── Travel Points ──
@@ -3362,17 +3367,53 @@ body > #dolmenwood-day-bar {
   border-color: var(--dw-border-light);
 }
 
+/* ── Forced march ──
+   The march toggle is the first thing in the Travel Point group, because it is
+   what the budget beside it depends on. Lit rather than merely pressed: a day
+   the party is pushing through is worth seeing from across the screen. */
+.day-bar-tp-march {
+  width: 20px;
+  height: 18px;
+  padding: 0;
+  line-height: 1;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--dw-tertiary);
+  cursor: pointer;
+}
+
+.day-bar-tp-march:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.day-bar-tp-march.is-forced {
+  color: var(--speed-orange);
+}
+
+.day-bar-tp.is-forced {
+  background: var(--speed-red-bg);
+  border-color: var(--speed-orange);
+}
+
+/* In the panel's rest column, beside the n/7 it makes urgent. */
+.day-bar-forced-flag {
+  margin-left: 4px;
+  margin-right: 1px;
+  color: var(--speed-orange);
+  font-size: 0.85em;
+}
+
 /* ── Party chips ── */
 
 .day-bar-party {
   display: flex;
   align-items: center;
   gap: 3px;
-}
-
-.day-bar-tp + .day-bar-party {
-  padding-left: 6px;
-  border-left: 1px solid var(--dw-border-light);
+  /* Pushed right on the now fixed-width strip, so the fold arrow lines up under
+     the controls in the top row instead of floating in the middle. */
+  margin-left: auto;
 }
 
 .day-bar-chip.is-done {
@@ -3416,10 +3457,14 @@ body > #dolmenwood-day-bar {
 
 .day-bar-panel {
   display: grid;
-  grid-template-columns: minmax(90px, 1fr) auto auto auto auto auto;
+  /* Every track is stated, so the columns do not shuffle sideways as the
+     numbers in them change: name, Ate, Slept well, Hunger, No sleep, No rest,
+     Penalty. The five middle ones are as wide as their headers need; the name
+     and the penalty share what is left. */
+  grid-template-columns:
+    minmax(0, 1.1fr) 34px 62px 52px 60px 62px minmax(0, 1.5fr);
   gap: 1px 10px;
   align-items: center;
-  max-width: 92vw;
   padding: 5px 8px;
 }
 
@@ -3503,7 +3548,198 @@ body > #dolmenwood-day-bar {
   font-weight: 600;
 }
 
+/* ── The penalty column ──
+   One figure for both clocks: hunger and exhaustion both hit the Attack Roll,
+   and what the character rolls with is the sum. The tooltip carries the
+   breakdown and the citations, which is where the detail belongs on a HUD. */
+.day-bar-panel-penalty {
+  min-width: 0;
+  padding-left: 4px;
+  border-left: 1px solid var(--dw-border-light);
+  color: var(--dw-tertiary);
+  font-size: 0.9em;
+  /* Wraps rather than widens: the column has a fixed share of a fixed width,
+     and the worst case (starving, exhausted, losing Constitution) is a long
+     line that must not push the panel out of step with the strip. */
+  white-space: normal;
+}
+
+.day-bar-panel-penalty.is-bad {
+  color: var(--speed-red);
+  font-weight: 600;
+}
+
+/* ── The duty group window ──
+   Where a grouped tick's steps live. A list rather than a row of chips: the
+   steps are read in order, and each carries a line of rules worth showing. */
+
+.duty-group .window-content {
+  padding: 0;
+}
+
+.duty-group-window {
+  display: flex;
+  flex-direction: column;
+  background: var(--dw-bg-parchment);
+  color: var(--dw-text);
+}
+
+.duty-group-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.duty-group-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  width: 100%;
+  height: auto;
+  padding: 6px 9px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--dw-border-light);
+  border-radius: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.duty-group-step:hover {
+  background: var(--dw-accent-light);
+}
+
+.duty-group-step:last-child {
+  border-bottom: none;
+}
+
+.duty-group-tick {
+  margin-top: 2px;
+  color: var(--dw-tertiary);
+}
+
+.duty-group-step.is-done .duty-group-tick {
+  color: var(--speed-green);
+}
+
+.duty-group-icon {
+  margin-top: 2px;
+  width: 14px;
+  color: var(--dw-tertiary);
+  text-align: center;
+}
+
+.duty-group-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.duty-group-label {
+  font-weight: 600;
+}
+
+/* Done recedes rather than shouting: the eye should land on what is still
+   owed, the same rule the strip's own ticks follow. */
+.duty-group-step.is-done .duty-group-label {
+  color: var(--dw-tertiary);
+  text-decoration: line-through;
+}
+
+.duty-group-hint {
+  color: var(--dw-tertiary);
+  font-size: 0.85em;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.duty-group-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  border-top: 1px solid var(--dw-border);
+}
+
+.duty-group-count {
+  flex: 1;
+  color: var(--dw-tertiary);
+  font-size: 0.85em;
+  font-variant: small-caps;
+}
+
+.duty-group-count.is-done {
+  color: var(--speed-green);
+}
+
+.duty-group-btn {
+  width: auto;
+  height: auto;
+  padding: 2px 8px;
+  background: none;
+  border: 1px solid var(--dw-border);
+  border-radius: 3px;
+  color: var(--dw-tertiary);
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
+.duty-group-btn:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+  color: var(--dw-text);
+}
+
+/* The header sits over left-aligned text rather than centred figures. */
+.day-bar-panel-penalty-head {
+  padding-left: 4px;
+  text-align: left;
+}
+
 /* The Eat button appears only on rows the catalogue or the GM marked edible. */
 .eat-btn:hover {
   color: var(--speed-orange);
+}
+
+/* Folded down, the strip is a handle rather than the bar: it keeps only the day
+   button and the controls, and holding it to the full width would leave 800
+   pixels of empty parchment across the top of the screen. */
+.day-bar-strip.is-collapsed {
+  width: auto;
+}
+
+/* More points walked than the day's budget allows — only reachable by calling
+   off a forced march after spending its extra points. Shown rather than
+   silently clamped: the party did walk them. */
+.day-bar-tp-value .is-over {
+  color: var(--speed-orange);
+}
+
+/* Re-read the day's Travel Point allowance from the party as they stand now.
+   Quiet until the two figures actually differ, so it does not invite clicking:
+   a fixed allowance is the point, and this is the exception to it. */
+.day-bar-tp-refresh {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  line-height: 1;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--dw-tertiary);
+  font-size: 0.9em;
+  opacity: 0.45;
+  cursor: pointer;
+}
+
+.day-bar-tp-refresh:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+  opacity: 1;
+}
+
+.day-bar-tp-refresh.is-stale {
+  color: var(--speed-orange);
+  opacity: 1;
 }

@@ -18,6 +18,7 @@ export const TEMPLATES = {
   INN: `modules/${MODULE_ID}/templates/inn.hbs`,
   TRASH: `modules/${MODULE_ID}/templates/trash.hbs`,
   DAY_BAR: `modules/${MODULE_ID}/templates/day-bar.hbs`,
+  DAY_BAR_GROUP: `modules/${MODULE_ID}/templates/day-bar-group.hbs`,
   MARKET: `modules/${MODULE_ID}/templates/market.hbs`,
   PARTIALS: {
     INVENTORY_ZONE: `modules/${MODULE_ID}/templates/partials/inventory-zone.hbs`,
@@ -90,9 +91,10 @@ export const LOOT_ZONE = "equipped" as const;
 // an archive. The transaction log caps itself the same way.
 export const TRASH_LIMIT_DEFAULT = 30 as const;
 
-// A party must rest 1 day per 6 days of travel or take exhaustion
-// (Player's Book p157). The bar counts travel days towards this.
-export const TRAVEL_DAYS_PER_REST = 6 as const;
+// A week of travel is six days on the move and one of rest (Player's Book
+// p157), so six travel days between rests are owed nothing — it is the seventh
+// that means the rest day was skipped, and that is where exhaustion starts.
+export const TRAVEL_DAYS_PER_REST = 7 as const;
 
 export const SOCKET_NAME = `module.${MODULE_ID}` as const;
 

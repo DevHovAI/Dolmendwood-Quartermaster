@@ -34,11 +34,12 @@ export const DUTY_MODES: { id: DutyMode; label: string; icon: string }[] = [
 ];
 
 /**
- * Setting up a camp is one job done in one stretch, not seven unrelated errands,
- * so its duties are drawn as a banded group rather than loose in the row.
+ * Setting up a camp is one job done in one stretch, not seven unrelated errands.
+ * Its steps live behind one tick in the strip and open in their own window: seven
+ * of them side by side made the Camp tab twice the width of every other one.
  */
-export const DUTY_GROUPS: Record<string, { label: string }> = {
-  "camp-setup": { label: "Making camp" },
+export const DUTY_GROUPS: Record<string, { label: string; icon: string }> = {
+  "camp-setup": { label: "Making camp", icon: "fa-campground" },
 };
 
 export interface Duty {
@@ -182,6 +183,23 @@ export interface DayState {
   /** Travel Points spent so far today; the budget itself is derived from Speed. */
   travelPointsUsed: number;
   /**
+   * Is today a forced march? Raises the day's Travel Point budget by half and
+   * costs every character who marched a rest day (Player's Book p156).
+   */
+  forcedMarch: boolean;
+  /**
+   * The day's Travel Point allowance, frozen when the day is first drawn.
+   *
+   * "Travel Points Per Day" is a per-day allowance read off the party's Speed
+   * (Player's Book p156), and the day's procedure spends it down — so it must
+   * not move under the party mid-march because somebody ate a ration, picked up
+   * a hoard, or left a mule behind. Absent means "not yet frozen today"; the bar
+   * derives it once from the convoy and writes it here, and a button beside the
+   * counter re-derives it when the GM decides the party's circumstances really
+   * have changed. This is the normal allowance; a forced march raises it live.
+   */
+  travelPointBudget?: number;
+  /**
    * The world-clock day this counter was last aligned with, when following a
    * calendar module. Absent while not following, or before the first sighting.
    */
@@ -189,7 +207,7 @@ export interface DayState {
 }
 
 function defaultState(day: number): DayState {
-  return { day, mode: "dawn", done: {}, travelPointsUsed: 0 };
+  return { day, mode: "dawn", done: {}, travelPointsUsed: 0, forcedMarch: false };
 }
 
 export function getDayState(): DayState {
@@ -201,9 +219,9 @@ export function getDayState(): DayState {
   if (stored.day !== day) {
     // The day moved on somewhere else — most likely the inn's own new-day
     // button. Show a clean sheet at once; reconcileDay persists it.
-    return { ...stored, day, done: {}, travelPointsUsed: 0 };
+    return { ...stored, day, done: {}, travelPointsUsed: 0, forcedMarch: false, travelPointBudget: undefined };
   }
-  return { ...stored, travelPointsUsed: stored.travelPointsUsed ?? 0 };
+  return { ...stored, travelPointsUsed: stored.travelPointsUsed ?? 0, forcedMarch: stored.forcedMarch ?? false };
 }
 
 async function writeState(state: DayState): Promise<void> {
@@ -228,13 +246,15 @@ export async function reconcileDay(): Promise<void> {
 
   // What makes a day a travel day is that the party actually moved — it can sit
   // in travel mode all day and never break camp.
-  await rollOverCharacterDays(day, (stored?.travelPointsUsed ?? 0) > 0);
+  await rollOverCharacterDays(day, (stored?.travelPointsUsed ?? 0) > 0, stored?.forcedMarch ?? false);
   await writeState({
     day,
     // A new day opens at its start, whatever the last one ended as.
     mode: "dawn",
     done: {},
     travelPointsUsed: 0,
+    // A forced march is a decision taken for one day, never carried into the next.
+    forcedMarch: false,
     ...(stored?.lastDayKey ? { lastDayKey: stored.lastDayKey } : {}),
   });
 }
@@ -256,14 +276,52 @@ export async function setDutyMode(mode: DutyMode): Promise<void> {
   await writeState({ ...getDayState(), mode });
 }
 
+/**
+ * Declare the day a forced march, or take it back.
+ *
+ * A whole-party decision rather than a per-character one: the party marches
+ * together or not at all, and the book prices it that way. What it costs lands
+ * on the characters at the day's roll-over, not here — until midnight it is
+ * still a plan, and a GM who mis-clicks should be able to undo it.
+ */
+export async function setForcedMarch(forcedMarch: boolean): Promise<void> {
+  await writeState({ ...getDayState(), forcedMarch });
+}
+
+/**
+ * Freeze the day's Travel Point allowance, or clear it so it is derived afresh.
+ *
+ * The number comes from the caller: it is read off the convoy's speed, and this
+ * module deliberately does not reach for that — the same reason
+ * `spendTravelPoints` takes the budget as an argument.
+ */
+export async function setTravelPointBudget(budget: number | undefined): Promise<void> {
+  await writeState({ ...getDayState(), travelPointBudget: budget });
+}
+
 export async function setDutyDone(id: string, done: boolean): Promise<void> {
   const state = getDayState();
   await writeState({ ...state, done: { ...state.done, [id]: done } });
 }
 
+/**
+ * Tick or clear several duties in one write.
+ *
+ * A loop of setDutyDone calls would write the world setting once per duty:
+ * seven round trips, seven hook cycles, and seven re-renders for one click.
+ */
+export async function setDutiesDone(ids: string[], done: boolean): Promise<void> {
+  const state = getDayState();
+  const next = { ...state.done };
+  for (const id of ids) next[id] = done;
+  await writeState({ ...state, done: next });
+}
+
 /** Clear today's ticks and spent Travel Points without moving the day on. */
 export async function resetDuties(): Promise<void> {
-  await writeState({ ...getDayState(), done: {}, travelPointsUsed: 0 });
+  // The frozen allowance goes too: resetting the day is starting it over, and
+  // it should be read off the party as they stand now.
+  await writeState({ ...getDayState(), done: {}, travelPointsUsed: 0, forcedMarch: false, travelPointBudget: undefined });
 }
 
 /**

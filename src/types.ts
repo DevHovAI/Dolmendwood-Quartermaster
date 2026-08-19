@@ -76,6 +76,11 @@ export interface CharacterDay {
   daysWithoutFood: number;     // consecutive days ending yesterday
   daysWithoutSleep: number;    // exhaustion: -1 per day until a good night's rest
   travelDaysSinceRest: number;
+  /**
+   * Forced marches since the last full rest day. Each one is a further -1 to
+   * Attack and Damage until the party rests (Player's Book p156).
+   */
+  forcedMarchesSinceRest: number;
 }
 
 export interface ExtraZone {

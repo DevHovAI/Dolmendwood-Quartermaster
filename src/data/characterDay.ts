@@ -1,3 +1,4 @@
+import { TRAVEL_DAYS_PER_REST } from "../constants";
 import { FlagManager } from "./FlagManager";
 import { getInnDay } from "./innMenu";
 import { getPartyActors } from "./sharedStore";
@@ -16,8 +17,9 @@ import type { CharacterDay, InventoryItem } from "../types";
  * - **Sleep** (p159) — failing to get a good night's rest leaves a character
  *   exhausted *until* they get one, cumulatively -1 per day, and gives each
  *   spell they try to prepare a 1-in-6 chance of failing.
- * - **Rest** (p157) — a party must rest 1 day per 6 days of travel or take the
- *   same exhaustion. Multiple sources stack to a maximum of -4 (p151).
+ * - **Rest** (p157) — a week is six travel days and one of rest, so a seventh
+ *   travel day without one brings the same exhaustion. Multiple sources stack
+ *   to a maximum of -4 (p151).
  *
  * Stored on the actor's own inventory flag, for the same reason the trash is:
  * a player eating a ration writes their own actor, which needs no GM online and
@@ -38,6 +40,7 @@ function emptyDay(day: number): CharacterDay {
     daysWithoutFood: 0,
     daysWithoutSleep: 0,
     travelDaysSinceRest: 0,
+    forcedMarchesSinceRest: 0,
   };
 }
 
@@ -54,6 +57,7 @@ function normalise(raw: CharacterDay & { slept?: boolean }): CharacterDay {
     daysWithoutFood: raw.daysWithoutFood ?? 0,
     daysWithoutSleep: raw.daysWithoutSleep ?? 0,
     travelDaysSinceRest: raw.travelDaysSinceRest ?? 0,
+    forcedMarchesSinceRest: raw.forcedMarchesSinceRest ?? 0,
   };
 }
 
@@ -111,13 +115,13 @@ export async function setSleptWell(
   await patchCharacterDay(actor, {
     sleptWell,
     daysWithoutSleep: 0,
-    ...(travelledToday ? {} : { travelDaysSinceRest: 0 }),
+    ...(travelledToday ? {} : { travelDaysSinceRest: 0, forcedMarchesSinceRest: 0 }),
   });
 }
 
 /** The party has taken its rest day — this character's rest clock goes to zero. */
 export async function setRested(actor: Actor): Promise<void> {
-  await patchCharacterDay(actor, { travelDaysSinceRest: 0 });
+  await patchCharacterDay(actor, { travelDaysSinceRest: 0, forcedMarchesSinceRest: 0 });
 }
 
 /**
@@ -138,7 +142,8 @@ export async function setRested(actor: Actor): Promise<void> {
  */
 export async function rollOverCharacterDays(
   newDay: number,
-  travelledToday: boolean
+  travelledToday: boolean,
+  forcedMarchToday: boolean
 ): Promise<void> {
   const g = game as Game;
   if (!g.user?.isGM) return;
@@ -157,6 +162,17 @@ export async function rollOverCharacterDays(
         : prev.sleptWell
           ? 0
           : prev.travelDaysSinceRest,
+      // A forced march is only a forced march if the party actually marched.
+      // The rest day that clears it is the same one the ordinary rest debt
+      // wants: a day nobody spent a Travel Point on, slept through properly.
+      forcedMarchesSinceRest:
+        travelledToday && forcedMarchToday
+          ? prev.forcedMarchesSinceRest + 1
+          : travelledToday
+            ? prev.forcedMarchesSinceRest
+            : prev.sleptWell
+              ? 0
+              : prev.forcedMarchesSinceRest,
     };
     await FlagManager.updateInventory(actor, (inv) => {
       inv.day = next;
@@ -227,6 +243,72 @@ export async function eatItem(
 
 // ─── Reading the party ─────────────────────────────────────────────────────────
 
+// ─── What the clocks cost ──────────────────────────────────────────────────────
+
+/**
+ * Effects of Hunger, Player's Book p153, as one row per day gone without food.
+ * The seventh row also applies to every day beyond it — hunger stops worsening
+ * there and starts killing instead.
+ *
+ * This is the Mortals & Demi-Fey column. Fairy characters lose Wisdom instead,
+ * on their own scale, which is not modelled: nothing tells this module what
+ * kindred an actor is, and the Foundry system underneath it does not record one.
+ *
+ * Numbers rather than a phrase, because hunger's Attack penalty is added to
+ * exhaustion's before it is shown, and two figures to add cannot be strings.
+ */
+export interface HungerEffect {
+  attack: number;
+  speed: number;
+  /** Constitution lost every further day, from day seven. Death at 0. */
+  constitutionPerDay: number;
+}
+
+const HUNGER_EFFECTS: HungerEffect[] = [
+  { attack: 1, speed: 0, constitutionPerDay: 0 },
+  { attack: 1, speed: 10, constitutionPerDay: 0 },
+  { attack: 2, speed: 10, constitutionPerDay: 0 },
+  { attack: 2, speed: 20, constitutionPerDay: 0 },
+  { attack: 3, speed: 20, constitutionPerDay: 0 },
+  { attack: 4, speed: 30, constitutionPerDay: 0 },
+  { attack: 4, speed: 30, constitutionPerDay: 1 },
+];
+
+/** What a character's hunger costs right now, or undefined if they have eaten. */
+export function hungerEffect(daysWithoutFood: number): HungerEffect | undefined {
+  if (daysWithoutFood < 1) return undefined;
+  return HUNGER_EFFECTS[Math.min(daysWithoutFood, HUNGER_EFFECTS.length) - 1];
+}
+
+/**
+ * Exhaustion, in points of Attack and Damage.
+ *
+ * Three sources, all of them "until they rest":
+ *
+ * - A night without a good rest costs a point, and further nights keep adding
+ *   one: "failure to properly sleep for multiple days incurs cumulative
+ *   exhaustion penalties (-1 per day)", Player's Book p159.
+ * - An overdue rest day costs one flat point however long it stays overdue
+ *   (p157).
+ * - Every forced march since the last rest day costs a point — "following a
+ *   forced march, characters must rest for a full day or become exhausted…
+ *   characters who forced march again without resting suffer cumulative
+ *   exhaustion penalties (-1 per day)", p156.
+ *
+ * They stack to no more than -4 — the ceiling p151 puts on exhaustion from all
+ * sources at once, not on any one of them alone.
+ */
+export function exhaustionPenalty(
+  daysWithoutSleep: number,
+  travelDaysSinceRest: number,
+  forcedMarchesSinceRest = 0
+): number {
+  const fromSleep = Math.max(0, daysWithoutSleep);
+  const fromRest = travelDaysSinceRest >= TRAVEL_DAYS_PER_REST ? 1 : 0;
+  const fromMarch = Math.max(0, forcedMarchesSinceRest);
+  return Math.min(4, fromSleep + fromRest + fromMarch);
+}
+
 export interface PartyDayRow {
   actorId: string;
   name: string;
@@ -235,6 +317,7 @@ export interface PartyDayRow {
   daysWithoutFood: number;
   daysWithoutSleep: number;
   travelDaysSinceRest: number;
+  forcedMarchesSinceRest: number;
   /** Whether this character is carrying anything they could eat right now. */
   hasFood: boolean;
 }
@@ -251,6 +334,7 @@ export function partyDayRows(): PartyDayRow[] {
       daysWithoutFood: day.daysWithoutFood,
       daysWithoutSleep: day.daysWithoutSleep,
       travelDaysSinceRest: day.travelDaysSinceRest,
+      forcedMarchesSinceRest: day.forcedMarchesSinceRest,
       hasFood: inv.items.some((i) => isEdible(i)),
     };
   });
