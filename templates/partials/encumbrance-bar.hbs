@@ -23,6 +23,13 @@
   </div>
   <div class="enc-final {{speedColor encumbrance.finalSpeed}}">
     <strong>Speed: {{speedLabel encumbrance.finalSpeed}}</strong>
+    {{!-- Hunger is already inside finalSpeed; this says how much of it is hunger
+          rather than load, since the load bars above cannot show it. --}}
+    {{#if encumbrance.hungerSpeedPenalty}}
+    <span class="enc-hunger" title="Going hungry costs {{encumbrance.hungerSpeedPenalty}} ft of Speed (Effects of Hunger, Player&#39;s Book p153). The load alone would allow {{encumbrance.loadSpeed}} ft, and Speed is never reduced below 10.">
+      <i class="fas fa-drumstick-bite"></i> &minus;{{encumbrance.hungerSpeedPenalty}} hunger
+    </span>
+    {{/if}}
     {{!-- The speed already says "cannot move"; this names the reason --}}
     {{#if (gt encumbrance.totalWeight 1600)}}
     <span class="enc-bottleneck">⚠ Over max load (1,600)</span>
@@ -58,6 +65,13 @@
   </div>
   <div class="enc-final {{speedColor encumbrance.finalSpeed}}">
     <strong>Speed: {{speedLabel encumbrance.finalSpeed}}</strong>
+    {{!-- Hunger is already inside finalSpeed; this says how much of it is hunger
+          rather than load, since the load bars above cannot show it. --}}
+    {{#if encumbrance.hungerSpeedPenalty}}
+    <span class="enc-hunger" title="Going hungry costs {{encumbrance.hungerSpeedPenalty}} ft of Speed (Effects of Hunger, Player&#39;s Book p153). The load alone would allow {{encumbrance.loadSpeed}} ft, and Speed is never reduced below 10.">
+      <i class="fas fa-drumstick-bite"></i> &minus;{{encumbrance.hungerSpeedPenalty}} hunger
+    </span>
+    {{/if}}
     {{#if (neq encumbrance.bottleneck "none")}}
     <span class="enc-bottleneck">⚠ {{bottleneckLabel encumbrance.bottleneck}}</span>
     {{/if}}

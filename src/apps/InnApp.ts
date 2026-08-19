@@ -941,10 +941,11 @@ class BuyTakeAwayDialog extends Dialog {
 
       // Weight mode only — slot mode does not derive a speed from the load.
       if (encMode === "weight") {
-        const before = calculateEncumbrance(inventory, CatalogManager.getMap(), encMode).footSpeed;
+        // loadSpeed: the warning is about the weight, not about how hungry they are.
+        const before = calculateEncumbrance(inventory, CatalogManager.getMap(), encMode).loadSpeed;
         const working = foundry.utils.deepClone(inventory) as CharacterInventory;
         working.items.push(...probes.map((p) => foundry.utils.deepClone(p)));
-        const after = calculateEncumbrance(working, CatalogManager.getMap(), encMode).footSpeed;
+        const after = calculateEncumbrance(working, CatalogManager.getMap(), encMode).loadSpeed;
         if (after < before) {
           warning
             .text(`Carrying this drops ${recipient.name} from ${before}ft to ${after}ft.`)

@@ -835,11 +835,13 @@ function loadPreviewHTML(actor: Actor | null, coins: ZoneCoins): string {
   for (const key of COIN_KEYS) purse[key] += coins[key];
   const afterEnc = calculateEncumbrance(after, CatalogManager.getMap(), encMode);
 
-  // footSpeed, not finalSpeed: this is about what the character can carry, and
+  // loadSpeed, not footSpeed or finalSpeed: the question is what this pile does
+  // to what the character can carry. footSpeed also carries their hunger, and a
+  // starving character already pinned at 10 ft would show no warning at all;
   // finalSpeed is clamped by whatever pack animal happens to be along.
   const label = `+${coinCount(coins)} wt → ${afterEnc.totalWeight} wt`;
-  if (afterEnc.footSpeed >= before.footSpeed) return `<span class="loot-load ok">${label}</span>`;
-  return `<span class="loot-load warn">⚠ ${label}, ${before.footSpeed}→${afterEnc.footSpeed} ft</span>`;
+  if (afterEnc.loadSpeed >= before.loadSpeed) return `<span class="loot-load ok">${label}</span>`;
+  return `<span class="loot-load warn">⚠ ${label}, ${before.loadSpeed}→${afterEnc.loadSpeed} ft</span>`;
 }
 
 /** Wire up the Open button on the chat announcement. */

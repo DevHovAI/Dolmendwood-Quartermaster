@@ -245,40 +245,10 @@ export async function eatItem(
 
 // ─── What the clocks cost ──────────────────────────────────────────────────────
 
-/**
- * Effects of Hunger, Player's Book p153, as one row per day gone without food.
- * The seventh row also applies to every day beyond it — hunger stops worsening
- * there and starts killing instead.
- *
- * This is the Mortals & Demi-Fey column. Fairy characters lose Wisdom instead,
- * on their own scale, which is not modelled: nothing tells this module what
- * kindred an actor is, and the Foundry system underneath it does not record one.
- *
- * Numbers rather than a phrase, because hunger's Attack penalty is added to
- * exhaustion's before it is shown, and two figures to add cannot be strings.
- */
-export interface HungerEffect {
-  attack: number;
-  speed: number;
-  /** Constitution lost every further day, from day seven. Death at 0. */
-  constitutionPerDay: number;
-}
-
-const HUNGER_EFFECTS: HungerEffect[] = [
-  { attack: 1, speed: 0, constitutionPerDay: 0 },
-  { attack: 1, speed: 10, constitutionPerDay: 0 },
-  { attack: 2, speed: 10, constitutionPerDay: 0 },
-  { attack: 2, speed: 20, constitutionPerDay: 0 },
-  { attack: 3, speed: 20, constitutionPerDay: 0 },
-  { attack: 4, speed: 30, constitutionPerDay: 0 },
-  { attack: 4, speed: 30, constitutionPerDay: 1 },
-];
-
-/** What a character's hunger costs right now, or undefined if they have eaten. */
-export function hungerEffect(daysWithoutFood: number): HungerEffect | undefined {
-  if (daysWithoutFood < 1) return undefined;
-  return HUNGER_EFFECTS[Math.min(daysWithoutFood, HUNGER_EFFECTS.length) - 1];
-}
+// The hunger table itself lives in `hunger.ts`, a leaf the encumbrance
+// calculator can import without dragging this module's dependencies with it.
+// Re-exported here so callers still find it beside the clocks it belongs to.
+export { hungerEffect, hungerSpeedPenalty, speedAfterHunger, type HungerEffect } from "./hunger";
 
 /**
  * Exhaustion, in points of Attack and Damage.

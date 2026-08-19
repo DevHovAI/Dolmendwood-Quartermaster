@@ -1,4 +1,5 @@
 import { EQUIPPED_SPEED_TIERS, STOWED_SPEED_TIERS, WEIGHT_SPEED_TIERS } from "../constants";
+import { hungerSpeedPenalty, speedAfterHunger } from "./hunger";
 import { effectiveWeightCapacity } from "./zoneCapacity";
 import { stackUnits } from "./consumables";
 import { definitionFor } from "./itemDefs";
@@ -125,12 +126,16 @@ function calculateSlotEncumbrance(
 
   const equippedSpeed = getSpeedForSlots(equippedSlots, EQUIPPED_SPEED_TIERS);
   const stowedSpeed = getSpeedForSlots(stowedSlots, STOWED_SPEED_TIERS);
-  const finalSpeed = Math.min(equippedSpeed, stowedSpeed) as 40 | 30 | 20 | 10;
+  // The pace the load alone allows, before hunger and before any pack animal.
+  const loadSpeed = Math.min(equippedSpeed, stowedSpeed) as 40 | 30 | 20 | 10;
+  const finalSpeed = speedAfterHunger(loadSpeed, inventory.day);
 
+  // Which zone is holding the character back is a question about the load, so
+  // it is read off loadSpeed — hunger slows everyone equally and blames nothing.
   let bottleneck: EncumbranceResult["bottleneck"] = "none";
   if (equippedSpeed < stowedSpeed) bottleneck = "equipped";
   else if (stowedSpeed < equippedSpeed) bottleneck = "stowed";
-  else if (finalSpeed < 40) bottleneck = "both";
+  else if (loadSpeed < 40) bottleneck = "both";
 
   return {
     mode: "slots",
@@ -150,6 +155,8 @@ function calculateSlotEncumbrance(
     stowedWeight: 0,
     tinyWeight: 0,
     footSpeed: finalSpeed,
+    loadSpeed,
+    hungerSpeedPenalty: hungerSpeedPenalty(inventory.day),
     animalSpeeds: [],
     convoySpeed: null,
   };
@@ -231,7 +238,10 @@ function calculateWeightEncumbrance(
   }
 
   const totalWeight = equippedWeight + stowedWeight + tinyWeight;
-  const footSpeed = getSpeedForWeight(totalWeight);
+  const loadSpeed = getSpeedForWeight(totalWeight);
+  // The character's own pace: the load, then hunger, never below 10 unless the
+  // load itself already stops them.
+  const footSpeed = speedAfterHunger(loadSpeed, inventory.day);
   // Not one of the tiers: a half-speed animal lands on 15, a stuck one on 0
   let finalSpeed: number = footSpeed;
 
@@ -292,6 +302,8 @@ function calculateWeightEncumbrance(
     tinyOverflow: 0,
     coinSlots: 0,
     footSpeed,
+    loadSpeed,
+    hungerSpeedPenalty: hungerSpeedPenalty(inventory.day),
     animalSpeeds,
     convoySpeed,
   };

@@ -3716,6 +3716,17 @@ body > #dolmenwood-day-bar {
   color: var(--speed-orange);
 }
 
+/* The hunger share of a character's speed, beside the total in the encumbrance
+   bar. The load bars above it can only show what is carried, so without this
+   the number at the bottom would not add up from anything on screen. */
+.enc-hunger {
+  margin-left: 6px;
+  color: var(--speed-orange);
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* Re-read the day's Travel Point allowance from the party as they stand now.
    Quiet until the two figures actually differ, so it does not invite clicking:
    a fixed allowance is the point, and this is the exception to it. */

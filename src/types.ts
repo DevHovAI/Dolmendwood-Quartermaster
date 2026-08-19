@@ -174,7 +174,15 @@ export interface EncumbranceResult {
   stowedWeight: number;
   tinyWeight: number;                  // weight in belt pouch (capacity: 50)
   // Animal/convoy speed
-  footSpeed: number;                   // speed from carried load alone, before any animal clamp; 0 = over max load
+  /**
+   * This character's own marching pace: their load and their hunger, before any
+   * pack animal drags the number down further. 0 = over max load.
+   */
+  footSpeed: number;
+  /** The pace the carried load alone allows — no hunger, no animals. */
+  loadSpeed: number;
+  /** Feet of Speed hunger is taking off right now; 0 when fed (PB p153). */
+  hungerSpeedPenalty: number;
   animalSpeeds: AnimalSpeedInfo[];
   convoySpeed: number | null;          // null = no animals with speed; otherwise min effective speed
 }
