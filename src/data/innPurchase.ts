@@ -1,5 +1,6 @@
 import { FlagManager, deductCoins } from "./FlagManager";
 import { recordInnPurchase } from "./innMenu";
+import { setAte, setSleptWell } from "./characterDay";
 import { addItemWithZones, getEncumbranceMode } from "./zoneGrants";
 import type { InnPurchasePayload } from "../types";
 
@@ -57,5 +58,17 @@ export async function processInnPurchase(payload: InnPurchasePayload): Promise<b
   }
 
   await recordInnPurchase(payload.forActorId, payload.section, payload.itemName);
+
+  // The day bar's hunger and rest clocks read the character's own record, so an
+  // inn meal has to land there too — otherwise a character who ate at an inn
+  // would still gain a day of hunger at the roll-over.
+  const fed = g.actors?.get(payload.forActorId);
+  if (fed) {
+    if (payload.section === "food") await setAte(fed, true);
+    // A paid bed under a roof is the "easy" row of the sleep difficulty table:
+    // a good night's rest without a Constitution Check.
+    if (payload.section === "lodging") await setSleptWell(fed, true, false);
+  }
+
   return true;
 }

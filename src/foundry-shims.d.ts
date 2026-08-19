@@ -8,6 +8,7 @@ import type { ShopState, Transaction, ItemDefinition, CharacterInventory } from 
 import type { InnQuality } from "./data/innData";
 import type { InnConfig } from "./data/innConfig";
 import type { InnDayLog } from "./data/innMenu";
+import type { DayState } from "./data/dayDuties";
 
 declare global {
   type DeepPartial<T extends object> = FvttDeepPartial<T>;
@@ -43,6 +44,10 @@ declare global {
     "dolmenwood-party-inventory.playerToolbarLoot": boolean;
     "dolmenwood-party-inventory.playerToolbarTrash": boolean;
     "dolmenwood-party-inventory.trashLimit": number;
+    "dolmenwood-party-inventory.dayState": DayState;
+    "dolmenwood-party-inventory.showDayBar": boolean;
+    "dolmenwood-party-inventory.followWorldTime": boolean;
+    "dolmenwood-party-inventory.dayBarCollapsed": boolean;
   }
 
   /** Declare the flags this module writes, so getFlag/setFlag are typed. */

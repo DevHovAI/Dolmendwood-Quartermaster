@@ -1,0 +1,7 @@
+<button type="button" class="day-bar-duty {{#if this.done}}is-done{{/if}}"
+        data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
+        title="{{this.hint}}">
+  <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} day-bar-tick"></i>
+  <i class="fas {{this.icon}} day-bar-duty-icon"></i>
+  <span class="day-bar-duty-label">{{this.label}}</span>
+</button>

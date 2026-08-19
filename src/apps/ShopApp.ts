@@ -566,6 +566,11 @@ class AddCustomShopItemDialog extends Dialog {
             <textarea id="custom-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
           </div>
           <div class="form-group">
+            <label>Edible</label>
+            <input type="checkbox" id="custom-edible" />
+            <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
+          </div>
+          <div class="form-group">
             <label>Secret?</label>
             <input type="checkbox" id="custom-secret" />
           </div>
@@ -590,6 +595,7 @@ class AddCustomShopItemDialog extends Dialog {
               customDef.size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
             }
             if (description) customDef.description = description;
+            if (html.find("#custom-edible").is(":checked")) customDef.edible = true;
 
             // Same zone rules as moving an item by hand
             if (targetActor) {
@@ -689,6 +695,11 @@ class AddToShopDialog extends Dialog {
             <label>Description</label>
             <textarea id="shop-item-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
           </div>
+          <div class="form-group">
+            <label>Edible</label>
+            <input type="checkbox" id="shop-item-edible" />
+            <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
+          </div>
         </form>
       `,
       buttons: {
@@ -720,6 +731,7 @@ class AddToShopDialog extends Dialog {
               isCustom: true,
               description: "",
               ...(description ? { description } : {}),
+              ...(html.find("#shop-item-edible").is(":checked") ? { edible: true } : {}),
             };
             if (encMode === "weight") {
               newItem.weight = Math.max(0, parseInt(html.find("#shop-item-weight").val() as string, 10) || 0);

@@ -1,0 +1,175 @@
+{{!-- One root node: a Handlebars part is rendered as a single element, and the
+      strip plus the unfolded panel as two roots lost the bar entirely. --}}
+<div class="day-bar-root">
+
+<div class="day-bar-strip">
+
+  {{!-- Which procedure the day is in decides what the whole list below says, so
+        it sits on its own line rather than among the ticks it governs. --}}
+  <div class="day-bar-row day-bar-row-top">
+    <div class="day-bar-day">
+      <button type="button" class="day-bar-icon-btn" data-action="newDay" title="Move on to the next in-game day">
+        <i class="fas fa-forward"></i>
+      </button>
+    </div>
+
+    {{#unless collapsed}}
+    <div class="day-bar-modes">
+      {{#each modes}}
+      <button type="button" class="day-bar-mode {{#if this.active}}is-active{{/if}}"
+              data-action="setMode" data-mode="{{this.id}}" title="{{this.label}} procedure">
+        <i class="fas {{this.icon}}"></i><span class="day-bar-mode-label">{{this.label}}</span>
+      </button>
+      {{/each}}
+    </div>
+    {{/unless}}
+
+    <div class="day-bar-right">
+      {{#if allDone}}
+      <span class="day-bar-status is-clear" title="Every duty for this mode is ticked">
+        <i class="fas fa-check"></i>
+      </span>
+      {{else}}
+      <span class="day-bar-status" title="Duties still open">{{remaining}} open</span>
+      {{/if}}
+      {{#unless collapsed}}
+      <button type="button" class="day-bar-icon-btn" data-action="resetDay" title="Clear today's ticks and spent Travel Points without moving the day on">
+        <i class="fas fa-rotate-left"></i>
+      </button>
+      {{/unless}}
+      <button type="button" class="day-bar-icon-btn" data-action="toggleCollapsed"
+              title="{{#if collapsed}}Unfold the bar{{else}}Fold the bar down to its handle{{/if}}">
+        <i class="fas {{#if collapsed}}fa-angles-down{{else}}fa-angles-up{{/if}}"></i>
+      </button>
+      <button type="button" class="day-bar-icon-btn" data-action="hideBar" title="Hide the bar entirely (bring it back from the toolbar)">
+        <i class="fas fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  {{#unless collapsed}}
+  <div class="day-bar-row day-bar-duties">
+    {{#each blocks}}
+    {{#if this.groupLabel}}
+    {{!-- Making camp is one job done in one stretch, so its steps are banded
+          together instead of sitting loose among the day's other checks. --}}
+    <div class="day-bar-group" title="{{this.groupLabel}}">
+      <span class="day-bar-group-label">{{this.groupLabel}}</span>
+      <div class="day-bar-group-items">
+        {{#each this.duties}}
+        {{> dayBarDuty}}
+        {{/each}}
+      </div>
+    </div>
+    {{else}}
+    {{#each this.duties}}
+    {{> dayBarDuty}}
+    {{/each}}
+    {{/if}}
+    {{/each}}
+  </div>
+  {{/unless}}
+
+  {{#if showFoot}}
+  {{#unless collapsed}}
+  <div class="day-bar-row day-bar-row-foot">
+    {{#if travelPoints}}
+    {{!-- Travel Points are a budget spent down over the day, not a thing that is
+          done or not done, so they get a counter rather than a tick. --}}
+    <div class="day-bar-tp {{#if travelPoints.spent}}is-spent{{/if}}"
+         title="Travel Points left today. The budget is the party's Speed divided by 5 (Player's Book p156); unspent points are lost at nightfall.">
+      <i class="fas fa-shoe-prints"></i>
+      <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="1"
+              {{#unless travelPoints.left}}disabled{{/unless}} title="Spend a Travel Point">&minus;</button>
+      <span class="day-bar-tp-value"><strong>{{travelPoints.left}}</strong>/{{travelPoints.total}} TP</span>
+      <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="-1"
+              {{#unless travelPoints.spent}}disabled{{/unless}} title="Hand a Travel Point back">+</button>
+    </div>
+    {{/if}}
+
+    {{#if hasParty}}
+    <div class="day-bar-party">
+      <button type="button" class="day-bar-chip {{#if allAte}}is-done{{/if}}"
+              data-action="togglePanel"
+              title="Characters who have eaten today. Everyone needs a ration a day — hunger costs -1 Attack from day one and 1 Constitution a day from day seven (Player's Book p153).">
+        <i class="fas fa-drumstick-bite"></i> {{ateCount}}/{{partySize}}
+      </button>
+      <button type="button" class="day-bar-chip {{#if allSlept}}is-done{{/if}}"
+              data-action="togglePanel"
+              title="Characters who got a GOOD night's rest. Anything less leaves them exhausted until they do (Player's Book p159).">
+        <i class="fas fa-bed"></i> {{sleptCount}}/{{partySize}}
+      </button>
+      {{#if warnings}}
+      <button type="button" class="day-bar-chip is-warning" data-action="togglePanel"
+              title="Characters currently taking a hunger, sleep, or exhaustion penalty">
+        <i class="fas fa-triangle-exclamation"></i> {{warnings}}
+      </button>
+      {{/if}}
+      <button type="button" class="day-bar-icon-btn" data-action="togglePanel"
+              title="{{#if panelOpen}}Fold the party away{{else}}Show each character{{/if}}">
+        <i class="fas {{#if panelOpen}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i>
+      </button>
+    </div>
+    {{/if}}
+  </div>
+  {{/unless}}
+  {{/if}}
+
+</div>
+
+{{#unless collapsed}}
+{{#if panelOpen}}
+{{#if hasParty}}
+{{!-- Hunger, sleep and exhaustion land on individual characters, not the party,
+      so this is where they are read and set. --}}
+<div class="day-bar-panel">
+  <div class="day-bar-panel-head">
+    <span class="day-bar-panel-name">Character</span>
+    <span class="day-bar-panel-col">Ate</span>
+    <span class="day-bar-panel-col">Slept</span>
+    <span class="day-bar-panel-col">Hunger</span>
+    <span class="day-bar-panel-col">Sleep</span>
+    <span class="day-bar-panel-col">Rest</span>
+  </div>
+  {{#each party}}
+  <div class="day-bar-panel-row">
+    <span class="day-bar-panel-name">
+      {{this.name}}
+      {{#unless this.hasFood}}<i class="fas fa-utensils-slash day-bar-nofood" title="Carrying nothing edible"></i>{{/unless}}
+    </span>
+
+    <button type="button" class="day-bar-panel-tick {{#if this.ate}}is-on{{/if}}"
+            data-action="toggleAte" data-actor-id="{{this.actorId}}" data-value="{{this.ate}}"
+            title="Eating a ration from the inventory or a meal at an inn ticks this by itself">
+      <i class="fas {{#if this.ate}}fa-square-check{{else}}fa-square{{/if}}"></i>
+    </button>
+
+    <button type="button" class="day-bar-panel-tick {{#if this.sleptWell}}is-on{{/if}}"
+            data-action="toggleSlept" data-actor-id="{{this.actorId}}" data-value="{{this.sleptWell}}"
+            title="A GOOD night's rest, not merely lying down: easy conditions are automatic, moderate and difficult ones need a Constitution Check, impossible ones fail outright (Player's Book p159). Paying for lodging at an inn ticks this by itself.">
+      <i class="fas {{#if this.sleptWell}}fa-square-check{{else}}fa-square{{/if}}"></i>
+    </button>
+
+    <span class="day-bar-panel-col {{#if this.hungry}}is-bad{{/if}}"
+          title="{{#if this.hungry}}Days without food. -1 Attack from day one, -10 Speed from day two, 1 Constitution a day from day seven.{{else}}Fed{{/if}}">
+      {{#if this.hungry}}{{this.daysWithoutFood}}d{{else}}&mdash;{{/if}}
+    </span>
+
+    <span class="day-bar-panel-col {{#if this.tired}}is-bad{{/if}}"
+          title="{{#if this.tired}}Days without a good night's rest. Exhausted until they get one: -1 to Attack and Damage Rolls per day, and a 1-in-6 chance of each prepared spell failing.{{else}}Rested{{/if}}">
+      {{#if this.tired}}-{{this.daysWithoutSleep}}{{else}}&mdash;{{/if}}
+    </span>
+
+    <button type="button" class="day-bar-panel-col day-bar-panel-rest {{#if this.overdue}}is-bad{{/if}}"
+            data-action="restChar" data-actor-id="{{this.actorId}}"
+            title="Travel days since this character last rested. The counter rises on every day the party spends a Travel Point, and clears on a day it spends none and this character sleeps well. One rest day is owed per {{../restLimit}} days of travel, or -1 to Attack and Damage Rolls until taken (Player's Book p157). Click to clear it by hand.">
+      {{this.travelDaysSinceRest}}/{{../restLimit}}
+    </button>
+  </div>
+  {{/each}}
+</div>
+{{/if}}
+{{/if}}
+{{/unless}}
+
+</div>

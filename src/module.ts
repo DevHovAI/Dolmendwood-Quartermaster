@@ -8,6 +8,8 @@ import { InnApp } from "./apps/InnApp";
 import { MarketApp } from "./apps/MarketApp";
 import { openLootBrowser, openLootFromNote, activateLootChatButtons } from "./apps/LootApp";
 import { openTrash } from "./apps/TrashApp";
+import { syncDayBar, toggleDayBar, refreshDayBar } from "./apps/DayBarApp";
+import { syncDayToWorldTime } from "./data/dayDuties";
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
@@ -189,6 +191,37 @@ Hooks.once("init", () => {
     default: TRASH_LIMIT_DEFAULT,
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
+  game.settings!.register(MODULE_ID, SETTINGS.DAY_STATE, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: { day: 1, mode: "travel", done: {}, travelDaysSinceRest: 0 },
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.SHOW_DAY_BAR, {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED, {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.FOLLOW_WORLD_TIME, {
+    name: "Follow the world clock",
+    hint: "Off by default. When on, the day counter moves on by itself whenever the world clock passes into a new day — so starting a new day in Simple Calendar, SmallTime, about-time, or Foundry's own time controls also re-rolls the inn menus and the day's duties. Built on core's world time rather than any one module's API, so it works with whichever you use. However far the clock jumps, the counter only ever advances one day.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => void syncDayToWorldTime(),
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
   // Register Handlebars helpers (synchronous)
   registerHandlebarsHelpers();
 
@@ -241,8 +274,31 @@ Hooks.once("ready", async () => {
       openMarket: (noteDoc: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }) => openMarket(noteDoc),
       openLoot: () => openLootBrowser(),
       openTrash: () => openTrash(),
+      toggleDayBar: () => toggleDayBar(),
     };
   }
+
+  // A GM who left the bar on last session gets it back straight away.
+  syncDayBar();
+
+  // Adopt the world clock's current day without advancing anything, so the
+  // first midnight after this is a real change rather than a false one.
+  void syncDayToWorldTime();
+
+  /**
+   * Any calendar or clock module worth the name advances core's world time, and
+   * core fires this when it does — so one hook covers Simple Calendar, SmallTime,
+   * about-time and Foundry's own controls alike, with no dependency on any of them.
+   *
+   * Debounced, because clicking an hour forward half a dozen times in a row fires
+   * this half a dozen times. Only where the clock comes to rest matters, and
+   * evaluating the intermediate steps is what made a burst of clicks skip several
+   * days at once.
+   */
+  const onWorldTimeChange = foundry.utils.debounce(() => {
+    void syncDayToWorldTime().then(() => refreshDayBar());
+  }, 500);
+  Hooks.on("updateWorldTime", () => onWorldTimeChange());
 
   // ─── Note / Map Marker Hooks ───────────────────────────────────────────────
 
@@ -594,6 +650,10 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
     if (appId === "dolmenwood-trash") {
       (app as { render?: () => void }).render?.();
     }
+    // The day bar shows the convoy's Travel Point budget, which any load change moves.
+    if (appId === "dolmenwood-day-bar") {
+      (app as { render?: () => void }).render?.();
+    }
   }
 });
 
@@ -608,9 +668,11 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
  */
 onUntypedHook("updateSetting", (setting: { key?: string }) => {
   const key = setting?.key ?? "";
-  const watched = [SETTINGS.INN_DAY, SETTINGS.INN_DAY_LOG, SETTINGS.INN_CONFIGS];
+  const watched = [SETTINGS.INN_DAY, SETTINGS.INN_DAY_LOG, SETTINGS.INN_CONFIGS, SETTINGS.DAY_STATE];
   if (!watched.some((s) => key.endsWith(`.${s}`))) return;
   getAppInstance("dolmenwood-inn")?.render();
+  // "Eaten" and "slept" are read off the inn day log, and a new day clears the ticks.
+  refreshDayBar();
 });
 
 // Add a button to the sidebar (scene controls) for all users
@@ -664,6 +726,17 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
       order: existingToolCount + 3,
       button: true,
       onChange: () => openTrash(),
+    } as SceneControlTool;
+  }
+
+  if (isGM) {
+    (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-day-bar"] = {
+      name: "dolmenwood-day-bar",
+      title: "Day Duties",
+      icon: "fas fa-calendar-day",
+      order: existingToolCount + 4,
+      button: true,
+      onChange: () => void toggleDayBar(),
     } as SceneControlTool;
   }
 });

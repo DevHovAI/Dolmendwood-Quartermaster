@@ -3107,3 +3107,403 @@
   color: var(--dw-accent);
 }
 
+/* ── Day bar ──────────────────────────────────────────────────────────────────
+   A HUD strip docked in #ui-top, not a window. That region is the top half of
+   #ui-middle: a centred flex column carrying pointer-events: none, so the strip
+   and the panel below it switch pointer events back on for themselves. */
+
+#dolmenwood-day-bar {
+  pointer-events: none;
+  margin-top: 4px;
+}
+
+/* One wrapper, because a Handlebars part is rendered as a single node — the
+   strip and the unfolded panel as two roots lost the bar entirely. */
+.day-bar-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+/* Fallback for the case where #ui-top is missing and the bar lands on the body:
+   pin it top-centre by hand rather than letting it land in the page flow. */
+body > #dolmenwood-day-bar {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+}
+
+.day-bar-strip,
+.day-bar-panel {
+  pointer-events: all;
+  background: var(--dw-bg-parchment);
+  border: 1px solid var(--dw-border);
+  border-radius: 5px;
+  box-shadow: 0 2px 6px var(--dw-shadow);
+  color: var(--dw-text);
+  font-size: 0.82em;
+  line-height: 1.2;
+}
+
+.day-bar-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 92vw;
+  padding: 4px 8px;
+}
+
+.day-bar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.day-bar-row > * {
+  flex: 0 0 auto;
+}
+
+/* Hairlines between the rows, so three stacked lines still read as one object
+   rather than three separate bars. */
+.day-bar-row + .day-bar-row {
+  padding-top: 4px;
+  border-top: 1px solid var(--dw-border-light);
+}
+
+/* ── Day counter ── */
+
+.day-bar-day {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 6px;
+  border-right: 1px solid var(--dw-border-light);
+}
+
+.day-bar-icon-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  line-height: 1;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--dw-tertiary);
+  cursor: pointer;
+}
+
+.day-bar-icon-btn:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+  color: var(--dw-text);
+}
+
+/* ── Mode switch ── */
+
+.day-bar-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.day-bar-mode,
+.day-bar-duty,
+.day-bar-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: auto;
+  min-height: 0;
+  padding: 3px 7px;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+  color: var(--dw-text);
+  font-size: 1em;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.day-bar-mode {
+  color: var(--dw-tertiary);
+}
+
+.day-bar-mode:hover,
+.day-bar-duty:hover,
+.day-bar-chip:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+/* The active mode decides which duties are listed at all, so it is marked by
+   fill and weight rather than a tint that could be mistaken for a hover. */
+.day-bar-mode.is-active {
+  background: var(--dw-border);
+  border-color: var(--dw-border);
+  color: var(--dw-bg-parchment);
+  font-weight: 600;
+}
+
+/* ── Duties ── */
+
+.day-bar-duties {
+  gap: 3px;
+}
+
+/* Done recedes rather than shouting: the eye should land on what is still
+   outstanding, which is the whole point of the strip. */
+.day-bar-duty.is-done {
+  background: var(--speed-green-bg);
+  border-color: var(--speed-green);
+  color: var(--speed-green);
+}
+
+.day-bar-duty.is-done .day-bar-duty-label {
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.day-bar-tick {
+  font-size: 0.95em;
+}
+
+.day-bar-duty-icon {
+  opacity: 0.7;
+}
+
+/* ── Grouped duties ──
+   Making camp is one job done in one stretch, so its steps get a band with a
+   name on it rather than sitting loose among the day's other checks. */
+
+.day-bar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 5px 2px 6px;
+  background: rgba(160, 100, 30, 0.09);
+  border: 1px dashed var(--dw-border-light);
+  border-radius: 4px;
+}
+
+.day-bar-group-label {
+  color: var(--dw-tertiary);
+  font-size: 0.8em;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.day-bar-group-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* ── Travel Points ──
+   A budget spent down over the day rather than a thing that is done or not, so
+   it reads as a counter with its own controls. */
+
+.day-bar-tp {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 5px;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.day-bar-tp > i {
+  color: var(--dw-tertiary);
+}
+
+.day-bar-tp-btn {
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  line-height: 1;
+  background: var(--dw-bg-dark);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 2px;
+  color: var(--dw-text);
+  font-size: 0.95em;
+  cursor: pointer;
+}
+
+.day-bar-tp-btn:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.day-bar-tp-value {
+  min-width: 52px;
+  text-align: center;
+}
+
+/* Points already spent today, so a partly-used budget is visible at a glance
+   without reading the numbers. */
+.day-bar-tp.is-spent {
+  border-color: var(--dw-accent);
+}
+
+.day-bar-tp-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.day-bar-tp-btn:disabled:hover {
+  background: var(--dw-bg-dark);
+  border-color: var(--dw-border-light);
+}
+
+/* ── Party chips ── */
+
+.day-bar-party {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.day-bar-tp + .day-bar-party {
+  padding-left: 6px;
+  border-left: 1px solid var(--dw-border-light);
+}
+
+.day-bar-chip.is-done {
+  background: var(--speed-green-bg);
+  border-color: var(--speed-green);
+  color: var(--speed-green);
+}
+
+/* Somebody is taking a penalty right now — worth a colour, because the number
+   it replaces is the one thing on the strip with a mechanical cost attached. */
+.day-bar-chip.is-warning {
+  background: var(--speed-red-bg);
+  border-color: var(--speed-red);
+  color: var(--speed-red);
+  font-weight: 600;
+}
+
+/* ── Right-hand status ── */
+
+.day-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 6px;
+  border-left: 1px solid var(--dw-border-light);
+  margin-left: auto;
+}
+
+.day-bar-status {
+  color: var(--dw-tertiary);
+  white-space: nowrap;
+}
+
+.day-bar-status.is-clear {
+  color: var(--speed-green);
+}
+
+/* ── Per-character panel ──
+   Hunger and exhaustion land on individual characters, not the party, so this
+   is where they are read and set. */
+
+.day-bar-panel {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) auto auto auto auto auto;
+  gap: 1px 10px;
+  align-items: center;
+  max-width: 92vw;
+  padding: 5px 8px;
+}
+
+.day-bar-panel-head {
+  display: contents;
+  color: var(--dw-tertiary);
+}
+
+.day-bar-panel-head > * {
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--dw-border-light);
+  font-size: 0.85em;
+  font-variant: small-caps;
+}
+
+.day-bar-panel-row {
+  display: contents;
+}
+
+.day-bar-panel-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-bar-nofood {
+  color: var(--speed-orange);
+  font-size: 0.85em;
+}
+
+.day-bar-panel-col {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.day-bar-panel-tick {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  line-height: 1;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--dw-tertiary);
+  cursor: pointer;
+}
+
+.day-bar-panel-tick:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.day-bar-panel-tick.is-on {
+  color: var(--speed-green);
+}
+
+.day-bar-panel-rest {
+  height: auto;
+  min-height: 0;
+  padding: 1px 5px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--dw-tertiary);
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.day-bar-panel-rest:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.day-bar-panel-col.is-bad {
+  background: var(--speed-red-bg);
+  border-radius: 3px;
+  color: var(--speed-red);
+  font-weight: 600;
+}
+
+/* The Eat button appears only on rows the catalogue or the GM marked edible. */
+.eat-btn:hover {
+  color: var(--speed-orange);
+}

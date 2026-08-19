@@ -29,6 +29,7 @@ import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker, buildColorPickerHTML, activateColorPicker, buildZoneOptionsHTML, escapeHTML, ZONE_ICONS } from "../helpers/handlebars";
 import { requireActiveGM } from "../helpers/gm";
 import { discardItem, discardItems } from "../data/trash";
+import { eatItem, isEdible } from "../data/characterDay";
 import {
   getSharedActor,
   getPartyActors,
@@ -77,6 +78,8 @@ function enrichItems(items: InventoryItem[]) {
       isSingleContainer: isSingleContainer(item, def),
       units: bundle ? stackUnits(item, def!.maxUses!) : item.quantity,
       unitWeight: bundle ? effectiveWeight / def!.maxUses! : effectiveWeight,
+      // Rations, and anything a GM marked edible when creating it
+      isEdible: isEdible(item),
     };
   });
 }
@@ -209,6 +212,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     actions: {
       addItem: PlayerInventoryApp._onAddItem,
       deleteItem: PlayerInventoryApp._onDeleteItem,
+      eatItem: PlayerInventoryApp._onEatItem,
       toggleSecret: PlayerInventoryApp._onToggleSecret,
       giveItem: PlayerInventoryApp._onGiveItem,
       giveCoins: PlayerInventoryApp._onGiveCoins,
@@ -1051,6 +1055,32 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     this.render();
   }
 
+  /**
+   * Eat one portion, feeding the character for the day.
+   *
+   * Written by whoever owns the actor, so a player feeds their own character
+   * with no GM online — the same reason the inn's own record is not the only
+   * source of "has eaten today".
+   */
+  private static async _onEatItem(
+    this: PlayerInventoryApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const itemId = target.dataset.itemId;
+    if (!itemId) return;
+    // Party rations normally live in the shared store, which is a pack rather
+    // than a person — so the food leaves the store and the character whose sheet
+    // this is gets the meal.
+    const source = this._actorForItem(itemId);
+    const eater = isSharedActor(source) ? this.actor : source;
+    if (await eatItem(source, itemId, eater)) {
+      ui.notifications?.info(`${eater.name} has eaten today.`);
+      SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+    }
+    this.render();
+  }
+
   private static async _onDeleteItem(
     this: PlayerInventoryApp,
     _event: Event,
@@ -1711,6 +1741,11 @@ export class AddItemDialog extends Dialog {
               <label>Description</label>
               <textarea id="add-custom-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
             </div>
+            <div class="form-group">
+              <label>Edible</label>
+              <input type="checkbox" id="add-custom-edible" />
+              <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
+            </div>
           </details>
         </form>
       `,
@@ -1734,6 +1769,7 @@ export class AddItemDialog extends Dialog {
                 customDef.size = html.find("#add-custom-size").val() as "tiny" | "normal" | "large";
               }
               if (customDesc) customDef.description = customDesc;
+              if (html.find("#add-custom-edible").is(":checked")) customDef.edible = true;
               const newItem: InventoryItem = {
                 id: foundry.utils.randomID(),
                 definitionId: "",
@@ -1851,6 +1887,11 @@ export class AddCustomItemDialog extends Dialog {
             <label>Description</label>
             <textarea id="custom-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
           </div>
+          <div class="form-group">
+            <label>Edible</label>
+            <input type="checkbox" id="custom-edible" />
+            <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
+          </div>
         </form>
       `,
       buttons: {
@@ -1871,6 +1912,7 @@ export class AddCustomItemDialog extends Dialog {
               customDef.size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
             }
             if (description) customDef.description = description;
+            if (html.find("#custom-edible").is(":checked")) customDef.edible = true;
             const newItem: InventoryItem = {
               id: foundry.utils.randomID(),
               definitionId: "",

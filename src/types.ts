@@ -25,6 +25,12 @@ export interface ItemDefinition {
   grantsZone?: { name: string; maxSlots: number; weightCapacity: number; speed?: number };  // purchasing this item auto-adds a named storage zone
   grantsStorageZone?: {name: string; weightCapacity: number; isBeltPouch?: boolean; allowedItemTags?: string[]; };  // weight mode: purchasing creates a storage zone that counts toward character weight
   coinCapacity?: number;  // max coins this item can hold (display counter, no structural change)
+  /**
+   * The row gets an Eat button, and eating it feeds the character for the day.
+   * Only the two ration entries carry this in the catalogue; custom items get it
+   * from a checkbox, so a GM inventing a wheel of cheese need not touch code.
+   */
+  edible?: boolean;
 }
 
 export interface InventoryItem {
@@ -53,6 +59,23 @@ export interface TrashedItem {
   deletedAt: number;    // epoch ms
   deletedBy: string;    // user name at the time of deletion
   zoneName: string;     // label of the zone it was deleted from
+}
+
+/**
+ * What one character has done today and what they owe themselves.
+ *
+ * Hunger and exhaustion are per character in the rules, so the counters are too.
+ * `ate` and `slept` are about the day named in `day`; the counters carry across
+ * days and are only ever advanced by the day roll-over.
+ */
+export interface CharacterDay {
+  day: number;                 // the in-game day ate/sleptWell refer to
+  ate: boolean;
+  /** A *good* night's rest, not merely lying down — see Player's Book p159. */
+  sleptWell: boolean;
+  daysWithoutFood: number;     // consecutive days ending yesterday
+  daysWithoutSleep: number;    // exhaustion: -1 per day until a good night's rest
+  travelDaysSinceRest: number;
 }
 
 export interface ExtraZone {
@@ -93,6 +116,7 @@ export interface CharacterInventory {
   coinSlots?: CoinSlot[];    // legacy — no longer written; kept so old saves don't lose data on first read
   coinsByZone?: Record<string, ZoneCoins>; // per-zone coin amounts; zone IDs: "tiny"|"equipped"|"stowed"|extraZoneId
   trash?: TrashedItem[];     // deleted rows, newest last; never counts toward encumbrance
+  day?: CharacterDay;        // today's eating and sleeping, plus the hunger and rest clocks
 }
 
 export interface ShopState {

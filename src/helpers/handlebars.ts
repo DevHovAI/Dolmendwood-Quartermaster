@@ -379,5 +379,6 @@ export async function registerHandlebarsPartials(): Promise<void> {
     "extra-zone": TEMPLATES.PARTIALS.EXTRA_ZONE,
     "zone-coin-purse": TEMPLATES.PARTIALS.ZONE_COIN_PURSE,
     "zone-section": TEMPLATES.PARTIALS.ZONE_SECTION,
+    dayBarDuty: TEMPLATES.PARTIALS.DAY_BAR_DUTY,
   });
 }

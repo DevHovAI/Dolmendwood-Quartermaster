@@ -95,6 +95,15 @@
   </button>
   {{/if}}
 
+  {{#if item.isEdible}}
+  {{#if isOwner}}
+  <button type="button" data-action="eatItem" data-item-id="{{item.id}}"
+          class="icon-btn eat-btn" title="Eat one — feeds this character for the day">
+    <i class="fas fa-drumstick-bite"></i>
+  </button>
+  {{/if}}
+  {{/if}}
+
   {{#if isOwner}}
   <button type="button" data-action="renameItem" data-item-id="{{item.id}}"
           class="icon-btn rename-btn" title="Rename item">

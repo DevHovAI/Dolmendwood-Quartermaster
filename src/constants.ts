@@ -17,6 +17,7 @@ export const TEMPLATES = {
   LOOT_BROWSER: `modules/${MODULE_ID}/templates/loot-browser.hbs`,
   INN: `modules/${MODULE_ID}/templates/inn.hbs`,
   TRASH: `modules/${MODULE_ID}/templates/trash.hbs`,
+  DAY_BAR: `modules/${MODULE_ID}/templates/day-bar.hbs`,
   MARKET: `modules/${MODULE_ID}/templates/market.hbs`,
   PARTIALS: {
     INVENTORY_ZONE: `modules/${MODULE_ID}/templates/partials/inventory-zone.hbs`,
@@ -28,6 +29,7 @@ export const TEMPLATES = {
     EXTRA_ZONE: `modules/${MODULE_ID}/templates/partials/extra-zone.hbs`,
     ZONE_COIN_PURSE: `modules/${MODULE_ID}/templates/partials/zone-coin-purse.hbs`,
     ZONE_SECTION: `modules/${MODULE_ID}/templates/partials/zone-section.hbs`,
+    DAY_BAR_DUTY: `modules/${MODULE_ID}/templates/partials/day-bar-duty.hbs`,
   },
 } as const;
 
@@ -61,6 +63,10 @@ export const SETTINGS = {
   PLAYER_TOOLBAR_LOOT: "playerToolbarLoot", // may players open the loot browser from the toolbar?
   PLAYER_TOOLBAR_TRASH: "playerToolbarTrash", // may players open the trash from the toolbar? (read-only for them)
   TRASH_LIMIT: "trashLimit", // how many deleted rows each actor's bin keeps before the oldest fall out
+  DAY_STATE: "dayState", // the day's mode, which duties are ticked, and the rest-day counter
+  SHOW_DAY_BAR: "showDayBar", // per-user: is the day bar on screen at all?
+  FOLLOW_WORLD_TIME: "followWorldTime", // let a calendar module's midnight advance the day counter
+  DAY_BAR_COLLAPSED: "dayBarCollapsed", // per-user: is the day bar folded down to its handle?
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in
@@ -83,6 +89,10 @@ export const LOOT_ZONE = "equipped" as const;
 // bottom rather than the bin growing without limit — it is an undo buffer, not
 // an archive. The transaction log caps itself the same way.
 export const TRASH_LIMIT_DEFAULT = 30 as const;
+
+// A party must rest 1 day per 6 days of travel or take exhaustion
+// (Player's Book p157). The bar counts travel days towards this.
+export const TRAVEL_DAYS_PER_REST = 6 as const;
 
 export const SOCKET_NAME = `module.${MODULE_ID}` as const;
 
