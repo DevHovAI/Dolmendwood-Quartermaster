@@ -1,6 +1,9 @@
 import { MODULE_ID, SETTINGS } from "../constants";
 import { getInnDay, advanceInnDay } from "./innMenu";
 import { rollOverCharacterDays } from "./characterDay";
+import type { WeatherResult } from "./weather";
+import type { LostResult } from "./gettingLost";
+import type { FoodResult } from "./findingFood";
 
 /**
  * The day's duties — the Referee's per-day checklist.
@@ -200,6 +203,18 @@ export interface DayState {
    */
   travelPointBudget?: number;
   /**
+   * What the day's weather turned out to be, once rolled.
+   *
+   * A fact about this day, so it lives and dies with it. It is also read back:
+   * the "travel impeded" letter takes 2 off the day's Travel Points, and "poor
+   * visibility" raises the chance of losing the way.
+   */
+  weather?: WeatherResult;
+  /** Today's roll for losing the way, and what it cost if it was lost. */
+  lost?: LostResult;
+  /** Today's attempt at finding food: which method, and what it produced. */
+  food?: FoodResult;
+  /**
    * The world-clock day this counter was last aligned with, when following a
    * calendar module. Absent while not following, or before the first sighting.
    */
@@ -219,7 +234,18 @@ export function getDayState(): DayState {
   if (stored.day !== day) {
     // The day moved on somewhere else — most likely the inn's own new-day
     // button. Show a clean sheet at once; reconcileDay persists it.
-    return { ...stored, day, done: {}, travelPointsUsed: 0, forcedMarch: false, travelPointBudget: undefined };
+    return {
+      ...stored,
+      day,
+      done: {},
+      travelPointsUsed: 0,
+      forcedMarch: false,
+      travelPointBudget: undefined,
+      // Yesterday's weather and yesterday's wrong turning are not this day's.
+      weather: undefined,
+      lost: undefined,
+      food: undefined,
+    };
   }
   return { ...stored, travelPointsUsed: stored.travelPointsUsed ?? 0, forcedMarch: stored.forcedMarch ?? false };
 }
@@ -305,6 +331,27 @@ export async function setDutyDone(id: string, done: boolean): Promise<void> {
 }
 
 /**
+ * Record what a table produced today.
+ *
+ * The result and the tick are written together: a rolled duty is a done duty,
+ * and leaving the GM to tick it afterwards was the sort of second step that
+ * makes a feature feel unfinished. Clearing a result (undefined) unticks it
+ * again, so a mis-click can be taken back and re-rolled.
+ */
+export async function setDutyResult(
+  id: string,
+  patch: Pick<DayState, "weather"> | Pick<DayState, "lost"> | Pick<DayState, "food">
+): Promise<void> {
+  const state = getDayState();
+  const value = Object.values(patch)[0];
+  await writeState({
+    ...state,
+    ...patch,
+    done: { ...state.done, [id]: value !== undefined },
+  });
+}
+
+/**
  * Tick or clear several duties in one write.
  *
  * A loop of setDutyDone calls would write the world setting once per duty:
@@ -321,7 +368,16 @@ export async function setDutiesDone(ids: string[], done: boolean): Promise<void>
 export async function resetDuties(): Promise<void> {
   // The frozen allowance goes too: resetting the day is starting it over, and
   // it should be read off the party as they stand now.
-  await writeState({ ...getDayState(), done: {}, travelPointsUsed: 0, forcedMarch: false, travelPointBudget: undefined });
+  await writeState({
+    ...getDayState(),
+    done: {},
+    travelPointsUsed: 0,
+    forcedMarch: false,
+    travelPointBudget: undefined,
+    weather: undefined,
+    lost: undefined,
+    food: undefined,
+  });
 }
 
 /**

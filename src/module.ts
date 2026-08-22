@@ -1,3 +1,4 @@
+import { noteHexStep } from "./data/dayContext";
 import { MODULE_ID, SETTINGS, FLAGS, SOCKET_EVENTS, TRASH_LIMIT_DEFAULT } from "./constants";
 import { registerHandlebarsHelpers, registerHandlebarsPartials, escapeHTML } from "./helpers/handlebars";
 import { SocketHandler } from "./socket/SocketHandler";
@@ -196,6 +197,15 @@ Hooks.once("init", () => {
     config: false,
     type: Object,
     default: { day: 1, mode: "travel", done: {}, travelDaysSinceRest: 0 },
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // Sticky on purpose: a party in the High Wold is still there tomorrow, and
+  // being asked for the season every morning would be worse than no rolls at all.
+  game.settings!.register(MODULE_ID, SETTINGS.DAY_CONTEXT, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: { season: "autumn", terrain: "moderate", way: "track" },
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.SHOW_DAY_BAR, {
@@ -668,11 +678,101 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
  */
 onUntypedHook("updateSetting", (setting: { key?: string }) => {
   const key = setting?.key ?? "";
-  const watched = [SETTINGS.INN_DAY, SETTINGS.INN_DAY_LOG, SETTINGS.INN_CONFIGS, SETTINGS.DAY_STATE];
+  const watched = [
+    SETTINGS.INN_DAY,
+    SETTINGS.INN_DAY_LOG,
+    SETTINGS.INN_CONFIGS,
+    SETTINGS.DAY_STATE,
+    SETTINGS.DAY_CONTEXT,
+  ];
   if (!watched.some((s) => key.endsWith(`.${s}`))) return;
   getAppInstance("dolmenwood-inn")?.render();
   // "Eaten" and "slept" are read off the inn day log, and a new day clears the ticks.
   refreshDayBar();
+});
+
+/**
+ * Notice when the party walks into another hex.
+ *
+ * The day bar's terrain and way are stated by hand and then kept, which is what
+ * makes them usable — but it also means they quietly go stale the moment the
+ * party moves. This does not guess the new terrain (nothing on a Foundry scene
+ * says whether a hex is a bog or a meadow); it only says "you have moved, check
+ * this", which is the part a Referee actually forgets.
+ *
+ * **Built on `moveToken`, not on diffing `updateToken`.** Foundry v13 replaced
+ * token movement with a waypoint system, and `moveToken` hands over the whole
+ * operation — `movement.origin` and `movement.destination` — so there is nothing
+ * to stash between two hooks and nothing to infer from a partial `changed`
+ * object. The two earlier attempts here both failed on exactly that inference.
+ *
+ * **The grid comes from the scene, not the canvas.** `Scene#grid` is a real
+ * `HexagonalGrid`/`SquareGrid` instance, so this works whether or not the map in
+ * question is the one currently on screen — the previous version required the
+ * moved token to be on the *active* scene, which is one more way for it to
+ * silently do nothing.
+ *
+ * **Any token counts, whoever owns it.** The first attempt asked
+ * `getPartyActors()` whether the token belonged to the party, and that helper
+ * requires a *non-GM* player to own the actor — so a Referee's own marker for
+ * the party, which is precisely what this is for, never qualified.
+ *
+ * **Hex grids only.** A hex on the Dolmenwood map is exactly the unit at which
+ * terrain changes, so a change of hex is the right trigger. On a square battle
+ * map every step would change cell and the warning would be constant noise.
+ */
+
+/** Which hex a point falls in, by the scene's own grid. Undefined off a hex map. */
+function hexOf(
+  scene: { grid?: unknown } | undefined,
+  point: { x?: number; y?: number } | undefined
+): string | undefined {
+  const grid = scene?.grid as
+    | {
+        isHexagonal?: boolean;
+        type?: number;
+        getOffset?: (p: { x: number; y: number }) => { i: number; j: number };
+      }
+    | undefined;
+  if (!grid?.getOffset) return undefined;
+
+  // `isHexagonal` is the v12+ getter; the type range is the older way of asking
+  // and costs nothing to keep.
+  const hex =
+    grid.isHexagonal ?? (typeof grid.type === "number" && grid.type >= 2 && grid.type <= 5);
+  if (!hex) return undefined;
+
+  if (typeof point?.x !== "number" || typeof point?.y !== "number") return undefined;
+  const { i, j } = grid.getOffset({ x: point.x, y: point.y });
+  return `${i},${j}`;
+}
+
+/**
+ * The one client that may count a step, matching the world-clock sync: two
+ * connected GMs would otherwise both count the same move.
+ */
+function isPrimaryGMClient(): boolean {
+  const g = game as Game;
+  const activeGM = (g.users as unknown as { activeGM?: { id?: string } } | undefined)?.activeGM;
+  return activeGM ? activeGM.id === g.user?.id : !!g.user?.isGM;
+}
+
+onUntypedHook("moveToken", (tokenDoc: unknown, movement: unknown) => {
+  if (!isPrimaryGMClient()) return;
+
+  const doc = tokenDoc as { parent?: { name?: string; grid?: unknown } };
+  const move = movement as {
+    origin?: { x?: number; y?: number };
+    destination?: { x?: number; y?: number };
+  };
+
+  const from = hexOf(doc.parent, move?.origin);
+  const to = hexOf(doc.parent, move?.destination);
+
+  // Off a hex map, or the token merely shifted within the same hex.
+  if (!from || !to || from === to) return;
+
+  void noteHexStep(doc.parent?.name ?? "the map").then(() => refreshDayBar());
 });
 
 // Add a button to the sidebar (scene controls) for all users

@@ -3127,6 +3127,13 @@
      tabs plus the Travel Point counter above, and the full penalty line beside
      six columns below. */
   --day-bar-width: 800px;
+  /* One height for everything sitting on the top line — the day button, the mode
+     tabs, the Travel Point group, and every chip on the folded handle. They were
+     each sized by their own padding and content before, so a row of them stepped
+     up and down by a pixel or three depending on what was in it. */
+  --day-bar-chip-h: 33px;
+  /* Controls nested *inside* a chip, which must not push it taller. */
+  --day-bar-chip-inner-h: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3178,6 +3185,47 @@ body > #dolmenwood-day-bar {
   flex: 0 0 auto;
 }
 
+/* Every chip on the top line is the same height, whatever is in it. Set on the
+   outer element only: the Travel Point group is one chip containing several
+   controls, not four chips in a row. */
+.day-bar-row-top .day-bar-icon-btn,
+.day-bar-row-top .day-bar-mode,
+.day-bar-row-top .day-bar-tp,
+.day-bar-row-top .day-bar-chip,
+.day-bar-row-top .day-bar-context-moved,
+.day-bar-row-top .day-bar-folded > * {
+  box-sizing: border-box;
+  height: var(--day-bar-chip-h);
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Icon-only buttons follow the height into their width, or a taller row leaves
+   them as narrow slivers. */
+.day-bar-row-top .day-bar-icon-btn {
+  width: var(--day-bar-chip-h);
+  justify-content: center;
+}
+
+.day-bar-tp .day-bar-tp-btn,
+.day-bar-tp .day-bar-tp-march,
+.day-bar-tp .day-bar-tp-refresh {
+  width: var(--day-bar-chip-inner-h);
+}
+
+/* The buttons inside the Travel Point group. Scoped to a descendant selector so
+   they beat the folded-handle rule above, where the same march icon stands on
+   its own and should be full height. */
+.day-bar-tp .day-bar-tp-btn,
+.day-bar-tp .day-bar-tp-march,
+.day-bar-tp .day-bar-tp-refresh {
+  box-sizing: border-box;
+  height: var(--day-bar-chip-inner-h);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Hairlines between the rows, so three stacked lines still read as one object
    rather than three separate bars. */
 .day-bar-row + .day-bar-row {
@@ -3211,6 +3259,284 @@ body > #dolmenwood-day-bar {
   background: var(--dw-accent-light);
   border-color: var(--dw-accent);
   color: var(--dw-text);
+}
+
+/* ── Where the party is ──────────────────────────────────────────────────────
+   The sticky context every table is rolled against. Folded to one summary line
+   by default; unfolding it lets the row wrap onto a second line rather than
+   widening the bar, which is fixed. */
+
+.day-bar-context {
+  font-size: 0.95em;
+  color: var(--dw-tertiary);
+}
+
+.day-bar-context-summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: auto;
+  min-height: 0;
+  padding: 2px 6px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--dw-secondary);
+  font-size: 1em;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.day-bar-context-summary:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+/* The chance the context currently produces, beside the context that produces
+   it — the Referee changes terrain and sees the number move. */
+.day-bar-context-lost {
+  padding: 2px 6px;
+  border-left: 1px solid var(--dw-border-light);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.day-bar-context-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.day-bar-context-field label {
+  color: var(--dw-tertiary);
+  font-size: 0.95em;
+}
+
+.day-bar-context-field select {
+  height: auto;
+  min-height: 0;
+  padding: 1px 4px;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+  color: var(--dw-text);
+  font-family: inherit;
+  font-size: 1em;
+  line-height: 1.3;
+}
+
+/* The party has crossed a hex boundary since the context was last answered.
+   Marked, not corrected: nothing on a Foundry scene says whether a hex is a bog
+   or a meadow. */
+.day-bar-context-moved {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: auto;
+  min-height: 0;
+  padding: 2px 6px;
+  background: var(--speed-orange-bg);
+  border: 1px solid var(--speed-orange);
+  border-radius: 3px;
+  color: var(--speed-orange);
+  font-size: 0.95em;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.day-bar-context-moved:hover {
+  background: var(--speed-orange);
+  color: var(--dw-bg-parchment);
+}
+
+/* ── Finding food dialog ───────────────────────────────────────────────────── */
+
+.dw-food-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.dw-food-method {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dw-food-method:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.dw-food-method > i {
+  margin-top: 2px;
+  color: var(--dw-tertiary);
+}
+
+.dw-food-method-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.dw-food-method-yield {
+  color: var(--dw-secondary);
+  font-size: 0.9em;
+}
+
+.dw-food-method-needs {
+  opacity: 0.7;
+  font-size: 0.85em;
+  font-style: italic;
+}
+
+.dw-food-fullday {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+  cursor: pointer;
+}
+
+.dw-food-hint {
+  margin-top: 6px;
+}
+
+/* What a procedure actually put in the party's packs. */
+.dw-day-roll-yield {
+  margin: 4px 0 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--dw-border-light);
+}
+
+/* ── Duties that roll ────────────────────────────────────────────────────────
+   A span rather than a button, because it holds two of them: the tick still
+   works by hand, and the die is separate. */
+
+.day-bar-duty-rollable {
+  cursor: default;
+}
+
+.day-bar-duty-tick,
+.day-bar-duty-roll {
+  display: flex;
+  align-items: center;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0 2px;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.day-bar-duty-roll {
+  color: var(--dw-tertiary);
+  border-left: 1px solid var(--dw-border-light);
+  padding-left: 5px;
+  margin-left: 2px;
+}
+
+.day-bar-duty-roll:hover {
+  color: var(--dw-primary);
+}
+
+.day-bar-duty-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+}
+
+/* Today's result, read at a glance under the label it belongs to. Capped so a
+   long consequence cannot stretch the fixed-width strip. */
+.day-bar-duty-result {
+  max-width: 200px;
+  overflow: hidden;
+  color: var(--dw-secondary);
+  font-size: 0.85em;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Weather's bite on the allowance ── */
+
+.day-bar-tp-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--speed-orange);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.day-bar-tp-weather.is-bad {
+  color: var(--speed-red);
+  font-weight: 600;
+}
+
+/* ── Rolled results in chat ── */
+
+.dw-day-roll h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+}
+
+.dw-day-roll-headline {
+  margin: 2px 0;
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+.dw-day-roll-headline.is-bad {
+  color: var(--speed-red);
+}
+
+.dw-day-roll-sub {
+  margin: 0 0 4px;
+  opacity: 0.75;
+  font-size: 0.9em;
+}
+
+.dw-day-roll-consequence {
+  margin: 4px 0;
+  padding: 4px 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border-left: 3px solid var(--dw-accent);
+}
+
+.dw-day-roll-note,
+.dw-day-roll-none {
+  margin: 4px 0 0;
+  opacity: 0.75;
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+.dw-day-roll-effects {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 0.9em;
+}
+
+.dw-day-roll-effects li {
+  margin-bottom: 2px;
 }
 
 /* ── Mode switch ── */
@@ -3442,13 +3768,24 @@ body > #dolmenwood-day-bar {
   margin-left: auto;
 }
 
-.day-bar-status {
-  color: var(--dw-tertiary);
+/* The folded handle. It carries only what must not be missed while the bar is
+   out of the way — how far the party can still get, that they have moved, and
+   who is taking a penalty — and every chip on it unfolds the bar rather than
+   trying to act in a space that has no room to act in. */
+.day-bar-folded {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 2px;
+}
+
+.day-bar-folded .day-bar-tp-value {
+  color: var(--dw-secondary);
   white-space: nowrap;
 }
 
-.day-bar-status.is-clear {
-  color: var(--speed-green);
+.day-bar-folded .day-bar-tp-value.is-spent strong {
+  font-weight: 700;
 }
 
 /* ── Per-character panel ──

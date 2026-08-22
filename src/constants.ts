@@ -68,6 +68,7 @@ export const SETTINGS = {
   SHOW_DAY_BAR: "showDayBar", // per-user: is the day bar on screen at all?
   FOLLOW_WORLD_TIME: "followWorldTime", // let a calendar module's midnight advance the day counter
   DAY_BAR_COLLAPSED: "dayBarCollapsed", // per-user: is the day bar folded down to its handle?
+  DAY_CONTEXT: "dayContext", // where the party is and what season it is — sticky, survives the day roll-over
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in

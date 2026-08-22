@@ -26,6 +26,40 @@
     {{!-- Travel Points sit on the top line in every mode, not only in travel:
           how far the party can still get today is asked mid-sentence, and it
           used to be a row that appeared and vanished with the mode. --}}
+    {{#if collapsed}}
+    {{!-- The folded handle. Read-only: the controls need the room they have when
+          the bar is open, and a chip here leads to them instead. --}}
+    <div class="day-bar-folded">
+      {{#if travelPoints.hasBudget}}
+      <span class="day-bar-tp-value {{#if travelPoints.spent}}is-spent{{/if}}" title="{{travelPoints.budgetTitle}}">
+        <strong class="{{#if travelPoints.over}}is-over{{/if}}">{{travelPoints.used}}</strong>/{{travelPoints.total}} TP
+      </span>
+      {{/if}}
+      {{#if travelPoints.forced}}
+      <span class="day-bar-tp-march is-forced" title="{{travelPoints.forcedTitle}}">
+        <i class="fas fa-person-running-fast"></i>
+      </span>
+      {{/if}}
+      {{#if travelPoints.weatherCost}}
+      <span class="day-bar-tp-weather {{#if travelPoints.weatherStopped}}is-bad{{/if}}" title="{{travelPoints.budgetTitle}}">
+        <i class="fas fa-cloud-showers-heavy"></i>&minus;{{travelPoints.weatherCost}}
+      </span>
+      {{/if}}
+      {{#if context.moved}}
+      <button type="button" class="day-bar-context-moved" data-action="expandToContext"
+              title="{{context.moved.title}}">
+        <i class="fas fa-triangle-exclamation"></i>
+      </button>
+      {{/if}}
+      {{#if warnings}}
+      <button type="button" class="day-bar-chip is-warning" data-action="expandToPanel"
+              title="{{warningsTitle}}">
+        <i class="fas fa-heart-crack"></i> {{warnings}}
+      </button>
+      {{/if}}
+    </div>
+    {{/if}}
+
     {{#unless collapsed}}
     <div class="day-bar-tp {{#if travelPoints.spent}}is-spent{{/if}} {{#if travelPoints.forced}}is-forced{{/if}}">
       <button type="button" class="day-bar-tp-march {{#if travelPoints.forced}}is-forced{{/if}}"
@@ -42,6 +76,14 @@
       <span class="day-bar-tp-value" title="{{travelPoints.budgetTitle}}">
         <strong class="{{#if travelPoints.over}}is-over{{/if}}">{{travelPoints.used}}</strong>/{{travelPoints.total}} TP
       </span>
+      {{!-- The allowance silently shrinking by 2 would look like a bug. It says
+            why. --}}
+      {{#if travelPoints.weatherCost}}
+      <span class="day-bar-tp-weather {{#if travelPoints.weatherStopped}}is-bad{{/if}}"
+            title="{{travelPoints.budgetTitle}}">
+        <i class="fas fa-cloud-showers-heavy"></i>&minus;{{travelPoints.weatherCost}}
+      </span>
+      {{/if}}
       <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="1"
               {{#unless travelPoints.left}}disabled{{/unless}} title="Spend a Travel Point">+</button>
       <button type="button" class="day-bar-tp-refresh {{#if travelPoints.stale}}is-stale{{/if}}"
@@ -55,13 +97,6 @@
     {{/unless}}
 
     <div class="day-bar-right">
-      {{#if allDone}}
-      <span class="day-bar-status is-clear" title="Every duty for this mode is ticked">
-        <i class="fas fa-check"></i>
-      </span>
-      {{else}}
-      <span class="day-bar-status" title="Duties still open">{{remaining}} open</span>
-      {{/if}}
       {{#unless collapsed}}
       <button type="button" class="day-bar-icon-btn" data-action="resetDay" title="Clear today's ticks and spent Travel Points without moving the day on">
         <i class="fas fa-rotate-left"></i>
@@ -76,6 +111,63 @@
       </button>
     </div>
   </div>
+
+  {{!-- Where the party is. Every table below is rolled against it, and none of
+        it can be derived — Foundry knows nothing of Dolmenwood's hexes or its
+        calendar. Folded to a summary by default: it is set once at the start of
+        a leg, and should not cost a line of the strip for the rest of the day. --}}
+  {{#unless collapsed}}
+  <div class="day-bar-row day-bar-context {{#if context.open}}is-open{{/if}}">
+    <button type="button" class="day-bar-context-summary" data-action="toggleContext"
+            title="{{context.summaryTitle}}">
+      <i class="fas {{#if context.open}}fa-chevron-down{{else}}fa-chevron-right{{/if}}"></i>
+      <i class="fas fa-location-dot"></i>
+      <span>{{context.summary}}</span>
+    </button>
+    {{#if context.moved}}
+    {{!-- The party has crossed a hex boundary since this was last answered. The
+          module cannot read terrain off a Foundry scene, so it asks rather than
+          guesses. Clicking says "still right" and drops it. --}}
+    <button type="button" class="day-bar-context-moved" data-action="confirmContext"
+            title="{{context.moved.title}}">
+      <i class="fas fa-triangle-exclamation"></i>
+      <span>{{context.moved.label}}</span>
+    </button>
+    {{/if}}
+    <span class="day-bar-context-lost" title="{{context.lostTitle}}">{{context.lostLine}}</span>
+
+    {{#if context.open}}
+    <span class="day-bar-context-field" title="{{context.seasonHint}}">
+      <label for="dw-ctx-season">Season</label>
+      <select id="dw-ctx-season" data-context-field="season">
+        {{#each context.seasons}}
+        <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+        {{/each}}
+      </select>
+    </span>
+    <span class="day-bar-context-field" title="{{context.wayHint}}">
+      <label for="dw-ctx-way">Way</label>
+      <select id="dw-ctx-way" data-context-field="way">
+        {{#each context.ways}}
+        <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+        {{/each}}
+      </select>
+    </span>
+    <span class="day-bar-context-field" title="{{context.terrainHint}}">
+      <label for="dw-ctx-terrain">Terrain</label>
+      <select id="dw-ctx-terrain" data-context-field="terrain">
+        {{#each context.terrainGroups}}
+        <optgroup label="{{this.label}}">
+          {{#each this.terrains}}
+          <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+          {{/each}}
+        </optgroup>
+        {{/each}}
+      </select>
+    </span>
+    {{/if}}
+  </div>
+  {{/unless}}
 
   {{#unless collapsed}}
   <div class="day-bar-row day-bar-duties">
@@ -97,12 +189,10 @@
     {{/each}}
     {{/if}}
     {{/each}}
-  </div>
-  {{/unless}}
 
-  {{#if showFoot}}
-  {{#unless collapsed}}
-  <div class="day-bar-row day-bar-row-foot">
+    {{!-- The party's own tallies ride at the right end of the duty line rather
+          than on a row of their own: three or four chips never filled a line,
+          and the bar is shorter for it. --}}
     {{#if hasParty}}
     <div class="day-bar-party">
       <button type="button" class="day-bar-chip {{#if allAte}}is-done{{/if}}"
@@ -117,8 +207,8 @@
       </button>
       {{#if warnings}}
       <button type="button" class="day-bar-chip is-warning" data-action="togglePanel"
-              title="Characters currently taking a hunger, sleep, or exhaustion penalty">
-        <i class="fas fa-triangle-exclamation"></i> {{warnings}}
+              title="{{warningsTitle}}">
+        <i class="fas fa-heart-crack"></i> {{warnings}}
       </button>
       {{/if}}
       <button type="button" class="day-bar-icon-btn" data-action="togglePanel"
@@ -129,7 +219,7 @@
     {{/if}}
   </div>
   {{/unless}}
-  {{/if}}
+
 
 </div>
 

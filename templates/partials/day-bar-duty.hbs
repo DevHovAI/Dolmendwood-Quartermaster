@@ -1,3 +1,32 @@
+{{#if this.rollable}}
+{{!-- A duty with a table behind it is two controls, not one: the tick still
+      toggles by hand (a Referee who rolled on paper should not be forced
+      through the dice), and the die rolls it. The result reads under the
+      label, so today's weather is on screen without opening anything. --}}
+<span class="day-bar-duty day-bar-duty-rollable {{#if this.done}}is-done{{/if}}" title="{{this.hint}}">
+  <button type="button" class="day-bar-duty-tick"
+          data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
+          title="Tick off by hand, without rolling">
+    <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} day-bar-tick"></i>
+  </button>
+  <i class="fas {{this.icon}} day-bar-duty-icon"></i>
+  <span class="day-bar-duty-text">
+    <span class="day-bar-duty-label">{{this.label}}</span>
+    {{#if this.result}}<span class="day-bar-duty-result">{{this.result}}</span>{{/if}}
+  </span>
+  {{#if this.result}}
+  <button type="button" class="day-bar-duty-roll" data-action="clearDuty" data-duty-id="{{this.id}}"
+          title="Take this roll back so it can be made again">
+    <i class="fas fa-rotate-left"></i>
+  </button>
+  {{else}}
+  <button type="button" class="day-bar-duty-roll" data-action="rollDuty" data-duty-id="{{this.id}}"
+          title="Roll it. The dice are real dice and the result is whispered to the GMs.">
+    <i class="fas fa-dice-d20"></i>
+  </button>
+  {{/if}}
+</span>
+{{else}}
 <button type="button" class="day-bar-duty {{#if this.done}}is-done{{/if}}"
         data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
         title="{{this.hint}}">
@@ -5,3 +34,4 @@
   <i class="fas {{this.icon}} day-bar-duty-icon"></i>
   <span class="day-bar-duty-label">{{this.label}}</span>
 </button>
+{{/if}}

@@ -9,6 +9,7 @@ import type { InnQuality } from "./data/innData";
 import type { InnConfig } from "./data/innConfig";
 import type { InnDayLog } from "./data/innMenu";
 import type { DayState } from "./data/dayDuties";
+import type { DayContext } from "./data/dayContext";
 
 declare global {
   type DeepPartial<T extends object> = FvttDeepPartial<T>;
@@ -48,6 +49,7 @@ declare global {
     "dolmenwood-party-inventory.showDayBar": boolean;
     "dolmenwood-party-inventory.followWorldTime": boolean;
     "dolmenwood-party-inventory.dayBarCollapsed": boolean;
+    "dolmenwood-party-inventory.dayContext": DayContext;
   }
 
   /** Declare the flags this module writes, so getFlag/setFlag are typed. */

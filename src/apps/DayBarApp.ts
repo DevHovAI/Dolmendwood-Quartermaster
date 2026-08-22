@@ -22,6 +22,30 @@ import {
   type Duty,
   type DutyMode,
 } from "../data/dayDuties";
+import {
+  SEASONS,
+  WAYS,
+  confirmDayContext,
+  getDayContext,
+  setDayContext,
+  seasonInfo,
+  terrainGroups,
+  terrainInfo,
+  wayInfo,
+  type DayContext,
+} from "../data/dayContext";
+import {
+  clearDayRoll,
+  dutyResultLine,
+  rollFindingFood,
+  rollGettingLost,
+  rollWeather,
+  ROLLABLE_DUTIES,
+  type RollableDuty,
+} from "../data/dayRolls";
+import { promptFindFood } from "./FindFoodDialog";
+import { travelPointPenalty, hasEffect } from "../data/weather";
+import { lostChance } from "../data/gettingLost";
 
 /**
  * The day bar: the Referee's per-day checklist, docked at the top of the screen.
@@ -44,6 +68,13 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
    */
   private panelOpen = false;
 
+  /**
+   * Is the "where are we?" row unfolded? Per-instance like the party panel: it
+   * is set once at the start of a leg and then left alone, so it should not
+   * take up a line of the strip for the rest of the session.
+   */
+  private contextOpen = false;
+
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-day-bar",
     // No window chrome and no JS positioning: this is a HUD strip, not a window.
@@ -64,6 +95,12 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       toggleSlept: DayBarApp._onToggleSlept,
       restChar: DayBarApp._onRestChar,
       openGroup: DayBarApp._onOpenGroup,
+      rollDuty: DayBarApp._onRollDuty,
+      clearDuty: DayBarApp._onClearDuty,
+      toggleContext: DayBarApp._onToggleContext,
+      confirmContext: DayBarApp._onConfirmContext,
+      expandToContext: DayBarApp._onExpandToContext,
+      expandToPanel: DayBarApp._onExpandToPanel,
     },
   };
 
@@ -87,6 +124,28 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       return;
     }
     (document.getElementById("ui-top") ?? document.body).append(element);
+  }
+
+  /**
+   * Wire the "where are we?" dropdowns.
+   *
+   * ApplicationV2 actions fire on click, which a <select> does not usefully
+   * emit — so these three are listened to by hand. Re-attached on every render
+   * because the element is replaced each time.
+   */
+  override async _onRender(
+    _context: DeepPartial<ApplicationV2RenderContext>,
+    _options: DeepPartial<ApplicationV2RenderOptions>
+  ): Promise<void> {
+    for (const field of ["season", "terrain", "way"] as (keyof DayContext)[]) {
+      this.element
+        .querySelector<HTMLSelectElement>(`[data-context-field="${field}"]`)
+        ?.addEventListener("change", async (event) => {
+          const value = (event.target as HTMLSelectElement).value;
+          await setDayContext({ [field]: value } as Partial<DayContext>);
+          this.render();
+        });
+    }
   }
 
   override async _prepareContext(): Promise<Record<string, unknown>> {
@@ -173,21 +232,73 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       state = getDayState();
     }
     const normalBudget = state.travelPointBudget ?? derived;
-    const budget = forcedBudget(normalBudget, state.forcedMarch);
+    // The weather is applied on top rather than written into the stored budget,
+    // so it stays reversible: re-rolling the weather, or clearing it, simply
+    // changes the sum again. Order follows the book — a forced march buys 50%
+    // more of the day's allowance, and the weather then takes 2 off what the
+    // party can actually manage in it.
+    const marched = forcedBudget(normalBudget, state.forcedMarch);
+    const weatherCost = travelPointPenalty(state.weather);
+    const budget =
+      marched === undefined ? undefined : Math.max(0, marched - weatherCost);
+    // "If this reduces the party's Travel Points to 0 or below, they can only
+    // progress by forced marching" (CB p112) — worth saying out loud, since a
+    // 0 TP day otherwise just looks broken.
+    const weatherStopped = weatherCost > 0 && budget === 0 && !state.forcedMarch;
     // The party is not what it was when the day began. Said, not acted on: only
     // the GM decides whether that is a new day's march or the same one.
     const stale =
       derived !== undefined && normalBudget !== undefined && derived !== normalBudget;
 
+    // ── Where the party is ──
+    const ctx = getDayContext();
+    const season = seasonInfo(ctx.season);
+    const terrain = terrainInfo(ctx.terrain);
+    const way = wayInfo(ctx.way);
+    const chance = lostChance(ctx.way, ctx.terrain, hasEffect(state.weather, "V"));
+
     return {
       collapsed,
       modes: DUTY_MODES.map((m) => ({ ...m, active: m.id === state.mode })),
+
+      // The sticky context. Folded away by default: it is set once at the start
+      // of a leg, and the summary line is enough to see it has not gone stale.
+      context: {
+        open: this.contextOpen,
+        summary: `${season.label} · ${way.label} · ${terrain.label}`,
+        // Set by the token-move hook. It never guesses the new terrain — nothing
+        // on a Foundry scene says whether a hex is bog or meadow — it only says
+        // the answer below may have gone stale.
+        moved: ctx.moved
+          ? {
+              label: "Party moved",
+              title: `A token has crossed a hex boundary on ${ctx.moved.sceneName} since this was last set. Check the terrain and the way — the module cannot read them off the map. Change one of them, or click to say it is still right.`,
+            }
+          : undefined,
+        summaryTitle:
+          `What the day's tables are rolled against. ${season.label}: ${season.hint} ` +
+          `${way.label}: ${way.hint} ${terrain.label} (${terrain.bandLabel.toLowerCase()} terrain): ${terrain.blurb}. ` +
+          "Click to change. It stays as it is until you do — it is not part of the day, and a new day does not clear it.",
+        seasons: SEASONS.map((x) => ({ ...x, selected: x.id === ctx.season })),
+        // Grouped by band, so the dropdown reads like the book's own table and
+        // the cost and risk of each group are visible while choosing.
+        terrainGroups: terrainGroups().map((g) => ({
+          ...g,
+          terrains: g.terrains.map((x) => ({ ...x, selected: x.id === ctx.terrain })),
+        })),
+        ways: WAYS.map((x) => ({ ...x, selected: x.id === ctx.way })),
+        seasonHint: `${season.label} — ${season.months}. ${season.hint}`,
+        terrainHint: `${terrain.label} (${terrain.bandLabel.toLowerCase()}): ${terrain.blurb}. ${terrain.chanceIn6}-in-6 to lose the way or to meet something; ${terrain.cost} Travel Points to enter or search a hex. ${terrain.travel}`,
+        wayHint: `${way.label}: ${way.hint}`,
+        // Said here rather than only in the duty's own tooltip, because this is
+        // the row where the numbers that produce it are being set.
+        lostLine:
+          chance.inSix > 0
+            ? `${chance.inSix}-in-6 to lose the way`
+            : "No chance of losing the way",
+        lostTitle: chance.reason,
+      },
       blocks,
-      // Counted off the blocks, not the raw duties, so the figure matches the
-      // ticks on screen: a group is one outstanding thing until its last step
-      // is done, not seven.
-      remaining: blocks.filter((b) => (b.groupId ? !b.allDone : !b.duties[0].done)).length,
-      allDone: duties.length > 0 && duties.every(isDone),
 
       // Always on the top line, in every mode: how far the party can still get
       // today is the one number the GM looks up mid-sentence, and it was buried
@@ -205,10 +316,12 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         over: budget !== undefined && state.travelPointsUsed > budget,
         stale,
         derived,
+        weatherCost,
+        weatherStopped,
         budgetTitle:
           budget === undefined
             ? "No party convoy to read a Speed from, so there is no allowance to count against."
-            : `${state.travelPointsUsed} of the day's ${budget} Travel Points spent. The allowance is fixed when the day starts — the party's Speed divided by 5, and half as many again on a forced march (Player's Book p156) — so it does not shift under the march when a load or a ration changes. Unspent points are lost at nightfall.${state.travelPointsUsed > budget ? " More has been spent than the allowance now allows: the extra points were walked under a forced march that has since been called off." : ""}`,
+            : `${state.travelPointsUsed} of the day's ${budget} Travel Points spent. The allowance is fixed when the day starts — the party's Speed divided by 5, and half as many again on a forced march (Player's Book p156) — so it does not shift under the march when a load or a ration changes. Unspent points are lost at nightfall.${weatherCost ? ` The weather takes ${weatherCost} off: ${state.weather?.text}.` : ""}${weatherStopped ? " That leaves nothing at all — the party can only progress by forced marching today." : ""}${state.travelPointsUsed > budget ? " More has been spent than the allowance now allows: the extra points were walked under a forced march that has since been called off." : ""}`,
         refreshTitle: stale
           ? `The party would be worth ${derived} Travel Points as they stand now, against the ${normalBudget} this day was started with. Click to adopt ${derived} — the points already spent stay spent.`
           : "Re-read the day's allowance from the party as they stand now. It is fixed at the start of the day on purpose, so this is only for when their circumstances really have changed.",        forced: state.forcedMarch,
@@ -216,8 +329,6 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
           ? `Forced march: ${normalBudget ?? "?"} Travel Points become ${budget ?? "?"}, at the price of a 16 hour day. Every character who marches owes a full rest day afterwards or is exhausted, -1 to Attack and Damage; marching again before that rest adds another -1 (Player's Book p156). Click to call it off.`
           : "Normal travel. Click to declare a forced march: half as many Travel Points again, a 16 hour day, and a rest day owed afterwards (Player's Book p156).",
       },
-      // The bottom row exists only when it has something to carry.
-      showFoot: party.length > 0,
 
       party,
       hasParty: party.length > 0,
@@ -230,6 +341,12 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       // One number for "somebody is taking a penalty right now", so the GM has a
       // reason to unfold the panel without unfolding it to find out.
       warnings: party.filter((p) => p.hungry || p.tired || p.overdue).length,
+      // Named, not merely counted: folded down to the handle this chip is the
+      // only thing standing between the Referee and a forgotten -2.
+      warningsTitle: party
+        .filter((c) => c.hungry || c.tired || c.overdue)
+        .map((c) => `${c.name}: ${c.noPenalty ? "a clock running, no penalty yet" : c.penalty}`)
+        .join("  •  "),
       restLimit: TRAVEL_DAYS_PER_REST,
     };
   }
@@ -255,6 +372,59 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     const id = target.dataset.dutyId;
     if (!id) return;
     await setDutyDone(id, target.dataset.done !== "true");
+    this.render();
+  }
+
+  /**
+   * Roll a duty's table.
+   *
+   * The result is written onto the day and whispered to the GMs; the tick goes
+   * with it, because a rolled duty is a done duty and leaving it to be ticked
+   * by hand afterwards was exactly the sort of half-step that made the bar feel
+   * unfinished.
+   */
+  private static async _onRollDuty(
+    this: DayBarApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const id = target.dataset.dutyId;
+    if (id === "weather") await rollWeather();
+    else if (id === "lost") await rollGettingLost();
+    else if (id === "forage") {
+      // Three procedures share this duty and need different things, so it asks
+      // before it rolls. Cancelling leaves the duty exactly as it was.
+      const choice = await promptFindFood();
+      if (!choice) return;
+      await rollFindingFood(choice.method, choice.target, choice.fullDay, choice.situational);
+    }
+    this.render();
+  }
+
+  /** Take a roll back so it can be made again. */
+  private static async _onClearDuty(
+    this: DayBarApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const id = target.dataset.dutyId;
+    if (!id || !ROLLABLE_DUTIES.has(id)) return;
+    await clearDayRoll(id as RollableDuty);
+    this.render();
+  }
+
+  private static _onToggleContext(this: DayBarApp): void {
+    this.contextOpen = !this.contextOpen;
+    this.render();
+  }
+
+  /**
+   * "It is still right." Drops the moved-since warning without changing
+   * anything — the party crossed a hex boundary but stayed in the same kind of
+   * country, which on a forest map is most of the time.
+   */
+  private static async _onConfirmContext(this: DayBarApp): Promise<void> {
+    await confirmDayContext();
     this.render();
   }
 
@@ -296,6 +466,28 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     const now = !!g.settings.get(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED);
     await g.settings.set(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED, !now);
     this.render();
+  }
+
+  /**
+   * Unfold the bar and open the row the chip was about.
+   *
+   * The folded handle carries warnings but none of what answers them, so a chip
+   * there has to lead somewhere rather than being a dead badge.
+   */
+  private static async _expand(this: DayBarApp, open: "context" | "panel"): Promise<void> {
+    const g = game as Game;
+    if (open === "context") this.contextOpen = true;
+    else this.panelOpen = true;
+    await g.settings.set(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED, false);
+    this.render();
+  }
+
+  private static async _onExpandToContext(this: DayBarApp): Promise<void> {
+    await DayBarApp._expand.call(this, "context");
+  }
+
+  private static async _onExpandToPanel(this: DayBarApp): Promise<void> {
+    await DayBarApp._expand.call(this, "panel");
   }
 
   private static async _onHideBar(this: DayBarApp): Promise<void> {
@@ -397,7 +589,17 @@ interface DutyBlock {
   doneCount?: number;
   total?: number;
   allDone?: boolean;
-  duties: { id: string; label: string; icon: string; hint: string; done: boolean }[];
+  duties: {
+    id: string;
+    label: string;
+    icon: string;
+    hint: string;
+    done: boolean;
+    /** Does this duty roll on a table, rather than only being ticked off? */
+    rollable?: boolean;
+    /** What the table produced today, shown under the label once it has. */
+    result?: string;
+  }[];
 }
 
 /**
@@ -412,12 +614,17 @@ function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean): DutyBlock[] 
   for (const duty of duties) {
     const group = duty.group ? DUTY_GROUPS[duty.group] : undefined;
     const last = blocks[blocks.length - 1];
+    const rollable = ROLLABLE_DUTIES.has(duty.id);
     const entry = {
       id: duty.id,
       label: duty.label,
       icon: duty.icon,
       hint: duty.hint,
       done: isDone(duty),
+      rollable,
+      // Only meaningful once rolled; the strip prints it under the label so the
+      // Referee reads today's weather without opening anything.
+      result: rollable ? dutyResultLine(duty.id) : undefined,
     };
     if (last && last.groupId === duty.group) last.duties.push(entry);
     else
