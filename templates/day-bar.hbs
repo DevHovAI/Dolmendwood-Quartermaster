@@ -96,6 +96,24 @@
     </div>
     {{/unless}}
 
+    {{!-- The other three windows of the module, so a day is run from one line
+          instead of from here and the control bar. Outside the collapse, and
+          fenced off by a rule: they are not part of the day's procedure. --}}
+    <div class="day-bar-shortcuts">
+      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="inventory"
+              title="Party Inventory">
+        <i class="fas fa-backpack"></i>
+      </button>
+      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="loot"
+              title="Loot">
+        <i class="fas fa-treasure-chest"></i>
+      </button>
+      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="trash"
+              title="Trash">
+        <i class="fas fa-trash-can"></i>
+      </button>
+    </div>
+
     <div class="day-bar-right">
       {{#unless collapsed}}
       <button type="button" class="day-bar-icon-btn" data-action="resetDay" title="Clear today's ticks and spent Travel Points without moving the day on">
@@ -137,6 +155,10 @@
     <span class="day-bar-context-lost" title="{{context.lostTitle}}">{{context.lostLine}}</span>
 
     {{#if context.open}}
+    {{!-- A line of their own under the summary, on a fixed five-column grid: in
+          the summary's own flex row they wrapped wherever they fitted, so a
+          longer season or town name shuffled every field after it along. --}}
+    <div class="day-bar-context-fields">
     <span class="day-bar-context-field" title="{{context.seasonHint}}">
       <label for="dw-ctx-season">Season</label>
       <select id="dw-ctx-season" data-context-field="season">
@@ -165,6 +187,28 @@
         {{/each}}
       </select>
     </span>
+    {{!-- Which regional encounter table the hex reads. Changed far less often
+          than the terrain — a region is a dozen hexes across — so it sits last
+          in the row. --}}
+    <span class="day-bar-context-field" title="{{context.regionHint}}">
+      <label for="dw-ctx-region">Region</label>
+      <select id="dw-ctx-region" data-context-field="region">
+        {{#each context.regions}}
+        <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+        {{/each}}
+      </select>
+    </span>
+    {{!-- Where the party is in town, which is a different question from the
+          region and true at the same time. Only the Settlement tab rolls on it. --}}
+    <span class="day-bar-context-field" title="{{context.settlementHint}}">
+      <label for="dw-ctx-settlement">Town</label>
+      <select id="dw-ctx-settlement" data-context-field="settlement">
+        {{#each context.settlements}}
+        <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+        {{/each}}
+      </select>
+    </span>
+    </div>
     {{/if}}
   </div>
   {{/unless}}

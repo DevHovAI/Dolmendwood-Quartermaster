@@ -847,6 +847,10 @@ function loadPreviewHTML(actor: Actor | null, coins: ZoneCoins): string {
 /** Wire up the Open button on the chat announcement. */
 export function activateLootChatButtons(html: HTMLElement): void {
   html.querySelectorAll<HTMLElement>(".dw-open-loot").forEach((button) => {
+    // Never wire the same button twice: a render hook that fires more than once
+    // would otherwise make one click do its work twice over.
+    if (button.dataset.dwWired === "1") return;
+    button.dataset.dwWired = "1";
     button.addEventListener("click", () => {
       const actor = (game as Game).actors?.get(button.dataset.actorId ?? "");
       if (actor) openLootBox(actor);

@@ -1,4 +1,5 @@
 import { MODULE_ID, SETTINGS } from "../constants";
+import { SETTLEMENTS, type Settlement } from "./settlementEncounters";
 
 /**
  * Where the party is, and when.
@@ -59,6 +60,29 @@ export interface DayContext {
   season: Season;
   terrain: Terrain;
   way: Way;
+  /**
+   * Which regional encounter column the party's hex reads (Campaign Book p115).
+   *
+   * Sticky like the rest of this record and changed about as often: a region is
+   * a dozen hexes across, so a party crossing one boundary is usually still in
+   * the same one. Aquatic is among the twelve and is not a place — it is the
+   * column for a day spent on a river or a lake, and picking it is how the
+   * Referee says so.
+   */
+  region: Region;
+  /**
+   * Which settlement the party is in, when they are in one at all.
+   *
+   * A separate field from `region` on purpose, and deliberately not an entry in
+   * its list: the two answer different questions and are both true at once.
+   * Prigwort is in the High Wold, and the moment the party walks out of the
+   * gate the region governs what they meet again. Folding towns into the region
+   * list would have made leaving town look like leaving the High Wold.
+   *
+   * `"elsewhere"` covers every place the book does not detail — most of the
+   * map's hamlets — and means the settlement roll has no table to read.
+   */
+  settlement: Settlement | "elsewhere";
   /**
    * Set once a token has crossed a hex boundary since the context was last
    * confirmed. A marker, not a tally: how many hexes were crossed does not
@@ -195,6 +219,43 @@ export const TERRAINS: { id: Terrain; label: string; band: TerrainBand; blurb: s
   { id: "thorny-forest", label: "Thorny forest", band: "difficult", blurb: "Dense thorn thickets" },
 ];
 
+export type Region =
+  | "aldweald"
+  | "aquatic"
+  | "dwelmfurgh"
+  | "fever-marsh"
+  | "hags-addle"
+  | "high-wold"
+  | "mulchgrove"
+  | "nagwood"
+  | "northern-scratch"
+  | "table-downs"
+  | "tithelands"
+  | "valley-of-wise-beasts";
+
+/**
+ * The twelve regional columns (CB p115).
+ *
+ * **Aquatic is one of the twelve, and is not a place.** It is the column for
+ * encounters on rivers and lakes, and the book says to roll on it directly
+ * rather than rolling for a type first — so choosing it here is how a Referee
+ * says the party is on the water today.
+ */
+export const REGIONS: { id: Region; label: string }[] = [
+  { id: "aldweald", label: "Aldweald" },
+  { id: "aquatic", label: "Aquatic" },
+  { id: "dwelmfurgh", label: "Dwelmfurgh" },
+  { id: "fever-marsh", label: "Fever Marsh" },
+  { id: "hags-addle", label: "Hag’s Addle" },
+  { id: "high-wold", label: "High Wold" },
+  { id: "mulchgrove", label: "Mulchgrove" },
+  { id: "nagwood", label: "Nagwood" },
+  { id: "northern-scratch", label: "Northern Scratch" },
+  { id: "table-downs", label: "Table Downs" },
+  { id: "tithelands", label: "Tithelands" },
+  { id: "valley-of-wise-beasts", label: "Valley of Wise Beasts" },
+];
+
 export const WAYS: { id: Way; label: string; icon: string; hint: string }[] = [
   {
     id: "road",
@@ -220,6 +281,10 @@ const DEFAULT_CONTEXT: DayContext = {
   season: "autumn",
   terrain: "tangled-forest",
   way: "track",
+  // The middle of the map and the middle of most campaigns: Prigwort, Lankshorn
+  // and the road between them are all in the High Wold.
+  region: "high-wold",
+  settlement: "elsewhere",
 };
 
 /**
@@ -240,6 +305,13 @@ function normalise(stored: Partial<DayContext> | undefined): DayContext {
       ? (stored.terrain as Terrain)
       : DEFAULT_CONTEXT.terrain,
     way: WAYS.some((w) => w.id === stored.way) ? (stored.way as Way) : DEFAULT_CONTEXT.way,
+    region: REGIONS.some((r) => r.id === stored.region)
+      ? (stored.region as Region)
+      : DEFAULT_CONTEXT.region,
+    settlement:
+      stored.settlement === "elsewhere" || SETTLEMENTS.some((x) => x.id === stored.settlement)
+        ? (stored.settlement as Settlement | "elsewhere")
+        : DEFAULT_CONTEXT.settlement,
     ...(stored.moved?.sceneName ? { moved: { sceneName: stored.moved.sceneName } } : {}),
   };
 }
@@ -261,7 +333,12 @@ export function getDayContext(): DayContext {
 export async function setDayContext(patch: Partial<DayContext>): Promise<void> {
   const g = game as Game;
   if (!g.user?.isGM) return;
-  const answered = patch.season !== undefined || patch.terrain !== undefined || patch.way !== undefined;
+  const answered =
+    patch.season !== undefined ||
+    patch.terrain !== undefined ||
+    patch.way !== undefined ||
+    patch.region !== undefined ||
+    patch.settlement !== undefined;
   const next = { ...getDayContext(), ...patch };
   if (answered) delete next.moved;
   await g.settings.set(MODULE_ID, SETTINGS.DAY_CONTEXT, next);
@@ -310,6 +387,14 @@ export function terrainInfo(id: Terrain) {
 
 export function wayInfo(id: Way) {
   return WAYS.find((w) => w.id === id) ?? WAYS[0];
+}
+
+export function settlementLabel(id: Settlement | "elsewhere"): string {
+  return SETTLEMENTS.find((s) => s.id === id)?.label ?? "Not in a detailed settlement";
+}
+
+export function regionInfo(id: Region) {
+  return REGIONS.find((r) => r.id === id) ?? REGIONS[0];
 }
 
 /** The terrains grouped into their bands, for a dropdown that reads like the book's table. */

@@ -4,6 +4,7 @@ import { rollOverCharacterDays } from "./characterDay";
 import type { WeatherResult } from "./weather";
 import type { LostResult } from "./gettingLost";
 import type { FoodResult } from "./findingFood";
+import type { EncounterResult } from "./encounters";
 
 /**
  * The day's duties — the Referee's per-day checklist.
@@ -91,7 +92,7 @@ export const DUTIES: Duty[] = [
   {
     id: "encounter-day",
     label: "Encounter (day)",
-    icon: "fa-dice-d6",
+    icon: "fa-sun",
     modes: ["travel", "settlement"],
     hint: "One daytime wandering-monster check. In the wilds the chance is the terrain's (1/2/3-in-6); in a settlement it is 2-in-6 while the party is out and about.",
   },
@@ -215,6 +216,15 @@ export interface DayState {
   /** Today's attempt at finding food: which method, and what it produced. */
   food?: FoodResult;
   /**
+   * The two wandering-monster checks, kept apart.
+   *
+   * One field each rather than a list: the book makes exactly one check by day
+   * and one by night, they are separate duties on the strip, and each has to be
+   * able to be taken back and rolled again without disturbing the other.
+   */
+  encounterDay?: EncounterResult;
+  encounterNight?: EncounterResult;
+  /**
    * The world-clock day this counter was last aligned with, when following a
    * calendar module. Absent while not following, or before the first sighting.
    */
@@ -245,6 +255,8 @@ export function getDayState(): DayState {
       weather: undefined,
       lost: undefined,
       food: undefined,
+      encounterDay: undefined,
+      encounterNight: undefined,
     };
   }
   return { ...stored, travelPointsUsed: stored.travelPointsUsed ?? 0, forcedMarch: stored.forcedMarch ?? false };
@@ -340,7 +352,12 @@ export async function setDutyDone(id: string, done: boolean): Promise<void> {
  */
 export async function setDutyResult(
   id: string,
-  patch: Pick<DayState, "weather"> | Pick<DayState, "lost"> | Pick<DayState, "food">
+  patch:
+    | Pick<DayState, "weather">
+    | Pick<DayState, "lost">
+    | Pick<DayState, "food">
+    | Pick<DayState, "encounterDay">
+    | Pick<DayState, "encounterNight">
 ): Promise<void> {
   const state = getDayState();
   const value = Object.values(patch)[0];
@@ -377,6 +394,8 @@ export async function resetDuties(): Promise<void> {
     weather: undefined,
     lost: undefined,
     food: undefined,
+    encounterDay: undefined,
+    encounterNight: undefined,
   });
 }
 

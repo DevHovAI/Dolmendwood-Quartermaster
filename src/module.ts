@@ -11,6 +11,7 @@ import { openLootBrowser, openLootFromNote, activateLootChatButtons } from "./ap
 import { openTrash } from "./apps/TrashApp";
 import { syncDayBar, toggleDayBar, refreshDayBar } from "./apps/DayBarApp";
 import { syncDayToWorldTime } from "./data/dayDuties";
+import { activateEncounterChatButtons } from "./data/dayRolls";
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
@@ -205,7 +206,13 @@ Hooks.once("init", () => {
     scope: "world",
     config: false,
     type: Object,
-    default: { season: "autumn", terrain: "moderate", way: "track" },
+    default: {
+      season: "autumn",
+      terrain: "tangled-forest",
+      way: "track",
+      region: "high-wold",
+      settlement: "elsewhere",
+    },
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.SHOW_DAY_BAR, {
@@ -892,16 +899,26 @@ onUntypedHook("renderActorDirectory", (_app: unknown, htmlOrEl: unknown) => {
   if (el) hideManagedActorsFromDirectory(el);
 });
 
-// The Open button on a released-loot chat card. renderChatMessageHTML is the
-// v13 hook; renderChatMessage is kept for older cores, where the second arg is
-// jQuery rather than an element.
+/**
+ * The buttons on the module's chat cards.
+ *
+ * **Only `renderChatMessageHTML`.** The deprecated `renderChatMessage` used to
+ * be registered beside it "for older cores", which was worse than useless: core
+ * fires the old hook *in addition to* the new one, but only when something is
+ * listening for it (`chat-message.mjs`, `if ("renderChatMessage" in Hooks.events)`),
+ * and it hands over the very same element wrapped in jQuery. Registering both
+ * therefore wired every button twice, and one click rolled twice. v13 is the
+ * module's minimum and has `renderChatMessageHTML`, so nothing is lost.
+ */
 onUntypedHook("renderChatMessageHTML", (_message: unknown, element: unknown) => {
-  if (element instanceof HTMLElement) activateLootChatButtons(element);
+  if (element instanceof HTMLElement) activateChatButtons(element);
 });
-onUntypedHook("renderChatMessage", (_message: unknown, html: unknown) => {
-  const el = (html as { get?: (n: number) => HTMLElement } | undefined)?.get?.(0);
-  if (el) activateLootChatButtons(el);
-});
+
+/** Both kinds of card the module posts carry buttons; both get wired here. */
+function activateChatButtons(element: HTMLElement): void {
+  activateLootChatButtons(element);
+  activateEncounterChatButtons(element);
+}
 
 // ─── Module API Functions ─────────────────────────────────────────────────────
 

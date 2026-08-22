@@ -2,8 +2,11 @@ import { MODULE_ID, SETTINGS, TEMPLATES, TRAVEL_DAYS_PER_REST } from "../constan
 import { getConvoyActors } from "../data/sharedStore";
 import { getEncumbranceMode } from "../data/zoneGrants";
 import { getInnDay } from "../data/innMenu";
+import { SETTLEMENTS } from "../data/settlementEncounters";
 import { partyDayRows, setAte, setSleptWell, setRested, hungerEffect, exhaustionPenalty } from "../data/characterDay";
-import { buildPartyConvoy } from "./PartyOverviewApp";
+import { PartyOverviewApp, buildPartyConvoy } from "./PartyOverviewApp";
+import { openLootBrowser } from "./LootApp";
+import { openTrash } from "./TrashApp";
 import {
   DUTIES,
   DUTY_GROUPS,
@@ -23,12 +26,15 @@ import {
   type DutyMode,
 } from "../data/dayDuties";
 import {
+  REGIONS,
   SEASONS,
   WAYS,
   confirmDayContext,
   getDayContext,
   setDayContext,
+  regionInfo,
   seasonInfo,
+  settlementLabel,
   terrainGroups,
   terrainInfo,
   wayInfo,
@@ -37,6 +43,7 @@ import {
 import {
   clearDayRoll,
   dutyResultLine,
+  rollEncounter,
   rollFindingFood,
   rollGettingLost,
   rollWeather,
@@ -101,6 +108,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       confirmContext: DayBarApp._onConfirmContext,
       expandToContext: DayBarApp._onExpandToContext,
       expandToPanel: DayBarApp._onExpandToPanel,
+      openShortcut: DayBarApp._onOpenShortcut,
     },
   };
 
@@ -137,7 +145,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     _context: DeepPartial<ApplicationV2RenderContext>,
     _options: DeepPartial<ApplicationV2RenderOptions>
   ): Promise<void> {
-    for (const field of ["season", "terrain", "way"] as (keyof DayContext)[]) {
+    for (const field of ["season", "terrain", "way", "region", "settlement"] as (keyof DayContext)[]) {
       this.element
         .querySelector<HTMLSelectElement>(`[data-context-field="${field}"]`)
         ?.addEventListener("change", async (event) => {
@@ -255,6 +263,8 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     const season = seasonInfo(ctx.season);
     const terrain = terrainInfo(ctx.terrain);
     const way = wayInfo(ctx.way);
+    const region = regionInfo(ctx.region);
+    const settlement = settlementLabel(ctx.settlement);
     const chance = lostChance(ctx.way, ctx.terrain, hasEffect(state.weather, "V"));
 
     return {
@@ -265,7 +275,10 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       // of a leg, and the summary line is enough to see it has not gone stale.
       context: {
         open: this.contextOpen,
-        summary: `${season.label} · ${way.label} · ${terrain.label}`,
+        summary:
+          state.mode === "settlement" && ctx.settlement !== "elsewhere"
+            ? `${season.label} · ${settlement} · ${region.label}`
+            : `${season.label} · ${way.label} · ${terrain.label} · ${region.label}`,
         // Set by the token-move hook. It never guesses the new terrain — nothing
         // on a Foundry scene says whether a hex is bog or meadow — it only says
         // the answer below may have gone stale.
@@ -287,9 +300,22 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
           terrains: g.terrains.map((x) => ({ ...x, selected: x.id === ctx.terrain })),
         })),
         ways: WAYS.map((x) => ({ ...x, selected: x.id === ctx.way })),
+        regions: REGIONS.map((x) => ({ ...x, selected: x.id === ctx.region })),
+        settlements: [
+          { id: "elsewhere", label: "— not in one —", selected: ctx.settlement === "elsewhere" },
+          ...SETTLEMENTS.map((x) => ({ ...x, selected: x.id === ctx.settlement })),
+        ],
         seasonHint: `${season.label} — ${season.months}. ${season.hint}`,
         terrainHint: `${terrain.label} (${terrain.bandLabel.toLowerCase()}): ${terrain.blurb}. ${terrain.chanceIn6}-in-6 to lose the way or to meet something; ${terrain.cost} Travel Points to enter or search a hex. ${terrain.travel}`,
         wayHint: `${way.label}: ${way.hint}`,
+        settlementHint:
+          ctx.settlement === "elsewhere"
+            ? "Which of the twelve settlements the Campaign Book details the party is in. Only the Settlement tab's encounter rolls use it — everywhere else it is ignored, and a hamlet the book does not cover has no table."
+            : `${settlement}. Its own d6 encounter tables, day and night, are what the Settlement tab rolls on. It does not replace the region: the party is still in ${region.label} the moment they leave.`,
+        regionHint:
+          region.id === "aquatic"
+            ? "Aquatic is the column for a day spent on a river or a lake, not a place on the map. Chosen, an encounter is rolled straight off it, as the Campaign Book directs (p114)."
+            : `${region.label} — which regional encounter table this hex reads (Campaign Book p115). A region is a dozen hexes across, so this changes far less often than the terrain does.`,
         // Said here rather than only in the duty's own tooltip, because this is
         // the row where the numbers that produce it are being set.
         lostLine:
@@ -391,6 +417,8 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     const id = target.dataset.dutyId;
     if (id === "weather") await rollWeather();
     else if (id === "lost") await rollGettingLost();
+    else if (id === "encounter-day") await rollEncounter("day");
+    else if (id === "encounter-night") await rollEncounter("night");
     else if (id === "forage") {
       // Three procedures share this duty and need different things, so it asks
       // before it rolls. Cancelling leaves the duty exactly as it was.
@@ -411,6 +439,34 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     if (!id || !ROLLABLE_DUTIES.has(id)) return;
     await clearDayRoll(id as RollableDuty);
     this.render();
+  }
+
+  /**
+   * The three windows the bar does not own, opened from it anyway.
+   *
+   * They are on the toolbar as well, and that is the point: the toolbar means
+   * leaving the strip, hunting the control bar, and coming back. Everything a
+   * Referee touches during a day now sits on one line.
+   *
+   * Kept out of the folding, so they are reachable from the handle too.
+   */
+  private static _onOpenShortcut(this: DayBarApp, _event: Event, target: HTMLElement): void {
+    switch (target.dataset.shortcut) {
+      case "loot":
+        openLootBrowser();
+        break;
+      case "trash":
+        openTrash();
+        break;
+      case "inventory": {
+        const existing = foundry.applications?.instances?.get("dolmenwood-party-overview") as
+          | { render: (options?: unknown) => void }
+          | undefined;
+        if (existing) existing.render({ force: true });
+        else new PartyOverviewApp().render(true);
+        break;
+      }
+    }
   }
 
   private static _onToggleContext(this: DayBarApp): void {

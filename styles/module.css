@@ -3193,6 +3193,7 @@ body > #dolmenwood-day-bar {
 .day-bar-row-top .day-bar-tp,
 .day-bar-row-top .day-bar-chip,
 .day-bar-row-top .day-bar-context-moved,
+.day-bar-row-top .day-bar-shortcuts > *,
 .day-bar-row-top .day-bar-folded > * {
   box-sizing: border-box;
   height: var(--day-bar-chip-h);
@@ -3200,11 +3201,60 @@ body > #dolmenwood-day-bar {
   align-items: center;
 }
 
+/* Shortcuts to the module's other windows. Pushed to the right, up against the
+   bar's own controls but fenced off from them: opening the loot browser is not
+   part of the day's procedure, and a chip that looks like the mode tabs would
+   say it was. */
+.day-bar-shortcuts {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+  padding-left: 6px;
+  border-left: 1px solid var(--dw-border-light);
+}
+
+.day-bar-shortcuts .day-bar-icon-btn {
+  color: var(--dw-tertiary);
+}
+
+.day-bar-shortcuts .day-bar-icon-btn:hover {
+  color: var(--dw-primary);
+}
+
 /* Icon-only buttons follow the height into their width, or a taller row leaves
    them as narrow slivers. */
 .day-bar-row-top .day-bar-icon-btn {
   width: var(--day-bar-chip-h);
   justify-content: center;
+}
+
+/* The bottom line is held to the same height as the top one. The duty chips
+   used to size themselves by their contents, so a duty carrying a rolled result
+   under its label stood taller than one that had not been rolled yet — and the
+   strip's bottom edge moved as the day was ticked off. */
+.day-bar-duties .day-bar-duty,
+.day-bar-duties .day-bar-chip,
+.day-bar-duties .day-bar-icon-btn {
+  box-sizing: border-box;
+  height: var(--day-bar-chip-h);
+}
+
+.day-bar-duties .day-bar-icon-btn {
+  width: var(--day-bar-chip-h);
+  justify-content: center;
+}
+
+/* Two lines inside a chip built for one: the label and the result together have
+   to clear 33px less the padding, so both are set tight and anything that still
+   will not fit is clipped rather than allowed to push the chip open. */
+.day-bar-duties .day-bar-duty-text {
+  overflow: hidden;
+  line-height: 1.1;
+}
+
+.day-bar-duties .day-bar-duty-result {
+  font-size: 0.8em;
+  line-height: 1.15;
 }
 
 .day-bar-tp .day-bar-tp-btn,
@@ -3302,11 +3352,35 @@ body > #dolmenwood-day-bar {
   white-space: nowrap;
 }
 
+/* Unfolded, the dropdowns take a line of their own under the summary and sit on
+   a fixed five-column grid. Flowing in the summary's flex row, they wrapped
+   wherever they happened to fit, so choosing a longer season or a longer town
+   name moved every field after it — the one thing a row of settings must not
+   do, since the Referee aims for a dropdown by where it was last time. */
+.day-bar-context-fields {
+  flex: 1 0 100%;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  gap: 4px 8px;
+  width: 100%;
+  margin-top: 2px;
+}
+
 .day-bar-context-field {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 4px;
+  min-width: 0;
   white-space: nowrap;
+}
+
+/* The select fills its cell rather than its content, or the grid track stops
+   being the thing that decides the width. */
+.day-bar-context-field select {
+  width: 100%;
+  min-width: 0;
 }
 
 .day-bar-context-field label {
@@ -3539,6 +3613,78 @@ body > #dolmenwood-day-bar {
   margin-bottom: 2px;
 }
 
+/* The encounter card answers eight questions at once, so its middle is a list
+   of facts rather than prose, and the conditional steps of the procedure are
+   buttons under it. */
+
+.dw-encounter-facts {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 0.9em;
+}
+
+.dw-encounter-facts li {
+  margin-bottom: 3px;
+}
+
+.dw-encounter-facts strong {
+  display: inline-block;
+  min-width: 66px;
+}
+
+.dw-encounter-die {
+  opacity: 0.6;
+}
+
+/* Page and lair chance: Monster Book facts, set apart from the Campaign Book
+   rolls above them. */
+
+.dw-encounter-book {
+  margin: 6px 0 0;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.dw-encounter-book i {
+  margin-right: 4px;
+  opacity: 0.7;
+}
+
+/* A settlement encounter is a whole sentence of scene, not a name and a number,
+   so it is set as prose rather than as a headline. */
+
+.dw-encounter-scene {
+  margin: 4px 0;
+  font-size: 1.05em;
+  line-height: 1.35;
+}
+
+/* Morale, hoard and temperament, read off the stat block rather than looked up. */
+
+.dw-encounter-stats {
+  margin: 3px 0 0;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.dw-encounter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.dw-encounter-btn {
+  flex: 0 1 auto;
+  width: auto;
+  padding: 2px 8px;
+  font-size: 0.85em;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
 /* ── Mode switch ── */
 
 .day-bar-modes {
@@ -3765,7 +3911,6 @@ body > #dolmenwood-day-bar {
   gap: 4px;
   padding-left: 6px;
   border-left: 1px solid var(--dw-border-light);
-  margin-left: auto;
 }
 
 /* The folded handle. It carries only what must not be missed while the bar is
