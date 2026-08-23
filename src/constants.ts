@@ -69,6 +69,11 @@ export const SETTINGS = {
   FOLLOW_WORLD_TIME: "followWorldTime", // let a calendar module's midnight advance the day counter
   DAY_BAR_COLLAPSED: "dayBarCollapsed", // per-user: is the day bar folded down to its handle?
   DAY_CONTEXT: "dayContext", // where the party is and what season it is — sticky, survives the day roll-over
+  BOOK_PLAYERS: "bookPlayers", // path, inside Foundry's data folder, to the reader's own Player's Book PDF
+  BOOK_CAMPAIGN: "bookCampaign", // …the Campaign Book
+  BOOK_MONSTERS: "bookMonsters", // …the Monster Book
+  BOOKS_FOR_PLAYERS: "booksForPlayers", // which of the three books players may open: "none" | "players" | "all"
+  BOOK_PAGE_OFFSET: "bookPageOffset", // PDF page = printed page + this; two pages of front matter in all three books
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in

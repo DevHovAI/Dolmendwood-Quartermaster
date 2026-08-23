@@ -23,6 +23,26 @@
 export interface BestiaryEntry {
   /** The creature's Level, which is what an OSE table reads as its Hit Dice. */
   level?: number;
+  /** Armour Class, as the stat block prints it. */
+  ac?: number;
+  /**
+   * Hit Points as the book writes them — the dice, "4d8". Kept as the string
+   * rather than a pair of numbers, because one entry (the talking animal) prints
+   * "By species" instead, and because the string is what gets rolled.
+   */
+  hp?: string;
+  /** The average the book prints in brackets after the dice. Absent where the dice are. */
+  hpAverage?: number;
+  /**
+   * Three lines saying what this is, in plain words.
+   *
+   * **Written for this module, not copied from the book.** The books' own
+   * descriptions are Necrotic Gnome's prose and stay in the reader's own copy;
+   * what a creature looks like and what it wants are facts, and these are those
+   * facts said again in ordinary English. Where the exact wording matters, the
+   * page reference on the card opens the book itself.
+   */
+  flavour?: string[];
   /** Size, type, intelligence and Alignment, as the book prints them on one line. */
   kind?: string;
   morale?: number;
@@ -56,7 +76,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Antler Wraith
   12: {
     level: 4,
+    ac: 14,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Medium Undead—Semi-Intelligent—Chaotic",
+    flavour: [
+      "A towering figure in black robes, stag's skull for a head, claws of bare bone.",
+      "A servant of gods nobody worships any more, and it cannot leave off the duty.",
+      "Bound to rings of standing stones, which it guards and will not stray far from.",
+    ],
     morale: 9,
     behaviour: "Ruthless, hateful, avaricious",
     speech: "None. Understand Woldish and Old Woldish",
@@ -85,12 +113,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Banshee
   13: {
     level: 7,
+    ac: 19,
+    hp: "7d8",
+    hpAverage: 31,
     kind: "Medium Undead—Sentient—Chaotic",
+    flavour: [
+      "The see-through shade of a frost elf noblewoman, drifting rather than walking.",
+      "Killed by mortals in a war long over, and still settling the account.",
+      "Keeps to bleak moorland and empty hills.",
+    ],
     morale: 10,
     behaviour: "Coldly brilliant, bitter, vengeful",
     speech: "Rasping whisper. High Elfish, Old Woldish",
     hoard: "C6 + R7 + M4",
     namesNote: "See Cold Prince faction, Campaign Book.",
+    nameTable: "frost-elf",
     traits: [
       "Seductive, youthful beauty.",
       "Throat slit. Icy, blue blood drips from the wound.",
@@ -115,7 +152,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Barrowbogey
   14: {
     level: 3,
+    ac: 13,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Small Fairy—Sentient—Any Alignment",
+    flavour: [
+      "A thin, three-foot fairy with loose wrinkled skin and a jug or pot where its head should be.",
+      "Sly rather than brave, and at home in the dark.",
+      "Nests in burial mounds whose tunnels run on into the fairy roads.",
+    ],
     morale: 9,
     behaviour: "Sharp-witted, wild, tricksome",
     speech: "Tinny voice emanating from head-pot.",
@@ -145,7 +190,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Basilisk
   15: {
     level: 6,
+    ac: 15,
+    hp: "6d8",
+    hpAverage: 27,
     kind: "Large Monstrosity—Animal Intelligence—Neutral",
+    flavour: [
+      "A ten-foot lizard, serpent-bodied and many-legged.",
+      "Its stare turns flesh to stone, and it need do nothing else.",
+      "Found in caves, ravines and thick tangled woodland.",
+    ],
     morale: 9,
     behaviour: "Languid, curious",
     speech: "Gravelly hissing",
@@ -174,7 +227,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Black Tentacles
   16: {
     level: 4,
+    ac: 15,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Large Monstrosity—Animal Intelligence—Neutral",
+    flavour: [
+      "A knot of black, sucker-covered arms, each some ten feet long.",
+      "Grabs whatever warm-blooded thing comes close and squeezes.",
+      "Lies waiting in bog channels, stinking mud and unlit caverns.",
+    ],
     morale: 10,
     behaviour: "Relentless, brutal",
     speech: "None",
@@ -196,7 +257,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Bog Corpse
   17: {
     level: 2,
+    ac: 11,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Undead—Mindless—Chaotic",
+    flavour: [
+      "A waterlogged body, still in the clothes it drowned in.",
+      "A marsh-fire spirit wears it, and it hates the living for still being alive.",
+      "Rises out of bogs and swampy ground.",
+    ],
     morale: 12,
     behaviour: "Hateful, savage",
     speech: "Incoherent moaning",
@@ -225,7 +294,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Bog Salamander
   18: {
     level: 4,
+    ac: 12,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Large Monstrosity—Animal Intelligence—Neutral",
+    flavour: [
+      "Eight feet of translucent white amphibian, glassy claws, eyes that glow like small moons.",
+      "A mouth without teeth, and an appetite for meat all the same.",
+      "Creeps through undergrowth hunting.",
+    ],
     morale: 8,
     behaviour: "Dull-witted, sluggish with frenzied",
     speech: "Bestial slurping and wheezing",
@@ -254,7 +331,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Boggin
   19: {
     level: 6,
+    ac: 14,
+    hp: "6d8",
+    hpAverage: 27,
     kind: "Large Monstrosity—Sentient—Chaotic",
+    flavour: [
+      "Ten feet tall, frog-limbed, with a mat of weed hanging where a face should be.",
+      "The face behind the weed is doing something unpleasant with its expression.",
+      "Waits in pools, lakes and mires.",
+    ],
     morale: 8,
     behaviour: "Cruel captors, man-eaters, slow-witted",
     speech: "Loon-like gibbering. Basic Woldish, Boggin",
@@ -284,7 +369,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Brainconk
   20: {
     level: 1,
+    ac: 13,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Small Fungus—Semi-Intelligent—Neutral",
+    flavour: [
+      "A bright orange bracket fungus, two feet across, growing high in a tree.",
+      "Drops onto heads. It eats brains, and knows where they are kept.",
+      "Look up in old woodland.",
+    ],
     morale: 6,
     behaviour: "Sneaky, ravenous",
     speech: "Excited squealing. Understand basic Sylvan,",
@@ -306,7 +399,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Brambling
   21: {
     level: 2,
+    ac: 13,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Plant—Mindless—Neutral",
+    flavour: [
+      "Five feet of thorn and bramble pulled into the shape of a person.",
+      "Green fire burns where its eyes should be. It was made, not born.",
+      "Drune magic animates it, so where one stands, Drune business is nearby.",
+    ],
     morale: 9,
     behaviour: "Sneaky, mindlessly follow commands",
     speech: "None. Understand Drunic, but cannot speak",
@@ -328,12 +429,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Breggle—Longhorn
   22: {
     level: 5,
+    ac: 16,
+    hp: "5d8",
+    hpAverage: 22,
     kind: "Medium Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A six-foot goat-person of the noble class, horns spiralling up to a foot and a half.",
+      "Proud, and reads your manners before it reads your face — horn length is rank here.",
+      "Knights and nobles; expect retainers and a claim to the land you are standing on.",
+    ],
     morale: 9,
     behaviour: "Scheming, haughty, callous",
     speech: "Eloquent, condescending. Woldish, Caprice,",
     hoard: "C5 + R2 + M8",
     namesNote: "See Longhorn Nobility faction, Campaign Book. See also: Breggle Kindred, Player's Book.",
+    nameTable: "noble-breggle",
     traits: [
       "Forward-pointing horns (an especially noble trait).",
       "Deep red eyes.",
@@ -358,12 +468,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Breggle—Shorthorn
   23: {
     level: 1,
+    ac: 13,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Medium Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A goat-person of five and a half feet with horns no longer than a thumb.",
+      "Peasant, servant, hunter or soldier, and used to being talked down to.",
+      "The common folk of breggle country.",
+    ],
     morale: 7,
     behaviour: "Merry, grudgingly servile",
     speech: "Mellow, rustic. Woldish, Gaffe, basic Caprice",
     hoard: "C1",
     namesNote: "See Breggle Kindred, Player's Book.",
+    nameTable: "breggle",
     traits: [
       "Wears an eye patch.",
       "Broken or jutting teeth.",
@@ -388,7 +507,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Centaur—Bestial
   24: {
     level: 6,
+    ac: 14,
+    hp: "6d8",
+    hpAverage: 27,
     kind: "Large Demi-Fey—Sentient—Chaotic",
+    flavour: [
+      "Ten feet of horse and man run together badly — lumpy flesh, jutting fangs.",
+      "Corrupted, and now hungry for the flesh of thinking beings only.",
+      "Other meat disgusts it, which is why it is looking at you.",
+    ],
     morale: 9,
     behaviour: "Feverish, brutal, furious",
     speech: "Semi-comprehensible bellowing.",
@@ -418,7 +545,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Centaur—Sylvan
   25: {
     level: 4,
+    ac: 13,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Large Fairy—Sentient—Neutral",
+    flavour: [
+      "A horse-bodied philosopher out of Fairy, cheerful and quick to turn.",
+      "Loves argument, wine and wisdom; also enjoys roasting mortals at a feast.",
+      "Both of those are true at once, and the mood decides which.",
+    ],
     morale: 10,
     behaviour: "Wild, jovial, philosophical",
     speech: "Gentle murmuring and wild whinnying.",
@@ -441,7 +576,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Cobbin
   26: {
     level: 1,
+    ac: 14,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Small Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A two- or three-foot animal person who keeps a cottage, a teapot and a pipe.",
+      "Civil, domestic, and living under someone else's boot.",
+      "From the Valley of Wise Beasts, where the crookhorns rule.",
+    ],
     morale: 6,
     behaviour: "Shrewd, cautious, merry",
     speech: "Rustic squeaks and croaks. Woldish, Gaffe",
@@ -471,7 +614,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Cockatrice
   27: {
     level: 5,
+    ac: 13,
+    hp: "5d8",
+    hpAverage: 22,
     kind: "Small Monstrosity—Animal Intelligence—Neutral",
+    flavour: [
+      "Four feet of cockerel gone wrong: wattled neck, scaled tail, dragonish body.",
+      "Whatever it touches turns to stone. It is not careful about what it touches.",
+      "Nests where nobody sensible goes.",
+    ],
     morale: 7,
     behaviour: "Rambunctious capering",
     speech: "Agitated squawking",
@@ -500,12 +651,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Crookhorn
   28: {
     level: 2,
+    ac: 13,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Mortal—Sentient—Chaotic",
+    flavour: [
+      "A seven-foot breggle gone feral, diseased and twisted out of shape.",
+      "Raids, burns and robs on its master's account.",
+      "Northern Dolmenwood is its hunting ground.",
+    ],
     morale: 8,
     behaviour: "Brutish, wild, merciless",
     speech: "Obscenity-laced bleating. Gaffe, basic Wold-",
     hoard: "C4 + R4 + M1",
     namesNote: "See Atanuwë faction, Campaign Book.",
+    nameTable: "crookhorn",
     traits: [
       "Milky white, oozing eyes.",
       "Patchy fur and flaking, grey skin.",
@@ -530,7 +690,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Crystaloid
   29: {
     level: 3,
+    ac: 15,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Medium Construct—Sentient—Any Alignment",
+    flavour: [
+      "A five-foot mineral figure with a head of clustered crystal, no eyes and no mouth.",
+      "Speaks mind to mind. Farms ore the way other folk farm barley.",
+      "Lives underground in quiet communities.",
+    ],
     morale: 9,
     behaviour: "Peaceful, curious, emotionless",
     speech: "Resonant keening. Dwelve",
@@ -560,7 +728,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Deorling—Doe
   30: {
     level: 2,
+    ac: 13,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A slight, five-foot deer-woman with green eyes, silver hair, nub horns and a soft tail.",
+      "Travels in small family groups of women and children, led by the eldest.",
+      "Wary of strangers, and quick to move on.",
+    ],
     morale: 6,
     behaviour: "Spirited, flighty, devotional",
     speech: "Melodious. Woldish, Deorling, Sylvan",
@@ -583,7 +759,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Deorling—Stag
   31: {
     level: 3,
+    ac: 12,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Medium Mortal—Sentient—Any Alignment",
+    flavour: [
+      "Six or seven feet of antlered, gaunt muscle under reddish-grey down.",
+      "Proud, solitary, and looking for another of his kind to fight.",
+      "Browses moss in the deep woods, alone.",
+    ],
     morale: 9,
     behaviour: "Single-minded, proud, belligerent",
     speech: "Blunt bellowing. Woldish, Deorling",
@@ -600,7 +784,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Devil Goat
   32: {
     level: 3,
+    ac: 12,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Medium Monstrosity—Semi-Intelligent—Neutral",
+    flavour: [
+      "A pony-sized black goat with spiral horns, meat-tearing fangs and three red eyes.",
+      "Shaggy, silent, and hunting rather than grazing.",
+      "Roams the High Wold.",
+    ],
     morale: 8,
     behaviour: "Careful cunning, rapacious",
     speech: "Harsh bleating. Basic understanding of",
@@ -622,12 +814,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Drune—Audrune
   33: {
     level: 6,
+    ac: 13,
+    hp: "6d8",
+    hpAverage: 27,
     kind: "Medium Mortal—Genius—Alignment By Individual",
+    flavour: [
+      "A senior member of the occult brotherhood, robed and unwelcoming.",
+      "Its job is to keep everyone away from the nodal stones. Everyone.",
+      "Where one stands, a warded stone is close by.",
+    ],
     morale: 10,
     behaviour: "Fierce, fanatical, ruthless",
     speech: "Fearsome, brooding. Woldish, Drunic, Sylvan",
     hoard: "C3 + R3 + M3 + M6",
     namesNote: "See above.",
+    nameTable: "drune",
     encounters: [
       "Stepping suddenly from a purple dimension door, fleeing 2d4 babbling shadows (p74).",
       "Divining the course of a lesser ley line with a pulsing crystal rod. Wears opaque onyx goggles which grant the ability to detect magic once a day for 6 Turns.",
@@ -638,11 +839,20 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Drune—Braithmaid
   34: {
     level: 1,
+    ac: 11,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Medium Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A young Drune woman out gathering herbs, roots and fungi.",
+      "Looks harmless. Sings, and the singing is the dangerous part.",
+      "Wanders the wilds alone or in pairs.",
+    ],
     morale: 7,
     behaviour: "Quick-witted, evasive, aloof",
     speech: "Melodic, coy. Woldish, Drunic",
     namesNote: "See Drune faction, Campaign Book.",
+    nameTable: "drune",
     traits: [
       "Albino—white hair and pink eyes.",
       "Human knuckle bones hanging from silver earrings.",
@@ -667,11 +877,20 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Drune—Cottager
   35: {
     level: 4,
+    ac: 13,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Medium Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A black-cloaked figure in a foul mood, walking the deep wood.",
+      "Writes down omens and collects occult power the way others collect debts.",
+      "Far from any road.",
+    ],
     morale: 9,
     behaviour: "Penetrating, self-serving, manipulative",
     speech: "Abstruse, doom-laden. Woldish, Drunic",
     namesNote: "See Drune faction, Campaign Book.",
+    nameTable: "drune",
     traits: [
       "Emaciated and addled by mushroom brew.",
       "Necklace of owl skulls.",
@@ -696,12 +915,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Drune—Drunewife
   36: {
     level: 3,
+    ac: 10,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Medium Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A Drune woman of the older crafts: herbs, pottery, enchanted song.",
+      "Her kiln is magical, and small clay servants come out of it.",
+      "Found at a cottage, with the kiln still warm.",
+    ],
     morale: 9,
     behaviour: "Crafty, watchful, suspicious",
     speech: "Clear, melodic. Woldish, Drunic",
     hoard: "C3 + R3 + M3 + M6",
     namesNote: "See Drune faction, Campaign Book.",
+    nameTable: "drune",
     traits: [
       "Dressed in rabbit skins.",
       "Beaming and buxom.",
@@ -726,11 +954,20 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Elf—Courtier
   37: {
     level: 6,
+    ac: 14,
+    hp: "6d8",
+    hpAverage: 27,
     kind: "Medium Fairy—Genius—Any Alignment",
+    flavour: [
+      "High-born Fairy, immaculately turned out, sent here by a liege lord.",
+      "The errand may be diplomacy, discovery, debauchery or something with no mortal name.",
+      "Will not explain, and will expect the courtesies.",
+    ],
     morale: 9,
     behaviour: "Elevated, decadent, aloof",
     speech: "Aristocratic drawl. Woldish, High Elfish,",
     namesNote: "See Elf Kindred, Player's Book and Cold Prince faction, Campaign Book. See also: Fairy Nobles and Their Dominions, Campaign Book.",
+    nameTable: "elf",
     traits: [
       "Spectral butterflies flitting around hair.",
       "Leaves a trail of petals, snowflakes, or light motes.",
@@ -749,11 +986,20 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Elf—Knight
   38: {
     level: 4,
+    ac: 17,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Medium Fairy—Sentient—Any Alignment",
+    flavour: [
+      "A lithe, exquisitely groomed elf warrior, armed to the teeth.",
+      "Serves a fairy noble, and is out on a quest of daring or of love.",
+      "Treats mortals as scenery until they interrupt.",
+    ],
     morale: 9,
     behaviour: "Romantic, arrogant, resolute",
     speech: "Poetic bravado. Woldish, High Elfish",
     namesNote: "See Elf Kindred, Player's Book and Cold Prince faction, Campaign Book. See also: Fairy Nobles and Their Dominions, Campaign Book.",
+    nameTable: "elf",
     traits: [
       "Opalescent skin dusted with powdered crystal.",
       "Armour of plated ice shards.",
@@ -772,11 +1018,20 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Elf—Wanderer
   39: {
     level: 1,
+    ac: 12,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Medium Fairy—Sentient—Any Alignment",
+    flavour: [
+      "An elf living in the mortal world by exile or by choice.",
+      "Passes for human until you look twice; the wrongness needs magic to hide.",
+      "Anywhere a stranger would go unremarked.",
+    ],
     morale: 7,
     behaviour: "Perceptive, impartial, awestruck",
     speech: "Languid, lyrical. High Elfish, Sylvan,",
     namesNote: "See Elf Kindred, Player's Book and Cold Prince faction, Campaign Book. See also: Fairy Nobles and Their Dominions, Campaign Book.",
+    nameTable: "elf",
     traits: [
       "Hair made of slender willow leaves.",
       "Utterly hairless, skin shimmers.",
@@ -795,7 +1050,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Fairy Horse
   40: {
     level: 2,
+    ac: 13,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Large Fairy—Sentient—Any Alignment",
+    flavour: [
+      "A silver-dappled mare or stallion, faster and freer than any mortal horse.",
+      "Clever, and following a quest of its own that it will not share.",
+      "Native to the forests of Fairy, currently here.",
+    ],
     morale: 8,
     behaviour: "Sharp-witted, curious, driven by",
     speech: "Sarcastic. Woldish, Sylvan",
@@ -818,7 +1081,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Fomorian
   41: {
     level: 13,
+    ac: 16,
+    hp: "13d8",
+    hpAverage: 58,
     kind: "Large Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A twelve- to fourteen-foot giant, pale translucent skin, lank hair, one great eye.",
+      "Hoards gems and lost knowledge in equal measure.",
+      "Deep caves and empty country.",
+    ],
     morale: 8,
     behaviour: "Enigmatic, ponderous",
     speech: "Profound, grinding boom. Dwelve",
@@ -848,7 +1119,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Galosher
   42: {
     level: 3,
+    ac: 12,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Medium Monstrosity—Semi-Intelligent—Chaotic",
+    flavour: [
+      "Seven feet of writhing greenish-brown lampreys holding a roughly human shape.",
+      "Lures people close, then feeds on their dreams.",
+      "Waits in muddy pools.",
+    ],
     morale: 7,
     behaviour: "Lumbering, cunning, languid",
     speech: "Wordless gurgling",
@@ -877,12 +1156,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Gargoyle
   43: {
     level: 4,
+    ac: 14,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Medium Construct—Sentient—Any Alignment",
+    flavour: [
+      "A winged stone grotesque, four to six feet, carved for a church or a vault.",
+      "Animated to guard something. The old ones have opinions and are tired of the job.",
+      "Talking to one sometimes works better than fighting it.",
+    ],
     morale: 11,
     behaviour: "Cunning, single-minded",
     speech: "Gravelly snapping. Woldish, Liturgic",
     hoard: "C3 + R3 + M3",
     namesNote: "Typically named after a saint, see Pluritine Church faction, Campaign Book.",
+    nameTable: "saint",
     traits: [
       "Covered in ivy.",
       "Patched with moss and lichen.",
@@ -901,7 +1189,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Gelatinous Hulk
   44: {
     level: 8,
+    ac: 13,
+    hp: "8d8",
+    hpAverage: 36,
     kind: "Large Ooze—Animal Intelligence—Neutral",
+    flavour: [
+      "A twenty-foot mound of clear jelly in roughly human shape.",
+      "Hunts at night for fungi, fairies and magic items, and will not be shaken off a scent.",
+      "Wanders the dark.",
+    ],
     morale: 8,
     behaviour: "Peaceful, relentless when pursuing food",
     speech: "Wordless gibbering",
@@ -917,7 +1213,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Ghoul
   45: {
     level: 2,
+    ac: 13,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Undead—Sentient—Chaotic",
+    flavour: [
+      "The risen corpse of someone who starved to death in the wilds.",
+      "Driven by hunger that dying did not settle.",
+      "Ambushes travellers, raids farms, digs up graves.",
+    ],
     morale: 9,
     behaviour: "Ravenous, hateful, devious",
     speech: "Deranged babbling. Broken Woldish",
@@ -947,7 +1251,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Gloam
   46: {
     level: 7,
+    ac: 14,
+    hp: "7d8",
+    hpAverage: 31,
     kind: "Medium Undead—Sentient—Neutral",
+    flavour: [
+      "Dead crows, many of them, held together by shadow.",
+      "Shows itself either as a ragged flock or as a gaunt man made of feathers, bone and beaks.",
+      "Changes between the two as it suits.",
+    ],
     morale: 9,
     behaviour: "Cunning, obsessive, amoral",
     speech: "Cawing rasp. Woldish, the tongue of crows",
@@ -977,7 +1289,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Goblin
   47: {
     level: 2,
+    ac: 12,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Small Fairy—Sentient—Any Alignment",
+    flavour: [
+      "A blue-skinned fairy trader with a pack of strange goods.",
+      "Sells, haggles, cheats, and loves money almost as much as a human does.",
+      "Will not touch silver.",
+    ],
     morale: 7,
     behaviour: "Sly, tricksy, craven, whimsical",
     speech: "Animated banter. Woldish, Sylvan",
@@ -1000,12 +1320,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Grimalkin
   48: {
     level: 1,
+    ac: 12,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Small Fairy—Sentient—Any Alignment",
+    flavour: [
+      "A three- or four-foot cat fairy, standing upright.",
+      "Has three shapes: cat-person, fat house cat, and something older and hungrier.",
+      "Here for the entertainment of watching mortals be absurd.",
+    ],
     morale: 8,
     behaviour: "Sharp-witted, narcissistic, mercurial",
     speech: "Impudent yowls. Woldish, Mewl",
     hoard: "C5 + R2 + M8",
     namesNote: "See Grimalkin Kindred, Player's Book.",
+    nameTable: "grimalkin",
     traits: [
       "Dressed in pirate garb, complete with a tricorn hat.",
       "Eyes shift between violet, green, and amber.",
@@ -1030,7 +1359,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Harpy
   49: {
     level: 3,
+    ac: 12,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Medium Monstrosity—Sentient—Chaotic",
+    flavour: [
+      "A thin, sagging woman with the legs, tail and wings of a crow.",
+      "Her song draws people to her, and she eats them.",
+      "Most of them answer to Atanuwë.",
+    ],
     morale: 7,
     behaviour: "Rapacious, sadistic, avaricious",
     speech: "Cackling, screeching. Woldish, Gaffe,",
@@ -1060,7 +1397,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Harridan
   50: {
     level: 5,
+    ac: 14,
+    hp: "5d8",
+    hpAverage: 22,
     kind: "Large Mortal—Sentient—Chaotic",
+    flavour: [
+      "A nine-foot ogre witch, and one of the Nag-Lord's lieutenants.",
+      "Prophesies for her master and hunts for herself.",
+      "Lives underground, comes up for errands and for meat.",
+    ],
     morale: 10,
     behaviour: "Diabolical, scheming, hateful, ravenous",
     speech: "Deranged cackling. Woldish, Gaffe",
@@ -1090,12 +1435,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Headless Rider
   51: {
     level: 7,
+    ac: 16,
+    hp: "7d8",
+    hpAverage: 31,
     kind: "Medium Undead—Sentient—Chaotic",
+    flavour: [
+      "A ghost on a spectral horse, carrying its own severed head.",
+      "In life a highwayman, a disgraced knight or a mercenary — and it was hanged for it.",
+      "Rides the roads it used to rob.",
+    ],
     morale: 9,
     behaviour: "Obsessive, cruel, vengeful",
     speech: "Grisly moaning (from decapitated head).",
     hoard: "C5 + R2 + M8",
     namesNote: "See Human Kindred, Player's Book.",
+    nameTable: "human",
     encounters: [
       "Bearing down on a lone cleric (Level 1—p104), staunchly presenting her holy symbol despite its failure to repel the undead.",
       "In battle with 1d6 knights (Level 1—p106) wielding silvertipped lances. The knights are on orders to vanquish the undead, who have been terrorising local roads.",
@@ -1108,7 +1462,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Jack-o’-Lantern
   52: {
     level: 3,
+    ac: 11,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Small Fungus—Genius—Chaotic",
+    flavour: [
+      "A four-foot mushroom person, brown-fleshed, with a great wobbling cap and clusters of eyes.",
+      "Keeps secrets, and enjoys taking mortals prisoner far more than it should.",
+      "Very old, and in no hurry.",
+    ],
     morale: 7,
     behaviour: "Alien, malevolent, Machiavellian",
     speech: "Emotionless. Telepathic projection with any",
@@ -1137,11 +1499,20 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Kelpie
   53: {
     level: 5,
+    ac: 14,
+    hp: "5d8",
+    hpAverage: 22,
     kind: "Large Demi-Fey—Sentient—Chaotic",
+    flavour: [
+      "A black horse standing at the water's edge, slick with foam.",
+      "Its hooves point backwards and its bridle is silver weed — check both before mounting.",
+      "Enchants riders, then drowns and eats them.",
+    ],
     morale: 8,
     behaviour: "Wily, treacherous, dreamy",
     speech: "Eloquently romantic. Woldish, Sylvan",
     namesNote: "Usually adopt a human name. See Human Kindred, Player's Book.",
+    nameTable: "human",
     encounters: [
       "Lying in wait beneath the steep bank of a pool or stream, making cries and wails like those of a drowning child.",
       "Charging along with a red-headed maid (its lover, everyday mortal—p110) atop its back. The pair flee a group of 6 villagers (p111)—the girl’s relatives, armed with pitchforks—who suspect the fairy nature of her new paramour.",
@@ -1152,7 +1523,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Madtom
   54: {
     level: 2,
+    ac: 12,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Small Demi-Fey—Sentient—Neutral or Chaotic",
+    flavour: [
+      "Three or four feet of slimy amphibian with a pale catfish face.",
+      "Comes up from the murk only to hunt, and prefers people.",
+      "Rivers and deep still water.",
+    ],
     morale: 8,
     behaviour: "Dull-witted, sly, ravenous",
     speech: "Slurping. Sylvan, Mewl, Woldish (1-in-4",
@@ -1182,7 +1561,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Manikin
   55: {
     level: 2,
+    ac: 12,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Construct—Mindless—Neutral",
+    flavour: [
+      "A four- or five-foot figure knocked together from sticks, planks and broken furniture.",
+      "A witch made it to guard something or to fetch and carry.",
+      "Where one walks, its maker is not far.",
+    ],
     morale: 12,
     behaviour: "Awkward, unflinching",
     speech: "None. Understand basic Woldish",
@@ -1210,7 +1597,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Manticore
   56: {
     level: 6,
+    ac: 15,
+    hp: "6d8",
+    hpAverage: 27,
     kind: "Large Monstrosity—Sentient—Any Alignment",
+    flavour: [
+      "A man's face on a lion's body, bat wings, and a tail full of spikes.",
+      "Vain, and bitterly set on becoming human.",
+      "Flattery is worth trying before steel is.",
+    ],
     morale: 9,
     behaviour: "Vain, covetous, love riddles",
     speech: "Languid growl. Woldish, Mewl",
@@ -1240,7 +1635,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Marsh Lantern
   57: {
     level: 4,
+    ac: 16,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Medium Undead—Semi-Intelligent—Chaotic",
+    flavour: [
+      "A bobbing light on the water with a mournful face inside it.",
+      "It drowned unblessed in this pool and would like company.",
+      "The light leads travellers off the safe ground.",
+    ],
     morale: 12,
     behaviour: "Hateful, pitiful",
     speech: "Cacophonous moaning",
@@ -1263,7 +1666,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Merfaun
   58: {
     level: 2,
+    ac: 12,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Demi-Fey—sentient—Any Alignment",
+    flavour: [
+      "Human above, fish below, with a goat's horns and curls.",
+      "Merry, musical, and at home in enchanted water.",
+      "Lairs in caverns beneath the surface.",
+    ],
     morale: 8,
     behaviour: "Merry, boisterous, hedonistic",
     speech: "Boastful, mirthful. Woldish, Sylvan, Merfolk",
@@ -1293,7 +1704,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Mogglewomp
   59: {
     level: 3,
+    ac: 12,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Large Demi-Fey—Sentient—Chaotic",
+    flavour: [
+      "A lion-like fairy with great claws, fangs and saucer eyes — currently wearing a human shape.",
+      "Asks to come in for a hot drink, eats the host, and keeps the house.",
+      "The house may still look occupied.",
+    ],
     morale: 7,
     behaviour: "Ferocious, slow-witted, curious,",
     speech: "Stammering yowls. Basic Woldish, Mewl",
@@ -1323,12 +1742,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Mossling
   60: {
     level: 1,
+    ac: 13,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Small Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A gnarled, four-foot woody person with moss for hair and beard.",
+      "Brews and makes cheese, and is respected for both.",
+      "Lives in small communities in damp, gloomy dells.",
+    ],
     morale: 7,
     behaviour: "Slow but shrewd, jovial, prudent",
     speech: "Squelching, grinding. Woldish, Mulch",
     hoard: "C3 + R3 + M3",
     namesNote: "See Mossling Kindred, Player's Book.",
+    nameTable: "mossling",
     traits: [
       "Pack full of stinky swine-cheese.",
       "Curious, bendy hat of red felt.",
@@ -1353,12 +1781,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Mould Oracle
   61: {
     level: 4,
+    ac: 12,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Small Mortal—Sentient—Neutral",
+    flavour: [
+      "A mossling given over to the fungal gods of root and mycelium.",
+      "Shares its body with psychedelic fungi, which grants visions and costs sanity.",
+      "Speaks in prophecy, not always to you.",
+    ],
     morale: 8,
     behaviour: "Sagacious, inscrutable, idiosyncratic",
     speech: "Abstracted gurgling. Woldish, Mulch,",
     hoard: "R1 + M5",
     namesNote: "See Mossling Kindred, Player's Book. See also Mogba religion, Player's Book and the Myconom Wood God, Campaign Book.",
+    nameTable: "mossling",
     traits: [
       "Rough clay mask with dangling conkers.",
       "Pulsating puffballs in place of eyes.",
@@ -1383,7 +1820,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Mugwudge
   62: {
     level: 3,
+    ac: 12,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Large Monstrosity—Animal Intelligence—Neutral",
+    flavour: [
+      "A long-necked, shaggy boar that smells appalling from a good distance.",
+      "The stench and the breath are the defence; predators have learned.",
+      "Eats mushrooms, moss and pondweed, and is foul-tempered if disturbed.",
+    ],
     morale: 8,
     behaviour: "Dull-witted, greedy, cantankerous",
     speech: "Grumbling and bellowing",
@@ -1412,7 +1857,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Nutcap
   63: {
     level: 1,
+    ac: 13,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Small Demi-Fey—Sentient—Any Alignment",
+    flavour: [
+      "A two- or three-foot tree fairy: acorn head, beech-bark skin, roots for hands, sycamore wings.",
+      "Tends magical trees it has bred itself.",
+      "Damage the tree and you have its full attention.",
+    ],
     morale: 7,
     behaviour: "Capricious, covetous, flighty",
     speech: "Excited chittering. Sylvan, Mulch (1-in-3",
@@ -1442,7 +1895,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Ochre Slime-Hulk
   64: {
     level: 7,
+    ac: 14,
+    hp: "7d8",
+    hpAverage: 31,
     kind: "Large Fungus—Animal Intelligence—Neutral",
+    flavour: [
+      "An eight-foot headless four-legged mound of fungal flesh, webbed with ochre slime.",
+      "Bristles with stalks that throw spores.",
+      "Kills readily and without ceremony.",
+    ],
     morale: 10,
     behaviour: "Indiscriminately brutal",
     speech: "None",
@@ -1464,12 +1925,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Ogre
   65: {
     level: 4,
+    ac: 14,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Large Mortal—Sentient—Chaotic",
+    flavour: [
+      "Eight to ten feet, warty violet skin, misshapen, with great curling horns.",
+      "Dressed in hides, and hungry for mortal meat — infants for preference.",
+      "Keeps to a lonely cave or a cottage that used to belong to somebody else.",
+    ],
     morale: 10,
     behaviour: "Depraved, brutish, slow-witted, greedy",
     speech: "Crude booming. Basic Woldish",
     hoard: "C4 + R4 + M2",
     namesNote: "Cannot recall original name; often given a crookhorn name—see Atanuwë faction, Campaign Book.",
+    nameTable: "crookhorn",
     traits: [
       "Jaw completely unhinges.",
       "Emaciated torso reveals last meal.",
@@ -1494,7 +1964,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Onyx Blob
   66: {
     level: 10,
+    ac: 16,
+    hp: "10d8",
+    hpAverage: 45,
     kind: "Large Ooze—Animal Intelligence—Neutral",
+    flavour: [
+      "Twenty feet across, black, wobbling, shapeless.",
+      "It has no mind, only the urge to dissolve anything alive.",
+      "It does not stop following.",
+    ],
     morale: 12,
     behaviour: "Relentless, ravenous",
     speech: "Unnerving fizzing",
@@ -1516,7 +1994,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Peryton
   67: {
     level: 4,
+    ac: 13,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Large Monstrosity—Animal Intelligence—Neutral",
+    flavour: [
+      "Eagle's body and wings, stag's head and antlers, a wolf's teeth in the middle.",
+      "Preys on people in particular.",
+      "Nests somewhere remote and comes a long way to hunt.",
+    ],
     morale: 9,
     behaviour: "Cunning, frenzied",
     speech: "Gurgling howls",
@@ -1545,7 +2031,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Pook Morel
   68: {
     level: 1,
+    ac: 16,
+    hp: "1d4",
+    hpAverage: 2,
     kind: "Small Fungus—Sentient—Any Alignment",
+    flavour: [
+      "A six-inch mushroom person, cream trunk, crinkled yellow cap.",
+      "Throws psychic horrors at travellers and pockets whatever they drop.",
+      "Works in numbers, on woodland paths.",
+    ],
     morale: 6,
     behaviour: "Sneaky, mischievous, covetous",
     speech: "High-pitched tittering. Mulch, basic Woldish",
@@ -1575,7 +2069,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Redcap
   69: {
     level: 2,
+    ac: 14,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Fairy—Sentient—Chaotic",
+    flavour: [
+      "A squat, white-haired figure with glinting eyes and a broad leering grin.",
+      "A fairy bandit sent to taunt, beat and rob mortals, on a prince's orders.",
+      "Robbery is the errand; the taunting is the pleasure.",
+    ],
     morale: 9,
     behaviour: "Sneaky, malicious, mischievous",
     speech: "Leering and tittering. Woldish, Sylvan, basic",
@@ -1598,7 +2100,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Redslob
   70: {
     level: 4,
+    ac: 13,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Large Ooze—Semi-Intelligent—Neutral",
+    flavour: [
+      "Eight feet of bubbling crimson ooze, sitting up in the branches.",
+      "Drops on whatever passes underneath.",
+      "Greedy in a way an ooze should not be — some collect gems.",
+    ],
     morale: 10,
     behaviour: "Cautious, inquisitive",
     speech: "Slurping and bubbling",
@@ -1620,7 +2130,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Root Thing
   71: {
     level: 3,
+    ac: 13,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Sm./Med./Lg. Plant—Animal Intelligence—Neutral",
+    flavour: [
+      "A humanoid root vegetable, four to ten feet, hauling itself out of the soil.",
+      "Blind, and hunts by smell with a horrible rasping sniff.",
+      "You hear it before you see it.",
+    ],
     morale: 9,
     behaviour: "Cunning, bestial, ruthless lust to feed",
     speech: "None",
@@ -1642,7 +2160,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Scarecrow
   72: {
     level: 3,
+    ac: 11,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Medium Construct—Sentient—Alignment by Season",
+    flavour: [
+      "Straw, brambles and leaves stuffed into a sack and old clothes.",
+      "Walks Dolmenwood as a pedlar, looking for wonders and a good time.",
+      "Friendlier than it looks, which is its own kind of unsettling.",
+    ],
     morale: 8,
     behaviour: "Merry / murderous / morose",
     speech: "Rustling and rumbling. Woldish, Mulch",
@@ -1665,7 +2191,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Scrabey
   73: {
     level: 2,
+    ac: 13,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Small Demi-Fey—Sentient—Any Alignment",
+    flavour: [
+      "A scrawny three- or four-foot fairy: ash-grey skin, moon eyes, needle teeth, a nose like a tap.",
+      "Carries everything it owns on its back.",
+      "Lives in a maze of tunnels under the ground.",
+    ],
     morale: 7,
     behaviour: "Prudent, excitable, curious",
     speech: "Gulping whisper. Dwelve, basic Woldish",
@@ -1695,7 +2229,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Shadow
   74: {
     level: 2,
+    ac: 12,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Monstrosity—Semi-Intelligent—Chaotic",
+    flavour: [
+      "A human shadow with nobody casting it, creeping along the dark.",
+      "Feeds on the vital strength of the living.",
+      "Its shape writhes as it moves — tentacles, mouths, horns.",
+    ],
     morale: 12,
     behaviour: "Ravenous, greedy",
     speech: "Incoherent whispering. Jumbled Woldish",
@@ -1724,12 +2266,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Shape-Stealer
   75: {
     level: 4,
+    ac: 14,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Medium Fairy—Sentient—Neutral",
+    flavour: [
+      "Ooze by nature, but it is wearing somebody at the moment.",
+      "Copies the form and the mind of anyone it kills and absorbs.",
+      "It wants to know what being mortal is like, and keeps trying.",
+    ],
     morale: 10,
     behaviour: "Remorseless, cautious, stealthy",
     speech: "Victim’s voice. Woldish, Sylvan, High Elfish",
     hoard: "C3 + R4 + M8",
     namesNote: "Use victims’ names. See Kindreds, Player's Book.",
+    nameTable: "human",
     encounters: [
       "Naked, in the forms of 1d3 pedlars (p111) spied in the distance. If confronted, claim that their intended victims are monsters who’ve stolen their possessions.",
       "Stealing away after tiring of their most recent victims’ lives. A search party of 2d4 villagers (p111) is in pursuit—friends who know something is wrong but have not yet realised the truth.",
@@ -1746,16 +2297,33 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Skeleton
   76: {
     level: 1,
+    ac: 12,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Medium Undead—Sentient—Any Alignment",
+    flavour: [
+      "Bones on their feet again, moved by stray magic.",
+      "Given a second run at life, it eats, drinks and enjoys itself.",
+      "Not necessarily hostile, and genuinely pleased to be here.",
+    ],
     morale: 7,
     behaviour: "Merry, flippant, addled, awed",
     speech: "Rattling whisper. Woldish",
     namesNote: "See mortal Kindreds, Player's Book.",
+    nameTable: "human",
   },
   // Snail, Giant—Mutant
   77: {
     level: 6,
+    ac: 17,
+    hp: "6d8",
+    hpAverage: 27,
     kind: "Large Monstrosity—Animal Intelligence—Neutral",
+    flavour: [
+      "A ten-foot shelled mollusc gliding through a damp glade.",
+      "Grazes on ley-soaked plants, and on anything fleshy in the way.",
+      "Slow, and does not need to be fast.",
+    ],
     morale: 9,
     behaviour: "Ravenous, instinctual",
     speech: "Relentless slurping",
@@ -1777,7 +2345,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Snail, Giant—Psionic
   78: {
     level: 6,
+    ac: 17,
+    hp: "6d8",
+    hpAverage: 27,
     kind: "Large Monstrosity—Sentient—Any Alignment",
+    flavour: [
+      "Ten feet of violet or pink snail under a shell of swirling orange and green.",
+      "Feeds on ley energy and magical moss.",
+      "Lives for centuries, and its mind is the dangerous end.",
+    ],
     morale: 8,
     behaviour: "Dreamy, aloof",
     speech: "Abstruse. Telepathic projection with any",
@@ -1800,7 +2376,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Spectre
   79: {
     level: 6,
+    ac: 17,
+    hp: "6d8",
+    hpAverage: 27,
     kind: "Medium Undead—Sentient—Chaotic",
+    flavour: [
+      "The bodiless spirit of someone who worshipped death itself, long ago.",
+      "Pride and a bad bargain keep it here, gloating over its wealth.",
+      "It stays with the hoard.",
+    ],
     morale: 11,
     behaviour: "Avaricious, arrogant, desire worship",
     speech: "Sinister whispering. Old Woldish",
@@ -1830,7 +2414,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Sprite
   80: {
     level: 1,
+    ac: 16,
+    hp: "1d4",
+    hpAverage: 2,
     kind: "Small Fairy—Sentient—Any Alignment",
+    flavour: [
+      "A six-inch fairy with dragonfly wings, and never just one.",
+      "Swarms, and makes mischief wherever mischief is available.",
+      "More annoying than deadly, until it is not.",
+    ],
     morale: 6,
     behaviour: "Sharp-witted, mischievous, flippant",
     speech: "High-pitched buzzing. Sylvan,",
@@ -1860,7 +2452,14 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Talking Animal
   82: {
     level: 1,
+    ac: 13,
+    hp: "By species",
     kind: "Small Animal—Sentient—Any Alignment",
+    flavour: [
+      "An ordinary woodland animal that has been given speech.",
+      "Lives as its kind does, but enjoys stopping travellers with a riddle.",
+      "May know something worth hearing, and will make you work for it.",
+    ],
     morale: 5,
     behaviour: "Tricksy, whimsical, slippery",
     speech: "Eloquent squeaks, hoots, barks, etc. Woldish",
@@ -1882,7 +2481,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Treowere
   83: {
     level: 8,
+    ac: 17,
+    hp: "8d8",
+    hpAverage: 36,
     kind: "Large Plant—Sentient—Any Alignment",
+    flavour: [
+      "Eighteen feet of walking tree, trunk-legged, twig-fingered.",
+      "Its canopy turns with the seasons.",
+      "Guards deep wild woodland and takes a long view of trespass.",
+    ],
     morale: 9,
     behaviour: "Lawful, Neutral: Benign unless slighted,",
     speech: "Slow creaking. Mulch, Sylvan,",
@@ -1912,7 +2519,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Troll
   84: {
     level: 8,
+    ac: 13,
+    hp: "8d8",
+    hpAverage: 36,
     kind: "Large Fairy—Sentient—Any Alignment",
+    flavour: [
+      "Ten feet of hairless, clay-fleshed fairy.",
+      "Eats moss — by preference the moss that grows on the corpses of thinking beings.",
+      "Which means it has a reason to make more corpses.",
+    ],
     morale: 10,
     behaviour: "Muddled, sly, hungry for moss",
     speech: "Lethargic rumbling. Woldish, Sylvan",
@@ -1942,11 +2557,20 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Unicorn—Blessed
   85: {
     level: 4,
+    ac: 17,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Large Demi-Fey—Sentient—Lawful",
+    flavour: [
+      "A shimmering horse of pink, white or pearl, with a horn.",
+      "Wholly good, and delighted by the ordinary wonders of the wood.",
+      "Avoids other thinking creatures, including you.",
+    ],
     morale: 9,
     behaviour: "Noble, timid, wilful",
     speech: "Proud whinnies. Liturgic, Sylvan",
     namesNote: "Typically named after a saint, see Pluritine Church faction, Campaign Book.",
+    nameTable: "saint",
     traits: [
       "Regal, goat-like beard.",
       "Voice tinkles like wind chimes.",
@@ -1965,7 +2589,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Unicorn—Corrupt
   86: {
     level: 4,
+    ac: 17,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Large Demi-Fey—Sentient—Chaotic",
+    flavour: [
+      "A unicorn in ash grey, midnight blue or deep purple.",
+      "Corrupted, and now advises on war and helps with dark sorcery.",
+      "Serves Atanuwë.",
+    ],
     morale: 9,
     behaviour: "Sinister, fanatic, sadistic",
     speech: "Creaky whinnies. Gaffe, Sylvan",
@@ -1988,12 +2620,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Werewolf
   87: {
     level: 4,
+    ac: 14,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Medium Mortal—Sentient—Chaotic",
+    flavour: [
+      "A person who becomes a hulking wolf-thing, and enjoys it.",
+      "Some hide among neighbours in a village; some run wild in packs.",
+      "The village kind is the harder problem.",
+    ],
     morale: 8,
     behaviour: "Predatory, menacing, sly",
     speech: "Growls and grunts. Woldish",
     hoard: "C3 + R3 + M3",
     namesNote: "See Human Kindred, Player's Book.",
+    nameTable: "human",
     traits: [
       "Snow white hair and fur.",
       "Constantly sniffling and snorting.",
@@ -2018,7 +2659,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Wicker Giant
   88: {
     level: 8,
+    ac: 12,
+    hp: "8d8",
+    hpAverage: 36,
     kind: "Large Construct—Mindless—Neutral",
+    flavour: [
+      "Twelve feet of woven wicker in the shape of a man.",
+      "Green flame flickers at its heart, around the burnt bones of a sacrifice.",
+      "Drune magic set it to guard a particular place.",
+    ],
     morale: 12,
     behaviour: "Looming, creaking, rageful",
     speech: "None. Understand Drunic",
@@ -2046,7 +2695,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Wight
   89: {
     level: 3,
+    ac: 14,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Medium Undead—Sentient—Chaotic",
+    flavour: [
+      "An interred corpse wrapped in pale flame, ridden by an evil spirit off a ley line.",
+      "Collects bones and riches in the tomb it was buried in.",
+      "It does not leave the tomb willingly.",
+    ],
     morale: 12,
     behaviour: "Covetous, hateful of the living",
     speech: "Bestial hissing and snarling",
@@ -2076,12 +2733,21 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Witch
   90: {
     level: 4,
+    ac: 14,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Medium Mortal—Sentient—Any Alignment",
+    flavour: [
+      "A woman who sold her service to a Gwyrigon for arcane secrets.",
+      "Meets others of her kind under the moon to worship and to work magic.",
+      "The bargain is still running, and something is owed.",
+    ],
     morale: 9,
     behaviour: "Perceptive, enigmatic",
     speech: "Formidable, cryptic. Woldish, Witches’ Cant,",
     hoard: "C2 + R1 + M5",
     namesNote: "See Human Kindred, Player's Book. See also: Witches faction, Campaign Book.",
+    nameTable: "human",
     traits: [
       "Arms tattooed with winding brambles and knives.",
       "Emaciated and bloodstained.",
@@ -2106,7 +2772,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Witch Owl
   92: {
     level: 2,
+    ac: 14,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Small Monstrosity—Semi-Intelligent—Chaotic",
+    flavour: [
+      "A milk-white owl with a three-foot wingspan, violet eyes and a head that turns too far.",
+      "Hunts thinking beings at dusk and feeds on their minds.",
+      "Seeing one is held to be a bad omen, and the locals mean it.",
+    ],
     morale: 8,
     behaviour: "Inscrutable, sinister, merciless",
     speech: "Eerie hooting",
@@ -2135,7 +2809,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Wodewose
   93: {
     level: 3,
+    ac: 12,
+    hp: "3d8",
+    hpAverage: 13,
     kind: "Medium Mortal—Sentient—Any Alignment",
+    flavour: [
+      "Six or seven feet of wild forest person, coarse-haired, patched with moss and ferns.",
+      "Wants no contact with anyone and will leave if allowed.",
+      "Eats fungus and roots in the deep woods.",
+    ],
     morale: 8,
     behaviour: "Wide-eyed, shy, uncultured",
     speech: "Whistling mumbles and whispers. Mulch,",
@@ -2158,11 +2840,20 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Woodgrue
   94: {
     level: 1,
+    ac: 12,
+    hp: "1d8",
+    hpAverage: 4,
     kind: "Small Demi-Fey—Sentient—Any Alignment",
+    flavour: [
+      "A three-and-a-half-foot bat-faced goblin covered in soft down.",
+      "Loves darkness, fire, revelry and unhinged woodwind music.",
+      "Sleeps in treetops; you will hear the band first.",
+    ],
     morale: 7,
     behaviour: "Madcap, frivolous, hair-brained",
     speech: "Rapid squeaking. Woldish, Sylvan",
     namesNote: "See Woodgrue Kindred, Player's Book.",
+    nameTable: "woodgrue",
     traits: [
       "Twitchy, wobbly ears.",
       "Purple nose and lips.",
@@ -2181,11 +2872,20 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Wronguncle
   95: {
     level: 2,
+    ac: 11,
+    hp: "2d8",
+    hpAverage: 9,
     kind: "Medium Fungus—Sentient—Any Alignment",
+    flavour: [
+      "A five-foot toadstool person, white-bodied under a red speckled cap.",
+      "It grew on a corpse and inherited the dead person's voice, habits and muddled memories.",
+      "It may greet you by name, and be wrong about which name.",
+    ],
     morale: 7,
     behaviour: "Befuddled, merry, inane (until reunited",
     speech: "Repeats favoured phrases. Woldish",
     namesNote: "See mortal Kindreds, Player's Book.",
+    nameTable: "human",
     traits: [
       "Sports a dead squirrel, in memory of its former hat.",
       "Face contorts between benign smile and twisted grimace.",
@@ -2204,7 +2904,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Wyrm—Black Bile
   97: {
     level: 5,
+    ac: 17,
+    hp: "5d8",
+    hpAverage: 22,
     kind: "Large Dragon—Sentient—Chaotic",
+    flavour: [
+      "Thirty feet of lumpy brown-black scale, patched with fur and feathers, with a wolfish leer.",
+      "Burrows and comes up under its prey.",
+      "Kills for the pleasure of it.",
+    ],
     morale: 9,
     behaviour: "Savage, rapacious, destructive",
     speech: "Growling, broken sentences. Basic Woldish,",
@@ -2234,7 +2942,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Wyrm—Blood
   98: {
     level: 9,
+    ac: 19,
+    hp: "9d8",
+    hpAverage: 40,
     kind: "Large Dragon—Sentient—Chaotic",
+    flavour: [
+      "Fifty feet of deep crimson scale, a near-human face, blue pupilless eyes, antlers at the neck.",
+      "Charms weaker creatures into doing its work.",
+      "The whip-like thorny tail is the other argument.",
+    ],
     morale: 9,
     behaviour: "Scheming, cruel, sadistic",
     speech: "Eloquent, venomous. Woldish, Wyrm,",
@@ -2264,7 +2980,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Wyrm—Phlegm
   99: {
     level: 7,
+    ac: 19,
+    hp: "7d8",
+    hpAverage: 31,
     kind: "Large Dragon—Sentient—Chaotic",
+    flavour: [
+      "Forty sinuous feet of silver-grey scale fringed with purple, with golden eyes.",
+      "Lives in or beside water.",
+      "Covets gems and music that hypnotises.",
+    ],
     morale: 9,
     behaviour: "Languid, avaricious, deceitful",
     speech: "Dreamy hissing. Woldish, Wyrm",
@@ -2294,7 +3018,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Wyrm—Yellow Bile
   100: {
     level: 11,
+    ac: 20,
+    hp: "11d8",
+    hpAverage: 49,
     kind: "Large Dragon—Genius—Chaotic",
+    flavour: [
+      "Sixty feet of tarnished gold scale, a misshapen head, bulging black eyes, wisps of white hair.",
+      "Hoards knowledge as greedily as gold.",
+      "Pretends to be wise in order to draw victims in close.",
+    ],
     morale: 9,
     behaviour: "Erudite, treacherous, hateful",
     speech: "Reasoned rasp. Woldish, Wyrm, Dwelve,",
@@ -2324,7 +3056,15 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
   // Yickerwill
   101: {
     level: 4,
+    ac: 13,
+    hp: "4d8",
+    hpAverage: 18,
     kind: "Medium Demi-Fey—Semi-Intelligent—Neutral",
+    flavour: [
+      "A six-foot flying fairy: caterpillar legs, moth face, feathered belly, cold fluttering wings.",
+      "Kills people in order to eat their clothes.",
+      "That is the whole reason. It wants the cloth.",
+    ],
     morale: 7,
     behaviour: "Flighty, greedy, mercurial",
     speech: "Chittering whispers. Snatches of Sylvan",
@@ -2366,77 +3106,148 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
  * of them use the same one.
  */
 export const APPENDIX: Record<string, BestiaryEntry> = {
-  "Angler": { level: 1, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6 },
-  "Ant, Giant": { level: 4, kind: "Medium Bug—Animal Intelligence—Neutral", morale: 7 },
-  "Bard": { level: 1, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7 },
-  "Bat, Giant": { level: 2, kind: "Small Animal—Animal Intelligence—Neutral", morale: 8 },
-  "Bat, Vampire": { level: 2, kind: "Small Animal—Semi-Intelligent—Chaotic", morale: 8 },
-  "Bear": { level: 4, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 7 },
-  "Boar": { level: 3, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 9 },
-  "Burrowing Beetle": { level: 2, kind: "Small Bug—Animal Intelligence—Neutral", morale: 8 },
-  "Carrion Worm": { level: 3, kind: "Large Bug—Animal Intelligence—Neutral", morale: 9, hoard: "C4 + R4 + M1" },
-  "Catfish, Giant": { level: 8, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8 },
-  "Cave Salamander": { level: 3, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 6 },
-  "Centipede, Giant": { level: 1, kind: "Small Bug—Animal Intelligence—Neutral", morale: 7 },
-  "Cleric": { level: 1, kind: "Size/Type By Kindred—Sentient—Lawful or Neutral", morale: 8 },
-  "Crab, Giant": { level: 3, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 7 },
-  "Crier": { level: 1, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6 },
-  "Earthworm, Giant": { level: 7, kind: "Large Bug—Animal Intelligence—Neutral", morale: 8 },
-  "Enchanter": { level: 1, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7 },
-  "False Unicorn": { level: 2, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 6 },
-  "Fighter": { level: 1, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7 },
-  "Fire Beetle, Giant": { level: 1, kind: "Small Bug—Animal Intelligence—Neutral", morale: 7 },
-  "Fly, Giant": { level: 3, kind: "Small Bug—Animal Intelligence—Neutral", morale: 8 },
-  "Fortune-Teller": { level: 1, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6 },
-  "Friar": { level: 1, kind: "Size/Type By Kindred—Sentient—Lawful or Neutral", morale: 7 },
-  "Frog, Giant": { level: 2, kind: "Small Animal—Animal Intelligence—Neutral", morale: 9 },
-  "Gelatinous Ape": { level: 2, kind: "Small Animal—Semi-Intelligent—Lawful", morale: 7 },
-  "Gobble": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 6 },
-  "Griffon": { level: 7, kind: "Large Animal—Semi-Intelligent—Neutral", morale: 8, hoard: "C5 + R2 + M8" },
-  "Hawk": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7 },
-  "Hawk, Giant": { level: 6, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8, hoard: "C8 + R9 + M2" },
-  "Headhog": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 6 },
-  "Honey Badger": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 8 },
-  "Hunter": { level: 1, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7 },
-  "Insect Swarm": { level: 3, kind: "Medium Bug—Animal Intelligence—Neutral", morale: 11 },
-  "Killer Bee": { level: 1, kind: "Small Bug—Animal Intelligence—Neutral", morale: 9 },
-  "Knight": { level: 1, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 8 },
-  "Leech, Giant": { level: 6, kind: "Small Bug—Animal Intelligence—Neutral", morale: 10 },
-  "Lost Soul": { level: 1, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6 },
-  "Lurkey": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7 },
-  "Magician": { level: 1, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7 },
-  "Merchant": { level: 1, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6 },
-  "Merriman": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7 },
-  "Moss Mole": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 6 },
-  "Ooze Salamander": { level: 6, kind: "Large Animal—Animal Intelligence—Neutral", morale: 9 },
-  "Owlbear": { level: 5, kind: "Large Animal—Animal Intelligence—Neutral", morale: 9, hoard: "C3 + R3 + M3" },
-  "Pedlar": { level: 1, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6 },
-  "Pike, Giant": { level: 4, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8 },
-  "Pilgrim": { level: 1, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6 },
-  "Priest": { level: 1, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6 },
-  "Puggle": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 9 },
-  "Purple Worm": { level: 15, kind: "Large Bug—Animal Intelligence—Neutral", morale: 10 },
-  "Rapacious Beetle": { level: 3, kind: "Small Bug—Animal Intelligence—Neutral", morale: 9 },
-  "Rat, Giant": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 8 },
-  "Red Deer": { level: 3, kind: "Large Animal—Animal Intelligence—Neutral", morale: 5 },
-  "Shaggy Mammoth": { level: 12, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8 },
-  "Slug, Giant": { level: 12, kind: "Large Bug—Animal Intelligence—Neutral", morale: 10 },
-  "Snake—Adder": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7 },
-  "Snake—Giant Python": { level: 5, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8 },
-  "Spinning Spider, Giant": { level: 3, kind: "Medium Bug—Semi-Intelligent—Chaotic", morale: 8 },
-  "Stirge": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 9 },
-  "Swamp Sloth": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 6 },
-  "Swamp Spider, Giant": { level: 5, kind: "Large Bug—Animal Intelligence—Neutral", morale: 8 },
-  "Thief": { level: 1, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7 },
-  "Toad, Giant": { level: 2, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 6 },
-  "Trotteling": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 8 },
-  "Villager": { level: 1, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6 },
-  "Water Termite, Giant": { level: 2, kind: "Small Bug—Animal Intelligence—Neutral", morale: 8 },
-  "Weasel, Giant": { level: 4, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8 },
-  "Woad": { level: 1, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7 },
-  "Wolf": { level: 2, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 6 },
-  "Wolf, Dire": { level: 4, kind: "Medium Animal—Semi-Intelligent—Chaotic", morale: 8 },
-  "Yegril": { level: 4, kind: "Large Animal—Animal Intelligence—Neutral", morale: 6 },
+  "Angler": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6, nameTable: "human",
+    flavour: ["Fisherfolk with nets, rods, tackle, bait boxes and buckets.", "On water they are aboard a raft or a rowing boat.", "Often carrying a few rations, and usually willing to talk about the weather."] },
+  "Ant, Giant": { level: 4, ac: 16, hp: "4d8", hpAverage: 18, kind: "Medium Bug—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["A black ant six feet long, and it eats anything.", "Strips whatever is in its path, plant or otherwise.", "Known to mine crystal from seams under ley lines."] },
+  "Bard": { level: 1, ac: 12, hp: "1d6", hpAverage: 3, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7,
+    flavour: ["A wandering performer who has learned a little magic along with the songs.", "Travels for an audience, a patron, or the next verse of a story.", "Knows more about the local gossip than anyone else you will meet today."] },
+  "Bat, Giant": { level: 2, ac: 13, hp: "2d8", hpAverage: 9, kind: "Small Animal—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A black-furred bat with a four-foot wingspan, and it eats meat.", "Leaves people alone unless it is hungry.", "Roosts somewhere dark and comes out at dusk."] },
+  "Bat, Vampire": { level: 2, ac: 13, hp: "2d8", hpAverage: 9, kind: "Small Animal—Semi-Intelligent—Chaotic", morale: 8,
+    flavour: ["Black fur, red eyes, crooked fangs, five feet across the wings.", "It wants blood and nothing else.", "Bred by the Nag-Lord; roosts in the twisted woods around its lands."] },
+  "Bear": { level: 4, ac: 13, hp: "4d8", hpAverage: 18, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["Six feet of brown-furred bear, ambling about after berries and roots.", "Good-natured until its cubs are involved, then absolute.", "Will raid a camp for food, which is how most trouble starts."] },
+  "Boar": { level: 3, ac: 12, hp: "3d8", hpAverage: 13, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 9,
+    flavour: ["A wild boar, common enough all through Dolmenwood.", "Bad-tempered and genuinely dangerous once roused.", "Leave it alone and it will leave you alone."] },
+  "Burrowing Beetle": { level: 2, ac: 15, hp: "2d8", hpAverage: 9, kind: "Small Bug—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A three-foot beetle with great horns and digging mandibles.", "Eats fungi, roots and carrion, and will not start a fight.", "Lives in burrow networks that sometimes break into other tunnels."] },
+  "Carrion Worm": { level: 3, ac: 12, hp: "3d8", hpAverage: 13, kind: "Large Bug—Animal Intelligence—Neutral", morale: 9, hoard: "C4 + R4 + M1",
+    flavour: ["Nine feet of corpse-white worm covered in sticky slime.", "A ring of writhing tentacles around a lamprey's mouth.", "Underground, and in dank dark woods and swamps."] },
+  "Catfish, Giant": { level: 8, ac: 15, hp: "8d8", hpAverage: 36, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["Fifteen feet of pale catfish with four spiked barbels.", "Attacks anything swimming.", "Spawns in Lake Longmere and wanders into other waters."] },
+  "Cave Salamander": { level: 3, ac: 14, hp: "3d8", hpAverage: 13, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 6,
+    flavour: ["Five feet of dark blue amphibian with orange spots.", "Aggressive, but startles easily.", "Lives underground, comes up at night."] },
+  "Centipede, Giant": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small Bug—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["A foot of centipede, and it hunts.", "Lurks in rotting trees, caves and anywhere dark and damp.", "Aggressive out of all proportion to its size."] },
+  "Cleric": { level: 1, ac: 15, hp: "1d6", hpAverage: 3, kind: "Size/Type By Kindred—Sentient—Lawful or Neutral", morale: 8,
+    flavour: ["A priest of the Pluritine Church who carries a mace as well as a prayer.", "Travelling on the business of a saint, or of a bishop.", "Will want to know your alignment before your name."] },
+  "Crab, Giant": { level: 3, ac: 17, hp: "3d8", hpAverage: 13, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["A four-foot crab out of the strange water of Lake Longmere.", "Attacks anything that moves, without waiting to see what it is.", "Lurks in the shallows and walks the beaches."] },
+  "Crier": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6, nameTable: "human",
+    flavour: ["A town official in loud clothes, carrying news between settlements.", "Sometimes brings a fanfare-blower along.", "Whatever is happening in the region, this is where you hear it first."] },
+  "Earthworm, Giant": { level: 7, ac: 13, hp: "7d8", hpAverage: 31, kind: "Large Bug—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["Thirty feet of greyish-pink worm with a gaping toothless mouth.", "Burrows deep and eats whatever the tunnel meets.", "Under the wood, mostly."] },
+  "Enchanter": { level: 1, ac: 12, hp: "1d6", hpAverage: 3, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7,
+    flavour: ["A spell-caster of the fairy tradition, usually an elf, grimalkin or woodgrue.", "Charm and glamour rather than fire and ruin.", "Rarely says plainly what it is doing here."] },
+  "False Unicorn": { level: 2, ac: 12, hp: "2d8", hpAverage: 9, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 6,
+    flavour: ["A white deer with a single horn in the middle of its brow.", "Straight and short on the does, a branched antler on the stags.", "At a distance it is easily mistaken for a real unicorn, which is the whole problem."] },
+  "Fighter": { level: 1, ac: 15, hp: "1d8", hpAverage: 4, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7,
+    flavour: ["A soldier, a guard or a sell-sword, armed and armoured for the road.", "Working for pay, for a lord, or for a grudge.", "The most straightforward encounter in the appendix."] },
+  "Fire Beetle, Giant": { level: 1, ac: 15, hp: "1d8", hpAverage: 4, kind: "Small Bug—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["A beetle two or three feet long, with three glowing glands on its shell.", "Grazes on fungi and moss and will not trouble you first.", "The glands go on glowing for a day or so after it dies."] },
+  "Fly, Giant": { level: 3, ac: 13, hp: "3d8", hpAverage: 13, kind: "Small Bug—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A three-foot bluebottle that lives on carrion and offal.", "Will go for a character who is already bleeding.", "The droning is maddening long before the fly is a threat."] },
+  "Fortune-Teller": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6, nameTable: "human",
+    flavour: ["A wandering seer who reads the fates for a small fee.", "Some are genuine, some believe themselves genuine, and some are frauds.", "Bones, cards, wax, entrails — the method varies with the teller."] },
+  "Friar": { level: 1, ac: 12, hp: "1d4", hpAverage: 2, kind: "Size/Type By Kindred—Sentient—Lawful or Neutral", morale: 7,
+    flavour: ["A mendicant of the Church walking between settlements.", "Owns very little and expects hospitality on the strength of it.", "Lawful or neutral, and inclined to lecture."] },
+  "Frog, Giant": { level: 2, ac: 12, hp: "2d8", hpAverage: 9, kind: "Small Animal—Animal Intelligence—Neutral", morale: 9,
+    flavour: ["A two-foot mutant frog with talons and teeth.", "Voraciously carnivorous, and eats its own kind quite happily.", "Underground, and in the bleak swamps of Hag's Addle and Fever Marsh."] },
+  "Gelatinous Ape": { level: 2, ac: 11, hp: "2d8", hpAverage: 9, kind: "Small Animal—Semi-Intelligent—Lawful", morale: 7,
+    flavour: ["A three-foot ape, hairless, brightly coloured and transparent.", "Gentle, and notably kind to travellers who have lost their way.", "Moves through the trees and undergrowth."] },
+  "Gobble": { level: 1, ac: 13, hp: "1d4", hpAverage: 2, kind: "Small Animal—Animal Intelligence—Neutral", morale: 6,
+    flavour: ["A fluffy purple tree-primate the size of an infant, with enormous eyes.", "Sleeps high up by day and comes down at night for grubs.", "Shy, timid, and worth more alive than dead."] },
+  "Griffon": { level: 7, ac: 14, hp: "7d8", hpAverage: 31, kind: "Large Animal—Semi-Intelligent—Neutral", morale: 8, hoard: "C5 + R2 + M8",
+    flavour: ["A lion's body under an eagle's head, wings and claws.", "Preys on horses, and on whoever is riding them.", "A mounted party is exactly what it is looking for."] },
+  "Hawk": { level: 1, ac: 11, hp: "1d4", hpAverage: 2, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["A small bird of prey, sometimes trained as a guard or a hunting bird.", "Attacks people only when they look helpless.", "A trained one means an owner nearby."] },
+  "Hawk, Giant": { level: 6, ac: 15, hp: "6d8", hpAverage: 27, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8, hoard: "C8 + R9 + M2",
+    flavour: ["A bird of prey with a twelve-foot wingspan.", "Preys on humans and other thinking creatures.", "Nests in great trees and on lonely hills."] },
+  "Headhog": { level: 1, ac: 12, hp: "1d4", hpAverage: 2, kind: "Small Animal—Animal Intelligence—Neutral", morale: 6,
+    flavour: ["A black-spined hedgehog, flea-ridden, with a long pink tongue.", "Creeps out of the undergrowth to sleep on a camper's head.", "Leaves the fleas behind, which is the real damage."] },
+  "Honey Badger": { level: 1, ac: 11, hp: "1d8", hpAverage: 4, kind: "Small Animal—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A squat white badger, slick with a honey-like ooze from its own pores.", "Nocturnal, curious and permanently starving.", "The flesh is revolting; the ooze is not."] },
+  "Hunter": { level: 1, ac: 12, hp: "1d8", hpAverage: 4, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7,
+    flavour: ["A woodsman who knows the hexes hereabouts better than any map.", "Tracking game, or working as a guide for whoever pays.", "Worth hiring, if the price is right."] },
+  "Insect Swarm": { level: 3, ac: 12, hp: "3d8", hpAverage: 13, kind: "Medium Bug—Animal Intelligence—Neutral", morale: 11,
+    flavour: ["A seething mass of small bugs filling a ten-foot space.", "Either guarding a nest or drawn in by a light or a smell.", "Weapons are close to useless; smoke and water are not."] },
+  "Killer Bee": { level: 1, ac: 12, hp: "1d4", hpAverage: 2, kind: "Small Bug—Animal Intelligence—Neutral", morale: 9,
+    flavour: ["A bee a foot long, and short-tempered with it.", "Attacks on sight, and always if you are near the hive.", "The hive is underground or cut into a cliff, and holds magical honey."] },
+  "Knight": { level: 1, ac: 17, hp: "1d8", hpAverage: 4, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 8,
+    flavour: ["An armoured warrior sworn to a lord, and conscious of it.", "On errand, on progress, or hunting something.", "Rank matters here; address it properly or pay for not doing."] },
+  "Leech, Giant": { level: 6, ac: 12, hp: "6d8", hpAverage: 27, kind: "Small Bug—Animal Intelligence—Neutral", morale: 10,
+    flavour: ["Three or four feet of leech that has drained hundreds of animals dry.", "The older they get the fatter and greedier they become.", "Attaches, and can only be removed by killing it."] },
+  "Lost Soul": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6, nameTable: "human",
+    flavour: ["Someone thoroughly bewildered, with no idea where they are.", "Trying to get home, and the home may be a long way off in time as well as distance.", "They escaped the land of the dead, or the fairies, or a hundred years of sleep."] },
+  "Lurkey": { level: 1, ac: 12, hp: "1d8", hpAverage: 4, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["A clumsy ground bird with stiff black feathers, an orange beak and wobbling pink wattles.", "Easy prey when cornered, and cunning enough that cornering it is the trick.", "Good eating, which is why anyone bothers."] },
+  "Magician": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7,
+    flavour: ["An arcane spell-caster travelling with a book and a short temper for questions.", "Looking for a component, a site, or somewhere quiet to work.", "The polite fiction is that it is just passing through."] },
+  "Merchant": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6, nameTable: "human",
+    flavour: ["A trading convoy moving between settlements, and well guarded.", "One wagon per merchant, with soldiers to each wagon.", "Buys as readily as it sells, which is worth remembering."] },
+  "Merriman": { level: 1, ac: 13, hp: "1d8", hpAverage: 4, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["A miniature golden pig with curly tusks and a long twisting tail.", "Snuffles through bracken after mushrooms and moss.", "Bolts at the first hint of danger."] },
+  "Moss Mole": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small Animal—Animal Intelligence—Neutral", morale: 6,
+    flavour: ["A mole the size of a cat, mottled green-brown with yellowish paws.", "Placid, and startles into a shriek that sounds unnervingly human.", "Burrows in leaf mould and moss banks."] },
+  "Ooze Salamander": { level: 6, ac: 15, hp: "6d8", hpAverage: 27, kind: "Large Animal—Animal Intelligence—Neutral", morale: 9,
+    flavour: ["A twelve-foot two-headed salamander with near-transparent flesh.", "Slavering maws and round pupilless eyes; you can see it digesting.", "Lives underground and leaves a trail of sticky ooze."] },
+  "Owlbear": { level: 5, ac: 14, hp: "5d8", hpAverage: 22, kind: "Large Animal—Animal Intelligence—Neutral", morale: 9, hoard: "C3 + R3 + M3",
+    flavour: ["Eight feet of bear with an owl's face.", "Bad-tempered, carnivorous, and not interested in negotiating.", "Nests in caves and hollow trees."] },
+  "Pedlar": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6, nameTable: "human",
+    flavour: ["A roving vendor with a pack of everything from the ordinary to the peculiar.", "Will trade for coin or for something interesting.", "Herbs and oddments as often as pots and needles."] },
+  "Pike, Giant": { level: 4, ac: 15, hp: "4d8", hpAverage: 18, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A predatory fish nine to fourteen feet long.", "Attacks whatever is nearby when it is hungry, which is most of the time.", "Spawns in the deeps of the Groaning Loch."] },
+  "Pilgrim": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6, nameTable: "human",
+    flavour: ["A devout traveller of the Pluritine Church, bound for a holy site.", "Roughly one in three is a flagellant, which is audible before it is visible.", "Usually human, sometimes breggle."] },
+  "Priest": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6, nameTable: "human",
+    flavour: ["Ordinary Church clergy moving between settlements on business.", "Not an adventurer — an administrator, an almoner, a lichward.", "Usually human, occasionally breggle."] },
+  "Puggle": { level: 1, ac: 13, hp: "1d8", hpAverage: 4, kind: "Small Animal—Animal Intelligence—Neutral", morale: 9,
+    flavour: ["A small silver-furred dog, flat-faced, bulging-eyed, tongue out.", "Lives in lively communities in tunnelled sandbanks or hollowed giant mushrooms.", "Where there is one there are many."] },
+  "Purple Worm": { level: 15, ac: 13, hp: "15d8", hpAverage: 67, kind: "Large Bug—Animal Intelligence—Neutral", morale: 10,
+    flavour: ["A hundred feet of slimy worm, eight to ten thick, with a poisonous tail sting.", "Bores through the earth and surfaces to eat whatever is standing there.", "It does not choose its victims."] },
+  "Rapacious Beetle": { level: 3, ac: 16, hp: "3d8", hpAverage: 13, kind: "Small Bug—Animal Intelligence—Neutral", morale: 9,
+    flavour: ["A four-foot striped beetle with crushing mandibles.", "Hunts other giant insects for preference.", "Will take livestock, and sometimes people."] },
+  "Rat, Giant": { level: 1, ac: 12, hp: "1d4", hpAverage: 2, kind: "Small Animal—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A three-foot rat with black or grey fur, and diseased.", "Eats anything at all.", "Burrows under ruins, barrows and graveyards; attacks only to defend the nest."] },
+  "Red Deer": { level: 3, ac: 12, hp: "3d8", hpAverage: 13, kind: "Large Animal—Animal Intelligence—Neutral", morale: 5,
+    flavour: ["An elegant red deer with dappled flanks.", "Browses moss and ferns, timid and easily spooked.", "Good hunting, if you can get close."] },
+  "Shaggy Mammoth": { level: 12, ac: 16, hp: "12d8", hpAverage: 54, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A mammoth in shaggy green fur with spiralling tusks.", "Forages for night-fruit at twilight and sleeps through the day.", "Peaceful, and catastrophic when angered."] },
+  "Slug, Giant": { level: 12, ac: 11, hp: "12d8", hpAverage: 54, kind: "Large Bug—Animal Intelligence—Neutral", morale: 10,
+    flavour: ["Thirty feet of grey slug with a rasping tongue and acid spit.", "A voracious predator, despite the pace.", "Lives underground and surfaces to hunt in Mulchgrove."] },
+  "Snake—Adder": { level: 1, ac: 13, hp: "1d8", hpAverage: 4, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["A four-foot snake with grey-green scales, in the undergrowth.", "Strikes only if surprised or cornered.", "Common right across Dolmenwood."] },
+  "Snake—Giant Python": { level: 5, ac: 13, hp: "5d8", hpAverage: 22, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["Twenty feet of snake patterned in spiralling brown and yellow.", "Comes out of hidden crevices during the unseason of Chame.", "Constricts; it has no venom to worry about."] },
+  "Spinning Spider, Giant": { level: 3, ac: 13, hp: "3d8", hpAverage: 13, kind: "Medium Bug—Semi-Intelligent—Chaotic", morale: 8,
+    flavour: ["A six-foot black spider with a dull, patient sort of cunning.", "Fills the wild places with webs that are a hazard in themselves.", "Waits, rather than hunts."] },
+  "Stirge": { level: 1, ac: 12, hp: "1d8", hpAverage: 4, kind: "Small Animal—Animal Intelligence—Neutral", morale: 9,
+    flavour: ["A feathered bird-like thing with a long sharp beak.", "Bred by the Nag-Lord and loosed in swarms; it has settled in since.", "Attacks anything warm-blooded and drains it."] },
+  "Swamp Sloth": { level: 1, ac: 10, hp: "1d8", hpAverage: 4, kind: "Small Animal—Animal Intelligence—Neutral", morale: 6,
+    flavour: ["An infant-sized mammal creeping through the treetops after fruit and flowers.", "Brown fur that looks green, because algae grows in it.", "Lazy, harmless and mostly found in the bogs."] },
+  "Swamp Spider, Giant": { level: 5, ac: 15, hp: "5d8", hpAverage: 22, kind: "Large Bug—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A mottled brown-grey spider on spindly eight-foot legs.", "Venom-dripping jaws under a cluster of beady eyes.", "Hunts in swamps, caverns and deserted places."] },
+  "Thief": { level: 1, ac: 12, hp: "1d4", hpAverage: 2, kind: "Size/Type By Kindred—Sentient—Any Alignment", morale: 7,
+    flavour: ["A cutpurse, burglar or scout, and rarely working alone by choice.", "Travelling towards a job or away from one.", "Will size up the party's baggage before it says hello."] },
+  "Toad, Giant": { level: 2, ac: 12, hp: "2d8", hpAverage: 9, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 6,
+    flavour: ["A warty toad the size of a large hound, with a long sticky tongue.", "Grew this big by soaking in ley-infused pools.", "Attacks whatever comes inside tongue range."] },
+  "Trotteling": { level: 1, ac: 12, hp: "1d8", hpAverage: 4, kind: "Small Animal—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A naked miniature pig, pink-brown, with the face of a sulking toddler.", "Roots through undergrowth after carrion, bickering like crows.", "Belligerent for its size."] },
+  "Villager": { level: 1, ac: 10, hp: "1d4", hpAverage: 2, kind: "Small/Medium Mortal—Sentient—Any Alignment", morale: 6, nameTable: "human",
+    flavour: ["An ordinary person going about an ordinary day.", "Rarely far from home, which means home is close.", "From the nearest settlement, or a hamlet too small for the map."] },
+  "Water Termite, Giant": { level: 2, ac: 13, hp: "2d8", hpAverage: 9, kind: "Small Bug—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["A two- or three-foot aquatic insect that eats wood.", "Latches onto the underside of a boat and chews.", "Attacks people only when cornered — the boat is the real casualty."] },
+  "Weasel, Giant": { level: 4, ac: 12, hp: "4d8", hpAverage: 18, kind: "Large Animal—Animal Intelligence—Neutral", morale: 8,
+    flavour: ["Eight or nine feet of vicious predator in rich brown, gold or white fur.", "Lives in tunnels underground.", "Found wherever giant rats are, because that is what it eats."] },
+  "Woad": { level: 1, ac: 11, hp: "1d8", hpAverage: 4, kind: "Small Animal—Animal Intelligence—Neutral", morale: 7,
+    flavour: ["A warty toad the size of a cat, yellowish-white, with a scarlet tongue.", "Attacks only if cornered.", "Dry but edible — and the bladder must be removed with great care."] },
+  "Wolf": { level: 2, ac: 12, hp: "2d8", hpAverage: 9, kind: "Medium Animal—Animal Intelligence—Neutral", morale: 6,
+    flavour: ["A wolf of the wild woods and caves, hunting in a pack.", "Takes deer and other game by preference.", "Attacks thinking creatures only when very hungry."] },
+  "Wolf, Dire": { level: 4, ac: 13, hp: "4d8", hpAverage: 18, kind: "Medium Animal—Semi-Intelligent—Chaotic", morale: 8,
+    flavour: ["A large, savage wolf with a spark of intelligence behind the eyes.", "Drawn to the evil of the Nagwood.", "Prefers the flesh of thinking beings."] },
+  "Yegril": { level: 4, ac: 11, hp: "4d8", hpAverage: 18, kind: "Large Animal—Animal Intelligence—Neutral", morale: 6,
+    flavour: ["A gigantic moose in luxuriant purple fur, with moon-yellow eyes.", "Long droopy orange antlers, and five-toed paws instead of hooves.", "The antlers stiffen only in the mating season, which is how you know."] },
 };
 
 /**

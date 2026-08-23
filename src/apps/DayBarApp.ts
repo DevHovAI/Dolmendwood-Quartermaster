@@ -1,7 +1,6 @@
 import { MODULE_ID, SETTINGS, TEMPLATES, TRAVEL_DAYS_PER_REST } from "../constants";
 import { getConvoyActors } from "../data/sharedStore";
 import { getEncumbranceMode } from "../data/zoneGrants";
-import { getInnDay } from "../data/innMenu";
 import { SETTLEMENTS } from "../data/settlementEncounters";
 import { partyDayRows, setAte, setSleptWell, setRested, hungerEffect, exhaustionPenalty } from "../data/characterDay";
 import { PartyOverviewApp, buildPartyConvoy } from "./PartyOverviewApp";
@@ -498,7 +497,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     const confirmed = await Dialog.confirm({
       title: "New Day",
       content:
-        `<p>Move on to day <strong>${getInnDay() + 1}</strong>?</p>` +
+        "<p>Move on to the next day?</p>" +
         '<p class="qm-hint">Every inn re-rolls its menu, the duty list starts fresh, and each character\'s hunger and rest clocks move on — anyone who did not eat today gains a day of hunger.</p>',
     });
     if (!confirmed) return;

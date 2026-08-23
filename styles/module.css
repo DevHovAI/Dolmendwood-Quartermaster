@@ -4236,3 +4236,53 @@ body > #dolmenwood-day-bar {
   color: var(--speed-orange);
   opacity: 1;
 }
+
+/* A page reference is a door.
+   ---------------------------------------------------------------------------
+   Every "Monster Book p12" the module prints is a link into the reader's own
+   PDF, where one has been given in the settings. Underlined on hover only: a
+   card carries several of them and a wall of underlines reads as an error
+   message rather than as a set of references. */
+
+.dw-book-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+  cursor: pointer;
+}
+
+.dw-book-link:hover {
+  text-decoration: underline;
+  border-bottom-color: transparent;
+}
+
+/* The PDF window is nothing but the reader, edge to edge. */
+
+.dw-book .window-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.dw-book-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* Three plain lines saying what the thing is.
+   ---------------------------------------------------------------------------
+   Set smaller and quieter than the card's own answers: this is the part the
+   Referee reads to themselves before speaking, not the part they read out. */
+
+.dw-encounter-flavour {
+  margin: 4px 0 0;
+  padding: 0 0 0 14px;
+  list-style: disc;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.dw-encounter-flavour li {
+  margin: 1px 0;
+}

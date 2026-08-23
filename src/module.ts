@@ -12,6 +12,8 @@ import { openTrash } from "./apps/TrashApp";
 import { syncDayBar, toggleDayBar, refreshDayBar } from "./apps/DayBarApp";
 import { syncDayToWorldTime } from "./data/dayDuties";
 import { activateEncounterChatButtons } from "./data/dayRolls";
+import { BookApp } from "./apps/BookApp";
+import type { BookId } from "./data/books";
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
@@ -193,6 +195,61 @@ Hooks.once("init", () => {
     default: TRASH_LIMIT_DEFAULT,
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
+  // The three books, as files the Referee points at once.
+  //
+  // Nothing of the books is shipped with the module — only the references. A
+  // path here turns every "Monster Book p12" on a card into a click that opens
+  // the reader's own copy at that page, in Foundry's own PDF reader. The file
+  // has to live inside Foundry's data folder: a browser can only fetch what the
+  // server hands out, so a path to somewhere else on the disk cannot work. Set
+  // once by the GM, it serves every player at the table.
+  const bookHint =
+    "A PDF inside Foundry's data folder (upload it with the file picker). Page references on the module's cards then open your own copy at the right page. Nothing of the book is stored in the module.";
+  (
+    [
+      [SETTINGS.BOOK_PLAYERS, "Player's Book (PDF)"],
+      [SETTINGS.BOOK_CAMPAIGN, "Campaign Book (PDF)"],
+      [SETTINGS.BOOK_MONSTERS, "Monster Book (PDF)"],
+    ] as const
+  ).forEach(([key, name]) => {
+    game.settings!.register(MODULE_ID, key, {
+      name,
+      hint: bookHint,
+      scope: "world",
+      config: true,
+      type: String,
+      default: "",
+      filePicker: "any",
+    } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+  });
+
+  // The Player's Book is the players' own book; the other two are the
+  // Referee's, and a player who can open the Monster Book can read the lair and
+  // the treasure of the thing they just met. Default is the honest one.
+  game.settings!.register(MODULE_ID, SETTINGS.BOOKS_FOR_PLAYERS, {
+    name: "Which books players may open",
+    hint: "Page references are printed for everyone, but only the GM opens the Campaign and Monster Books by default — those two give away lairs, hoards and what lives in the next hex. A reference a player may not open stays on the card as plain text.",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: {
+      none: "None — the GM only",
+      players: "The Player's Book only (default)",
+      all: "All three",
+    },
+    default: "players",
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.BOOK_PAGE_OFFSET, {
+    name: "Book page offset",
+    hint: "How far the PDF's page numbering runs ahead of the printed page numbers. All three Dolmenwood books carry two pages of front matter that the printed numbering does not count, so printed p152 is the PDF's page 154 — leave this at 2 unless a reference lands short.",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: -10, max: 20, step: 1 },
+    default: 2,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
   game.settings!.register(MODULE_ID, SETTINGS.DAY_STATE, {
     scope: "world",
     config: false,
@@ -292,6 +349,9 @@ Hooks.once("ready", async () => {
       openLoot: () => openLootBrowser(),
       openTrash: () => openTrash(),
       toggleDayBar: () => toggleDayBar(),
+      // Every page reference the module prints is a click, and this is the same
+      // door for anything outside it: a journal button, a macro, another module.
+      openBook: (book: BookId, page: number) => BookApp.open(book, page),
     };
   }
 

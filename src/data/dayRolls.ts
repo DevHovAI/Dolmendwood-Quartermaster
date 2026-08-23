@@ -29,7 +29,10 @@ import {
   type EncounterMark,
   type EncounterResult,
 } from "./encounters";
-import { creatureEntry } from "./bestiary";
+import { creatureEntry, type BestiaryEntry } from "./bestiary";
+import { BOOKS, bookRef, mayOpenBook, type BookId } from "./books";
+import { creatureArt } from "./creatureArt";
+import { BookApp } from "../apps/BookApp";
 import { givenColumns, nameTable, surnameColumn } from "./nameTables";
 import { getDayState, setDutyResult } from "./dayDuties";
 import { lostChance, lostConsequence, type LostResult } from "./gettingLost";
@@ -327,7 +330,7 @@ export async function rollFindingFood(
     // other creature. The other nineteen are fish the Campaign Book invented for
     // this table alone, and the Monster Book has never heard of them.
     const fishBlock = monsterInfo(entry.name)
-      ? `${creatureBookLine(entry.name)}${creatureStatLine(entry.name)}`
+      ? `${creatureBookLine(entry.name)}${creatureStatLine(entry.name)}${creatureFlavour(entry.name)}`
       : "";
 
     body = `<p class="dw-day-roll-headline">${escapeHTML(entry.name)}</p>
@@ -356,7 +359,7 @@ export async function rollFindingFood(
     dice.push(distanceDie);
     const feet = total(distanceDie) * 30;
     const uuid = await findCreatureUuid(name);
-    const extras = creatureButtons(name, uuid).filter(Boolean).join("");
+    const extras = Object.values(creatureButtons(name, uuid, total(countDie))).filter(Boolean).join("");
 
     body = `<p class="dw-day-roll-headline">${escapeHTML(name)} &times;${total(countDie)}</p>
       <p class="dw-day-roll-sub">${escapeHTML(t.label)}, 1d20 = ${which}; number ${numberDice} = ${total(countDie)}</p>
@@ -364,6 +367,7 @@ export async function rollFindingFood(
       <p class="dw-day-roll-yield"><strong>Rations by Hit Points of what falls</strong> — 1 per HP for small game, 2 for medium, 4 for large.</p>
       ${creatureBookLine(name)}
       ${creatureStatLine(name)}
+      ${creatureFlavour(name)}
       ${extras ? `<div class="dw-encounter-buttons">${extras}</div>` : ""}`;
   }
 
@@ -638,7 +642,7 @@ function creatureBookLine(name: string | undefined, mark?: EncounterMark): strin
   const lairWord =
     info.lair === "none" ? "keeps no lair" : typeof info.lair === "number" ? `${info.lair}% in lair` : "";
   return `<p class="dw-encounter-book"><i class="fas fa-book-skull"></i>
-      Monster Book <strong>p${info.page}</strong>${info.pageNote ? ` (${escapeHTML(info.pageNote)})` : ""}${
+      ${bookRef("monsters", info.page, `Monster Book <strong>p${info.page}</strong>`)}${info.pageNote ? ` (${escapeHTML(info.pageNote)})` : ""}${
         mark ? ` &middot; ${escapeHTML(MARK_SECTIONS[mark])}` : ""
       }${lairWord ? ` &middot; ${lairWord}` : ""}</p>`;
 }
@@ -650,10 +654,28 @@ function creatureBookLine(name: string | undefined, mark?: EncounterMark): strin
  * otherwise. Only the bestiary's seventy-seven entries carry them; the animals
  * and everyday mortals have compact blocks with none of it, and get nothing.
  */
+/**
+ * What the thing is, in three plain lines.
+ *
+ * Printed on the card rather than hidden behind a button, because it is the
+ * one thing a Referee needs in the first second of an encounter and the one
+ * thing the stat line does not say. Written for this module — the books' own
+ * descriptions stay in the books, and the page reference beside it opens them.
+ */
+function creatureFlavour(name: string | undefined): string {
+  const book = creatureEntry(name, monsterInfo(name)?.page);
+  if (!book?.flavour?.length) return "";
+  return `<ul class="dw-encounter-flavour">${book.flavour
+    .map((line) => `<li>${escapeHTML(line)}</li>`)
+    .join("")}</ul>`;
+}
+
 function creatureStatLine(name: string | undefined): string {
   const book = creatureEntry(name, monsterInfo(name)?.page);
   const bits = [
     book?.level !== undefined ? `Level <strong>${book.level}</strong>` : "",
+    book?.ac !== undefined ? `AC <strong>${book.ac}</strong>` : "",
+    hpBit(book),
     book?.kind ? escapeHTML(book.kind) : "",
     book?.morale !== undefined ? `Morale <strong>${book.morale}</strong>` : "",
     book?.hoard ? `Hoard ${escapeHTML(book.hoard)}` : "",
@@ -671,36 +693,70 @@ function creatureStatLine(name: string | undefined): string {
   return line + note;
 }
 
-/** Trait, Situation, and the sheet — drawn only where there is something behind them. */
-function creatureButtons(name: string | undefined, uuid?: string): string[] {
+/**
+ * The book's Hit Points as a formula, where it prints dice.
+ *
+ * One entry does not: the talking animal's block says "By species", which the
+ * stat line prints as it stands and no button offers to roll.
+ */
+function rollableHP(hp: string | undefined): string | undefined {
+  return hp && /^[0-9]+d[0-9]+([+-][0-9]+)?$/.test(hp) ? hp : undefined;
+}
+
+/** "HP 18 (4d8)" — the book's average, with the dice behind it. */
+function hpBit(book: BestiaryEntry | undefined): string {
+  if (!book?.hp) return "";
+  return book.hpAverage === undefined
+    ? `HP <strong>${escapeHTML(book.hp)}</strong>`
+    : `HP <strong>${book.hpAverage}</strong> (${escapeHTML(book.hp)})`;
+}
+
+/**
+ * Situation, Trait, Name, HP and the sheet — drawn only where there is
+ * something behind them.
+ *
+ * Handed back **by name** rather than as a list. They were read by index, and
+ * the Name button landing at index 2 meant the encounter card drew Name where
+ * it meant to draw the sheet — it never showed an Open button at all. A caller
+ * that wants four of the five now says which four.
+ */
+function creatureButtons(
+  name: string | undefined,
+  uuid?: string,
+  count?: number
+): Record<"situation" | "trait" | "name" | "hp" | "map", string> {
   const book = creatureEntry(name, monsterInfo(name)?.page);
   const held = escapeHTML(name ?? "");
-  return [
-    book?.encounters?.length
+  return {
+    situation: book?.encounters?.length
       ? `<button type="button" class="dw-encounter-btn" data-encounter-action="situation" data-name="${held}"
            title="The Monster Book's own suggestion for what this creature is in the middle of — a whole situation rather than a bare sighting.">
           <i class="fas fa-masks-theater"></i> Situation
          </button>`
       : "",
-    book?.traits?.length
+    trait: book?.traits?.length
       ? `<button type="button" class="dw-encounter-btn" data-encounter-action="trait" data-name="${held}"
            title="One detail that tells this individual apart from the rest of its kind.">
           <i class="fas fa-fingerprint"></i> Trait
          </button>`
       : "",
-    book?.names?.length || book?.nameTable
+    name: book?.names?.length || book?.nameTable
       ? `<button type="button" class="dw-encounter-btn" data-encounter-action="name" data-name="${held}"
            title="One of the book's example names for this kind of creature. A named thing is harder to kill and easier to remember.">
           <i class="fas fa-signature"></i> Name
          </button>`
       : "",
-    uuid
-      ? `<button type="button" class="dw-encounter-btn" data-encounter-action="open" data-uuid="${escapeHTML(uuid)}"
-           title="Open this creature's sheet.">
-          <i class="fas fa-book-skull"></i> Open ${held}
+    hp: rollableHP(book?.hp)
+      ? `<button type="button" class="dw-encounter-btn" data-encounter-action="hp" data-name="${held}" data-count="${Math.max(count ?? 1, 1)}"
+           title="Hit Points for each of them, on the book's own dice. The stat line carries the book's average, which is what most encounters ever need.">
+          <i class="fas fa-heart-pulse"></i> HP
          </button>`
       : "",
-  ];
+    map: `<button type="button" class="dw-encounter-btn" data-encounter-action="map" data-name="${held}" data-count="${Math.max(count ?? 1, 1)}"
+           title="Put them on the battle map: one token each, at the middle of the view. An actor of this name is used where the world has one; otherwise a bare one is made, carrying nothing but the name.">
+          <i class="fas fa-chess-pawn"></i> To the map
+         </button>`,
+  };
 }
 
 /**
@@ -757,14 +813,16 @@ function encounterCard(r: EncounterResult): string {
 
   const lair = lairChance(r.name, r.period);
   const bookLine = creatureBookLine(r.name, r.mark);
-  const statLine = creatureStatLine(r.name);
+  const statLine = creatureStatLine(r.name) + creatureFlavour(r.name);
 
+  const creature = creatureButtons(r.name, r.uuid, r.number);
   const buttons = [
     `<button type="button" class="dw-encounter-btn" data-encounter-action="reaction" data-period="${r.period}"
        title="How it takes the party, on 2d6 — for when that is not already obvious. The speaking character's Charisma Modifier applies when parleying (Player's Book p165).">
       <i class="fas fa-comments"></i> Reaction
      </button>`,
-    ...creatureButtons(r.name).slice(0, 2),
+    creature.situation,
+    creature.trait,
     `<button type="button" class="dw-encounter-btn" data-encounter-action="activity" data-period="${r.period}"
        title="What it is doing when found, on the Creature Activity d20. A prompt rather than a ruling — take another if the first says nothing to you.">
       <i class="fas fa-person-walking"></i> Activity
@@ -781,7 +839,9 @@ function encounterCard(r: EncounterResult): string {
           <i class="fas fa-question"></i> The other creature
          </button>`
       : "",
-    creatureButtons(r.name, r.uuid)[2],
+    creature.name,
+    creature.hp,
+    creature.map,
   ]
     .filter(Boolean)
     .join("");
@@ -901,7 +961,92 @@ async function rerollSettlement(period: "day" | "night"): Promise<void> {
  * answer changes the day — a re-rolled reaction — the stored result is updated
  * too, so the strip and the card do not drift apart.
  */
+/**
+ * Every way the three books are cited, on a card or in a sentence.
+ *
+ * Both apostrophes, because the module writes one and the books the other, and
+ * both the long names and the short forms the books themselves cross-reference
+ * with.
+ */
+const BOOK_REFERENCE = /(Player['’]s Book|Campaign Book|Monster Book|DPB|DCB|DMB) +p[.]? ?([0-9]{1,3})/g;
+
+const BOOK_BY_NAME: Record<string, BookId> = {
+  "player's book": "players",
+  "player’s book": "players",
+  dpb: "players",
+  "campaign book": "campaign",
+  dcb: "campaign",
+  "monster book": "monsters",
+  dmb: "monsters",
+};
+
+/**
+ * Turn every page reference in a card into a click.
+ *
+ * Done on the rendered card rather than in the strings that build it, so that
+ * one pass covers every citation the module has ever written — the ones on the
+ * encounter cards, the ones in a hunt's yield line, the ones a future card has
+ * not been written yet to print. Text nodes only: a reference inside a tooltip
+ * is an attribute, and rewriting attributes as markup is how cards break.
+ */
+function linkBookReferences(root: HTMLElement): void {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const found: Text[] = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text;
+    if (node.parentElement?.closest("a")) continue;
+    BOOK_REFERENCE.lastIndex = 0;
+    if (BOOK_REFERENCE.test(node.data)) found.push(node);
+  }
+
+  for (const node of found) {
+    const pieces: Node[] = [];
+    let at = 0;
+    BOOK_REFERENCE.lastIndex = 0;
+    for (let hit = BOOK_REFERENCE.exec(node.data); hit; hit = BOOK_REFERENCE.exec(node.data)) {
+      const id = BOOK_BY_NAME[hit[1].toLowerCase()];
+      const page = Number(hit[2]);
+      if (!id || !page) continue;
+      if (hit.index > at) pieces.push(document.createTextNode(node.data.slice(at, hit.index)));
+      const link = document.createElement("a");
+      link.className = "dw-book-link";
+      link.dataset.book = id;
+      link.dataset.bookPage = String(page);
+      link.title = `Open ${BOOKS[id].label} at page ${page}.`;
+      link.textContent = hit[0];
+      pieces.push(link);
+      at = hit.index + hit[0].length;
+    }
+    if (at < node.data.length) pieces.push(document.createTextNode(node.data.slice(at)));
+    node.replaceWith(...pieces);
+  }
+}
+
+/** One handler for every page reference on a card, however it got there. */
+function activateBookLinks(html: HTMLElement): void {
+  html.querySelectorAll<HTMLElement>(".dw-book-link").forEach((link) => {
+    if (link.dataset.dwWired === "1") return;
+    link.dataset.dwWired = "1";
+    // A reference a player may not follow stays on the card, but stops looking
+    // like a door. The page number is not a secret; the page is.
+    const book = link.dataset.book as BookId | undefined;
+    if (!book || !mayOpenBook(book)) {
+      link.classList.remove("dw-book-link");
+      link.removeAttribute("title");
+      return;
+    }
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      const id = link.dataset.book as BookId | undefined;
+      const page = Number(link.dataset.bookPage ?? "0");
+      if (id && BOOKS[id] && page > 0) void BookApp.open(id, page);
+    });
+  });
+}
+
 export function activateEncounterChatButtons(html: HTMLElement): void {
+  linkBookReferences(html);
+  activateBookLinks(html);
   html.querySelectorAll<HTMLElement>(".dw-encounter-btn").forEach((button) => {
     // Never wire the same button twice: a render hook that fires more than once
     // would otherwise make one click do its work twice over.
@@ -925,6 +1070,12 @@ export function activateEncounterChatButtons(html: HTMLElement): void {
         case "situation":
           void rollBestiaryTable(name, "encounters", "Situation", "fa-masks-theater", "situation");
           break;
+        case "hp":
+          void rollCreatureHP(name, Number(button.dataset.count ?? "1"));
+          break;
+        case "map":
+          void placeCreatureTokens(name, Number(button.dataset.count ?? "1"));
+          break;
         case "settlement":
           void rerollSettlement(period);
           break;
@@ -936,9 +1087,6 @@ export function activateEncounterChatButtons(html: HTMLElement): void {
           break;
         case "other":
           void rollOtherCreature(period);
-          break;
-        case "open":
-          void openCreature(button.dataset.uuid ?? "");
           break;
       }
     });
@@ -1056,6 +1204,195 @@ async function rollBestiaryTable(
       </div>
     </div>`,
     [die]
+  );
+}
+
+/**
+ * The little of a Scene and an Actor that placing a token actually touches.
+ *
+ * Written out here rather than reached for through the system's own types,
+ * which differ between systems and between Foundry versions; these five members
+ * are core and have not moved.
+ */
+interface SceneLike {
+  grid?: { size?: number };
+  createEmbeddedDocuments: (name: string, data: Record<string, unknown>[]) => Promise<unknown>;
+}
+
+interface ActorLike {
+  id?: string;
+  getTokenDocument: (data: Record<string, unknown>) => Promise<{ toObject: () => Record<string, unknown> }>;
+}
+
+/**
+ * Put what was met on the battle map.
+ *
+ * The Referee has already rolled the creature and the number; carrying both
+ * across to the canvas by hand is the one part of an encounter that is pure
+ * clerical work. One token per creature, laid out around the middle of the
+ * current view.
+ *
+ * **The name is enough.** Where the world or a compendium already holds an
+ * actor of that name it is used, statistics and artwork and all. Where it does
+ * not — most of the Monster Book, in most worlds — a bare actor is made
+ * carrying nothing but the name, which is what a Referee running out of the
+ * book needs anyway: the numbers are on the card and in the book, and what the
+ * map is for is knowing who is standing where.
+ */
+async function placeCreatureTokens(name: string, count: number): Promise<void> {
+  if (!isGM()) return;
+  const scene = (canvas as unknown as { scene?: SceneLike }).scene;
+  if (!scene) {
+    ui.notifications?.warn("There is no scene in view to put them on.");
+    return;
+  }
+
+  const actor = await findOrMakeCreatureActor(name);
+  if (!actor) return;
+
+  const wanted = Math.max(Number.isFinite(count) ? count : 1, 1);
+  const howMany = Math.min(wanted, 30);
+  const grid = scene.grid?.size ?? 100;
+  const stage = (canvas as unknown as { stage?: { pivot?: { x: number; y: number } } }).stage;
+  const middle = { x: stage?.pivot?.x ?? 0, y: stage?.pivot?.y ?? 0 };
+  const perRow = Math.max(1, Math.ceil(Math.sqrt(howMany)));
+
+  const tokens: Record<string, unknown>[] = [];
+  for (let i = 0; i < howMany; i++) {
+    const column = i % perRow;
+    const row = Math.floor(i / perRow);
+    const x = middle.x + (column - (perRow - 1) / 2) * grid;
+    const y = middle.y + (row - (Math.ceil(howMany / perRow) - 1) / 2) * grid;
+    const doc = await actor.getTokenDocument({
+      x: Math.round(x / grid) * grid,
+      y: Math.round(y / grid) * grid,
+      hidden: true,
+    });
+    tokens.push(doc.toObject());
+  }
+  await scene.createEmbeddedDocuments("Token", tokens);
+
+  ui.notifications?.info(
+    `${howMany} × ${name} placed, hidden — reveal them when the party sees them.${
+      wanted > howMany ? ` (${wanted} were rolled; thirty is as many as this places at once.)` : ""
+    }`
+  );
+}
+
+/**
+ * The actor a token needs, found or made.
+ *
+ * A compendium entry is imported first: a token cannot point at a document
+ * inside a pack, and importing is what the sidebar's own drag-and-drop does.
+ */
+async function findOrMakeCreatureActor(name: string): Promise<ActorLike | undefined> {
+  const g = game as Game;
+  const uuid = await findCreatureUuid(name);
+  if (uuid) {
+    const found = (await fromUuid(uuid)) as (ActorLike & { pack?: string | null }) | null;
+    if (found && !found.pack) return found;
+    if (found) {
+      const imported = (await (
+        g.actors as unknown as { importFromCompendium: (pack: unknown, id: string) => Promise<ActorLike> }
+      ).importFromCompendium(g.packs?.get?.(found.pack ?? ""), found.id ?? "")) as ActorLike | undefined;
+      if (imported) return imported;
+    }
+  }
+
+  // Actor.create needs a type the active system actually defines — the same
+  // dance the loot boxes do, and for the same reason.
+  const g2 = g as unknown as {
+    documentTypes?: Record<string, string[]>;
+    model?: { Actor?: Record<string, unknown> };
+  };
+  const declared = g2.documentTypes?.Actor?.length
+    ? g2.documentTypes.Actor
+    : Object.keys(g2.model?.Actor ?? {});
+  const types = declared.filter((t) => t !== CONST.BASE_DOCUMENT_TYPE);
+  const type = types.find((t) => /monster|npc|creature/i.test(t)) ?? types[0];
+  if (!type) {
+    ui.notifications?.error("Cannot place a token: the game system defines no actor types.");
+    return undefined;
+  }
+
+  // A picture, so that three species in the same clearing are three different
+  // things on the map rather than three identical rings. Foundry's own icons —
+  // the same one for the same creature every time, in every world.
+  const img = creatureArt(name, creatureEntry(name, monsterInfo(name)?.page)?.kind);
+  const created = await Actor.create({
+    name,
+    type,
+    img,
+    folder: await encounterFolderId(),
+    ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE },
+    prototypeToken: {
+      name,
+      texture: { src: img },
+      // Hostile by default: these are made by an encounter roll, and the ones
+      // that turn out to be friendly are a click away from saying so.
+      disposition: CONST.TOKEN_DISPOSITIONS.HOSTILE,
+      displayName: CONST.TOKEN_DISPLAY_MODES.OWNER_HOVER,
+    },
+  } as Parameters<typeof Actor.create>[0]);
+  return (created as ActorLike | undefined) ?? undefined;
+}
+
+/** One folder for the actors the encounter cards make, so they do not litter the tab. */
+async function encounterFolderId(): Promise<string | undefined> {
+  const g = game as unknown as {
+    folders?: { find: (fn: (f: { name?: string; type?: string; id?: string }) => boolean) => { id?: string } | undefined };
+  };
+  const existing = g.folders?.find((f) => f.type === "Actor" && f.name === ENCOUNTER_FOLDER);
+  if (existing?.id) return existing.id;
+  const made = (await Folder.create({ name: ENCOUNTER_FOLDER, type: "Actor" } as Parameters<
+    typeof Folder.create
+  >[0])) as { id?: string } | undefined;
+  return made?.id;
+}
+
+const ENCOUNTER_FOLDER = "Dolmenwood Encounters";
+
+/**
+ * Hit Points for what was met, one roll per creature.
+ *
+ * The stat line already prints the book's average, which is what most
+ * encounters ever need — this is for the ones that turn into a fight, where
+ * five wolves are five different animals and one of them is the one that dies
+ * first. The number encountered comes with the button, so a hunt's card rolls
+ * for what it brought down and a card with no count behind it rolls one.
+ *
+ * Capped at twenty rolls. Past that the list stops being readable and the
+ * Referee is better served by the average, which is on the card already.
+ */
+async function rollCreatureHP(name: string, count: number): Promise<void> {
+  if (!isGM()) return;
+  const info = monsterInfo(name);
+  const entry = creatureEntry(name, info?.page);
+  const formula = rollableHP(entry?.hp);
+  if (!formula) return;
+
+  const wanted = Math.max(Number.isFinite(count) ? count : 1, 1);
+  const howMany = Math.min(wanted, 20);
+  const rolls: Roll[] = [];
+  for (let i = 0; i < howMany; i++) rolls.push(await rollDice(formula));
+  const each = rolls.map((roll) => total(roll));
+  const sum = each.reduce((a, b) => a + b, 0);
+
+  await whisperToGMs(
+    `<div class="dw-day-roll dw-encounter">
+      <h3><i class="fas fa-heart-pulse"></i> Hit Points &mdash; ${escapeHTML(name)}</h3>
+      <p class="dw-encounter-scene">${each.join(" &middot; ")}</p>
+      <p class="dw-day-roll-sub">${howMany} &times; ${escapeHTML(formula)}${
+        howMany > 1 ? ` &middot; ${sum} in all` : ""
+      }${entry?.hpAverage !== undefined ? ` &middot; the book's average is ${entry.hpAverage}` : ""}${
+        wanted > howMany ? ` &middot; the first ${howMany} of ${wanted}` : ""
+      }</p>
+      <div class="dw-encounter-buttons">
+        <button type="button" class="dw-encounter-btn" data-encounter-action="hp" data-name="${escapeHTML(name)}" data-count="${wanted}"
+          title="Again."><i class="fas fa-arrows-rotate"></i> Again</button>
+      </div>
+    </div>`,
+    rolls
   );
 }
 
@@ -1266,12 +1603,6 @@ async function rollOtherCreature(period: "day" | "night"): Promise<void> {
   );
 }
 
-async function openCreature(uuid: string): Promise<void> {
-  if (!uuid) return;
-  const doc = (await fromUuid(uuid)) as { sheet?: { render: (force: boolean) => unknown } } | null;
-  if (doc?.sheet) doc.sheet.render(true);
-  else ui.notifications?.warn("That creature is no longer in this world.");
-}
 // ─── Clearing ──────────────────────────────────────────────────────────────────
 
 /** Take a roll back, so it can be made again. Unticks the duty with it. */

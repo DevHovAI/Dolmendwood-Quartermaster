@@ -50,6 +50,11 @@ declare global {
     "dolmenwood-party-inventory.followWorldTime": boolean;
     "dolmenwood-party-inventory.dayBarCollapsed": boolean;
     "dolmenwood-party-inventory.dayContext": DayContext;
+    "dolmenwood-party-inventory.bookPlayers": string;
+    "dolmenwood-party-inventory.bookCampaign": string;
+    "dolmenwood-party-inventory.bookMonsters": string;
+    "dolmenwood-party-inventory.bookPageOffset": number;
+    "dolmenwood-party-inventory.booksForPlayers": "none" | "players" | "all";
   }
 
   /** Declare the flags this module writes, so getFlag/setFlag are typed. */
