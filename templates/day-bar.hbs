@@ -8,18 +8,28 @@
         it sits on its own line rather than among the ticks it governs. --}}
   <div class="day-bar-row day-bar-row-top">
     <div class="day-bar-day">
+      {{#if isGM}}
       <button type="button" class="day-bar-icon-btn" data-action="newDay" title="Move on to the next in-game day">
         <i class="fas fa-forward"></i>
       </button>
+      {{/if}}
     </div>
 
     {{#unless collapsed}}
     <div class="day-bar-modes">
       {{#each modes}}
+      {{#if ../isGM}}
       <button type="button" class="day-bar-mode {{#if this.active}}is-active{{/if}}"
               data-action="setMode" data-mode="{{this.id}}" title="{{this.label}} procedure">
         <i class="fas {{this.icon}}"></i><span class="day-bar-mode-label">{{this.label}}</span>
       </button>
+      {{else}}
+      {{#if this.active}}
+      <span class="day-bar-mode is-active" title="What the party is doing today">
+        <i class="fas {{this.icon}}"></i><span class="day-bar-mode-label">{{this.label}}</span>
+      </span>
+      {{/if}}
+      {{/if}}
       {{/each}}
     </div>
     {{/unless}}
@@ -62,17 +72,25 @@
 
     {{#unless collapsed}}
     <div class="day-bar-tp {{#if travelPoints.spent}}is-spent{{/if}} {{#if travelPoints.forced}}is-forced{{/if}}">
+      {{#if isGM}}
       <button type="button" class="day-bar-tp-march {{#if travelPoints.forced}}is-forced{{/if}}"
               data-action="toggleForcedMarch" title="{{travelPoints.forcedTitle}}">
         <i class="fas {{#if travelPoints.forced}}fa-person-running-fast{{else}}fa-shoe-prints{{/if}}"></i>
       </button>
+      {{else}}{{#if travelPoints.forced}}
+      <span class="day-bar-tp-march is-forced" title="{{travelPoints.forcedTitle}}">
+        <i class="fas fa-person-running-fast"></i>
+      </span>
+      {{/if}}{{/if}}
       {{#if travelPoints.hasBudget}}
       {{!-- Counts up, not down. Declaring a forced march raises the allowance,
             and a readout of what is left jumped by the whole difference at that
             click — 4/8 became 8/12 without a step having been walked. What has
             been spent does not change when the day gets longer. --}}
+      {{#if isGM}}
       <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="-1"
               {{#unless travelPoints.spent}}disabled{{/unless}} title="Hand a Travel Point back">&minus;</button>
+      {{/if}}
       <span class="day-bar-tp-value" title="{{travelPoints.budgetTitle}}">
         <strong class="{{#if travelPoints.over}}is-over{{/if}}">{{travelPoints.used}}</strong>/{{travelPoints.total}} TP
       </span>
@@ -84,42 +102,90 @@
         <i class="fas fa-cloud-showers-heavy"></i>&minus;{{travelPoints.weatherCost}}
       </span>
       {{/if}}
+      {{#if isGM}}
       <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="1"
               {{#unless travelPoints.left}}disabled{{/unless}} title="Spend a Travel Point">+</button>
+      {{/if}}
+      {{#if isGM}}
       <button type="button" class="day-bar-tp-refresh {{#if travelPoints.stale}}is-stale{{/if}}"
               data-action="refreshBudget" title="{{travelPoints.refreshTitle}}">
         <i class="fas fa-rotate"></i>
       </button>
+      {{/if}}
       {{else}}
       <span class="day-bar-tp-value" title="{{travelPoints.budgetTitle}}">&mdash; TP</span>
       {{/if}}
     </div>
+    {{#if weatherSlot}}
+    {{!-- A fixed berth, held whether or not the day has been rolled for. A chip
+          that appears out of nowhere shifts everything after it along the row,
+          and "not yet" is itself worth seeing. --}}
+    <span class="day-bar-weather {{#unless weather}}is-empty{{/unless}}" title="{{weatherTitle}}">
+      <i class="fas {{weatherIcon}}"></i>
+      <span class="day-bar-weather-text">{{#if weather}}{{weather}}{{else}}&mdash;{{/if}}</span>
+    </span>
+    {{/if}}
+    {{#if showOwn}}
+    {{!-- The third fixed unit: icons only, no names — a player knows whose
+          characters these are. Both states are drawn, never only the done one:
+          "not eaten" is the reading that matters. --}}
+    <div class="day-bar-own">
+      {{#each party}}
+      <span class="day-bar-own-char" title="{{this.name}}{{#unless this.noPenalty}} &mdash; {{this.penaltyTitle}}{{/unless}}">
+        <i class="fas fa-drumstick-bite {{#if this.ate}}is-on{{else}}is-off{{/if}}"
+           title="{{this.name}}: {{#if this.ate}}has eaten today{{else}}has NOT eaten today{{/if}}"></i>
+        <i class="fas fa-bed {{#if this.sleptWell}}is-on{{else}}is-off{{/if}}"
+           title="{{this.name}}: {{#if this.sleptWell}}slept well{{else}}NO good night&#x27;s rest{{/if}}"></i>
+        {{!-- The running total of hunger and exhaustion, beside the two things
+              that cause it. The slot is kept even when there is nothing in it,
+              so the unit does not change width the moment somebody goes hungry. --}}
+        <span class="day-bar-own-penalty {{#unless this.noPenalty}}is-bad{{/unless}}"
+              title="{{this.name}}: {{#if this.noPenalty}}no hunger or exhaustion penalty{{else}}{{this.penaltyTitle}}{{/if}}">
+          {{#if this.noPenalty}}&mdash;{{else}}{{this.penalty}}{{/if}}
+        </span>
+      </span>
+      {{/each}}
+    </div>
+    {{/if}}
     {{/unless}}
 
     {{!-- The other three windows of the module, so a day is run from one line
           instead of from here and the control bar. Outside the collapse, and
           fenced off by a rule: they are not part of the day's procedure. --}}
+    {{!-- The same three the toolbar offers, and under the same settings: a
+          player who may not open the Loot from the toolbar may not open it from
+          here either. --}}
     <div class="day-bar-shortcuts">
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="inventory"
-              title="Party Inventory">
+              title="{{#if isGM}}Party Inventory{{else}}My Inventory{{/if}}">
         <i class="fas fa-backpack"></i>
       </button>
+      {{#if mayOpenLoot}}
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="loot"
               title="Loot">
         <i class="fas fa-treasure-chest"></i>
       </button>
+      {{/if}}
+      {{#if mayOpenTrash}}
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="trash"
               title="Trash">
         <i class="fas fa-trash-can"></i>
       </button>
+      {{/if}}
+      {{#if mayOpenInn}}
+      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="inn"
+              title="Inn">
+        <i class="fas fa-beer-mug-empty"></i>
+      </button>
+      {{/if}}
     </div>
 
     <div class="day-bar-right">
-      {{#unless collapsed}}
+      {{#unless collapsed}}{{#if isGM}}
       <button type="button" class="day-bar-icon-btn" data-action="resetDay" title="Clear today's ticks and spent Travel Points without moving the day on">
         <i class="fas fa-rotate-left"></i>
       </button>
-      {{/unless}}
+      {{/if}}{{/unless}}
       <button type="button" class="day-bar-icon-btn" data-action="toggleCollapsed"
               title="{{#if collapsed}}Unfold the bar{{else}}Fold the bar down to its handle{{/if}}">
         <i class="fas {{#if collapsed}}fa-angles-down{{else}}fa-angles-up{{/if}}"></i>
@@ -135,6 +201,7 @@
         calendar. Folded to a summary by default: it is set once at the start of
         a leg, and should not cost a line of the strip for the rest of the day. --}}
   {{#unless collapsed}}
+  {{#if isGM}}
   <div class="day-bar-row day-bar-context {{#if context.open}}is-open{{/if}}">
     <button type="button" class="day-bar-context-summary" data-action="toggleContext"
             title="{{context.summaryTitle}}">
@@ -158,6 +225,30 @@
     {{!-- A line of their own under the summary, on a fixed five-column grid: in
           the summary's own flex row they wrapped wherever they fitted, so a
           longer season or town name shuffled every field after it along. --}}
+    {{!-- The hex and what the book says about it share a line: the number is
+          the question, the rest of the line is the answer, clipped to it. The
+          dropdowns get a fixed grid of their own underneath, so nothing moves
+          sideways when a name is longer than the last one. --}}
+    {{!-- The hex, the page it is on, and then the book answering — one line,
+          clipped at its true end rather than at each part. The page button sits
+          beside the box it belongs to, not adrift at the far margin. --}}
+    <div class="day-bar-context-hexrow">
+      <span class="day-bar-context-field day-bar-context-hex" title="{{context.hexHint}}">
+        <label for="dw-ctx-hex">Hex</label>
+        <input type="text" id="dw-ctx-hex" data-context-field="hex" maxlength="5"
+               inputmode="numeric" placeholder="0101" value="{{context.hex}}" />
+      </span>
+      {{#if context.hexName}}
+      <a class="day-bar-hex-page dw-book-link" data-book="campaign" data-book-page="{{context.hexPage}}"
+         title="Open the Campaign Book at this hex.">p{{context.hexPage}}</a>
+      <span class="day-bar-hex-note">
+        <strong>{{context.hexName}}</strong>
+        {{#if context.hexAlso}}<span class="day-bar-hex-extra">&middot; also {{context.hexAlso}}</span>{{/if}}
+        {{#if context.hexForage}}<span class="day-bar-hex-forage"><i class="fas fa-seedling"></i> {{context.hexForage}}</span>{{/if}}
+        {{#if context.hexNote}}<span class="day-bar-hex-extra">&middot; {{context.hexNote}}</span>{{/if}}
+      </span>
+      {{/if}}
+    </div>
     <div class="day-bar-context-fields">
     <span class="day-bar-context-field" title="{{context.seasonHint}}">
       <label for="dw-ctx-season">Season</label>
@@ -211,10 +302,16 @@
     </div>
     {{/if}}
   </div>
+  {{/if}}
   {{/unless}}
 
   {{#unless collapsed}}
+  {{#if isGM}}
+  {{!-- The duty list and the party tallies are both the Referee’s. A player’s
+        own eating and sleeping moved up to the top line, so this row would be
+        an empty band on their bar. --}}
   <div class="day-bar-row day-bar-duties">
+    {{#if isGM}}
     {{#each blocks}}
     {{#if this.groupId}}
     {{!-- Making camp is one job done in one stretch, so it takes one tick here
@@ -233,11 +330,13 @@
     {{/each}}
     {{/if}}
     {{/each}}
+    {{/if}}
 
     {{!-- The party's own tallies ride at the right end of the duty line rather
           than on a row of their own: three or four chips never filled a line,
           and the bar is shorter for it. --}}
     {{#if hasParty}}
+    {{#if isGM}}
     <div class="day-bar-party">
       <button type="button" class="day-bar-chip {{#if allAte}}is-done{{/if}}"
               data-action="togglePanel"
@@ -261,7 +360,9 @@
       </button>
     </div>
     {{/if}}
+    {{/if}}
   </div>
+  {{/if}}
   {{/unless}}
 
 
@@ -272,6 +373,7 @@
 {{#if hasParty}}
 {{!-- Hunger, sleep and exhaustion land on individual characters, not the party,
       so this is where they are read and set. --}}
+{{#if isGM}}
 <div class="day-bar-panel">
   <div class="day-bar-panel-head">
     <span class="day-bar-panel-name">Character</span>
@@ -289,17 +391,29 @@
       {{#unless this.hasFood}}<i class="fas fa-utensils-slash day-bar-nofood" title="Carrying nothing edible"></i>{{/unless}}
     </span>
 
+    {{#if ../isGM}}
     <button type="button" class="day-bar-panel-tick {{#if this.ate}}is-on{{/if}}"
             data-action="toggleAte" data-actor-id="{{this.actorId}}" data-value="{{this.ate}}"
             title="Eating a ration from the inventory or a meal at an inn ticks this by itself">
       <i class="fas {{#if this.ate}}fa-square-check{{else}}fa-square{{/if}}"></i>
     </button>
+    {{else}}
+    <span class="day-bar-panel-tick {{#if this.ate}}is-on{{/if}}">
+      <i class="fas {{#if this.ate}}fa-square-check{{else}}fa-square{{/if}}"></i>
+    </span>
+    {{/if}}
 
+    {{#if ../isGM}}
     <button type="button" class="day-bar-panel-tick {{#if this.sleptWell}}is-on{{/if}}"
             data-action="toggleSlept" data-actor-id="{{this.actorId}}" data-value="{{this.sleptWell}}"
             title="A GOOD night's rest, not merely lying down: easy conditions are automatic, moderate and difficult ones need a Constitution Check, impossible ones fail outright (Player's Book p159). Paying for lodging at an inn ticks this by itself.">
       <i class="fas {{#if this.sleptWell}}fa-square-check{{else}}fa-square{{/if}}"></i>
     </button>
+    {{else}}
+    <span class="day-bar-panel-tick {{#if this.sleptWell}}is-on{{/if}}">
+      <i class="fas {{#if this.sleptWell}}fa-square-check{{else}}fa-square{{/if}}"></i>
+    </span>
+    {{/if}}
 
     <span class="day-bar-panel-col {{#if this.hungry}}is-bad{{/if}}"
           title="{{#if this.hungry}}Days without food. -1 Attack from day one, -10 Speed from day two, 1 Constitution a day from day seven.{{else}}Fed{{/if}}">
@@ -311,11 +425,15 @@
       {{#if this.tired}}{{this.daysWithoutSleep}}{{else}}&mdash;{{/if}}
     </span>
 
+    {{#if ../isGM}}
     <button type="button" class="day-bar-panel-col day-bar-panel-rest {{#if this.overdue}}is-bad{{/if}}"
             data-action="restChar" data-actor-id="{{this.actorId}}"
             title="Travel days since this character last rested. The counter rises on every day the party spends a Travel Point, and clears on a day it spends none and this character sleeps well. A week is six travel days and one of rest, so the seventh travel day without one costs -1 to Attack and Damage Rolls until it is taken (Player's Book p157). A forced march owes its rest day at once. Click to clear both by hand.">
       {{this.travelDaysSinceRest}}/{{../restLimit}}{{#if this.forcedMarchesSinceRest}}<i class="fas fa-person-running-fast day-bar-forced-flag" title="Forced marches since the last rest day"></i>{{this.forcedMarchesSinceRest}}{{/if}}
     </button>
+    {{else}}
+    <span class="day-bar-panel-col day-bar-panel-rest {{#if this.overdue}}is-bad{{/if}}">{{this.travelDaysSinceRest}}/{{../restLimit}}</span>
+    {{/if}}
 
     {{!-- One figure, both clocks. Hunger and exhaustion both hit the Attack Roll,
           so adding them is what the character actually rolls with; where it comes
@@ -327,6 +445,7 @@
   </div>
   {{/each}}
 </div>
+{{/if}}
 {{/if}}
 {{/if}}
 {{/unless}}

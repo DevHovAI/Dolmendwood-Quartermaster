@@ -84,6 +84,17 @@ export interface DayContext {
    */
   settlement: Settlement | "elsewhere";
   /**
+   * The hex the party is standing in, as the Referee reads it off the map.
+   *
+   * The one fact they always have and the module never could: from it come the
+   * terrain, its Travel Point cost, the region, the chance of losing the way,
+   * and whether anything grows here the ordinary tables do not know about. Kept
+   * as the string rather than resolved, because a hex the book does not detail
+   * is still worth writing down — the Referee sets the terrain by hand and the
+   * number stays on the bar.
+   */
+  hex?: string;
+  /**
    * Set once a token has crossed a hex boundary since the context was last
    * confirmed. A marker, not a tally: how many hexes were crossed does not
    * change what the Referee has to do about it, which is look at the terrain
@@ -312,6 +323,12 @@ function normalise(stored: Partial<DayContext> | undefined): DayContext {
       stored.settlement === "elsewhere" || SETTLEMENTS.some((x) => x.id === stored.settlement)
         ? (stored.settlement as Settlement | "elsewhere")
         : DEFAULT_CONTEXT.settlement,
+    // Carried through as it was typed. This rebuilds the record field by
+    // field, so anything not named here is silently dropped on every read —
+    // which is exactly what happened to the hex the first time round: it was
+    // written to the setting and never came back, so the bar showed no hex
+    // line and foraging never found the hex's own yield.
+    ...(stored.hex ? { hex: stored.hex } : {}),
     ...(stored.moved?.sceneName ? { moved: { sceneName: stored.moved.sceneName } } : {}),
   };
 }
@@ -338,7 +355,8 @@ export async function setDayContext(patch: Partial<DayContext>): Promise<void> {
     patch.terrain !== undefined ||
     patch.way !== undefined ||
     patch.region !== undefined ||
-    patch.settlement !== undefined;
+    patch.settlement !== undefined ||
+    patch.hex !== undefined;
   const next = { ...getDayContext(), ...patch };
   if (answered) delete next.moved;
   await g.settings.set(MODULE_ID, SETTINGS.DAY_CONTEXT, next);

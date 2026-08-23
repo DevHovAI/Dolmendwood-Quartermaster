@@ -60,6 +60,11 @@
                 title="Put this back">
           <i class="fas fa-arrow-rotate-left"></i>
         </button>
+        <button type="button" class="icon-btn trash-danger" data-action="deleteEntry"
+                data-actor-id="{{../actorId}}" data-entry-id="{{this.entryId}}"
+                title="Throw this one away for good, and leave the rest of the bin alone">
+          <i class="fas fa-xmark"></i>
+        </button>
         {{/if}}
       </div>
       {{/each}}

@@ -3125,8 +3125,13 @@
      Camp or a character going hungry made the whole bar jump around under the
      cursor. Wide enough for the longest row either of them can hold: four mode
      tabs plus the Travel Point counter above, and the full penalty line beside
-     six columns below. */
-  --day-bar-width: 800px;
+     six columns below.
+
+     Raised from 800px when the Inn joined the shortcuts: the Referee’s top row
+     is the longest one there is — day button, four mode tabs, the Travel Point
+     group with its march toggle and refresh, four shortcut icons, reset and
+     fold — and at 800px it wrapped. */
+  --day-bar-width: 860px;
   /* One height for everything sitting on the top line — the day button, the mode
      tabs, the Travel Point group, and every chip on the folded handle. They were
      each sized by their own padding and content before, so a row of them stepped
@@ -4285,4 +4290,337 @@ body > #dolmenwood-day-bar {
 
 .dw-encounter-flavour li {
   margin: 1px 0;
+}
+
+/* Stocking a shop out of the catalogue.
+   ---------------------------------------------------------------------------
+   Four hundred rows is a list nobody reads, so the picker is a set of folded
+   categories: shut by default, opened one at a time, or opened by a search
+   that hides everything it did not find. The tick on a category header takes
+   the whole category — which is the point of the thing. */
+
+.dw-stock-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dw-stock-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dw-stock-search {
+  flex: 1;
+}
+
+.dw-stock-expand {
+  flex: 0 0 auto;
+  width: 28px;
+  line-height: 1;
+}
+
+.dw-stock-chosen {
+  flex: 0 0 auto;
+  font-size: 0.85em;
+  opacity: 0.75;
+  min-width: 9ch;
+  text-align: right;
+}
+
+.dw-stock-list {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+  padding: 2px;
+}
+
+.dw-stock-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 3px;
+  list-style: none;
+  font-weight: 600;
+}
+
+.dw-stock-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.dw-stock-group > summary::before {
+  content: "\f0da";
+  font-family: "Font Awesome 6 Pro", "Font Awesome 6 Free", "Font Awesome 5 Free";
+  font-weight: 900;
+  opacity: 0.6;
+  width: 10px;
+}
+
+.dw-stock-group[open] > summary::before {
+  content: "\f0d7";
+}
+
+.dw-stock-group > summary:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.dw-stock-group-name {
+  flex: 1;
+}
+
+.dw-stock-group-count {
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+
+.dw-stock-rows {
+  padding: 2px 6px 6px 24px;
+}
+
+.dw-stock-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 1px 2px;
+  cursor: pointer;
+}
+
+.dw-stock-row:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.dw-stock-sub,
+.dw-stock-cost {
+  font-size: 0.85em;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+/* The hex's own exception to the check — what an encounter here is likely to
+   be, a ley line crossing. Clipped to one line: it is a reminder, and the page
+   link beside it is where the whole of it lives. */
+
+.day-bar-hex-extra {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 46ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+/* The players' half of the bar.
+   ---------------------------------------------------------------------------
+   Same strip, fewer controls: the day is a label rather than a button, the mode
+   is a statement rather than a choice, and the weather appears only once the
+   Referee has rolled it. */
+
+.day-bar-day-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2ch;
+  padding: 0 4px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-bar-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 8px;
+  padding: 0 6px;
+  max-width: 34ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85em;
+  opacity: 0.9;
+}
+
+/* A tick nobody may click still has to look like the ticked state it shows. */
+span.day-bar-panel-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+/* The hex line.
+   ---------------------------------------------------------------------------
+   Box, page button, then the book answering. The answer is one line clipped at
+   its own end — clipping each part separately is what cut the text off with
+   half the row still empty. The two controls are a little shallower than a
+   normal field, since the line is a reading and not a form. */
+
+.day-bar-context-hexrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 2px 0 4px;
+}
+
+.day-bar-context-hex {
+  flex: 0 0 auto;
+}
+
+.day-bar-context-hex input {
+  width: 7ch;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 4px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-bar-hex-page {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 7ch;
+  height: 22px;
+  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.3));
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 0.85em;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.day-bar-hex-page:hover {
+  background: rgba(0, 0, 0, 0.14);
+  text-decoration: none;
+}
+
+/* One line, one ellipsis, at the end of the whole sentence. */
+.day-bar-hex-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.85em;
+  opacity: 0.9;
+}
+
+.day-bar-hex-note > * {
+  display: inline;
+}
+
+.day-bar-hex-forage {
+  margin-left: 6px;
+}
+
+.day-bar-hex-extra {
+  opacity: 0.85;
+}
+
+/* Unticked reads as absent, not as missing: dimmed rather than hidden. */
+.day-bar-own-char i {
+  opacity: 0.3;
+}
+
+.day-bar-own-char i.is-on {
+  opacity: 1;
+}
+
+.day-bar-own-penalty {
+  font-weight: 600;
+}
+
+/* The top row is a single line by contract. If something new ever does not fit,
+   the bar gets wider — a wrapped strip is twice as tall and pushes the canvas
+   down. */
+.day-bar-row-top {
+  flex-wrap: nowrap;
+}
+
+/* The players’ three units on the top line.
+   ---------------------------------------------------------------------------
+   Phase and Travel Points, then the weather, then eating and sleeping. Each
+   keeps its berth whatever it holds: a unit that appears only when it has
+   something to say drags the two after it sideways, and a bar that moves under
+   the cursor is the thing this width was fixed to stop. */
+
+.day-bar-weather {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  height: var(--day-bar-chip-h);
+  min-width: 15ch;
+  max-width: 15ch;
+  padding: 0 8px;
+  margin-left: 10px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 0.85em;
+}
+
+.day-bar-weather.is-empty {
+  opacity: 0.5;
+}
+
+.day-bar-weather-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-bar-own {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--day-bar-chip-h);
+  margin-left: 10px;
+}
+
+.day-bar-own-char {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--day-bar-chip-h);
+  padding: 0 8px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+/* Both states are drawn. Done is plain, not-done is red — the reading that
+   matters is the one that needs doing something about. */
+.day-bar-own-char i.is-on {
+  opacity: 1;
+}
+
+.day-bar-own-char i.is-off {
+  color: var(--dw-bad, #a33);
+  opacity: 0.9;
+}
+
+/* The penalty rides in the same chip as the two icons that cause it, and keeps
+   its slot when there is nothing to show — an em dash rather than a gap, so
+   the unit does not resize the moment somebody goes hungry. */
+.day-bar-own-penalty {
+  min-width: 7ch;
+  text-align: right;
+  font-size: 0.85em;
+  opacity: 0.45;
+  white-space: nowrap;
+}
+
+.day-bar-own-penalty.is-bad {
+  color: var(--dw-bad, #a33);
+  font-weight: 600;
+  opacity: 1;
 }

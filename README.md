@@ -191,6 +191,35 @@ styles/
 
 ## Changelog
 
+### v1.8.0
+- **The catalogue holds what the books hold** — 273 entries added: the Player's Book's Common Fungi and Herbs (20), and the whole of the Campaign Book's Treasures and Oddments (253) across thirteen categories, from Rare Herbs to Magic Weapons. Every figure was rebuilt into the book's own line and checked against its page
+- **Treasures are found, not bought** — everything imported carries `notSold`, so no shop stocks it by accident. A new **From Catalogue** button puts any catalogue item on a particular shop's shelf by hand: folded categories, a search, and a tick that takes a whole category
+- **The hex is the key** — type the hex number on the day bar and the terrain, its Travel Point cost, the region and the chance of losing the way all follow from the Campaign Book. 195 hexes, 53 of which grow something the foraging tables know nothing about — and a successful forage rolls that too
+- **A day bar for the players** — a slimmer strip carrying only what the characters would know: what the party is doing, Travel Points walked, the weather once it has been rolled, and their own hunger and rest. Optional, and the module's windows can be reached from it instead of from the toolbar
+- **Per-entry delete in the trash** — throw one row away for good without emptying the bin
+- Fixed: a shop or inn name containing a quotation mark no longer breaks the map-note form
+- Fixed: an inn saved before rations were added shows them without needing its Extras reset
+
+### v1.7.0
+- **The day bar** — the Player's Book's per-day procedures on screen: Day start, Travel, Camp and Settlement, each with the duties that belong to it. Travel Points read off the party's Speed, the forced march, and per-character hunger, sleep and rest-day clocks
+- **The duties roll themselves** — weather, getting lost, foraging, hunting and fishing all roll on the Campaign Book's own tables and write a card
+- **Encounters, in the wilds and in town** — day and night, with 87 bestiary entries behind them: traits, situations, lairs, names, AC and Hit Points, and a button that puts the creature on the battle map
+- **Your own copy of the books, one click away** — point the module at your PDFs and every page reference on a card opens Foundry's reader at that page
+- **A trash** — deleted items are recoverable until the bin is emptied
+- Verified on Foundry v14; minimum still v13
+
+### v1.6.0
+- **The inn, rebuilt** — per-house tables, a menu rolled fresh each day, and bottles and casks to take away
+- **Loot boxes** — stage a hoard privately, release it to the party in one click
+- **A shared party store** — group property that everyone can reach and write to
+- **Multi-select and consumable bundles**, one quiver per row showing its fill level
+- Moved to Foundry v13 types, with a `typecheck` script
+
+### v1.5.x
+- Drag-and-drop reordering, subcategory icons, item qualities, zone give and drop
+- Party convoy speed, double draught teams, speed 0 as a real state
+- A long run of fixes: ghost containers, unreachable coins, GM grants, player performance
+
 ### v1.2.0
 - **Coin zone assignment** — coins are split into 100-coin purse slots that can be moved between zones (Tiny/Equipped/Stowed/Extra); encumbrance updates accordingly
 - **Coin-storing items** — containers (backpack, belt pouch, caskets, chests, sack) now show a live "X/capacity" counter for how many coins they hold

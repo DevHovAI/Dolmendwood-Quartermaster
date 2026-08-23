@@ -32,6 +32,7 @@ import {
 import { creatureEntry, type BestiaryEntry } from "./bestiary";
 import { BOOKS, bookRef, mayOpenBook, type BookId } from "./books";
 import { creatureArt } from "./creatureArt";
+import { hexInfo } from "./hexes";
 import { BookApp } from "../apps/BookApp";
 import { givenColumns, nameTable, surnameColumn } from "./nameTables";
 import { getDayState, setDutyResult } from "./dayDuties";
@@ -292,6 +293,8 @@ export async function rollFindingFood(
     const which = total(whichDie);
     const entry = (kind === "fungi" ? FUNGI : PLANTS)[which - 1];
 
+    // Fifty of the book's hexes grow something the tables do not know about.
+    const hexExtra = await hexForageLine(ctx.hex);
     const y = foragingYield(ctx.season);
     const yieldDie = await rollDice(y.formula);
     dice.push(yieldDie);
@@ -306,7 +309,9 @@ export async function rollFindingFood(
       ${noteLine(entry.note)}
       <p class="dw-day-roll-yield"><strong>${result.rations.total}${doubled ? ` × 2 = ${result.rations.total * 2}` : ""} fresh rations</strong>
         (${y.formula}, ${escapeHTML(y.why)})${doubled ? " — Colliggwyld doubles foraged fungi." : ""}</p>
-      <p class="dw-day-roll-note">Some hexes list their own special plants or fungi, instead of or as well as this.</p>`;
+      <p class="dw-day-roll-sub">${bookRef("campaign", kind === "fungi" ? 118 : 119, "Campaign Book p" + (kind === "fungi" ? 118 : 119))}</p>
+      ${hexExtra.html}`;
+    dice.push(...hexExtra.dice);
   } else if (method === "fish") {
     const whichDie = await rollDice("1d20");
     dice.push(whichDie);
@@ -334,7 +339,7 @@ export async function rollFindingFood(
       : "";
 
     body = `<p class="dw-day-roll-headline">${escapeHTML(entry.name)}</p>
-      <p class="dw-day-roll-sub">1d20 = ${which}</p>
+      <p class="dw-day-roll-sub">1d20 = ${which} &middot; ${bookRef("campaign", 116, "Campaign Book p116")}</p>
       ${noteLine(entry.note)}
       ${yieldLine}
       ${fishBlock}`;
@@ -364,7 +369,7 @@ export async function rollFindingFood(
     body = `<p class="dw-day-roll-headline">${escapeHTML(name)} &times;${total(countDie)}</p>
       <p class="dw-day-roll-sub">${escapeHTML(t.label)}, 1d20 = ${which}; number ${numberDice} = ${total(countDie)}</p>
       <p class="dw-day-roll-consequence">The party has crept up on them. The kill is a normal combat encounter: the party has surprise and begins <strong>${feet} feet</strong> away (1d4 &times; 30 = ${total(distanceDie)} &times; 30).</p>
-      <p class="dw-day-roll-yield"><strong>Rations by Hit Points of what falls</strong> — 1 per HP for small game, 2 for medium, 4 for large.</p>
+      <p class="dw-day-roll-yield"><strong>Rations by Hit Points of what falls</strong> — 1 per HP for small game, 2 for medium, 4 for large (Player's Book p152).</p>
       ${creatureBookLine(name)}
       ${creatureStatLine(name)}
       ${creatureFlavour(name)}
@@ -654,6 +659,63 @@ function creatureBookLine(name: string | undefined, mark?: EncounterMark): strin
  * otherwise. Only the bestiary's seventy-seven entries carry them; the animals
  * and everyday mortals have compact blocks with none of it, and get nothing.
  */
+/**
+ * What this particular hex gives a forager, on top of the usual.
+ *
+ * Fifty of the Campaign Book's hexes grant something the foraging tables know
+ * nothing about — a stand of Wolfsbane, a patch of Sage Toe — and the note is
+ * always written the same way: so many portions of a named thing, with the book
+ * it is described in. The die is rolled here rather than left to the Referee,
+ * and the name carries a link to the page that says what it does.
+ *
+ * "DPB" is the Player's Book's Common Fungi and Herbs table on p130; a bare
+ * page number is the Campaign Book's own treasure chapter.
+ */
+async function hexForageLine(hex: string | undefined): Promise<{ html: string; dice: Roll[] }> {
+  const here = hexInfo(hex);
+  if (!here?.forage) {
+    return {
+      html: '<p class="dw-day-roll-note">Some hexes list their own plants or fungi, instead of or as well as this. Type the hex on the bar and it is rolled here.</p>',
+      dice: [],
+    };
+  }
+  const dice: Roll[] = [];
+  const parts: string[] = [];
+  // "1d3 portions of Hogscap (DPB) or Prancing Mandrake (p430)" — the second
+  // choice inherits the first one's count rather than restating it, so it is
+  // written back in before anything is matched.
+  const spelled = here.forage.replace(
+    /(([0-9]+d[0-9]+|[0-9]+)[ ]+(?:portions? of[ ]+)?)[A-Za-z'’ -]+?[ ]*[(](?:DPB|p[0-9]{1,3})[)][ ]+(?:or|and)[ ]+(?![0-9])/g,
+    (whole, lead) => whole + lead
+  );
+  const pattern = /([0-9]+d[0-9]+|[0-9]+)[ ]+(?:portions? of[ ]+)?([A-Za-z'’ -]+?)[ ]*[(](DPB|p[0-9]{1,3})[)]/g;
+  for (let hit = pattern.exec(spelled); hit; hit = pattern.exec(spelled)) {
+    const [, formula, name, source] = hit;
+    let howMany = Number(formula);
+    if (/d/.test(formula)) {
+      const die = await rollDice(formula);
+      dice.push(die);
+      howMany = total(die);
+    }
+    const where =
+      source === "DPB" ? bookRef("players", 130, escapeHTML(name.trim())) : bookRef("campaign", Number(source.slice(1)), escapeHTML(name.trim()));
+    parts.push(`<strong>${howMany}</strong> &times; ${where}${/d/.test(formula) ? ` (${formula})` : ""}`);
+  }
+  if (!parts.length) {
+    return {
+      html: `<p class="dw-day-roll-note">${escapeHTML(here.hex)} also grants: ${escapeHTML(here.forage)}</p>`,
+      dice: [],
+    };
+  }
+  const joiner = / or /.test(here.forage) ? " <em>or</em> " : " and ";
+  return {
+    html: `<p class="dw-day-roll-yield"><i class="fas fa-seedling"></i>
+        This hex as well: ${parts.join(joiner)} &middot; ${escapeHTML(here.hex)} ${escapeHTML(here.name)},
+        ${bookRef("campaign", here.page, "Campaign Book p" + here.page)}</p>`,
+    dice,
+  };
+}
+
 /**
  * What the thing is, in three plain lines.
  *
@@ -1022,8 +1084,13 @@ function linkBookReferences(root: HTMLElement): void {
   }
 }
 
-/** One handler for every page reference on a card, however it got there. */
-function activateBookLinks(html: HTMLElement): void {
+/**
+ * One handler for every page reference, however it got there.
+ *
+ * Exported because the day bar prints references of its own — the hex's page —
+ * and a link that works in chat and not on the bar is worse than no link.
+ */
+export function activateBookLinks(html: HTMLElement): void {
   html.querySelectorAll<HTMLElement>(".dw-book-link").forEach((link) => {
     if (link.dataset.dwWired === "1") return;
     link.dataset.dwWired = "1";

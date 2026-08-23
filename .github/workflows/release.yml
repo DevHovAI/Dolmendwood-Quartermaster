@@ -1,0 +1,83 @@
+# Build and publish a release when a version tag is pushed.
+#
+# The release checklist that used to be done by hand: build, zip `dist` as a
+# nested folder (which is what Foundry's installer expects), and attach both the
+# zip and `module.json` — the manifest has to be its own asset, because
+# `releases/latest/download/module.json` is the URL Foundry checks for updates.
+#
+#   git tag v1.8.0 && git push origin main --tags
+#
+# The guard below is the part worth having: it refuses to publish when the tag
+# and the version inside module.json disagree, which is the one mistake that
+# ships a release nobody can install.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Check the tag against module.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          MODULE=$(node -p "require('./module.json').version")
+          PACKAGE=$(node -p "require('./package.json').version")
+          echo "tag $TAG | module.json $MODULE | package.json $PACKAGE"
+          if [ "$TAG" != "$MODULE" ]; then
+            echo "::error::module.json says $MODULE but the tag says $TAG"
+            exit 1
+          fi
+          if [ "$TAG" != "$PACKAGE" ]; then
+            echo "::error::package.json says $PACKAGE but the tag says $TAG"
+            exit 1
+          fi
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Check the download URL points at this release
+        run: |
+          EXPECTED="quartermaster-${GITHUB_REF_NAME}.zip"
+          DOWNLOAD=$(node -p "require('./dist/module.json').download")
+          case "$DOWNLOAD" in
+            *"$EXPECTED") echo "download URL ends in $EXPECTED" ;;
+            *) echo "::error::module.json download URL does not end in $EXPECTED (it is $DOWNLOAD)"; exit 1 ;;
+          esac
+
+      - name: Zip
+        run: zip -r "quartermaster-${GITHUB_REF_NAME}.zip" dist
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="RELEASE_NOTES_${GITHUB_REF_NAME}.md"
+          if [ -f "$NOTES" ]; then
+            gh release create "$GITHUB_REF_NAME" \
+              "quartermaster-${GITHUB_REF_NAME}.zip" dist/module.json \
+              --title "$GITHUB_REF_NAME" --notes-file "$NOTES"
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              "quartermaster-${GITHUB_REF_NAME}.zip" dist/module.json \
+              --title "$GITHUB_REF_NAME" --generate-notes
+          fi

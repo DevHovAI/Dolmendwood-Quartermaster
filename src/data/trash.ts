@@ -162,6 +162,23 @@ export async function restoreTrashEntry(actor: Actor, entryId: string): Promise<
 }
 
 /** Throw away everything in one actor's bin, for good. */
+/**
+ * Throw one row away for good.
+ *
+ * The bin was all-or-nothing before: restore a row, or empty the lot. A bin
+ * kept as an undo buffer fills with things nobody will ever want back, and
+ * emptying it to be rid of one of them takes the rest with it.
+ */
+export async function deleteTrashEntry(actor: Actor, entryId: string): Promise<boolean> {
+  const before = getTrash(actor).length;
+  if (!before) return false;
+  await FlagManager.updateInventory(actor, (draft) => {
+    draft.trash = (draft.trash ?? []).filter((t) => t.entryId !== entryId);
+    return draft;
+  });
+  return getTrash(actor).length < before;
+}
+
 export async function emptyTrash(actor: Actor): Promise<number> {
   const count = getTrash(actor).length;
   if (count === 0) return 0;

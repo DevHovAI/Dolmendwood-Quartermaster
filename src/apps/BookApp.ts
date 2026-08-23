@@ -120,7 +120,7 @@ export class BookApp extends foundry.applications.api.ApplicationV2 {
     const url = bookViewerURL(id, printedPage);
     if (!url) {
       ui.notifications?.warn(
-        `No file is set for the ${BOOKS[id].label}. A GM can point at their own copy in Configure Settings → Dolmendudes Quartermaster; the file has to sit in Foundry's own data folder for the browser to reach it.`
+        `No file is set for the ${BOOKS[id].label}. A GM can point at their own copy in Configure Settings → Dolmendudes Companion; the file has to sit in Foundry's own data folder for the browser to reach it.`
       );
       return;
     }

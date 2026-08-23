@@ -176,3 +176,28 @@ export function weatherSummary(result: WeatherResult): string {
   const named = result.effects.map((e) => WEATHER_EFFECTS[e].label.toLowerCase()).join(", ");
   return `${result.text} (${named})`;
 }
+
+/**
+ * A face for the day, off the words the book uses for it.
+ *
+ * Read in order, so the decisive word wins: a blizzard is snow before it is
+ * fog, and freezing rain is rain before it is cold. The effect icons are no
+ * use here — they picture what the weather *does* to the party (a figure
+ * falling over for impeded travel), not what it looks like out of the window.
+ */
+export function weatherIcon(result: WeatherResult | undefined): string {
+  const text = (result?.text ?? "").toLowerCase();
+  const faces: [RegExp, string][] = [
+    [/blizzard|snow|hoarfrost|deep freeze|sleet/, "fa-snowflake"],
+    [/thunder|lightning|storm/, "fa-cloud-bolt"],
+    [/driving rain|downpour|torrential|freezing rain|rain/, "fa-cloud-showers-heavy"],
+    [/drizzle|damp|shower/, "fa-cloud-rain"],
+    [/fog|mist|murk/, "fa-smog"],
+    [/gale|blustery|wind|breez/, "fa-wind"],
+    [/baking|scorching|sweltering|hot/, "fa-temperature-arrow-up"],
+    [/freez|bitter|frost|icy|cold|chill/, "fa-temperature-arrow-down"],
+    [/overcast|brooding|cloud|gloom|grey|gray/, "fa-cloud"],
+    [/clear|bright|balmy|clement|fresh|fine|sun/, "fa-sun"],
+  ];
+  return faces.find(([pattern]) => pattern.test(text))?.[1] ?? "fa-cloud-sun";
+}

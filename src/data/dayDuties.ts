@@ -303,9 +303,59 @@ export async function reconcileDay(): Promise<void> {
  * The world-clock marker is re-aligned afterwards, so a day advanced from the
  * bar is not then advanced a second time when the calendar module catches up.
  */
+/** The hour a Dolmenwood party gets up: waking, spells, and then the road. */
+export const DAY_STARTS_AT_HOUR = 7;
+
+/**
+ * Push the world clock to the next morning.
+ *
+ * The other half of the calendar link, which ran one way for a long time: a
+ * calendar module’s midnight moved our counter, but our own ▶ left the clock
+ * where it was, so the two drifted apart in exactly the way the setting exists
+ * to prevent.
+ *
+ * **Time is only ever advanced, never set.** `game.time.advance` takes a delta,
+ * every calendar module in play reads the same `worldTime`, and going forwards
+ * by a computed amount needs no module’s API. Where Simple Calendar is present
+ * it is asked what o’clock it is, since a Dolmenwood day need not be 24 hours;
+ * otherwise the seconds since midnight are the remainder of the division.
+ */
+async function advanceWorldClockToMorning(): Promise<void> {
+  const g = game as Game;
+  const worldTime = g.time?.worldTime;
+  if (typeof worldTime !== "number") return;
+
+  const api = (
+    globalThis as { SimpleCalendar?: { api?: { timestampToDate?: (t: number) => unknown } } }
+  ).SimpleCalendar?.api;
+  const date = api?.timestampToDate?.(worldTime) as
+    | { hour?: number; minute?: number; second?: number }
+    | undefined;
+  const secondsIntoDay =
+    date && typeof date.hour === "number"
+      ? date.hour * 3600 + (date.minute ?? 0) * 60 + (date.second ?? 0)
+      : ((worldTime % 86400) + 86400) % 86400;
+
+  const morning = DAY_STARTS_AT_HOUR * 3600;
+  // Always forwards, and always to the *next* morning: pressing the button at
+  // 06:00 means the day is over, not that it has not begun.
+  const delta = 86400 - secondsIntoDay + morning;
+  await (g.time as unknown as { advance: (s: number) => Promise<unknown> }).advance(delta);
+}
+
 export async function startNewDay(): Promise<void> {
   await advanceInnDay();
   await reconcileDay();
+
+  // Only where the table has linked the two. A world with no calendar in play
+  // has a worldTime of 0 that nobody looks at, and moving it would be a
+  // surprise rather than a service.
+  if ((game as Game).settings.get(MODULE_ID, SETTINGS.FOLLOW_WORLD_TIME)) {
+    await advanceWorldClockToMorning();
+  }
+
+  // Re-aligned *after* the clock has been pushed, or the hook that watches it
+  // would see a new day and advance the counter a second time.
   const key = worldDayKey();
   if (key) await writeState({ ...getDayState(), lastDayKey: key });
 }

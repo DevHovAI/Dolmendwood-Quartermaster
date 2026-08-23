@@ -154,7 +154,43 @@ export function getInnConfig(key: string, quality: InnQuality): InnConfig {
   // carried over to a different level, so a fresh seed is the only honest
   // answer. The stored copy is left alone: switching back restores it.
   if (stored.quality !== quality) return seedConfig(quality);
-  return stored;
+  return withFixedLines(stored, quality);
+}
+
+/**
+ * Give a stored config the fixed lines it was saved before.
+ *
+ * A config is a snapshot: an inn edited in March keeps exactly what the module
+ * offered in March. When rations were added to every inn's Extras, every inn
+ * that already had a stored config went on showing none, and the only way to
+ * see them was to reset the whole section with ↺ — which threw away the GM's
+ * edits to get at a line the module had added for free. It reads like a bug and
+ * it may as well not be one.
+ *
+ * **Only `fixed` lines are filled in, and only ones missing by id.** They are
+ * the lines the book gives every inn of that quality, so no judgement is being
+ * overruled; a line the GM deleted on purpose comes back, which is the price of
+ * not needing a migration for every future addition. Prices, text, draws and
+ * every invented line are left exactly as they were stored.
+ */
+function withFixedLines(stored: InnConfig, quality: InnQuality): InnConfig {
+  let changed = false;
+  const sections = { ...stored.sections } as Record<InnSection, InnSectionConfig>;
+  for (const { key } of INN_SECTIONS) {
+    const section = sections[key];
+    if (!section) {
+      sections[key] = seedSection(key, stored.sectionQuality?.[key] ?? quality);
+      changed = true;
+      continue;
+    }
+    const seeded = seedSection(key, stored.sectionQuality?.[key] ?? quality);
+    const have = new Set(section.entries.map((e) => e.id));
+    const missing = seeded.entries.filter((e) => e.fixed && !have.has(e.id));
+    if (!missing.length) continue;
+    sections[key] = { ...section, entries: [...section.entries, ...missing.map((e) => ({ ...e, cost: { ...e.cost } }))] };
+    changed = true;
+  }
+  return changed ? { ...stored, sections } : stored;
 }
 
 /** GM only — players cannot write world settings. */

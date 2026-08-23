@@ -55,6 +55,8 @@ declare global {
     "dolmenwood-party-inventory.bookMonsters": string;
     "dolmenwood-party-inventory.bookPageOffset": number;
     "dolmenwood-party-inventory.booksForPlayers": "none" | "players" | "all";
+    "dolmenwood-party-inventory.playerDayBar": boolean;
+    "dolmenwood-party-inventory.barOnlyAccess": boolean;
   }
 
   /** Declare the flags this module writes, so getFlag/setFlag are typed. */

@@ -3,7 +3,8 @@ import { definitionFor } from "../data/itemDefs";
 import { displayQuantity } from "../data/consumables";
 import { getPartyActors, getSharedActor } from "../data/sharedStore";
 import { getLootActors, getLootIcon } from "../data/lootStore";
-import { getTrash, restoreTrashEntry, emptyTrash } from "../data/trash";
+import { getTrash, restoreTrashEntry, emptyTrash, deleteTrashEntry } from "../data/trash";
+import { escapeHTML } from "../helpers/handlebars";
 import { iconForItemCategory } from "../helpers/handlebars";
 import { SocketHandler } from "../socket/SocketHandler";
 import type { TrashedItem } from "../types";
@@ -92,6 +93,7 @@ export class TrashApp extends foundry.applications.api.HandlebarsApplicationMixi
     classes: ["dolmenwood-party-inventory", "trash-window"],
     actions: {
       restore: TrashApp._onRestore,
+      deleteEntry: TrashApp._onDeleteEntry,
       emptyActor: TrashApp._onEmptyActor,
       emptyAll: TrashApp._onEmptyAll,
     },
@@ -144,6 +146,35 @@ export class TrashApp extends foundry.applications.api.HandlebarsApplicationMixi
 
     SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
     this.render();
+  }
+
+  /**
+   * One row gone for good.
+   *
+   * Confirmed, because it is the one button in this window that destroys
+   * something rather than moving it: up to here, deleting was reversible.
+   */
+  private static async _onDeleteEntry(
+    this: TrashApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const actorId = target.dataset.actorId ?? "";
+    const entryId = target.dataset.entryId ?? "";
+    const actor = (game as Game).actors?.get(actorId) as Actor | undefined;
+    if (!actor) return;
+    const entry = getTrash(actor).find((t) => t.entryId === entryId);
+    const confirmed = await Dialog.confirm({
+      title: "Throw Away",
+      content:
+        "<p>Throw <strong>" +
+        escapeHTML(entry?.item?.name ?? "this row") +
+        "</strong> away for good?</p>" +
+        '<p class="qm-hint">It cannot be restored afterwards. The rest of the bin is untouched.</p>'
+    });
+    if (!confirmed) return;
+    await deleteTrashEntry(actor, entryId);
+    this.render(false);
   }
 
   private static async _onEmptyActor(

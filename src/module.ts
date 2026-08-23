@@ -226,6 +226,31 @@ Hooks.once("init", () => {
   // The Player's Book is the players' own book; the other two are the
   // Referee's, and a player who can open the Monster Book can read the lair and
   // the treasure of the thing they just met. Default is the honest one.
+  // The players' half of the bar: the day, the mode, what the party has walked,
+  // the weather once it is known, and their own character's hunger and rest.
+  // None of the Referee's half — no duty ticks, no hex, no page references.
+  game.settings!.register(MODULE_ID, SETTINGS.PLAYER_DAY_BAR, {
+    name: "Players get a day bar of their own",
+    hint: "A slimmer strip carrying only what the characters would know: the day and what the party is doing, Travel Points walked, the weather once the GM has rolled it, and each player's own hunger and rest clocks. The duty list, the hex, the region and every page reference stay with the GM. Each player still switches their own bar on from the toolbar.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // Everything through one door. Off by default, because the bar can be folded
+  // away or switched off and the toolbar is then the only way back in.
+  game.settings!.register(MODULE_ID, SETTINGS.BAR_ONLY_ACCESS, {
+    name: "Reach the module's windows from the day bar only",
+    hint: "Takes the Inn, Loot and Trash buttons off the scene toolbar for anyone who has the day bar, since the bar carries the same shortcuts. The button that shows and hides the bar itself always stays — without it there would be no way back.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
   game.settings!.register(MODULE_ID, SETTINGS.BOOKS_FOR_PLAYERS, {
     name: "Which books players may open",
     hint: "Page references are printed for everyone, but only the GM opens the Campaign and Monster Books by default — those two give away lairs, hoards and what lives in the next hex. A reference a player may not open stays on the card as plain text.",
@@ -287,8 +312,8 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.FOLLOW_WORLD_TIME, {
-    name: "Follow the world clock",
-    hint: "Off by default. When on, the day counter moves on by itself whenever the world clock passes into a new day — so starting a new day in Simple Calendar, SmallTime, about-time, or Foundry's own time controls also re-rolls the inn menus and the day's duties. Built on core's world time rather than any one module's API, so it works with whichever you use. However far the clock jumps, the counter only ever advances one day.",
+    name: "Tie the day counter to the world clock",
+    hint: "Off by default, and it works both ways when on. The world clock passing into a new day moves the counter on, re-rolling the inn menus and the day's duties; and the bar's own ▶ pushes the clock forward to 7:00 the next morning. Built on core's world time rather than any one module's API, so it works with Simple Calendar, SmallTime, about-time or Foundry's own controls alike. However far the clock jumps, the counter only ever advances one day.",
     scope: "world",
     config: true,
     type: Boolean,
@@ -408,7 +433,7 @@ Hooks.once("ready", async () => {
       .map((cat) => {
         const checked = savedInnCats.includes(cat.key) ? "checked" : "";
         return `<label style="display:flex;align-items:center;gap:4px;font-size:0.85em;">
-          <input type="checkbox" class="note-inn-cat" value="${cat.key}" ${checked} /> ${cat.label}
+          <input type="checkbox" class="note-inn-cat" value="${escapeHTML(cat.key)}" ${checked} /> ${escapeHTML(cat.label)}
         </label>`;
       })
       .join("");
@@ -422,7 +447,7 @@ Hooks.once("ready", async () => {
         <div id="note-inn-fields" style="${isInn ? "" : "display:none;"}">
           <div class="form-group">
             <label>Inn Name</label>
-            <input type="text" id="note-inn-name" value="${innName}" placeholder="e.g. The Silver Stag" />
+            <input type="text" id="note-inn-name" value="${escapeHTML(innName)}" placeholder="e.g. The Silver Stag" />
           </div>
           <div class="form-group">
             <label>Quality</label>
@@ -455,7 +480,7 @@ Hooks.once("ready", async () => {
       .map((cat) => {
         const checked = savedCats.includes(cat) ? "checked" : "";
         return `<label style="display:flex;align-items:center;gap:4px;font-size:0.85em;">
-          <input type="checkbox" class="note-shop-cat" value="${cat}" ${checked} /> ${cat}
+          <input type="checkbox" class="note-shop-cat" value="${escapeHTML(cat)}" ${checked} /> ${escapeHTML(cat)}
         </label>`;
       })
       .join("");
@@ -469,7 +494,7 @@ Hooks.once("ready", async () => {
         <div id="note-shop-fields" style="${isShop ? "" : "display:none;"}">
           <div class="form-group">
             <label>Shop Name</label>
-            <input type="text" id="note-shop-name" value="${shopName}" placeholder="e.g. The Blacksmith" />
+            <input type="text" id="note-shop-name" value="${escapeHTML(shopName)}" placeholder="e.g. The Blacksmith" />
           </div>
           <div class="form-group">
             <label>Price Factor <small>(%  — 100 = normal, 200 = double)</small></label>
@@ -497,7 +522,7 @@ Hooks.once("ready", async () => {
         <div id="note-market-fields" style="${isMarket ? "" : "display:none;"}">
           <div class="form-group">
             <label>Market Name</label>
-            <input type="text" id="note-market-name" value="${marketName}" placeholder="e.g. The Grand Bazaar" />
+            <input type="text" id="note-market-name" value="${escapeHTML(marketName)}" placeholder="e.g. The Grand Bazaar" />
           </div>
           <p class="hint" style="margin:4px 0 0;font-size:0.85em;color:#666;">Add shops and inns by opening the market after saving this note.</p>
         </div>
@@ -853,6 +878,14 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
 
   const existingToolCount = Object.keys(tokens.tools as Record<string, SceneControlTool>).length;
 
+  // Everything through one door, where the table has asked for it: the bar
+  // carries the same three shortcuts, so the toolbar need not. The bar's own
+  // show/hide button is never taken away — it is the way back.
+  const barOnly =
+    !!g.settings.get(MODULE_ID, SETTINGS.BAR_ONLY_ACCESS) &&
+    (isGM || !!g.settings.get(MODULE_ID, SETTINGS.PLAYER_DAY_BAR));
+
+  if (!barOnly) {
   (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-party-inventory"] = {
     name: "dolmenwood-party-inventory",
     title: isGM ? "Party Inventory" : "My Inventory",
@@ -861,9 +894,10 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     button: true,
     onChange: isGM ? () => openPartyOverview() : () => openPlayerInventory(),
   } as SceneControlTool;
+  }
 
   // Both buttons are always the GM's; for players they are settings.
-  if (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN)) {
+  if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN))) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-inn"] = {
       name: "dolmenwood-inn",
       title: "Inn",
@@ -874,7 +908,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     } as SceneControlTool;
   }
 
-  if (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT)) {
+  if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT))) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-loot"] = {
       name: "dolmenwood-loot",
       title: "Loot",
@@ -885,7 +919,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     } as SceneControlTool;
   }
 
-  if (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH)) {
+  if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH))) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-trash"] = {
       name: "dolmenwood-trash",
       title: "Trash",
@@ -896,7 +930,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     } as SceneControlTool;
   }
 
-  if (isGM) {
+  if (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_DAY_BAR)) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-day-bar"] = {
       name: "dolmenwood-day-bar",
       title: "Day Duties",

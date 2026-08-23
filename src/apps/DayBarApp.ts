@@ -2,8 +2,11 @@ import { MODULE_ID, SETTINGS, TEMPLATES, TRAVEL_DAYS_PER_REST } from "../constan
 import { getConvoyActors } from "../data/sharedStore";
 import { getEncumbranceMode } from "../data/zoneGrants";
 import { SETTLEMENTS } from "../data/settlementEncounters";
+import { hexInfo } from "../data/hexes";
+import { activateBookLinks } from "../data/dayRolls";
 import { partyDayRows, setAte, setSleptWell, setRested, hungerEffect, exhaustionPenalty } from "../data/characterDay";
 import { PartyOverviewApp, buildPartyConvoy } from "./PartyOverviewApp";
+import { InnApp } from "./InnApp";
 import { openLootBrowser } from "./LootApp";
 import { openTrash } from "./TrashApp";
 import {
@@ -50,7 +53,7 @@ import {
   type RollableDuty,
 } from "../data/dayRolls";
 import { promptFindFood } from "./FindFoodDialog";
-import { travelPointPenalty, hasEffect } from "../data/weather";
+import { travelPointPenalty, hasEffect, weatherSummary, weatherIcon } from "../data/weather";
 import { lostChance } from "../data/gettingLost";
 
 /**
@@ -144,6 +147,26 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     _context: DeepPartial<ApplicationV2RenderContext>,
     _options: DeepPartial<ApplicationV2RenderOptions>
   ): Promise<void> {
+    // Typing a hex answers three of the other four fields at once: the book
+    // prints the terrain, its cost and the region above every hex it details.
+    // A hex it does not detail is still written down — the number is the thing
+    // the Referee actually has — and the other fields stay as they were.
+    // The hex line carries a page reference, and it should open the book like
+    // every other one the module prints.
+    activateBookLinks(this.element);
+
+    const hexBox = this.element.querySelector<HTMLInputElement>('[data-context-field="hex"]');
+    hexBox?.addEventListener("change", async () => {
+      const typed = hexBox.value.trim();
+      const found = hexInfo(typed);
+      await setDayContext(
+        found
+          ? { hex: found.hex, terrain: found.terrain, region: found.region }
+          : { hex: typed }
+      );
+      this.render();
+    });
+
     for (const field of ["season", "terrain", "way", "region", "settlement"] as (keyof DayContext)[]) {
       this.element
         .querySelector<HTMLSelectElement>(`[data-context-field="${field}"]`)
@@ -160,12 +183,24 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     await reconcileDay();
 
     let state = getDayState();
+    // Everything on the context row that the book already knows, given the hex.
+    const here = hexInfo(getDayContext().hex);
     const collapsed = !!(game as Game).settings.get(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED);
     const duties = dutiesForMode(state.mode);
     const isDone = (d: Duty) => state.done[d.id] === true;
     const blocks = buildBlocks(duties, isDone);
 
-    const party = partyDayRows().map((row) => {
+    const isGM = (game as Game).user?.isGM ?? false;
+    // A player's bar carries their own characters and nobody else's. The party
+    // tallies above it stay whole — how many of the party have eaten is not a
+    // secret, and it is what makes somebody go and fix it.
+    const allRows = partyDayRows();
+    const ownRows = allRows.filter(
+      (row) =>
+        isGM ||
+        ((game as Game).actors?.get?.(row.actorId) as { isOwner?: boolean } | undefined)?.isOwner === true
+    );
+    const party = ownRows.map((row) => {
       const overdue = row.travelDaysSinceRest >= TRAVEL_DAYS_PER_REST;
       const hunger = hungerEffect(row.daysWithoutFood);
       const exhaustion = exhaustionPenalty(
@@ -322,7 +357,38 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
             ? `${chance.inSix}-in-6 to lose the way`
             : "No chance of losing the way",
         lostTitle: chance.reason,
+        hex: ctx.hex ?? "",
+        hexName: here?.name ?? "",
+        hexPage: here?.page ?? 0,
+        hexForage: here?.forage ?? "",
+        hexNote: here?.note ?? "",
+        hexAlso: here?.alsoRegion ?? "",
+        hexHint: here
+          ? `${here.hex}, ${here.name}. ${terrain.label}, ${region.label}, ${here.lost} to lose the way. Described in the Campaign Book on p${here.page}.`
+          : "The hex the party is standing in. Type it and the terrain, the region and the lost chance follow from the Campaign Book — including anything that grows here which the foraging tables do not know about. A hex the book does not detail is still kept; set the terrain by hand.",
       },
+      isGM,
+      // The bar's shortcuts are the toolbar's buttons in another place, so they
+      // answer to the same settings. A player who may not open the Loot from
+      // the toolbar may not open it from here either.
+      mayOpenLoot: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT),
+      mayOpenTrash: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH),
+      mayOpenInn: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN),
+      day: state.day,
+      // Told to the players only once it has been rolled: they are standing in
+      // it, so there is nothing left to give away.
+      // Both only on a player's bar: the Referee rolled the weather and has the
+      // card, and the panel below carries every character in full.
+      //
+      // The slot is held whether or not the day has been rolled for, so the two
+      // units after it do not slide along the row when it appears.
+      weatherSlot: !isGM,
+      showOwn: !isGM && ownRows.length > 0,
+      weather: !isGM && state.weather ? weatherSummary(state.weather) : "",
+      weatherIcon: state.weather ? weatherIcon(state.weather) : "fa-cloud-question",
+      weatherTitle: state.weather
+        ? `${weatherSummary(state.weather)} — the day's weather.`
+        : "The day's weather has not been rolled yet.",
       blocks,
 
       // Always on the top line, in every mode: how far the party can still get
@@ -356,13 +422,16 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       },
 
       party,
-      hasParty: party.length > 0,
+      hasParty: allRows.length > 0,
       panelOpen: this.panelOpen,
-      ateCount: party.filter((p) => p.ate).length,
-      sleptCount: party.filter((p) => p.sleptWell).length,
-      allAte: party.length > 0 && party.every((p) => p.ate),
-      allSlept: party.length > 0 && party.every((p) => p.sleptWell),
-      partySize: party.length,
+      // Counted across the whole party, listed only for one's own characters:
+      // "two of us have not eaten" is not a secret, and it is the thing that
+      // makes somebody go and do something about it.
+      ateCount: allRows.filter((p) => p.ate).length,
+      sleptCount: allRows.filter((p) => p.sleptWell).length,
+      allAte: allRows.length > 0 && allRows.every((p) => p.ate),
+      allSlept: allRows.length > 0 && allRows.every((p) => p.sleptWell),
+      partySize: allRows.length,
       // One number for "somebody is taking a penalty right now", so the GM has a
       // reason to unfold the panel without unfolding it to find out.
       warnings: party.filter((p) => p.hungry || p.tired || p.overdue).length,
@@ -457,6 +526,14 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       case "trash":
         openTrash();
         break;
+      case "inn": {
+        const inn = foundry.applications?.instances?.get("dolmenwood-inn") as
+          | { render: (options?: unknown) => void }
+          | undefined;
+        if (inn) inn.render({ force: true });
+        else new InnApp().render(true);
+        break;
+      }
       case "inventory": {
         const existing = foundry.applications?.instances?.get("dolmenwood-party-overview") as
           | { render: (options?: unknown) => void }
@@ -733,9 +810,21 @@ function barInstance(): DayBarApp | undefined {
 }
 
 /** Show the bar if this user is the GM and has not hidden it. */
+/**
+ * May this user have a bar at all?
+ *
+ * The GM always; a player when the table has switched their half on. What they
+ * then get is a different strip, not a censored one — see the template.
+ */
+export function mayUseDayBar(): boolean {
+  const g = game as Game;
+  if (g.user?.isGM) return true;
+  return !!g.settings?.get(MODULE_ID, SETTINGS.PLAYER_DAY_BAR);
+}
+
 export function syncDayBar(): void {
   const g = game as Game;
-  const wanted = (g.user?.isGM ?? false) && !!g.settings.get(MODULE_ID, SETTINGS.SHOW_DAY_BAR);
+  const wanted = mayUseDayBar() && !!g.settings.get(MODULE_ID, SETTINGS.SHOW_DAY_BAR);
   const existing = barInstance();
 
   if (!wanted) {
@@ -759,7 +848,7 @@ export function syncDayBar(): void {
 /** Flip the bar on or off — the toolbar button. */
 export async function toggleDayBar(): Promise<void> {
   const g = game as Game;
-  if (!g.user?.isGM) return;
+  if (!mayUseDayBar()) return;
   const on = !!g.settings.get(MODULE_ID, SETTINGS.SHOW_DAY_BAR);
   await g.settings.set(MODULE_ID, SETTINGS.SHOW_DAY_BAR, !on);
   syncDayBar();

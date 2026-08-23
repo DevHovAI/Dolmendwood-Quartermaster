@@ -6,7 +6,7 @@ import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { zoneRejection } from "../data/zoneGrants";
 import { getPartyActors } from "../data/sharedStore";
 import { SocketHandler } from "../socket/SocketHandler";
-import { buildIconPickerHTML, activateIconPicker, buildZoneOptionsHTML } from "../helpers/handlebars";
+import { buildIconPickerHTML, activateIconPicker, buildZoneOptionsHTML, escapeHTML } from "../helpers/handlebars";
 import type { ItemDefinition, ShopState, InventoryItem, PurchasePayload } from "../types";
 
 export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -85,6 +85,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       toggleHideItem: ShopApp._onToggleHideItem,
       toggleLocalHideItem: ShopApp._onToggleLocalHideItem,
       addToShop: ShopApp._onAddToShop,
+      stockFromCatalogue: ShopApp._onStockFromCatalogue,
       removeFromShop: ShopApp._onRemoveFromShop,
     },
   };
@@ -139,8 +140,10 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
         selectedInventory.coins.pp * 500
       : 0;
 
-    // Filter catalog
-    let items = CatalogManager.filterByTags(shopState.activeTags);
+    // Filter catalog. Treasures are in the catalogue so they can be carried,
+    // not so they can be bought — a shop lists them only where the GM has put
+    // them there by hand, which arrives through customItems() below.
+    let items = CatalogManager.filterByTags(shopState.activeTags).filter((i) => !i.notSold);
     // Local shop category restriction (from Note marker) takes precedence over global availableItems
     if (this.localCategories.length > 0) {
       items = items.filter((i) => this.localCategories.includes(i.category));
@@ -491,6 +494,10 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     new AddToShopDialog(this.shopKey, () => this.render(false)).render(true);
   }
 
+  private static _onStockFromCatalogue(this: ShopApp): void {
+    new StockFromCatalogueDialog(this.shopKey, () => this.render(false)).render(true);
+  }
+
   private static async _onRemoveFromShop(
     this: ShopApp,
     _event: Event,
@@ -634,6 +641,168 @@ class AddCustomShopItemDialog extends Dialog {
 }
 
 // ─── Add To Shop Dialog ───────────────────────────────────────────────────────
+
+/**
+ * Put catalogue items on this shop's shelves by hand.
+ *
+ * The counterpart to `notSold`: the treasures out of the Campaign Book are in
+ * the catalogue so that a party can carry them, and off the shelves so that
+ * every unconfigured shop does not sell potions. This is how a particular
+ * alchemist gets to sell a particular potion — and it lists **everything**,
+ * flag or no flag, because the whole point of it is to override the default.
+ *
+ * What it stores is a copy of the definition in this shop's own stock, which
+ * is the same place the invented items live, so the shelf, the price factor
+ * and the remove button all work on it without knowing where it came from.
+ */
+class StockFromCatalogueDialog extends Dialog {
+  constructor(shopName: string, onComplete: () => void) {
+    // Grouped the way the shop itself groups, so what the Referee picks here
+    // and what they see on the shelf afterwards are arranged alike.
+    const byCategory = new Map<string, ItemDefinition[]>();
+    for (const item of CatalogManager.getAllDefinitions()) {
+      const list = byCategory.get(item.category) ?? [];
+      list.push(item);
+      byCategory.set(item.category, list);
+    }
+
+    const sections = [...byCategory.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([category, items]) => {
+        const rows = [...items]
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map(
+            (item) => `<label class="dw-stock-row" data-search="${escapeHTML(
+              (item.name + " " + item.category + " " + item.subcategory).toLowerCase()
+            )}">
+              <input type="checkbox" value="${escapeHTML(item.id)}" />
+              <span class="dw-stock-name">${escapeHTML(item.name)}</span>
+              <span class="dw-stock-sub">${escapeHTML(item.subcategory)}</span>
+              <span class="dw-stock-cost">${item.cost.amount}${item.cost.currency}</span>
+            </label>`
+          )
+          .join("");
+        return `<details class="dw-stock-group" data-category="${escapeHTML(category)}">
+            <summary>
+              <input type="checkbox" class="dw-stock-all" title="Everything in this category" />
+              <span class="dw-stock-group-name">${escapeHTML(category)}</span>
+              <span class="dw-stock-group-count">${items.length}</span>
+            </summary>
+            <div class="dw-stock-rows">${rows}</div>
+          </details>`;
+      })
+      .join("");
+
+    super({
+      title: "Stock from Catalogue",
+      content: `<div class="dw-stock-picker">
+          <div class="dw-stock-toolbar">
+            <input type="search" class="dw-stock-search" placeholder="Search the whole catalogue…" autofocus />
+            <button type="button" class="dw-stock-expand" title="Open or close every category">
+              <i class="fas fa-angles-down"></i>
+            </button>
+            <span class="dw-stock-chosen">nothing picked</span>
+          </div>
+          <div class="dw-stock-list">${sections}</div>
+        </div>`,
+      buttons: {
+        add: {
+          label: "Add to Shop",
+          callback: async (html: JQuery) => {
+            const chosen = html
+              .find(".dw-stock-rows input:checked")
+              .map((_i: number, el: HTMLElement) => (el as HTMLInputElement).value)
+              .get();
+            if (!chosen.length) return;
+            const g = game as Game;
+            const all =
+              (g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {};
+            if (!all[shopName]) all[shopName] = [];
+            for (const id of chosen) {
+              const def = CatalogManager.getDefinition(id);
+              // Already on this shelf: adding it twice would list it twice.
+              if (!def || all[shopName].some((i) => i.id === def.id)) continue;
+              all[shopName].push({ ...def });
+            }
+            await g.settings.set(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, all);
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "add",
+    });
+  }
+
+  /**
+   * Four behaviours, all of them about not scrolling through four hundred rows:
+   * a search that opens the categories it finds something in, a tick on the
+   * category header that takes the lot, a running count of what is picked, and
+   * one button to fold everything up again.
+   */
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    const root = html[0] ?? html.get(0);
+    if (!root) return;
+
+    const count = (): void => {
+      const picked = root.querySelectorAll(".dw-stock-rows input:checked").length;
+      const label = root.querySelector(".dw-stock-chosen");
+      if (label) label.textContent = picked ? `${picked} picked` : "nothing picked";
+      // A category is ticked when everything under it is, and shows a dash
+      // while only some of it is — the same three states a file tree uses.
+      root.querySelectorAll<HTMLDetailsElement>(".dw-stock-group").forEach((group) => {
+        const boxes = [...group.querySelectorAll<HTMLInputElement>(".dw-stock-rows input")];
+        const on = boxes.filter((b) => b.checked).length;
+        const all = group.querySelector<HTMLInputElement>(".dw-stock-all");
+        if (!all) return;
+        all.checked = on > 0 && on === boxes.length;
+        all.indeterminate = on > 0 && on < boxes.length;
+      });
+    };
+
+    root.querySelectorAll<HTMLInputElement>(".dw-stock-all").forEach((all) => {
+      // The header tick lives inside <summary>, where a click would otherwise
+      // fold the category shut under the Referee's hand.
+      all.addEventListener("click", (event) => event.stopPropagation());
+      all.addEventListener("change", () => {
+        const group = all.closest(".dw-stock-group");
+        group?.querySelectorAll<HTMLInputElement>(".dw-stock-rows input").forEach((box) => {
+          if (box.parentElement?.style.display !== "none") box.checked = all.checked;
+        });
+        count();
+      });
+    });
+
+    root.querySelector(".dw-stock-list")?.addEventListener("change", () => count());
+
+    const search = root.querySelector<HTMLInputElement>(".dw-stock-search");
+    search?.addEventListener("input", () => {
+      const q = search.value.toLowerCase().trim();
+      root.querySelectorAll<HTMLDetailsElement>(".dw-stock-group").forEach((group) => {
+        let shown = 0;
+        group.querySelectorAll<HTMLElement>(".dw-stock-row").forEach((row) => {
+          const hit = !q || (row.dataset.search ?? "").includes(q);
+          row.style.display = hit ? "" : "none";
+          if (hit) shown++;
+        });
+        group.style.display = shown ? "" : "none";
+        // Searching opens what it found and closes what it did not; clearing
+        // the box puts every category back to shut.
+        group.open = q ? shown > 0 : false;
+      });
+    });
+
+    const expand = root.querySelector<HTMLButtonElement>(".dw-stock-expand");
+    expand?.addEventListener("click", () => {
+      const groups = [...root.querySelectorAll<HTMLDetailsElement>(".dw-stock-group")];
+      const anyShut = groups.some((g) => !g.open);
+      groups.forEach((g) => (g.open = anyShut));
+      const icon = expand.querySelector("i");
+      if (icon) icon.className = anyShut ? "fas fa-angles-up" : "fas fa-angles-down";
+    });
+  }
+}
 
 class AddToShopDialog extends Dialog {
   constructor(shopName: string, onComplete: () => void) {

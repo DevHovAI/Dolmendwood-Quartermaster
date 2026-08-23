@@ -31,6 +31,17 @@ export interface ItemDefinition {
    * from a checkbox, so a GM inventing a wheel of cheese need not touch code.
    */
   edible?: boolean;
+  /**
+   * Kept out of a shop's shelves, but still in the catalogue.
+   *
+   * The Campaign Book's treasures — potions, rings, rare herbs, enchanted
+   * oddments — are found, not bought, and a shop with no category list shows
+   * everything in the catalogue. Without this, importing them would put a Bag
+   * of Holding in front of every village blacksmith. A GM who wants one on a
+   * particular shelf adds it to that shop with **From Catalogue**, which
+   * ignores this flag entirely.
+   */
+  notSold?: boolean;
 }
 
 export interface InventoryItem {
