@@ -4474,6 +4474,12 @@ span.day-bar-panel-tick {
   flex: 0 0 auto;
 }
 
+/* Colours stated outright, like the selects beside it.
+   -------------------------------------------------------------------------
+   Left to inherit, the box took whatever the running Foundry gives an input,
+   and v13 and v14 do not give it the same thing: on the play table the text
+   came out unreadable against its own background while the test machine
+   looked fine. Nothing in this bar should depend on that. */
 .day-bar-context-hex input {
   width: 7ch;
   height: 22px;
@@ -4481,6 +4487,22 @@ span.day-bar-panel-tick {
   padding: 0 4px;
   text-align: center;
   font-variant-numeric: tabular-nums;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+  color: var(--dw-text);
+  font-family: inherit;
+}
+
+.day-bar-context-hex input::placeholder {
+  color: var(--dw-tertiary);
+  opacity: 0.6;
+}
+
+/* The page button beside it, for the same reason. */
+.day-bar-hex-page,
+.day-bar-hex-page:hover {
+  color: var(--dw-text);
 }
 
 .day-bar-hex-page {

@@ -11,7 +11,7 @@ import { openLootBrowser, openLootFromNote, activateLootChatButtons } from "./ap
 import { openTrash } from "./apps/TrashApp";
 import { syncDayBar, toggleDayBar, refreshDayBar } from "./apps/DayBarApp";
 import { syncDayToWorldTime } from "./data/dayDuties";
-import { activateEncounterChatButtons } from "./data/dayRolls";
+import { activateEncounterChatButtons, ENCOUNTER_FOLDER } from "./data/dayRolls";
 import { BookApp } from "./apps/BookApp";
 import type { BookId } from "./data/books";
 import { CatalogManager } from "./data/CatalogManager";
@@ -226,6 +226,19 @@ Hooks.once("init", () => {
   // The Player's Book is the players' own book; the other two are the
   // Referee's, and a player who can open the Monster Book can read the lair and
   // the treasure of the thing they just met. Default is the honest one.
+  // A window that opens itself is a window somebody has to close. It was
+  // unconditional for a long time, from before the bar existed; now that the
+  // bar carries the shortcut, opening it uninvited is a preference rather than
+  // a service, and the default is to leave the screen alone.
+  game.settings!.register(MODULE_ID, SETTINGS.AUTO_OPEN_INVENTORY, {
+    name: "Open a player's inventory when they log in",
+    hint: "Off by default. When on, a player with a character assigned gets their inventory window thrown open as Foundry finishes loading. With the day bar on there is a backpack button on it either way, so this is only about saving the first click.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
   // The players' half of the bar: the day, the mode, what the party has walked,
   // the weather once it is known, and their own character's hunger and rest.
   // None of the Referee's half — no duty ticks, no hex, no page references.
@@ -297,11 +310,15 @@ Hooks.once("init", () => {
     },
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
+  // On by default now: the bar is where the day is run from, and for a player
+  // it is the only thing the module puts on screen. A client that has already
+  // switched it off keeps its own answer — this decides what a new one starts
+  // with.
   game.settings!.register(MODULE_ID, SETTINGS.SHOW_DAY_BAR, {
     scope: "client",
     config: false,
     type: Boolean,
-    default: false,
+    default: true,
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED, {
@@ -719,9 +736,14 @@ Hooks.once("ready", async () => {
   Hooks.on("activateNote", handleNoteClick);
   onUntypedHook("clickNote", handleNoteClick);
 
-  // Auto-open player's own inventory (non-GM players)
+  // A player's own inventory, thrown open on login — only where the table has
+  // asked for it. See the setting's own note.
   const g = game as Game;
-  if (!g.user?.isGM && g.user?.character) {
+  if (
+    !g.user?.isGM &&
+    g.user?.character &&
+    g.settings.get(MODULE_ID, SETTINGS.AUTO_OPEN_INVENTORY)
+  ) {
     openPlayerInventory(g.user.character);
   }
 });
@@ -957,6 +979,24 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
  */
 function hideManagedActorsFromDirectory(element: HTMLElement): void {
   const g = game as Game;
+
+  // The folder the map button files its actors in. Every actor in it is made
+  // with ownership NONE, so a player sees an empty folder with a name that
+  // tells them the Referee has been placing things — which is worse than not
+  // seeing it at all. Hidden from players whatever the setting below says; the
+  // Referee keeps it, because it is where the actors actually live.
+  if (!g.user?.isGM) {
+    const folder = (g.folders?.contents ?? []).find(
+      (f: { name?: string; type?: string; id?: string }) =>
+        f.type === "Actor" && f.name === ENCOUNTER_FOLDER
+    ) as { id?: string } | undefined;
+    if (folder?.id) {
+      element
+        .querySelectorAll(`[data-folder-id="${folder.id}"], [data-entry-id="${folder.id}"]`)
+        .forEach((entry) => entry.closest("li")?.remove());
+    }
+  }
+
   if (!g.settings.get(MODULE_ID, SETTINGS.HIDE_MANAGED_ACTORS)) return;
 
   const hiddenIds = new Set<string>();

@@ -1417,7 +1417,14 @@ async function encounterFolderId(): Promise<string | undefined> {
   return made?.id;
 }
 
-const ENCOUNTER_FOLDER = "Dolmenwood Encounters";
+/**
+ * Where the actors made for a map token are kept.
+ *
+ * Exported because the Actors sidebar has to know the same name: the folder is
+ * hidden from players there, and a folder hidden under one name while actors
+ * are filed under another is the kind of drift that survives for months.
+ */
+export const ENCOUNTER_FOLDER = "Dolmenwood Encounters";
 
 /**
  * Hit Points for what was met, one roll per creature.

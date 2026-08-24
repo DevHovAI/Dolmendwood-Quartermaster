@@ -56,6 +56,7 @@ declare global {
     "dolmenwood-party-inventory.bookPageOffset": number;
     "dolmenwood-party-inventory.booksForPlayers": "none" | "players" | "all";
     "dolmenwood-party-inventory.playerDayBar": boolean;
+    "dolmenwood-party-inventory.autoOpenInventory": boolean;
     "dolmenwood-party-inventory.barOnlyAccess": boolean;
   }
 
