@@ -1,6 +1,7 @@
 import { noteHexStep } from "./data/dayContext";
 import { MODULE_ID, SETTINGS, FLAGS, SOCKET_EVENTS, TRASH_LIMIT_DEFAULT } from "./constants";
 import { registerHandlebarsHelpers, registerHandlebarsPartials, escapeHTML } from "./helpers/handlebars";
+import { fitToViewport } from "./helpers/fitToViewport";
 import { SocketHandler } from "./socket/SocketHandler";
 import { PartyOverviewApp } from "./apps/PartyOverviewApp";
 import { PlayerInventoryApp } from "./apps/PlayerInventoryApp";
@@ -16,9 +17,11 @@ import { BookApp } from "./apps/BookApp";
 import type { BookId } from "./data/books";
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
+import { hexOf, tokenPoint, refusePlaceIfAway } from "./data/partyPlace";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
 import { INN_SECTIONS, DEFAULT_INN_NAME } from "./data/innData";
 import type { InnQuality } from "./data/innData";
+import type { ShopNoteFlag } from "./types";
 import "../styles/module.css";
 
 /**
@@ -105,6 +108,24 @@ Hooks.once("init", () => {
     default: {},
   });
 
+  // Services the Referee has written, kept apart from any one shop so the same
+  // guide can be put on twelve shelves without being priced twelve times.
+  game.settings!.register(MODULE_ID, SETTINGS.SERVICE_LIBRARY, {
+    scope: "world",
+    config: false,
+    type: Array,
+    default: [],
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // One counter per shop. Bumping it re-rolls everything that shop stocks on an
+  // X-in-6 chance — the shop's equivalent of the inn's new day.
+  game.settings!.register(MODULE_ID, SETTINGS.SHOP_VISITS, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
+  });
+
   game.settings!.register(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE, {
     name: "Encumbrance System",
     hint: "Slot Encumbrance tracks gear slots (equipped ≤10, stowed ≤16). Weight Encumbrance tracks total item weight in coins (max 1,600).",
@@ -183,6 +204,45 @@ Hooks.once("init", () => {
     type: Boolean,
     default: true,
     onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // ── Where the shops are, and who may reach them ────────────────────────────
+
+  game.settings!.register(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP, {
+    name: "Players may open the general shop from the toolbar",
+    hint: "Off by default. The general shop is the place-less one — it belongs to no map note, so it can be neither a specialist nor a buyer, and it is reachable from anywhere at any time. With this off, players buy where the party is standing and the map notes are what a shop means. The GM keeps the button either way.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.PLAYER_ADD_CUSTOM_ITEM, {
+    name: "Players may invent items in their own inventory",
+    hint: "On by default, which is how it has always worked. The Add Custom Item button lets a player write a line into their own sheet — name, weight and all — without asking anyone. Turn it off for a table where everything should come from the catalogue, a shop, or the GM's hand. The GM's own Add Item button is not affected.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.SHOPS_NEED_PARTY_PRESENT, {
+    name: "Places open only where the party is standing",
+    hint: "On by default. A player may open a shop, market or inn note only if the party's token is in the same hex on a hex map, or simply on the same scene where there is no hex grid — a village map, say. The GM is never restricted. Turn this off to let players open any of them from anywhere, as before.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.PARTY_MARKER_ACTOR, {
+    name: "The party's marker on the map",
+    hint: "The name of the actor whose token stands for the party while travelling. Leave this empty and every party character's own token counts instead — which is what you want if you move the characters individually. Name a marker here if the party travels as one token that belongs to no player, since such a token is otherwise invisible to the module.",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "",
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.TRASH_LIMIT, {
@@ -354,12 +414,23 @@ Hooks.once("init", () => {
       event: Event
     ): unknown {
       const getFlag = (key: string) => this.document?.getFlag?.(MODULE_ID, key);
-      const marketFlag = getFlag("market");
-      if (marketFlag) { openMarket(this.document as { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }); return; }
+      // A shop is a place: a player reaches one only where the party stands.
+      const doc = this.document as Parameters<typeof refusePlaceIfAway>[0];
+      const marketFlag = getFlag("market") as { name?: string } | undefined;
+      if (marketFlag) {
+        if (refusePlaceIfAway(doc, marketFlag.name ?? "That market")) return;
+        openMarket(this.document as { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }); return;
+      }
       const innFlag = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[]; priceFactor?: number } | undefined;
-      if (innFlag) { openInn(innFlag.name, innFlag.quality, innFlag.categories, innFlag.priceFactor); return; }
-      const shopFlag = getFlag("shop") as { name?: string; categories?: string[]; priceFactor?: number } | undefined;
-      if (shopFlag) { openShop(shopFlag.name, shopFlag.categories ?? [], shopFlag.priceFactor); return; }
+      if (innFlag) {
+        if (refusePlaceIfAway(doc, innFlag.name ?? "That inn")) return;
+        openInn(innFlag.name, innFlag.quality, innFlag.categories, innFlag.priceFactor); return;
+      }
+      const shopFlag = getFlag("shop") as ShopNoteFlag | undefined;
+      if (shopFlag) {
+        if (refusePlaceIfAway(doc, shopFlag.name ?? "That shop")) return;
+        openShop(shopFlag.name, shopFlag.categories ?? [], shopFlag.priceFactor, shopFlag.ownStockOnly, shopFlag.buyBackRate); return;
+      }
       const lootFlag = getFlag("loot");
       if (lootFlag) { void openLootFromNote(this.document as Parameters<typeof openLootFromNote>[0]); return; }
       return _origClick.call(this, event);
@@ -385,7 +456,8 @@ Hooks.once("ready", async () => {
     (mod as ModuleData & { api: unknown }).api = {
       openPartyOverview: () => openPartyOverview(),
       openPlayerInventory: (actorOrId?: Actor | string) => openPlayerInventory(actorOrId),
-      openShop: (name?: string, categories?: string[], priceFactor?: number) => openShop(name, categories, priceFactor),
+      openShop: (name?: string, categories?: string[], priceFactor?: number, ownStockOnly?: boolean, buyBackRate?: number) =>
+        openShop(name, categories, priceFactor, ownStockOnly, buyBackRate),
       openInn: (name?: string, quality?: InnQuality, categories?: string[], priceFactor?: number) => openInn(name, quality, categories, priceFactor),
       openMarket: (noteDoc: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }) => openMarket(noteDoc),
       openLoot: () => openLootBrowser(),
@@ -423,7 +495,7 @@ Hooks.once("ready", async () => {
 
   // Cache of pending flag values keyed on the app instance.
   // Updated on every input change; read by closeNoteConfig (which fires without HTML in v13).
-  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality; categories: string[]; priceFactor: number } | false; shop?: { name: string; categories: string[]; priceFactor: number } | false; market?: { name: string } | false; loot?: { name: string } | false };
+  type PendingNoteFlags = { inn?: { name: string; quality: InnQuality; categories: string[]; priceFactor: number } | false; shop?: { name: string; categories: string[]; priceFactor: number; ownStockOnly: boolean; buyBackRate: number } | false; market?: { name: string } | false; loot?: { name: string } | false };
   const pendingNoteFlags = new WeakMap<object, PendingNoteFlags>();
 
   // v13 ApplicationV2 passes an HTMLElement as the second arg; old Application passed jQuery.
@@ -449,79 +521,122 @@ Hooks.once("ready", async () => {
     const innCategoryCheckboxes = INN_SECTIONS
       .map((cat) => {
         const checked = savedInnCats.includes(cat.key) ? "checked" : "";
-        return `<label style="display:flex;align-items:center;gap:4px;font-size:0.85em;">
+        return `<label class="qm-note-cat">
           <input type="checkbox" class="note-inn-cat" value="${escapeHTML(cat.key)}" ${checked} /> ${escapeHTML(cat.label)}
         </label>`;
       })
       .join("");
 
+    // Markup follows Foundry's own `standard-form` convention — a label, a
+    // `.form-fields` box holding the control, and the hint as a `p.hint`. Core
+    // lays a `.form-group` out as a flex ROW, so anything dropped in beside the
+    // label as a sibling ends up in the same row and the whole form reads as
+    // shoved about. That is what these looked like before.
     const innHtml = `
-      <fieldset style="margin:8px 0;padding:8px;border:1px solid #7a5030;">
-        <legend style="font-weight:bold;padding:0 4px;">Quartermaster Inn</legend>
+      <fieldset class="qm-note-fieldset">
+        <legend>Quartermaster Inn</legend>
         <div class="form-group">
-          <label><input type="checkbox" id="note-is-inn" ${isInn ? "checked" : ""} /> Mark as Inn</label>
+          <label for="note-is-inn">Mark as Inn</label>
+          <div class="form-fields">
+            <input type="checkbox" id="note-is-inn" ${isInn ? "checked" : ""} />
+          </div>
         </div>
-        <div id="note-inn-fields" style="${isInn ? "" : "display:none;"}">
+        <div id="note-inn-fields" class="qm-note-body" style="${isInn ? "" : "display:none;"}">
           <div class="form-group">
-            <label>Inn Name</label>
-            <input type="text" id="note-inn-name" value="${escapeHTML(innName)}" placeholder="e.g. The Silver Stag" />
-          </div>
-          <div class="form-group">
-            <label>Quality</label>
-            <select id="note-inn-quality">
-              <option value="poor" ${innQuality === "poor" ? "selected" : ""}>Poor</option>
-              <option value="common" ${innQuality === "common" ? "selected" : ""}>Common</option>
-              <option value="fancy" ${innQuality === "fancy" ? "selected" : ""}>Fancy</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Price Factor <small>(%  — 100 = normal, 200 = double)</small></label>
-            <input type="number" id="note-inn-price-factor" value="${innPriceFactor}" min="1" max="10000" step="1" style="width:80px;" />
-          </div>
-          <div class="form-group">
-            <label>Categories served <small>(leave all unchecked = serve everything)</small></label>
-            <div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;">
-              ${innCategoryCheckboxes}
+            <label for="note-inn-name">Inn Name</label>
+            <div class="form-fields">
+              <input type="text" id="note-inn-name" value="${escapeHTML(innName)}" placeholder="e.g. The Silver Stag" />
             </div>
+          </div>
+          <div class="form-group">
+            <label for="note-inn-quality">Quality</label>
+            <div class="form-fields">
+              <select id="note-inn-quality">
+                <option value="poor" ${innQuality === "poor" ? "selected" : ""}>Poor</option>
+                <option value="common" ${innQuality === "common" ? "selected" : ""}>Common</option>
+                <option value="fancy" ${innQuality === "fancy" ? "selected" : ""}>Fancy</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="note-inn-price-factor">Price factor</label>
+            <div class="form-fields">
+              <input type="number" id="note-inn-price-factor" value="${innPriceFactor}" min="1" max="10000" step="1" />
+            </div>
+            <p class="hint">Per cent of the book price. 100 is normal, 200 is double.</p>
+          </div>
+          <div class="form-group">
+            <label>Sections served</label>
+            <div class="form-fields qm-note-cats">${innCategoryCheckboxes}</div>
+            <p class="hint">Leave every box unticked to serve all of them.</p>
           </div>
         </div>
       </fieldset>`;
 
     // ── Shop fieldset ─────────────────────────────────────────────────────────
-    const existingShop = note?.getFlag?.(MODULE_ID, "shop") as { name?: string; categories?: string[]; priceFactor?: number } | undefined;
+    const existingShop = note?.getFlag?.(MODULE_ID, "shop") as ShopNoteFlag | undefined;
     const isShop = !!existingShop;
     const shopName = existingShop?.name ?? "";
     const savedCats = existingShop?.categories ?? [];
     const shopPriceFactor = existingShop?.priceFactor ?? 100;
-    const categoryCheckboxes = CatalogManager.getCategories()
-      .map((cat) => {
-        const checked = savedCats.includes(cat) ? "checked" : "";
-        return `<label style="display:flex;align-items:center;gap:4px;font-size:0.85em;">
-          <input type="checkbox" class="note-shop-cat" value="${escapeHTML(cat)}" ${checked} /> ${escapeHTML(cat)}
-        </label>`;
-      })
-      .join("");
+    const shopOwnStock = existingShop?.ownStockOnly ?? false;
+    const shopBuyBack = existingShop?.buyBackRate ?? 0;
+    // Only the categories a shop can actually sell from are offered. The other
+    // thirteen are the Campaign Book's treasure, where every entry is marked
+    // not-for-sale — and a shop strips `notSold` *before* it reads this list, so
+    // ticking one of those did precisely nothing. A potion reaches a particular
+    // shelf through **From Catalogue** in the shop window, which ignores the
+    // flag on purpose, and that is the only way it ever worked.
+    const { sold: soldCats } = CatalogManager.getCategoriesBySale();
+    const catBox = (cat: string): string => {
+      const checked = savedCats.includes(cat) ? "checked" : "";
+      return `<label class="qm-note-cat">
+        <input type="checkbox" class="note-shop-cat" value="${escapeHTML(cat)}" ${checked} /> ${escapeHTML(cat)}
+      </label>`;
+    };
+    const categoryCheckboxes = soldCats.map(catBox).join("");
 
     const shopHtml = `
-      <fieldset style="margin:8px 0;padding:8px;border:1px solid #7a5030;">
-        <legend style="font-weight:bold;padding:0 4px;">Quartermaster Shop</legend>
+      <fieldset class="qm-note-fieldset">
+        <legend>Quartermaster Shop</legend>
         <div class="form-group">
-          <label><input type="checkbox" id="note-is-shop" ${isShop ? "checked" : ""} /> Mark as Shop</label>
+          <label for="note-is-shop">Mark as Shop</label>
+          <div class="form-fields">
+            <input type="checkbox" id="note-is-shop" ${isShop ? "checked" : ""} />
+          </div>
         </div>
-        <div id="note-shop-fields" style="${isShop ? "" : "display:none;"}">
+        <div id="note-shop-fields" class="qm-note-body" style="${isShop ? "" : "display:none;"}">
           <div class="form-group">
-            <label>Shop Name</label>
-            <input type="text" id="note-shop-name" value="${escapeHTML(shopName)}" placeholder="e.g. The Blacksmith" />
-          </div>
-          <div class="form-group">
-            <label>Price Factor <small>(%  — 100 = normal, 200 = double)</small></label>
-            <input type="number" id="note-shop-price-factor" value="${shopPriceFactor}" min="1" max="10000" step="1" style="width:80px;" />
-          </div>
-          <div class="form-group">
-            <label>Categories sold <small>(leave all unchecked = sell everything)</small></label>
-            <div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px;">
-              ${categoryCheckboxes}
+            <label for="note-shop-name">Shop Name</label>
+            <div class="form-fields">
+              <input type="text" id="note-shop-name" value="${escapeHTML(shopName)}" placeholder="e.g. The Blacksmith" />
             </div>
+          </div>
+          <div class="form-group">
+            <label for="note-shop-price-factor">Price factor</label>
+            <div class="form-fields">
+              <input type="number" id="note-shop-price-factor" value="${shopPriceFactor}" min="1" max="10000" step="1" />
+            </div>
+            <p class="hint">Per cent of the book price. 100 is normal, 200 is double.</p>
+          </div>
+          <div class="form-group">
+            <label for="note-shop-buy-back">Buys back at</label>
+            <div class="form-fields">
+              <input type="number" id="note-shop-buy-back" value="${shopBuyBack}" min="0" max="200" step="5" />
+            </div>
+            <p class="hint">Per cent of what a thing is worth, not of this shop's asking price. 50 for used gear, 80 for a jeweller's gems, 0 to buy nothing.</p>
+          </div>
+          <div class="form-group">
+            <label for="note-shop-own-stock">Sells only its own stock</label>
+            <div class="form-fields">
+              <input type="checkbox" id="note-shop-own-stock" ${shopOwnStock ? "checked" : ""} />
+            </div>
+            <p class="hint">The cheesemonger, the pipe carver, the magicians' guild: nothing from the catalogue, only what you put on this shop's shelf yourself. The categories below are then ignored.</p>
+          </div>
+          <div class="form-group">
+            <label>Categories sold</label>
+            <div class="form-fields qm-note-cats">${categoryCheckboxes}</div>
+            <p class="hint">Leave every box unticked to sell the whole catalogue. Treasures are never on a shelf by category — put one there with <strong>From Catalogue</strong> inside the shop.</p>
           </div>
         </div>
       </fieldset>`;
@@ -531,17 +646,22 @@ Hooks.once("ready", async () => {
     const isMarket = !!existingMarket;
     const marketName = existingMarket?.name ?? "";
     const marketHtml = `
-      <fieldset style="margin:8px 0;padding:8px;border:1px solid #7a5030;">
-        <legend style="font-weight:bold;padding:0 4px;">Quartermaster Market</legend>
+      <fieldset class="qm-note-fieldset">
+        <legend>Quartermaster Market</legend>
         <div class="form-group">
-          <label><input type="checkbox" id="note-is-market" ${isMarket ? "checked" : ""} /> Mark as Market</label>
-        </div>
-        <div id="note-market-fields" style="${isMarket ? "" : "display:none;"}">
-          <div class="form-group">
-            <label>Market Name</label>
-            <input type="text" id="note-market-name" value="${escapeHTML(marketName)}" placeholder="e.g. The Grand Bazaar" />
+          <label for="note-is-market">Mark as Market</label>
+          <div class="form-fields">
+            <input type="checkbox" id="note-is-market" ${isMarket ? "checked" : ""} />
           </div>
-          <p class="hint" style="margin:4px 0 0;font-size:0.85em;color:#666;">Add shops and inns by opening the market after saving this note.</p>
+        </div>
+        <div id="note-market-fields" class="qm-note-body" style="${isMarket ? "" : "display:none;"}">
+          <div class="form-group">
+            <label for="note-market-name">Market Name</label>
+            <div class="form-fields">
+              <input type="text" id="note-market-name" value="${escapeHTML(marketName)}" placeholder="e.g. The Grand Bazaar" />
+            </div>
+            <p class="hint">Add its shops and inns by opening the market once this note is saved.</p>
+          </div>
         </div>
       </fieldset>`;
 
@@ -559,23 +679,28 @@ Hooks.once("ready", async () => {
     const hasEntry = !!(note as { entryId?: string | null } | undefined)?.entryId;
     const lootEntryWarning = hasEntry
       ? ""
-      : `<p class="notification warning" style="margin:4px 0 0;font-size:0.85em;">
+      : `<p class="notification warning qm-note-warning">
            This note has no journal entry, so it will not open anything and players
            cannot see it. Link a blank journal entry — releasing the box then grants
            the party access to it automatically.
          </p>`;
     const lootHtml = `
-      <fieldset style="margin:8px 0;padding:8px;border:1px solid #7a5030;">
-        <legend style="font-weight:bold;padding:0 4px;">Quartermaster Loot</legend>
+      <fieldset class="qm-note-fieldset">
+        <legend>Quartermaster Loot</legend>
         <div class="form-group">
-          <label><input type="checkbox" id="note-is-loot" ${isLoot ? "checked" : ""} /> Mark as Loot Box</label>
-        </div>
-        <div id="note-loot-fields" style="${isLoot ? "" : "display:none;"}">
-          <div class="form-group">
-            <label>Box Name</label>
-            <input type="text" id="note-loot-name" value="${escapeHTML(lootName)}" placeholder="e.g. Barrow Hoard" />
+          <label for="note-is-loot">Mark as Loot Box</label>
+          <div class="form-fields">
+            <input type="checkbox" id="note-is-loot" ${isLoot ? "checked" : ""} />
           </div>
-          <p class="hint" style="margin:4px 0 0;font-size:0.85em;color:#666;">The box is created when you first open it, and stays hidden from players until you release it.</p>
+        </div>
+        <div id="note-loot-fields" class="qm-note-body" style="${isLoot ? "" : "display:none;"}">
+          <div class="form-group">
+            <label for="note-loot-name">Box Name</label>
+            <div class="form-fields">
+              <input type="text" id="note-loot-name" value="${escapeHTML(lootName)}" placeholder="e.g. Barrow Hoard" />
+            </div>
+            <p class="hint">The box is made when you first open it, and stays hidden from players until you release it.</p>
+          </div>
           ${lootEntryWarning}
         </div>
       </fieldset>`;
@@ -587,23 +712,96 @@ Hooks.once("ready", async () => {
     wrapper.innerHTML = innHtml + shopHtml + marketHtml + lootHtml;
     footer.before(wrapper);
 
-    // Toggle visibility on checkbox change
+    /**
+     * Fit the sheet to what is now inside it — without walking off the screen.
+     *
+     * Two facts decide this. Foundry measures a note config's height once, when
+     * it renders, and these four fieldsets are added afterwards; and NoteConfig
+     * is an ApplicationV2, whose `.window-content` is `overflow: hidden`, so
+     * nothing inside it scrolls on its own. Growing the window is therefore the
+     * only way the added fields become visible — and growing it without a limit
+     * pushes the footer, and with it the Create button, off the bottom of the
+     * screen where nothing can scroll it back.
+     *
+     * So: grow to fit while it fits, and once it would not, cap the window at
+     * the viewport and hand the overflow to the injected block, which gets a
+     * scrollbar of its own. The footer stays a sibling *below* that block and
+     * is always reachable.
+     */
+    const resize = (): void => {
+      const sheet = app as { setPosition?: (p: { height: number | string }) => void };
+      const root = (el.closest(".application") ?? el) as HTMLElement;
+      const content = root.querySelector<HTMLElement>(".window-content");
+
+      // Measure unconstrained first: a fold that was just closed should give
+      // its height back rather than leave the block scrolling forever.
+      wrapper.style.maxHeight = "";
+      wrapper.style.overflowY = "";
+      if (content) content.style.overflowY = "";
+      sheet.setPosition?.({ height: "auto" });
+
+      const fit = fitToViewport(root.offsetHeight, wrapper.offsetHeight, window.innerHeight);
+      if (fit.windowHeight === null) return;
+
+      wrapper.style.maxHeight = `${fit.blockMaxHeight}px`;
+      wrapper.style.overflowY = "auto";
+      wrapper.style.paddingRight = "4px";
+
+      // Belt and braces. If the sheet's own fields already fill the screen, the
+      // block hits its floor and the window is still too tall — so the content
+      // area is allowed to scroll as well. V2 sets it to `hidden`, which is what
+      // makes an over-tall note config unscrollable in the first place.
+      if (content && fit.contentMustScroll) content.style.overflowY = "auto";
+
+      sheet.setPosition?.({ height: fit.windowHeight });
+    };
+    resize();
+
+    // The sheet is measured against the viewport, so a resized browser window
+    // has to be measured again — otherwise a form that fitted at full screen
+    // keeps a height taller than the screen it is now on.
+    //
+    // Taken off again when this particular sheet closes. A listener added on
+    // every render and never removed is one more on the window each time a
+    // note is opened, for as long as the world stays loaded.
+    const onViewportResize = (): void => resize();
+    window.addEventListener("resize", onViewportResize);
+    const hooks = Hooks as unknown as {
+      on(hook: string, fn: (...a: any[]) => unknown): number;
+      off(hook: string, id: number): void;
+    };
+    const closeId = hooks.on("closeNoteConfig", (closed: object) => {
+      if (closed !== app) return;
+      window.removeEventListener("resize", onViewportResize);
+      hooks.off("closeNoteConfig", closeId);
+    });
+
+    // Toggle visibility on checkbox change. Each of these opens or closes a
+    // block several fields tall, so the sheet has to be re-measured after it.
     el.querySelector("#note-is-inn")?.addEventListener("change", function (this: HTMLInputElement) {
       (el.querySelector("#note-inn-fields") as HTMLElement).style.display =
         this.checked ? "" : "none";
+      resize();
     });
     el.querySelector("#note-is-shop")?.addEventListener("change", function (this: HTMLInputElement) {
       (el.querySelector("#note-shop-fields") as HTMLElement).style.display =
         this.checked ? "" : "none";
+      resize();
     });
     el.querySelector("#note-is-loot")?.addEventListener("change", function (this: HTMLInputElement) {
       (el.querySelector("#note-loot-fields") as HTMLElement).style.display =
         this.checked ? "" : "none";
+      resize();
     });
     el.querySelector("#note-is-market")?.addEventListener("change", function (this: HTMLInputElement) {
       (el.querySelector("#note-market-fields") as HTMLElement).style.display =
         this.checked ? "" : "none";
+      resize();
     });
+
+    // `toggle` does not bubble, so every fold is wired by hand rather than
+    // through one listener on the form.
+    el.querySelectorAll("details").forEach((d) => d.addEventListener("toggle", resize));
 
     // Helper: read current field values from the DOM into the WeakMap cache.
     // Called on every input change so closeNoteConfig can save without the HTML.
@@ -628,7 +826,9 @@ Hooks.once("ready", async () => {
         const categories: string[] = [];
         el.querySelectorAll<HTMLInputElement>(".note-shop-cat:checked").forEach((cb) => categories.push(cb.value));
         const priceFactor = Math.max(1, parseInt((el.querySelector("#note-shop-price-factor") as HTMLInputElement | null)?.value ?? "100", 10) || 100);
-        flags.shop = { name, categories, priceFactor };
+        const ownStockOnly = (el.querySelector("#note-shop-own-stock") as HTMLInputElement | null)?.checked ?? false;
+        const buyBackRate = Math.max(0, parseInt((el.querySelector("#note-shop-buy-back") as HTMLInputElement | null)?.value ?? "0", 10) || 0);
+        flags.shop = { name, categories, priceFactor, ownStockOnly, buyBackRate };
       } else {
         flags.shop = false;
       }
@@ -708,18 +908,29 @@ Hooks.once("ready", async () => {
     const getFlag = (key: string) =>
       asDoc.getFlag?.(MODULE_ID, key) ?? asDoc.document?.getFlag?.(MODULE_ID, key);
 
-    const marketData = getFlag("market");
+    // Same gate as the _onClickLeft2 override above — this is the other door
+    // into the same rooms, and a rule enforced at only one of them is no rule.
+    const placeDoc = (asDoc.document ?? asDoc) as Parameters<typeof refusePlaceIfAway>[0];
+
+    const marketData = getFlag("market") as { name?: string } | undefined;
     if (marketData) {
+      if (refusePlaceIfAway(placeDoc, marketData.name ?? "That market")) return false;
       const doc = (asDoc.document ?? asDoc) as { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> };
       openMarket(doc);
       return false;
     }
 
     const innData = getFlag("inn") as { name?: string; quality?: InnQuality; categories?: string[]; priceFactor?: number } | undefined;
-    if (innData) { openInn(innData.name, innData.quality, innData.categories, innData.priceFactor); return false; }
+    if (innData) {
+      if (refusePlaceIfAway(placeDoc, innData.name ?? "That inn")) return false;
+      openInn(innData.name, innData.quality, innData.categories, innData.priceFactor); return false;
+    }
 
-    const shopData = getFlag("shop") as { name?: string; categories?: string[]; priceFactor?: number } | undefined;
-    if (shopData) { openShop(shopData.name, shopData.categories ?? [], shopData.priceFactor); return false; }
+    const shopData = getFlag("shop") as ShopNoteFlag | undefined;
+    if (shopData) {
+      if (refusePlaceIfAway(placeDoc, shopData.name ?? "That shop")) return false;
+      openShop(shopData.name, shopData.categories ?? [], shopData.priceFactor, shopData.ownStockOnly, shopData.buyBackRate); return false;
+    }
 
     const lootData = getFlag("loot");
     if (lootData) {
@@ -836,30 +1047,9 @@ onUntypedHook("updateSetting", (setting: { key?: string }) => {
  * map every step would change cell and the warning would be constant noise.
  */
 
-/** Which hex a point falls in, by the scene's own grid. Undefined off a hex map. */
-function hexOf(
-  scene: { grid?: unknown } | undefined,
-  point: { x?: number; y?: number } | undefined
-): string | undefined {
-  const grid = scene?.grid as
-    | {
-        isHexagonal?: boolean;
-        type?: number;
-        getOffset?: (p: { x: number; y: number }) => { i: number; j: number };
-      }
-    | undefined;
-  if (!grid?.getOffset) return undefined;
-
-  // `isHexagonal` is the v12+ getter; the type range is the older way of asking
-  // and costs nothing to keep.
-  const hex =
-    grid.isHexagonal ?? (typeof grid.type === "number" && grid.type >= 2 && grid.type <= 5);
-  if (!hex) return undefined;
-
-  if (typeof point?.x !== "number" || typeof point?.y !== "number") return undefined;
-  const { i, j } = grid.getOffset({ x: point.x, y: point.y });
-  return `${i},${j}`;
-}
+// hexOf now lives in data/partyPlace.ts: the movement hint and the "is the
+// party here?" test must agree on what a hex is, and two copies of that answer
+// would be one too many.
 
 /**
  * The one client that may count a step, matching the world-clock sync: two
@@ -874,14 +1064,33 @@ function isPrimaryGMClient(): boolean {
 onUntypedHook("moveToken", (tokenDoc: unknown, movement: unknown) => {
   if (!isPrimaryGMClient()) return;
 
-  const doc = tokenDoc as { parent?: { name?: string; grid?: unknown } };
+  const doc = tokenDoc as {
+    parent?: { name?: string; grid?: unknown };
+    getCenterPoint?: (data?: { x?: number; y?: number }) => { x?: number; y?: number };
+    width?: number;
+    height?: number;
+  };
   const move = movement as {
     origin?: { x?: number; y?: number };
     destination?: { x?: number; y?: number };
   };
 
-  const from = hexOf(doc.parent, move?.origin);
-  const to = hexOf(doc.parent, move?.destination);
+  // `origin` and `destination` are token positions — the top-left corner of the
+  // base, which on a hex grid sits in a *neighbouring* hex. Both ends have to be
+  // recentred or the crossing is detected at the wrong moment. Same correction
+  // as the party-presence rule, which is why they share tokenPoint().
+  // getCenterPoint() takes the position to centre, so it answers for a waypoint
+  // the token is not standing on yet.
+  const at = (p: { x?: number; y?: number } | undefined) => {
+    if (!p) return undefined;
+    return (
+      doc.getCenterPoint?.(p) ??
+      tokenPoint(doc.parent, { ...p, width: doc.width, height: doc.height })
+    );
+  };
+
+  const from = hexOf(doc.parent, at(move?.origin));
+  const to = hexOf(doc.parent, at(move?.destination));
 
   // Off a hex map, or the token merely shifted within the same hex.
   if (!from || !to || from === to) return;
@@ -907,6 +1116,9 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     !!g.settings.get(MODULE_ID, SETTINGS.BAR_ONLY_ACCESS) &&
     (isGM || !!g.settings.get(MODULE_ID, SETTINGS.PLAYER_DAY_BAR));
 
+  // Leander's order, 2026-08-25: inventory, trash, shop, inn, loot — the two
+  // you reach for constantly first, then the three places. The day bar's own
+  // toggle stays last of all, since it is the way back rather than a window.
   if (!barOnly) {
   (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-party-inventory"] = {
     name: "dolmenwood-party-inventory",
@@ -918,13 +1130,37 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
   } as SceneControlTool;
   }
 
-  // Both buttons are always the GM's; for players they are settings.
+  if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH))) {
+    (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-trash"] = {
+      name: "dolmenwood-trash",
+      title: "Trash",
+      icon: "fas fa-trash-can",
+      order: existingToolCount + 1,
+      button: true,
+      onChange: () => openTrash(),
+    } as SceneControlTool;
+  }
+
+  // The place-less shop, under the same setting as the one in an inventory —
+  // it is the same shop and the same way round the map-note rule.
+  if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP))) {
+    (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-shop"] = {
+      name: "dolmenwood-shop",
+      title: "Shop",
+      icon: "fas fa-store",
+      order: existingToolCount + 2,
+      button: true,
+      onChange: () => openShop(),
+    } as SceneControlTool;
+  }
+
+  // The rest are always the GM's; for players they are settings.
   if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN))) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-inn"] = {
       name: "dolmenwood-inn",
       title: "Inn",
       icon: "fas fa-beer-mug-empty",
-      order: existingToolCount + 1,
+      order: existingToolCount + 3,
       button: true,
       onChange: () => openInn(),
     } as SceneControlTool;
@@ -935,20 +1171,9 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
       name: "dolmenwood-loot",
       title: "Loot",
       icon: "fas fa-treasure-chest",
-      order: existingToolCount + 2,
+      order: existingToolCount + 4,
       button: true,
       onChange: () => openLootBrowser(),
-    } as SceneControlTool;
-  }
-
-  if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH))) {
-    (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-trash"] = {
-      name: "dolmenwood-trash",
-      title: "Trash",
-      icon: "fas fa-trash-can",
-      order: existingToolCount + 3,
-      button: true,
-      onChange: () => openTrash(),
     } as SceneControlTool;
   }
 
@@ -957,7 +1182,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
       name: "dolmenwood-day-bar",
       title: "Day Duties",
       icon: "fas fa-calendar-day",
-      order: existingToolCount + 4,
+      order: existingToolCount + 5,
       button: true,
       onChange: () => void toggleDayBar(),
     } as SceneControlTool;
@@ -1096,14 +1321,24 @@ function openPlayerInventory(actorOrId?: Actor | string): void {
   }
 }
 
-function openShop(name?: string, categories?: string[], priceFactor?: number): void {
+function openShop(
+  name?: string,
+  categories?: string[],
+  priceFactor?: number,
+  ownStockOnly?: boolean,
+  buyBackRate?: number
+): void {
+  // Positional and growing, because this is the macro API a world may already
+  // be calling. New arguments are appended and optional for that reason.
+  const apply = (app: ShopApp): void =>
+    app.setConfig(name!, categories ?? [], priceFactor ?? 100, ownStockOnly ?? false, buyBackRate ?? 0);
   const existing = getAppInstance("dolmenwood-shop");
   if (existing) {
-    if (name !== undefined) (existing as unknown as ShopApp).setConfig(name, categories ?? [], priceFactor ?? 100);
+    if (name !== undefined) apply(existing as unknown as ShopApp);
     existing.render({ force: true });
   } else {
     const app = new ShopApp();
-    if (name !== undefined) app.setConfig(name, categories ?? [], priceFactor ?? 100);
+    if (name !== undefined) apply(app);
     app.render(true);
   }
 }

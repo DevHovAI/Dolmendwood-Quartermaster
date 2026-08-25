@@ -7,7 +7,31 @@ import { zoneRejection } from "../data/zoneGrants";
 import { getPartyActors } from "../data/sharedStore";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker, buildZoneOptionsHTML, escapeHTML } from "../helpers/handlebars";
-import type { ItemDefinition, ShopState, InventoryItem, PurchasePayload } from "../types";
+import {
+  shopEntries,
+  setShopEntries,
+  addShopEntries,
+  allLibraryServices,
+  serviceLibrary,
+  setServiceLibrary,
+  mergeShopEntry,
+  buyCategories,
+  shopBuys,
+} from "../data/shopStock";
+import { inStock, shopVisit, bumpShopVisit } from "../data/shopAvailability";
+import { definitionFor } from "../data/itemDefs";
+import { linkBookReferences, activateBookLinks } from "../data/dayRolls";
+import { CURRENCY_IN_CP as IN_CP, cpToCoin, withPriceFactor } from "../data/coins";
+import type {
+  ItemDefinition,
+  ShopEntry,
+  ShopState,
+  InventoryItem,
+  CharacterInventory,
+  PurchasePayload,
+  ServicePurchasePayload,
+  SellItemPayload,
+} from "../types";
 
 export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -24,6 +48,23 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   private localCategories: string[] = [];
   /** Price multiplier in percent (100 = normal, 200 = double price) */
   private priceFactor = 100;
+  /**
+   * The shop keeps to its own shelf and shows nothing from the catalogue.
+   *
+   * Needed because an empty category list has always meant "sells everything",
+   * so unticking every box could not express a cheesemonger. The settlement
+   * notes are full of shops like that — the pipe carver, the moon-fruit
+   * orchard, the magicians' guild — and until now none of them was buildable.
+   */
+  private ownStockOnly = false;
+  /**
+   * What the shop pays for what the party brings in, as a percentage of the
+   * item's own value. 0 = buys nothing, which is the default: most shops in
+   * the settlement notes sell only.
+   */
+  private buyBackRate = 0;
+  /** Showing the sell panel rather than the shelves. */
+  private selling = false;
   /** Saved scroll position of .shop-catalog — restored after each re-render */
   private _scrollTop = 0;
 
@@ -36,18 +77,24 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     return this.localName ?? GENERIC_SHOP_KEY;
   }
 
-  /** The GM-defined items stocked in this shop. */
-  private customItems(): ItemDefinition[] {
-    const all =
-      ((game as Game).settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {};
-    return all[this.shopKey] ?? [];
+  /** The GM-defined items and services stocked in this shop. */
+  private customItems(): ShopEntry[] {
+    return shopEntries(this.shopKey);
   }
 
   /** Configure this shop instance from a Note marker */
-  setConfig(name: string, categories: string[], priceFactor = 100): void {
+  setConfig(
+    name: string,
+    categories: string[],
+    priceFactor = 100,
+    ownStockOnly = false,
+    buyBackRate = 0
+  ): void {
     this.localName = name;
     this.localCategories = categories;
     this.priceFactor = priceFactor;
+    this.ownStockOnly = ownStockOnly;
+    this.buyBackRate = buyBackRate;
   }
 
   /**
@@ -86,7 +133,13 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       toggleLocalHideItem: ShopApp._onToggleLocalHideItem,
       addToShop: ShopApp._onAddToShop,
       stockFromCatalogue: ShopApp._onStockFromCatalogue,
+      stockFromLibrary: ShopApp._onStockFromLibrary,
       removeFromShop: ShopApp._onRemoveFromShop,
+      editShopEntry: ShopApp._onEditShopEntry,
+      saveToLibrary: ShopApp._onSaveToLibrary,
+      toggleSelling: ShopApp._onToggleSelling,
+      sellItem: ShopApp._onSellItem,
+      newVisit: ShopApp._onNewVisit,
     },
   };
 
@@ -143,7 +196,13 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     // Filter catalog. Treasures are in the catalogue so they can be carried,
     // not so they can be bought — a shop lists them only where the GM has put
     // them there by hand, which arrives through customItems() below.
-    let items = CatalogManager.filterByTags(shopState.activeTags).filter((i) => !i.notSold);
+    // A shop that keeps to its own shelf never reaches the catalogue at all.
+    // Note the asymmetry with the category list below: no categories means
+    // "everything", which is why this needed a switch of its own rather than
+    // an empty list.
+    let items = this.ownStockOnly
+      ? []
+      : CatalogManager.filterByTags(shopState.activeTags).filter((i) => !i.notSold);
     // Local shop category restriction (from Note marker) takes precedence over global availableItems
     if (this.localCategories.length > 0) {
       items = items.filter((i) => this.localCategories.includes(i.category));
@@ -183,7 +242,16 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     }
 
     // Group by category → subcategory, applying price factor and hidden markers
-    type GroupedItem = ItemDefinition & { isHidden?: boolean; isLocalCustom?: boolean };
+    type GroupedItem = ShopEntry & {
+      isHidden?: boolean;
+      isLocalCustom?: boolean;
+      /** Nothing enters the inventory: no size, no weight, no zone to choose. */
+      isService?: boolean;
+      /** Stocked on a chance, and this visit the chance failed. GM sees it greyed; players never see it at all. */
+      outOfStock?: boolean;
+      /** The price the books do not print — the alchemist's "the potion's own value". */
+      byArrangement?: boolean;
+    };
     const factor = this.priceFactor;
     const grouped: Record<string, { subcategory: string; items: GroupedItem[] }[]> = {};
 
@@ -195,15 +263,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       sub.items.push(item);
     };
 
-    const withPriceFactor = (cost: ItemDefinition["cost"]) =>
-      factor === 100
-        ? cost
-        : { amount: Math.max(1, Math.round(cost.amount * factor / 100)), currency: cost.currency };
+    const priced = (cost: ItemDefinition["cost"]) => withPriceFactor(cost, factor);
 
     for (const item of items) {
       addToGrouped({
         ...item,
-        cost: withPriceFactor(item.cost),
+        cost: priced(item.cost),
         isHidden: isGM && activeHiddenItems.includes(item.id),
       });
     }
@@ -212,10 +277,31 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     // under a reserved key, so stocking it works exactly like a map-note shop.
     // The price factor applies here too — the purchase dialog always charges
     // the adjusted price, so listing the raw one would misquote it.
+    const visit = shopVisit(this.shopKey);
     for (const item of this.customItems()) {
       const q = this.searchText.toLowerCase();
       if (this.searchText && !item.name.toLowerCase().includes(q) && !item.category.toLowerCase().includes(q)) continue;
-      addToGrouped({ ...item, cost: withPriceFactor(item.cost), isLocalCustom: true, isHidden: false });
+
+      // A chancy line that is not there this visit is simply not on the shelf.
+      // The Referee still sees it, greyed out, because otherwise a shop they
+      // stocked yesterday looks empty today and the natural conclusion is that
+      // the module lost it.
+      const here = inStock(item, this.shopKey, visit);
+      if (!here && !isGM) continue;
+
+      // A price of 0 is not free — it is a price the book declines to print,
+      // and the row says so rather than offering a bath for nothing.
+      const byArrangement = item.cost.amount === 0;
+
+      addToGrouped({
+        ...item,
+        cost: byArrangement ? item.cost : priced(item.cost),
+        isLocalCustom: true,
+        isHidden: false,
+        isService: item.service === true,
+        outOfStock: !here,
+        byArrangement,
+      });
     }
 
     return {
@@ -237,7 +323,60 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       isLocalShop: this.localName !== null,
       localName: this.localName,
       priceFactor: this.priceFactor,
+      ownStockOnly: this.ownStockOnly,
+      buyBackRate: this.buyBackRate,
+      buysAnything: this.buyBackRate > 0,
+      // Whether the sell panel has to explain a restriction, and in whose terms.
+      buysOnlyItsTrade: this.buyCategories() !== null,
+      buyCategoryList: [...(this.buyCategories() ?? [])].sort().join(", "),
+      selling: this.selling,
+      sellRows: this.selling ? this.sellableRows(selectedInventory) : [],
+      // Only worth a button where something in the shop actually turns on it.
+      hasChancyStock: this.customItems().some((e) => e.availability !== undefined),
+      visit,
     };
+  }
+
+  /**
+   * What the selected character could sell here, with what the shop would pay.
+   *
+   * The rate is the shop's, the value is the item's own — a shop that sells at
+   * double does not therefore buy at double, and the settlement notes are
+   * explicit about it: "50% of its normal value", not of the asking price.
+   *
+   * Rows that brought a zone with them are left out. Selling a backpack would
+   * have to decide what happens to everything inside it, and quietly dropping
+   * a zone full of gear is the kind of loss nobody notices until much later.
+   */
+  /** This shop's buy-back reach — the rule itself lives in shopStock.ts. */
+  private buyCategories(): Set<string> | null {
+    return buyCategories(this.localCategories, this.ownStockOnly, this.customItems());
+  }
+
+  private sellableRows(inventory: CharacterInventory | undefined) {
+    if (!inventory || this.buyBackRate <= 0) return [];
+    const catalog = CatalogManager.getMap();
+    const zoneItemIds = new Set((inventory.extraZones ?? []).map((z) => z.itemId).filter(Boolean));
+    const buys = this.buyCategories();
+
+    return inventory.items
+      .filter((row) => !zoneItemIds.has(row.id))
+      .filter((row) => shopBuys(definitionFor(row, catalog)?.category, buys))
+      .map((row) => {
+        const def = definitionFor(row, catalog);
+        const unitCp = def ? def.cost.amount * IN_CP[def.cost.currency] : 0;
+        const perItem = Math.floor((unitCp * this.buyBackRate) / 100);
+        return {
+          id: row.id,
+          name: row.name,
+          quantity: row.quantity,
+          icon: def?.icon,
+          worthless: perItem <= 0,
+          perItem: cpToCoin(perItem),
+          total: cpToCoin(perItem * row.quantity),
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 
   override render(
@@ -285,6 +424,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       const len = searchEl.value.length;
       searchEl.setSelectionRange(len, len);
     }
+
+    // A service description carries its own page — "Player's Book p132" — and
+    // the same DOM pass that turns those into doors on a chat card turns them
+    // into doors here.
+    linkBookReferences(el);
+    activateBookLinks(el);
   }
 
   // ─── Action Handlers ────────────────────────────────────────────────────────
@@ -326,6 +471,13 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     if (!def || !this.selectedActorId) return;
     const actor = g.actors?.get(this.selectedActorId);
     if (!actor) return;
+
+    // A service takes an entirely different road: no zone to choose, no row to
+    // add, no encumbrance to warn about. Only the money and the record.
+    if ((def as ShopEntry).service) {
+      await this.buyService(def as ShopEntry, actor, false);
+      return;
+    }
 
     const inventory = FlagManager.getInventory(actor);
 
@@ -410,6 +562,77 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     ui.notifications?.info(`Purchased ${def.name} for ${actor.name}.`);
   }
 
+  /**
+   * Buy — or, from the Referee's Grant button, wave through — one service.
+   *
+   * The confirmation says outright that nothing will be carried away, because
+   * the button sits in the same column as the one that buys a sword and the two
+   * are not undoable in the same way: a wrong sword can be dropped, a wrong
+   * 1,000gp identification cannot.
+   */
+  private async buyService(entry: ShopEntry, actor: Actor, free: boolean): Promise<void> {
+    const byArrangement = entry.cost.amount === 0;
+    const cost = byArrangement ? entry.cost : withPriceFactor(entry.cost, this.priceFactor);
+
+    const priceText = free
+      ? "with the shop's compliments"
+      : byArrangement
+        ? "at a price to be agreed — nothing is deducted"
+        : `for <strong>${cost.amount} ${cost.currency}</strong>${entry.unit && entry.unit !== "piece" ? ` ${escapeHTML(entry.unit)}` : ""}`;
+
+    // The same refusal the goods path gives: a player who cannot pay is told so
+    // here, on their own screen. Without this the click would travel to the GM's
+    // client, fail there, and warn nobody the player can see.
+    const isGM = (game as Game).user?.isGM ?? false;
+    if (!free && !byArrangement && !isGM) {
+      const inventory = FlagManager.getInventory(actor);
+      const walletCp =
+        inventory.coins.cp + inventory.coins.sp * 10 + inventory.coins.gp * 100 + inventory.coins.pp * 500;
+      if (walletCp < cost.amount * IN_CP[cost.currency]) {
+        ui.notifications?.warn(`${actor.name} cannot afford ${entry.name}.`);
+        return;
+      }
+    }
+
+    const confirmed = await new Promise<boolean>((resolve) => {
+      new Dialog({
+        title: free ? "Grant Service" : "Buy Service",
+        content: `
+          <p>${escapeHTML(entry.name)} ${priceText}?</p>
+          <p>For: <strong>${escapeHTML(actor.name ?? "")}</strong></p>
+          ${entry.description ? `<p class="qm-hint">${escapeHTML(entry.description)}</p>` : ""}
+          <p class="qm-hint"><i class="fas fa-circle-info"></i> Nothing is added to the inventory — a service is used where it is bought.</p>
+        `,
+        buttons: {
+          confirm: {
+            label: free ? "Grant" : "Buy",
+            icon: '<i class="fas fa-hand-holding-dollar"></i>',
+            callback: () => resolve(true),
+          },
+          cancel: { label: "Cancel", callback: () => resolve(false) },
+        },
+        default: "confirm",
+      }).render(true);
+    });
+
+    if (!confirmed) return;
+
+    const payload: ServicePurchasePayload = {
+      actorId: actor.id!,
+      forActorId: actor.id!,
+      serviceName: entry.name,
+      shopName: this.localName ?? "Shop",
+      cost,
+      unit: entry.unit,
+      note: entry.description,
+      // `free` is the Referee's compliments and nothing else. A price of 0 is
+      // settled away from the table and needs no deduction either, but the card
+      // must say "by arrangement" rather than thanking a shop that was paid.
+      free,
+    };
+    SocketHandler.emitOrHandle(SOCKET_EVENTS.PURCHASE_SERVICE, payload);
+  }
+
   private static _onGrantItem(
     this: ShopApp,
     _event: Event,
@@ -426,6 +649,14 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     const def = catalogDef ?? this.customItems().find((i) => i.id === definitionId);
     if (!def) {
       ui.notifications?.warn("Item not found.");
+      return;
+    }
+
+    // The Referee's Grant on a service is the free tattoo: it happened, the
+    // card says so, and no coins moved.
+    if ((def as ShopEntry).service) {
+      const actor = g.actors?.get(this.selectedActorId);
+      if (actor) void this.buyService(def as ShopEntry, actor, true);
       return;
     }
 
@@ -498,18 +729,177 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     new StockFromCatalogueDialog(this.shopKey, () => this.render(false)).render(true);
   }
 
+  private static _onStockFromLibrary(this: ShopApp): void {
+    new StockFromLibraryDialog(this.shopKey, () => this.render(false)).render(true);
+  }
+
+  /**
+   * Change a row already on this shelf — its price for this village, or the
+   * X-in-6 chance a catalogue copy arrived without.
+   */
+  private static _onEditShopEntry(
+    this: ShopApp,
+    _event: Event,
+    target: HTMLElement
+  ): void {
+    const itemId = target.dataset.itemId!;
+    const entry = this.customItems().find((i) => i.id === itemId);
+    if (!entry) return;
+    new AddToShopDialog(this.shopKey, () => this.render(false), entry).render(true);
+  }
+
+  /**
+   * Put one of this shop's own services into the library, so the next village
+   * can have it without it being typed again.
+   */
+  private static async _onSaveToLibrary(
+    this: ShopApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const itemId = target.dataset.itemId!;
+    const entry = this.customItems().find((i) => i.id === itemId);
+    if (!entry) return;
+
+    const library = serviceLibrary();
+    if (library.some((e) => e.id === entry.id)) {
+      ui.notifications?.info(`${entry.name} is already in the library.`);
+      return;
+    }
+    await setServiceLibrary([...library, foundry.utils.deepClone(entry)]);
+    ui.notifications?.info(`${entry.name} saved to the service library.`);
+  }
+
+  private static _onToggleSelling(this: ShopApp): void {
+    this.selling = !this.selling;
+    this.render(false);
+  }
+
+  /**
+   * Moving the shop's stock on: everything stocked on an X-in-6 chance is
+   * rolled again. The Referee's equivalent of the inn's new day, and a world
+   * write, so players never reach it.
+   */
+  private static async _onNewVisit(this: ShopApp): Promise<void> {
+    await bumpShopVisit(this.shopKey);
+    ui.notifications?.info("The shop's chancy stock has been rolled again.");
+    this.render(false);
+  }
+
+  private static async _onSellItem(
+    this: ShopApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    // Every bail-out below says so. A sale that stops here leaves no trace of
+    // its own — the row stays, the purse is unchanged — so a silent return is
+    // indistinguishable from a dead button, and cost a test round for exactly
+    // that reason.
+    const itemId = target.dataset.itemId!;
+    const g = game as Game;
+    if (!this.selectedActorId) {
+      ui.notifications?.warn("Select a party member first.");
+      return;
+    }
+    const actor = g.actors?.get(this.selectedActorId);
+    if (!actor) {
+      ui.notifications?.warn("That character is no longer in the world.");
+      return;
+    }
+
+    const inventory = FlagManager.getInventory(actor);
+    const row = inventory.items.find((i) => i.id === itemId);
+    if (!row) {
+      ui.notifications?.warn(`${actor.name} is no longer carrying that — reopen the shop.`);
+      return;
+    }
+
+    const def = definitionFor(row, CatalogManager.getMap());
+
+    // The same rule the list is built with, applied again here: the button can
+    // outlive the shelf that justified it, if the shop is reconfigured while
+    // the window is open.
+    if (!shopBuys(def?.category, this.buyCategories())) {
+      ui.notifications?.warn(`${this.localName ?? "This shop"} does not deal in ${row.name}.`);
+      return;
+    }
+
+    const unitCp = def ? def.cost.amount * IN_CP[def.cost.currency] : 0;
+    const perItemCp = Math.floor((unitCp * this.buyBackRate) / 100);
+    if (perItemCp <= 0) {
+      ui.notifications?.warn(`${row.name} is worth nothing to this shop.`);
+      return;
+    }
+
+    // How many of a stack. A single row skips the question entirely rather
+    // than asking "how many of your one sword".
+    let quantity = 1;
+    if (row.quantity > 1) {
+      const answer = await new Promise<number>((resolve) => {
+        new Dialog({
+          title: "Sell",
+          content: `
+            <p>Sell how many of <strong>${escapeHTML(row.name)}</strong>?</p>
+            <p class="qm-hint">${cpToCoin(perItemCp).amount} ${cpToCoin(perItemCp).currency} each, ${row.quantity} in hand.</p>
+            <div class="form-group">
+              <input type="number" id="sell-qty" value="1" min="1" max="${row.quantity}" />
+            </div>`,
+          buttons: {
+            sell: {
+              label: "Sell",
+              callback: (html: JQuery) =>
+                resolve(Math.max(1, Math.min(row.quantity, parseInt(html.find("#sell-qty").val() as string, 10) || 1))),
+            },
+            cancel: { label: "Cancel", callback: () => resolve(0) },
+          },
+          default: "sell",
+        }).render(true);
+      });
+      if (!answer) return;
+      quantity = answer;
+    }
+
+    const proceeds = cpToCoin(perItemCp * quantity);
+    const confirmed = await new Promise<boolean>((resolve) => {
+      new Dialog({
+        title: "Sell",
+        content: `<p>Sell ${quantity} × <strong>${escapeHTML(row.name)}</strong> for <strong>${proceeds.amount} ${proceeds.currency}</strong>?</p>
+          <p class="qm-hint">${
+            row.quantity - quantity > 0
+              ? `${escapeHTML(actor.name ?? "")} keeps ${row.quantity - quantity} of ${row.quantity}.`
+              : `That is the last of ${row.quantity === 1 ? "them" : `all ${row.quantity}`}.`
+          }</p>
+          <p class="qm-hint">${this.localName ?? "The shop"} pays ${this.buyBackRate}% of what a thing is worth.</p>`,
+        buttons: {
+          sell: { label: "Sell", icon: '<i class="fas fa-hand-holding-dollar"></i>', callback: () => resolve(true) },
+          cancel: { label: "Cancel", callback: () => resolve(false) },
+        },
+        default: "sell",
+      }).render(true);
+    });
+    if (!confirmed) return;
+
+    const payload: SellItemPayload = {
+      actorId: this.selectedActorId,
+      itemId,
+      quantity,
+      proceeds,
+      shopName: this.localName ?? "Shop",
+    };
+    SocketHandler.emitOrHandle(SOCKET_EVENTS.SELL_ITEM, payload);
+    this.render(false);
+  }
+
   private static async _onRemoveFromShop(
     this: ShopApp,
     _event: Event,
     target: HTMLElement
   ): Promise<void> {
     const itemId = target.dataset.itemId!;
-    const g = game as Game;
-    const key = this.shopKey;
-    const all = (g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {};
-    if (!all[key]) return;
-    all[key] = all[key].filter((i) => i.id !== itemId);
-    await g.settings.set(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, all);
+    await setShopEntries(
+      this.shopKey,
+      this.customItems().filter((i) => i.id !== itemId)
+    );
     this.render(false);
   }
 
@@ -684,9 +1074,10 @@ class StockFromCatalogueDialog extends Dialog {
           .join("");
         return `<details class="dw-stock-group" data-category="${escapeHTML(category)}">
             <summary>
-              <input type="checkbox" class="dw-stock-all" title="Everything in this category" />
+              <i class="fas fa-chevron-right dw-stock-caret"></i>
               <span class="dw-stock-group-name">${escapeHTML(category)}</span>
               <span class="dw-stock-group-count">${items.length}</span>
+              <input type="checkbox" class="dw-stock-all" title="Tick everything under this heading" />
             </summary>
             <div class="dw-stock-rows">${rows}</div>
           </details>`;
@@ -714,17 +1105,13 @@ class StockFromCatalogueDialog extends Dialog {
               .map((_i: number, el: HTMLElement) => (el as HTMLInputElement).value)
               .get();
             if (!chosen.length) return;
-            const g = game as Game;
-            const all =
-              (g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {};
-            if (!all[shopName]) all[shopName] = [];
-            for (const id of chosen) {
-              const def = CatalogManager.getDefinition(id);
-              // Already on this shelf: adding it twice would list it twice.
-              if (!def || all[shopName].some((i) => i.id === def.id)) continue;
-              all[shopName].push({ ...def });
-            }
-            await g.settings.set(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, all);
+            // addShopEntries skips anything already on this shelf, so picking a
+            // category twice does not list its items twice.
+            const picked = chosen
+              .map((id: string) => CatalogManager.getDefinition(id))
+              .filter((def): def is ItemDefinition => !!def)
+              .map((def) => ({ ...def }));
+            await addShopEntries(shopName, picked);
             onComplete();
           },
         },
@@ -744,175 +1131,268 @@ class StockFromCatalogueDialog extends Dialog {
     super.activateListeners(html);
     const root = html[0] ?? html.get(0);
     if (!root) return;
-
-    const count = (): void => {
-      const picked = root.querySelectorAll(".dw-stock-rows input:checked").length;
-      const label = root.querySelector(".dw-stock-chosen");
-      if (label) label.textContent = picked ? `${picked} picked` : "nothing picked";
-      // A category is ticked when everything under it is, and shows a dash
-      // while only some of it is — the same three states a file tree uses.
-      root.querySelectorAll<HTMLDetailsElement>(".dw-stock-group").forEach((group) => {
-        const boxes = [...group.querySelectorAll<HTMLInputElement>(".dw-stock-rows input")];
-        const on = boxes.filter((b) => b.checked).length;
-        const all = group.querySelector<HTMLInputElement>(".dw-stock-all");
-        if (!all) return;
-        all.checked = on > 0 && on === boxes.length;
-        all.indeterminate = on > 0 && on < boxes.length;
-      });
-    };
-
-    root.querySelectorAll<HTMLInputElement>(".dw-stock-all").forEach((all) => {
-      // The header tick lives inside <summary>, where a click would otherwise
-      // fold the category shut under the Referee's hand.
-      all.addEventListener("click", (event) => event.stopPropagation());
-      all.addEventListener("change", () => {
-        const group = all.closest(".dw-stock-group");
-        group?.querySelectorAll<HTMLInputElement>(".dw-stock-rows input").forEach((box) => {
-          if (box.parentElement?.style.display !== "none") box.checked = all.checked;
-        });
-        count();
-      });
-    });
-
-    root.querySelector(".dw-stock-list")?.addEventListener("change", () => count());
-
-    const search = root.querySelector<HTMLInputElement>(".dw-stock-search");
-    search?.addEventListener("input", () => {
-      const q = search.value.toLowerCase().trim();
-      root.querySelectorAll<HTMLDetailsElement>(".dw-stock-group").forEach((group) => {
-        let shown = 0;
-        group.querySelectorAll<HTMLElement>(".dw-stock-row").forEach((row) => {
-          const hit = !q || (row.dataset.search ?? "").includes(q);
-          row.style.display = hit ? "" : "none";
-          if (hit) shown++;
-        });
-        group.style.display = shown ? "" : "none";
-        // Searching opens what it found and closes what it did not; clearing
-        // the box puts every category back to shut.
-        group.open = q ? shown > 0 : false;
-      });
-    });
-
-    const expand = root.querySelector<HTMLButtonElement>(".dw-stock-expand");
-    expand?.addEventListener("click", () => {
-      const groups = [...root.querySelectorAll<HTMLDetailsElement>(".dw-stock-group")];
-      const anyShut = groups.some((g) => !g.open);
-      groups.forEach((g) => (g.open = anyShut));
-      const icon = expand.querySelector("i");
-      if (icon) icon.className = anyShut ? "fas fa-angles-up" : "fas fa-angles-down";
-    });
+    wireStockPicker(root);
   }
 }
 
+
+
+// ─── The stock picker's behaviour, shared by both pickers ────────────────────
+
+/**
+ * Four behaviours, all of them about not scrolling through four hundred rows:
+ * a search that opens the headings it finds something in, a tick on the heading
+ * that takes the lot, a running count of what is picked, and one button to fold
+ * everything up again.
+ *
+ * Written against the markup rather than against either dialog, so the
+ * catalogue picker and the service picker cannot drift apart.
+ */
+function wireStockPicker(root: HTMLElement): void {
+  const count = (): void => {
+    const picked = root.querySelectorAll(".dw-stock-rows input:checked").length;
+    const label = root.querySelector(".dw-stock-chosen");
+    if (label) label.textContent = picked ? `${picked} picked` : "nothing picked";
+    // A heading is ticked when everything under it is, and shows a dash while
+    // only some of it is — the same three states a file tree uses.
+    root.querySelectorAll<HTMLDetailsElement>(".dw-stock-group").forEach((group) => {
+      const boxes = [...group.querySelectorAll<HTMLInputElement>(".dw-stock-rows input")];
+      const on = boxes.filter((b) => b.checked).length;
+      const all = group.querySelector<HTMLInputElement>(".dw-stock-all");
+      if (!all) return;
+      all.checked = on > 0 && on === boxes.length;
+      all.indeterminate = on > 0 && on < boxes.length;
+    });
+  };
+
+  root.querySelectorAll<HTMLInputElement>(".dw-stock-all").forEach((all) => {
+    // The heading tick lives inside <summary>, where a click would otherwise
+    // fold the group shut under the Referee's hand.
+    all.addEventListener("click", (event) => event.stopPropagation());
+    all.addEventListener("change", () => {
+      const group = all.closest(".dw-stock-group");
+      group?.querySelectorAll<HTMLInputElement>(".dw-stock-rows input").forEach((box) => {
+        if (box.parentElement?.style.display !== "none") box.checked = all.checked;
+      });
+      count();
+    });
+  });
+
+  root.querySelector(".dw-stock-list")?.addEventListener("change", () => count());
+
+  const search = root.querySelector<HTMLInputElement>(".dw-stock-search");
+  search?.addEventListener("input", () => {
+    const q = search.value.toLowerCase().trim();
+    root.querySelectorAll<HTMLDetailsElement>(".dw-stock-group").forEach((group) => {
+      let shown = 0;
+      group.querySelectorAll<HTMLElement>(".dw-stock-row").forEach((row) => {
+        const hit = !q || (row.dataset.search ?? "").includes(q);
+        row.style.display = hit ? "" : "none";
+        if (hit) shown++;
+      });
+      group.style.display = shown ? "" : "none";
+      // Searching opens what it found and closes what it did not; clearing the
+      // box puts every group back to shut.
+      group.open = q ? shown > 0 : false;
+    });
+  });
+
+  const expand = root.querySelector<HTMLButtonElement>(".dw-stock-expand");
+  expand?.addEventListener("click", () => {
+    const groups = [...root.querySelectorAll<HTMLDetailsElement>(".dw-stock-group")];
+    const anyShut = groups.some((g) => !g.open);
+    groups.forEach((g) => (g.open = anyShut));
+    const icon = expand.querySelector("i");
+    if (icon) icon.className = anyShut ? "fas fa-angles-up" : "fas fa-angles-down";
+  });
+}
+
+/**
+ * One row on a shop's own shelf — a thing or a service.
+ *
+ * The two differ in exactly one place, and the form follows it: goods have a
+ * size or a weight because they are carried away, services have neither
+ * because nothing is. Everything else — name, price, category, availability —
+ * is asked once and means the same for both.
+ *
+ * **The category is typed, not chosen.** It used to be a dropdown of the
+ * catalogue's own categories, which is why a bath had nowhere to go. The
+ * datalist still offers the catalogue's, plus whatever this shop already uses,
+ * so the common case is still one click.
+ */
 class AddToShopDialog extends Dialog {
-  constructor(shopName: string, onComplete: () => void) {
+  /**
+   * @param existing an entry already on this shelf, to be edited in place.
+   *   Without it the dialog adds a new one. Editing matters most for the
+   *   X-in-6 chance: an item put on the shelf with **From Catalogue** arrives
+   *   as a plain copy, and giving the apothecary's Alchemical Tonic its 2-in-6
+   *   would otherwise mean deleting it and typing the whole thing again.
+   */
+  constructor(shopName: string, onComplete: () => void, existing?: ShopEntry) {
     const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
-    const categories = CatalogManager.getCategories();
-    const categoryOptions = categories.map((c) => `<option value="${c}">${c}</option>`).join("");
+    const was = existing;
+    const sel = (on: boolean): string => (on ? " selected" : "");
+
+    // Categories already in use here come first: a Referee filling a shop is
+    // usually adding the fourth thing to a category they invented for the first.
+    const used = [...new Set(shopEntries(shopName).map((e) => e.category).filter(Boolean))];
+    const known = [...new Set([...used, "Special Services", ...CatalogManager.getCategories()])];
+    const categoryOptions = known.map((c) => `<option value="${escapeHTML(c)}"></option>`).join("");
+
     const sizeOrWeightField = encMode === "weight"
       ? `<div class="form-group">
-            <label>Weight (coin wt)</label>
-            <input type="number" id="shop-item-weight" value="10" min="0" />
+            <label for="shop-item-weight">Weight</label>
+            <div class="qm-field">
+              <input type="number" id="shop-item-weight" value="${was?.weight ?? 10}" min="0" />
+              <span class="qm-unit">coin wt</span>
+            </div>
           </div>`
       : `<div class="form-group">
-            <label>Size</label>
+            <label for="shop-item-size">Size</label>
+            <div class="qm-field">
             <select id="shop-item-size">
-              <option value="tiny">Tiny (0 slots)</option>
-              <option value="normal" selected>Normal (1 slot)</option>
-              <option value="large">Large (2 slots)</option>
+              <option value="tiny"${sel(was?.size === "tiny")}>Tiny (0 slots)</option>
+              <option value="normal"${sel(!was || was.size === "normal")}>Normal (1 slot)</option>
+              <option value="large"${sel(was?.size === "large")}>Large (2 slots)</option>
             </select>
-          </div>`;
-    super({
-      title: "Add Item to Shop",
-      content: `
-        <form>
-          <div class="form-group">
-            <label>Item Name</label>
-            <input type="text" id="shop-item-name" placeholder="Item name" />
-          </div>
-          <div class="form-group" style="display:flex;gap:8px;">
-            <div style="flex:1;">
-              <label>Price</label>
-              <input type="number" id="shop-item-price" value="1" min="0" />
             </div>
-            <div style="flex:1;">
-              <label>Currency</label>
+          </div>`;
+
+    super({
+      title: was ? `Edit: ${was.name}` : "Add to Shop",
+      content: `
+        <form class="qm-form">
+          <div class="form-group">
+            <label for="shop-item-kind">This is</label>
+            <div class="qm-field">
+            <select id="shop-item-kind">
+              <option value="goods"${sel(!was?.service)}>Goods — carried away and kept</option>
+              <option value="service"${sel(!!was?.service)}>A service — used here, nothing to carry</option>
+            </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="shop-item-name">Name</label>
+            <div class="qm-field">
+              <input type="text" id="shop-item-name" value="${escapeHTML(was?.name ?? "")}" placeholder="e.g. Bath, attended by Heggid" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="shop-item-price">Price</label>
+            <div class="qm-field">
+              <input type="number" id="shop-item-price" value="${was?.cost.amount ?? 1}" min="0" />
               <select id="shop-item-currency">
-                <option value="cp">cp</option>
-                <option value="sp">sp</option>
-                <option value="gp" selected>gp</option>
-                <option value="pp">pp</option>
+                <option value="cp"${sel(was?.cost.currency === "cp")}>cp</option>
+                <option value="sp"${sel(was?.cost.currency === "sp")}>sp</option>
+                <option value="gp"${sel(!was || was.cost.currency === "gp")}>gp</option>
+                <option value="pp"${sel(was?.cost.currency === "pp")}>pp</option>
               </select>
             </div>
-          </div>
-          ${sizeOrWeightField}
-          <div class="form-group">
-            <label>Category</label>
-            <select id="shop-item-category">
-              ${categoryOptions}
-            </select>
+            <p class="qm-hint">0 means the price is settled at the table — the shelf shows it as "by arrangement".</p>
           </div>
           <div class="form-group">
-            <label>Subcategory (optional)</label>
-            <input type="text" id="shop-item-subcategory" placeholder="e.g. Melee Weapons" />
+            <label for="shop-item-unit">Per</label>
+            <div class="qm-field">
+              <input type="text" id="shop-item-unit" value="${escapeHTML(was && was.unit !== "piece" ? was.unit : "")}" placeholder="e.g. per person, per day, per night" />
+            </div>
+            <p class="qm-hint">Printed after the price. Leave empty for a plain each-one price.</p>
+          </div>
+          <div id="shop-item-carry">
+            ${sizeOrWeightField}
           </div>
           <div class="form-group">
+            <label for="shop-item-category">Category</label>
+            <div class="qm-field">
+              <input type="text" id="shop-item-category" list="shop-item-categories" value="${escapeHTML(was?.category ?? "")}" placeholder="Type one, or pick a known one" />
+              <datalist id="shop-item-categories">${categoryOptions}</datalist>
+            </div>
+            <p class="qm-hint">Anything you like — a bath belongs under Baths, not under Adventuring Gear.</p>
+          </div>
+          <div class="form-group">
+            <label for="shop-item-subcategory">Subcategory</label>
+            <div class="qm-field">
+              <input type="text" id="shop-item-subcategory" value="${escapeHTML(was?.subcategory ?? "")}" placeholder="Optional — e.g. Melee Weapons" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="shop-item-availability">In stock</label>
+            <div class="qm-field">
+              <select id="shop-item-availability">
+                <option value=""${sel(was?.availability === undefined)}>Always</option>
+                ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}"${sel(was?.availability === n)}>${n} in 6</option>`).join("")}
+              </select>
+            </div>
+            <p class="qm-hint">Rolled once per visit and the same for everyone. Move a shop on with <strong>New visit</strong>.</p>
+          </div>
+          <div class="form-group qm-wide">
             <label>Icon</label>
-            ${buildIconPickerHTML()}
+            <div class="qm-field qm-field-icons">
+              ${buildIconPickerHTML(was?.icon)}
+            </div>
           </div>
-          <div class="form-group">
-            <label>Description</label>
-            <textarea id="shop-item-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+          <div class="form-group qm-wide">
+            <label for="shop-item-desc">Description</label>
+            <div class="qm-field">
+              <textarea id="shop-item-desc" placeholder="Conditions, waiting time, what it actually does…" rows="2">${escapeHTML(was?.description ?? "")}</textarea>
+            </div>
+            <p class="qm-hint">A page reference like "Player's Book p132" becomes a link, on the shelf and on the chat card.</p>
           </div>
-          <div class="form-group">
-            <label>Edible</label>
-            <input type="checkbox" id="shop-item-edible" />
-            <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
+          <div class="form-group" id="shop-item-edible-group">
+            <label for="shop-item-edible">Edible</label>
+            <div class="qm-field">
+              <input type="checkbox" id="shop-item-edible"${was?.edible ? " checked" : ""} />
+            </div>
+            <p class="qm-hint">Gives the row an Eat button that feeds the character for the day.</p>
           </div>
         </form>
       `,
       buttons: {
         add: {
-          label: "Add to Shop",
+          label: was ? "Save" : "Add to Shop",
           callback: async (html: JQuery) => {
             const name = (html.find("#shop-item-name").val() as string).trim();
             if (!name) return;
-            const priceAmount = Math.max(0, parseInt(html.find("#shop-item-price").val() as string, 10) || 1);
+            const isService = (html.find("#shop-item-kind").val() as string) === "service";
+            // A price of 0 is meaningful and kept: it is the alchemist charging
+            // what the potion is worth, which the shelf prints as "by
+            // arrangement" rather than as free.
+            const priceAmount = Math.max(0, parseInt(html.find("#shop-item-price").val() as string, 10) || 0);
             const currency = html.find("#shop-item-currency").val() as "cp" | "sp" | "gp" | "pp";
-            const category = html.find("#shop-item-category").val() as string;
+            const category = (html.find("#shop-item-category").val() as string).trim() ||
+              (isService ? "Special Services" : "Sundries");
             const subcategory = (html.find("#shop-item-subcategory").val() as string).trim();
-            const icon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
+            const unit = (html.find("#shop-item-unit").val() as string).trim();
+            const icon = (html.find("#custom-icon-value").val() as string) || (isService ? "fa-hand-holding-dollar" : "fa-sack");
             const description = (html.find("#shop-item-desc").val() as string).trim();
+            const availability = parseInt(html.find("#shop-item-availability").val() as string, 10);
 
-            const newItem: ItemDefinition = {
-              id: foundry.utils.randomID(),
+            // Only the field the running mode actually showed is passed on;
+            // the other is left undefined so the entry keeps what it had.
+            const newItem = mergeShopEntry(was, {
               name,
               category,
               subcategory,
               cost: { amount: priceAmount, currency },
-              size: "normal",
-              cannotBeStowed: false,
-              unit: "piece",
-              qualities: [],
-              weight: 10,
+              unit,
               icon,
-              tags: [],
-              isCustom: true,
-              description: "",
-              ...(description ? { description } : {}),
-              ...(html.find("#shop-item-edible").is(":checked") ? { edible: true } : {}),
-            };
-            if (encMode === "weight") {
-              newItem.weight = Math.max(0, parseInt(html.find("#shop-item-weight").val() as string, 10) || 0);
-            } else {
-              newItem.size = html.find("#shop-item-size").val() as "tiny" | "normal" | "large";
-            }
+              description,
+              availability: Number.isFinite(availability) ? availability : undefined,
+              service: isService,
+              edible: html.find("#shop-item-edible").is(":checked") as boolean,
+              ...(isService
+                ? {}
+                : encMode === "weight"
+                  ? { weight: Math.max(0, parseInt(html.find("#shop-item-weight").val() as string, 10) || 0) }
+                  : { size: html.find("#shop-item-size").val() as "tiny" | "normal" | "large" }),
+            });
 
-            const g = game as Game;
-            const all = ((g.settings.get(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS) as Record<string, ItemDefinition[]>) ?? {});
-            if (!all[shopName]) all[shopName] = [];
-            all[shopName].push(newItem);
-            await g.settings.set(MODULE_ID, SETTINGS.LOCAL_CUSTOM_ITEMS, all);
+            // Editing replaces in place so the row keeps its position on the
+            // shelf; adding appends.
+            const shelf = shopEntries(shopName);
+            await setShopEntries(
+              shopName,
+              was ? shelf.map((e) => (e.id === was.id ? newItem : e)) : [...shelf, newItem]
+            );
             onComplete();
           },
         },
@@ -925,5 +1405,111 @@ class AddToShopDialog extends Dialog {
   override activateListeners(html: JQuery): void {
     super.activateListeners(html);
     activateIconPicker(html);
+
+    // Size, weight and Edible describe a thing that gets carried. Asking them
+    // about a bath is how a form teaches people to ignore it.
+    const kind = html.find("#shop-item-kind");
+    const sync = (): void => {
+      const isService = (kind.val() as string) === "service";
+      html.find("#shop-item-carry").toggle(!isService);
+      html.find("#shop-item-edible-group").toggle(!isService);
+      this.setPosition({ height: "auto" });
+    };
+    kind.on("change", sync);
+    sync();
+  }
+}
+
+/**
+ * Putting a service the Referee has already written — or one of the Player's
+ * Book's own specialists — onto this shop's shelf.
+ *
+ * A *copy* lands on the shelf, never a link: the guide costs 5gp a day in the
+ * book and 3gp in a village that likes the party, and the second must not
+ * rewrite the first.
+ */
+class StockFromLibraryDialog extends Dialog {
+  constructor(shopName: string, onComplete: () => void) {
+    const services = allLibraryServices();
+
+    const byGroup = new Map<string, ShopEntry[]>();
+    for (const entry of services) {
+      const group = entry.subcategory || entry.category || "Services";
+      const list = byGroup.get(group) ?? [];
+      list.push(entry);
+      byGroup.set(group, list);
+    }
+
+    const sections = [...byGroup.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([group, entries]) => {
+        const rows = entries
+          .map(
+            (entry) => `<label class="dw-stock-row" data-search="${escapeHTML(
+              (entry.name + " " + group).toLowerCase()
+            )}">
+              <input type="checkbox" value="${escapeHTML(entry.id)}" />
+              <span class="dw-stock-name">${escapeHTML(entry.name)}</span>
+              <span class="dw-stock-sub">${escapeHTML(entry.unit && entry.unit !== "piece" ? entry.unit : "")}</span>
+              <span class="dw-stock-cost">${entry.cost.amount === 0 ? "—" : `${entry.cost.amount}${entry.cost.currency}`}</span>
+            </label>`
+          )
+          .join("");
+        return `<details class="dw-stock-group" data-category="${escapeHTML(group)}">
+            <summary>
+              <i class="fas fa-chevron-right dw-stock-caret"></i>
+              <span class="dw-stock-group-name">${escapeHTML(group)}</span>
+              <span class="dw-stock-group-count">${entries.length}</span>
+              <input type="checkbox" class="dw-stock-all" title="Tick everything under this heading" />
+            </summary>
+            <div class="dw-stock-rows">${rows}</div>
+          </details>`;
+      })
+      .join("");
+
+    super({
+      title: "Add a Service",
+      content: `<div class="dw-stock-picker">
+          <div class="dw-stock-toolbar">
+            <input type="search" class="dw-stock-search" placeholder="Search the services…" autofocus />
+            <button type="button" class="dw-stock-expand" title="Open or close every heading">
+              <i class="fas fa-angles-down"></i>
+            </button>
+            <span class="dw-stock-chosen">nothing picked</span>
+          </div>
+          <div class="dw-stock-list">${sections}</div>
+          <p class="qm-hint">A copy goes on this shop's shelf. Repricing it here leaves the library alone.</p>
+        </div>`,
+      buttons: {
+        add: {
+          label: "Add to Shop",
+          callback: async (html: JQuery) => {
+            const chosen = html
+              .find(".dw-stock-rows input:checked")
+              .map((_i: number, el: HTMLElement) => (el as HTMLInputElement).value)
+              .get();
+            if (!chosen.length) return;
+            const picked = services.filter((s) => chosen.includes(s.id));
+            const added = await addShopEntries(shopName, picked);
+            if (added < picked.length) {
+              ui.notifications?.info(
+                `${picked.length - added} of those were already on this shelf.`
+              );
+            }
+            onComplete();
+          },
+        },
+        cancel: { label: "Cancel" },
+      },
+      default: "add",
+    });
+  }
+
+  /** The same four behaviours the catalogue picker has; see its own note. */
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    const root = html[0] ?? html.get(0);
+    if (!root) return;
+    wireStockPicker(root);
   }
 }

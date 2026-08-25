@@ -364,8 +364,21 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       encumbrance,
       isGM,
       isOwner,
+      // The shop button belongs in a character sheet after all (his call, twice
+      // over): from here it opens with *this* character as the buyer, which is
+      // the one thing the toolbar and day-bar buttons cannot do. Players see it
+      // under the same setting as every other place-less door.
+      mayOpenGenericShop:
+        isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP),
       canEdit: isGM,
-      canAddItem: isOwner && !isGM,
+      // Inventing an item is a real power — it is how a player writes a line
+      // into their own sheet without asking. On by default, because that is how
+      // it has always worked; the setting is there for a table that would
+      // rather everything came from the catalogue or the GM's hand.
+      canAddItem:
+        isOwner &&
+        !isGM &&
+        !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_ADD_CUSTOM_ITEM),
       canGive: isOwner && !isGM,
       // Handing over a whole container is a GM job too — unlike the per-item
       // give button, which stays off the GM's screen to keep rows uncluttered.
@@ -1148,9 +1161,22 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     new GrantCoinsDialog(this.actor, () => this.render()).render(true);
   }
 
+  /**
+   * The place-less shop, opened to buy for *this* character.
+   *
+   * This is what the toolbar and day-bar buttons cannot do: `setActor` makes
+   * the sheet you came from the buyer, instead of whichever party member the
+   * shop would otherwise default to. That is the whole reason the button earns
+   * a place inside an inventory as well.
+   */
   private static _onOpenShop(this: PlayerInventoryApp): void {
-    // Buy for the character whose inventory we came from, not for whoever the
-    // shop would otherwise default to. Also re-targets an already-open shop.
+    // Hiding the button is presentation; this is the rule. The action stays
+    // registered whatever the template renders.
+    const g = game as Game;
+    if (!g.user?.isGM && !g.settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP)) {
+      ui.notifications?.warn("Shops are reached from the map — travel to one and open its note.");
+      return;
+    }
     const actorId = this.actor.id ?? null;
     const existing = foundry.applications?.instances?.get("dolmenwood-shop") as ShopApp | undefined;
     if (existing) {

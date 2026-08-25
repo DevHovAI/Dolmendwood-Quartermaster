@@ -44,6 +44,8 @@ export const SOCKET_EVENTS = {
   SHARE_ZONE: "shareZone",
   REQUEST_REFRESH: "requestRefresh",
   INN_PURCHASE: "innPurchase",
+  PURCHASE_SERVICE: "purchaseService",
+  SELL_ITEM: "sellItem",
 } as const;
 
 export const SETTINGS = {
@@ -56,13 +58,19 @@ export const SETTINGS = {
   INN_DAY_LOG: "innDayLog", // Record<actorId, {lodging?, food?}> — who has eaten and slept today
   LOCAL_HIDDEN: "localHidden", // Record<locationName, itemId[]> — per-location hidden items
   ENCUMBRANCE_MODE: "encumbranceMode", // "slots" | "weight"
-  LOCAL_CUSTOM_ITEMS: "localCustomItems", // Record<shopName, ItemDefinition[]>
+  LOCAL_CUSTOM_ITEMS: "localCustomItems", // Record<shopName, ShopEntry[]> — a shop's own shelf, goods and services alike
+  SERVICE_LIBRARY: "serviceLibrary", // ShopEntry[] — services the Referee can put in any shop
+  SHOP_VISITS: "shopVisits", // Record<shopName, number> — bumping one re-rolls that shop's X-in-6 stock
   SHARED_ACTOR_ID: "sharedActorId", // Actor holding the party's shared containers ("" = not created yet)
   HIDE_DROPPED_ZONES: "hideDroppedZones", // per-user: collapse zones left behind
   HIDE_MANAGED_ACTORS: "hideManagedActors", // hide the shared store and loot boxes from players' Actors tab
   PLAYER_TOOLBAR_INN: "playerToolbarInn", // may players open the generic inn from the toolbar?
   PLAYER_TOOLBAR_LOOT: "playerToolbarLoot", // may players open the loot browser from the toolbar?
   PLAYER_TOOLBAR_TRASH: "playerToolbarTrash", // may players open the trash from the toolbar? (read-only for them)
+  PLAYER_GENERIC_SHOP: "playerGenericShop", // may players open the place-less shop from the toolbar/day bar?
+  PLAYER_ADD_CUSTOM_ITEM: "playerAddCustomItem", // may players invent items in their own inventory?
+  SHOPS_NEED_PARTY_PRESENT: "shopsNeedPartyPresent", // must the party marker be where a shop/market/inn note is?
+  PARTY_MARKER_ACTOR: "partyMarkerActor", // name or id of the actor whose token stands for the party
   TRASH_LIMIT: "trashLimit", // how many deleted rows each actor's bin keeps before the oldest fall out
   DAY_STATE: "dayState", // the day's mode, which duties are ticked, and the rest-day counter
   SHOW_DAY_BAR: "showDayBar", // per-user: is the day bar on screen at all?

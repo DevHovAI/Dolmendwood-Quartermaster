@@ -4,6 +4,7 @@
     <h2>
       <i class="fas fa-store"></i> {{shopName}}
       {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
+      {{#if buysAnything}}<span class="buy-back-badge" title="This shop buys what you bring in at {{buyBackRate}}% of its own value">buys at {{buyBackRate}}%</span>{{/if}}
     </h2>
 
     {{!-- Target actor selector (GM can pick any party member; players buy for themselves) --}}
@@ -34,7 +35,8 @@
     {{/if}}
   </div>
 
-  {{!-- Tag Filters --}}
+  {{!-- Tag Filters: catalogue tags, so a shop keeping to its own shelf has none --}}
+  {{#unless ownStockOnly}}
   {{#if allTags.length}}
   <div class="shop-tag-filters">
     <span class="tag-filter-label">Tags:</span>
@@ -46,6 +48,7 @@
     {{/each}}
   </div>
   {{/if}}
+  {{/unless}}
 
   {{!-- Search --}}
   <div class="shop-search">
@@ -57,6 +60,15 @@
       <i class="fas fa-coins"></i> Affordable
     </button>
     {{/if}}
+    {{#if buysAnything}}
+    {{#if selectedActor}}
+    <button type="button" data-action="toggleSelling"
+            class="btn-sell-toggle {{#if selling}}active{{/if}}"
+            title="{{#if selling}}Back to the shelves{{else}}Sell what {{selectedActor.name}} is carrying — this shop pays {{buyBackRate}}% of an item's own value{{/if}}">
+      <i class="fas {{#if selling}}fa-shelves{{else}}fa-hand-holding-dollar{{/if}}"></i> {{#if selling}}Shelves{{else}}Sell{{/if}}
+    </button>
+    {{/if}}
+    {{/if}}
     {{#if selectedActor}}
     <button type="button" data-action="addCustomItem" class="btn-custom-item"
             title="Add a custom item{{#if isGM}} to the selected party member{{/if}}">
@@ -65,16 +77,73 @@
     {{/if}}
     {{#if isGM}}
     <button type="button" data-action="addToShop" class="btn-add-to-shop"
-            title="Add an item that stays in {{#if isLocalShop}}this shop{{else}}the general shop{{/if}} permanently">
+            title="Add goods or a service that stay in {{#if isLocalShop}}this shop{{else}}the general shop{{/if}} permanently">
       <i class="fas fa-plus"></i> Add to Shop
     </button>
     <button type="button" data-action="stockFromCatalogue" class="btn-add-to-shop"
             title="Put catalogue items on this shelf by hand — including the treasures that are never on sale by default">
       <i class="fas fa-book"></i> From Catalogue
     </button>
+    <button type="button" data-action="stockFromLibrary" class="btn-add-to-shop"
+            title="Put a service on this shelf: the Player's Book specialists, and whatever you have written yourself">
+      <i class="fas fa-hand-holding-dollar"></i> Add a Service
+    </button>
+    {{#if hasChancyStock}}
+    <button type="button" data-action="newVisit" class="btn-add-to-shop"
+            title="Roll again for everything this shop stocks on a chance. Visit {{visit}}.">
+      <i class="fas fa-dice-d6"></i> New visit
+    </button>
+    {{/if}}
     {{/if}}
   </div>
 
+  {{#if selling}}
+  {{!-- ── Selling: what the character carries, and what this shop would pay ── --}}
+  <div class="shop-catalog shop-sell">
+    <p class="shop-sell-note">
+      <i class="fas fa-circle-info"></i>
+      {{shopName}} pays <strong>{{buyBackRate}}%</strong> of what a thing is worth — reckoned on its own value, not on this shop's asking price.
+      {{#if buysOnlyItsTrade}}It takes only what it deals in: <strong>{{buyCategoryList}}</strong>.{{/if}}
+      Anything that carries a zone of its own (a backpack, a cart) is not listed: selling one would have to decide what happens to everything inside it.
+    </p>
+    {{#if sellRows.length}}
+    <div class="shop-item-list">
+      {{#each sellRows}}
+      <div class="shop-item shop-sell-row {{#if this.worthless}}shop-item-hidden{{/if}}">
+        <div class="shop-item-info">
+          <span class="shop-item-name">
+            <i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-sack{{/if}} shop-item-icon"></i>
+            {{this.name}}
+            <span class="shop-sell-count" title="How many {{@root.selectedActor.name}} still carries">{{this.quantity}} in hand</span>
+          </span>
+        </div>
+        <div class="shop-item-meta">
+          {{#if this.worthless}}
+          <span class="shop-item-cost">nothing</span>
+          {{else}}
+          <span class="shop-item-cost">{{this.perItem.amount}} {{this.perItem.currency}} each</span>
+          {{#if (neq this.quantity 1)}}
+          <span class="shop-sell-total" title="If you sold all {{this.quantity}}">all: {{this.total.amount}} {{this.total.currency}}</span>
+          {{/if}}
+          {{/if}}
+        </div>
+        <div class="shop-item-actions">
+          {{#unless this.worthless}}
+          <button type="button" data-action="sellItem" data-item-id="{{this.id}}"
+                  class="btn-purchase" title="Sell to {{@root.shopName}}">
+            <i class="fas fa-hand-holding-dollar"></i> Sell
+          </button>
+          {{/unless}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <p class="shop-sell-empty">{{selectedActor.name}} has nothing this shop would take.</p>
+    {{/if}}
+  </div>
+
+  {{else}}
   {{!-- Item Catalog grouped by category → subcategory --}}
   <div class="shop-catalog">
     {{#each grouped}}
@@ -90,13 +159,15 @@
         <div class="shop-item-list">
           {{#each this.items}}
           {{!-- item: use @root for top-level context --}}
-          <div class="shop-item {{#if this.isHidden}}shop-item-hidden{{/if}} {{#if this.isLocalCustom}}shop-item-custom{{/if}}" data-item-id="{{this.id}}">
+          <div class="shop-item {{#if this.isHidden}}shop-item-hidden{{/if}} {{#if this.isLocalCustom}}shop-item-custom{{/if}} {{#if this.isService}}shop-item-service{{/if}} {{#if this.outOfStock}}shop-item-out{{/if}}" data-item-id="{{this.id}}">
             <div class="shop-item-info">
               <span class="shop-item-name">
                 <i class="fas {{#if this.icon}}{{this.icon}}{{else}}{{itemIcon this.category this.subcategory}}{{/if}} shop-item-icon" title="{{this.category}}"></i>
                 {{this.name}}
+                {{#if this.isService}}<span class="shop-service-badge" title="A service: nothing is added to the inventory"><i class="fas fa-hand-holding-dollar"></i></span>{{/if}}
                 {{#if this.isHidden}}<span class="shop-hidden-badge" title="Hidden from players"><i class="fas fa-eye-slash"></i></span>{{/if}}
-                {{#if this.isLocalCustom}}<span class="shop-custom-badge" title="Custom shop item"><i class="fas fa-plus-circle"></i></span>{{/if}}
+                {{#if this.outOfStock}}<span class="shop-out-badge" title="Stocked on a {{this.availability}}-in-6 chance, and not in this visit. Players do not see this row at all.">out this visit</span>{{/if}}
+                {{#if this.isLocalCustom}}{{#unless this.isService}}<span class="shop-custom-badge" title="Custom shop item"><i class="fas fa-plus-circle"></i></span>{{/unless}}{{/if}}
               </span>
               {{#if this.description}}<span class="shop-item-desc-inline">{{this.description}}</span>{{/if}}
               {{#if this.qualities.length}}
@@ -104,26 +175,43 @@
               {{/if}}
             </div>
             <div class="shop-item-meta">
+              {{#if this.isService}}
+              {{!-- No size, no weight: nothing is carried away. The unit takes that column instead. --}}
+              {{#if this.availability}}
+              <span class="shop-item-size shop-chance-badge" title="Stocked on a {{this.availability}}-in-6 chance, rolled once per visit">{{this.availability}}-in-6</span>
+              {{/if}}
+              {{else}}
               {{#if (eq @root.encMode "weight")}}
               <span class="shop-item-size item-weight-badge" title="Weight per unit">{{this.weight}} wt</span>
               {{else}}
               <span class="shop-item-size size-{{this.size}}" title="{{slotCost this.size}}">{{sizeLabel this.size}}</span>
               {{/if}}
-              <span class="shop-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
+              {{#if this.availability}}
+              <span class="shop-item-size shop-chance-badge" title="Stocked on a {{this.availability}}-in-6 chance, rolled once per visit">{{this.availability}}-in-6</span>
+              {{/if}}
+              {{/if}}
+              <span class="shop-item-cost">
+                {{#if this.byArrangement}}by arrangement{{else}}{{this.cost.amount}} {{this.cost.currency}}{{/if}}
+                {{#if this.unit}}{{#if (neq this.unit "piece")}}<span class="shop-item-unit">{{this.unit}}</span>{{/if}}{{/if}}
+              </span>
             </div>
             <div class="shop-item-actions">
               {{#unless this.isHidden}}
+              {{#unless this.outOfStock}}
               <button type="button" data-action="purchaseItem" data-item-id="{{this.id}}"
-                      class="btn-purchase" title="Purchase (deducts coins)">
-                <i class="fas fa-shopping-cart"></i> Buy
+                      class="btn-purchase" title="{{#if this.isService}}Pay for this — nothing enters the inventory{{else}}Purchase (deducts coins){{/if}}">
+                <i class="fas {{#if this.isService}}fa-hand-holding-dollar{{else}}fa-shopping-cart{{/if}}"></i> {{#if this.isService}}Pay{{else}}Buy{{/if}}
               </button>
+              {{/unless}}
               {{/unless}}
               {{#if @root.isGM}}
               {{#unless this.isHidden}}
+              {{#unless this.outOfStock}}
               <button type="button" data-action="grantItem" data-item-id="{{this.id}}"
-                      class="btn-grant" title="Grant item (no cost)">
+                      class="btn-grant" title="{{#if this.isService}}With the shop's compliments — no coins move{{else}}Grant item (no cost){{/if}}">
                 <i class="fas fa-gift"></i> Grant
               </button>
+              {{/unless}}
               {{/unless}}
               {{#unless this.isLocalCustom}}
               <button type="button"
@@ -134,7 +222,17 @@
                 <i class="fas {{#if this.isHidden}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
               </button>
               {{/unless}}
+              {{#if this.isService}}
+              <button type="button" data-action="saveToLibrary" data-item-id="{{this.id}}"
+                      class="icon-btn btn-save-library" title="Keep this service in the library, so another shop can offer it too">
+                <i class="fas fa-box-archive"></i>
+              </button>
+              {{/if}}
               {{#if this.isLocalCustom}}
+              <button type="button" data-action="editShopEntry" data-item-id="{{this.id}}"
+                      class="icon-btn btn-edit-shop-entry" title="Change the price, the chance of it being in stock, or anything else about this row">
+                <i class="fas fa-pen"></i>
+              </button>
               <button type="button" data-action="removeFromShop" data-item-id="{{this.id}}"
                       class="icon-btn btn-remove-from-shop" title="Remove from shop">
                 <i class="fas fa-trash"></i>
@@ -150,6 +248,7 @@
     </details>
     {{/each}}
   </div>
+  {{/if}}
 
   {{!-- Transaction Log --}}
   {{> transaction-log transactions=[]}}

@@ -141,6 +141,35 @@ export interface ShopState {
   hiddenItems?: string[];              // item IDs hidden from players (GM-visible but dimmed)
 }
 
+/**
+ * A line on a particular shop's own shelf.
+ *
+ * A superset of `ItemDefinition`, which is what these were before services
+ * existed and what they are still stored as — so every shop stocked under an
+ * older version reads back unchanged, as an entry with none of the fields
+ * below set.
+ *
+ * The two shapes are told apart by `service`, the same way the inn tells a
+ * purchase of goods from a thing consumed on the spot: an entry with
+ * `grantsItem` hands something over, one without is used up where it is sold.
+ */
+export interface ShopEntry extends ItemDefinition {
+  /**
+   * Paid for and never seen again — a bath, a tattoo, a night in the infirmary.
+   * Nothing enters the inventory, so the size, weight and zone of the
+   * definition mean nothing here and are not shown.
+   */
+  service?: boolean;
+  /**
+   * Chance in six of being in stock on a given visit; unset = always.
+   *
+   * Not rolled per viewer: the result is derived from the shop's visit counter,
+   * for the same reason the inn's daily menu is derived — a player cannot write
+   * a world setting, so a stored roll would leave a player-opened shop empty.
+   */
+  availability?: number;
+}
+
 export interface Transaction {
   id: string;
   timestamp: number;
@@ -271,6 +300,50 @@ export interface InnPurchasePayload {
   item?: InventoryItem;
 }
 
+/**
+ * What a map note remembers about the shop it marks.
+ *
+ * Every field is optional because a note written under an older version has
+ * none of the later ones, and the reader has to cope with that rather than the
+ * writer guaranteeing it.
+ */
+export interface ShopNoteFlag {
+  name?: string;
+  categories?: string[];
+  priceFactor?: number;
+  ownStockOnly?: boolean;
+  buyBackRate?: number;
+}
+
+export interface ServicePurchasePayload {
+  /** Who pays. */
+  actorId: string;
+  /** Who it is for — the same character unless somebody stood a round. */
+  forActorId: string;
+  serviceName: string;
+  /** The shop it was bought at, for the card. */
+  shopName: string;
+  cost: { amount: number; currency: "cp" | "sp" | "gp" | "pp" };
+  /** "per day", "per person" — printed after the price where there is one. */
+  unit?: string;
+  /** The entry's own text, which is where a condition like "1d4 days" lives. */
+  note?: string;
+  /** The Referee waved it through: no coins move, the card still gets written. */
+  free?: boolean;
+}
+
+export interface SellItemPayload {
+  /** Whose inventory the row leaves, and whose purse the coins land in. */
+  actorId: string;
+  /** The inventory row being sold, by its own id. */
+  itemId: string;
+  /** How many of a stacked row to sell. */
+  quantity: number;
+  /** What the shop pays, already worked out and shown to the seller. */
+  proceeds: { amount: number; currency: "cp" | "sp" | "gp" | "pp" };
+  shopName: string;
+}
+
 export interface MarketEntry {
   id: string;
   type: "shop" | "inn";
@@ -280,6 +353,13 @@ export interface MarketEntry {
   categories: string[];                     // shop: [] = all categories; ignored for inn
   quality: "poor" | "common" | "fancy";     // inn only; ignored for shop
   priceFactor?: number;                     // percentage; 100 = normal (default)
+  /**
+   * Shop only. The same two settings a shop on its own map note has — a market
+   * stall is a shop, and a Referee who set one up here should not have to learn
+   * that some shop settings live somewhere else.
+   */
+  ownStockOnly?: boolean;
+  buyBackRate?: number;
 }
 
 export interface MarketFlag {

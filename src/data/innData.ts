@@ -9,9 +9,14 @@
 // does not also offer a spot on the common room floor. Each level therefore has
 // its own complete table rather than a minimum-quality filter.
 
+import type { Currency } from "./coins";
+import { CURRENCY_IN_CP } from "./coins";
+
 export type InnQuality = "poor" | "common" | "fancy";
 export type InnSection = "lodging" | "food" | "beverages" | "extras";
-export type Currency = "cp" | "sp" | "gp" | "pp";
+// Defined in coins.ts and re-exported here, because everything that already
+// imports Currency imports it from this file.
+export type { Currency };
 
 /**
  * Name for a *placed* inn whose map note was left blank. The toolbar inn is
@@ -367,17 +372,15 @@ export const BEVERAGE_TEXT: Record<InnQuality, string> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const CURRENCY_IN_CP: Record<Currency, number> = { cp: 1, sp: 10, gp: 100, pp: 500 };
+// The exchange rate itself lives in coins.ts — see the note there.
 
 export function costToCp(cost: InnCost): number {
   return cost.amount * CURRENCY_IN_CP[cost.currency];
 }
 
-/** Apply a shop-style price factor in percent, never dropping below 1 coin. */
-export function withPriceFactor(cost: InnCost, factor: number): InnCost {
-  if (factor === 100) return cost;
-  return { amount: Math.max(1, Math.round(cost.amount * factor / 100)), currency: cost.currency };
-}
+// withPriceFactor now lives in coins.ts; re-exported so the inn keeps its
+// familiar import.
+export { withPriceFactor } from "./coins";
 
 export function qualityLabel(quality: InnQuality): string {
   return INN_QUALITIES.find((q) => q.key === quality)?.label ?? quality;

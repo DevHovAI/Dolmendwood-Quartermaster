@@ -44,6 +44,28 @@ export class CatalogManager {
   }
 
   /**
+   * The categories worth offering as a shop's stock list, and the ones that are
+   * not.
+   *
+   * A category where **every** entry is `notSold` is the Campaign Book's
+   * treasure: amulets, magic rings, rare herbs and the rest. Ticking one on a
+   * map note does precisely nothing, because a shop filters `notSold` away
+   * *before* it applies the category list — those items reach a shelf only
+   * through **From Catalogue**, which ignores the flag on purpose.
+   *
+   * Derived rather than listed, so importing more treasures later sorts itself.
+   */
+  static getCategoriesBySale(): { sold: string[]; treasure: string[] } {
+    const sold: string[] = [];
+    const treasure: string[] = [];
+    for (const category of CatalogManager.getCategories()) {
+      const anyForSale = CATALOG.some((d) => d.category === category && !d.notSold);
+      (anyForSale ? sold : treasure).push(category);
+    }
+    return { sold, treasure };
+  }
+
+  /**
    * Tags that describe how an item behaves rather than what a shopper would
    * browse by. They stay on the items — zone rules read them through
    * `allowedItemTags` — but they are not offered as shop filters, where they

@@ -6,6 +6,8 @@ import { hexInfo } from "../data/hexes";
 import { activateBookLinks } from "../data/dayRolls";
 import { partyDayRows, setAte, setSleptWell, setRested, hungerEffect, exhaustionPenalty } from "../data/characterDay";
 import { PartyOverviewApp, buildPartyConvoy } from "./PartyOverviewApp";
+import { PlayerInventoryApp } from "./PlayerInventoryApp";
+import { ShopApp } from "./ShopApp";
 import { InnApp } from "./InnApp";
 import { openLootBrowser } from "./LootApp";
 import { openTrash } from "./TrashApp";
@@ -374,6 +376,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       mayOpenLoot: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT),
       mayOpenTrash: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH),
       mayOpenInn: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN),
+      mayOpenShop: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP),
       day: state.day,
       // Told to the players only once it has been rolled: they are standing in
       // it, so there is nothing left to give away.
@@ -534,12 +537,42 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         else new InnApp().render(true);
         break;
       }
-      case "inventory": {
-        const existing = foundry.applications?.instances?.get("dolmenwood-party-overview") as
+      case "shop": {
+        // The place-less shop. Reaching it from the bar keeps it available when
+        // BAR_ONLY_ACCESS has taken the toolbar buttons away.
+        const shop = foundry.applications?.instances?.get("dolmenwood-shop") as
           | { render: (options?: unknown) => void }
           | undefined;
-        if (existing) existing.render({ force: true });
-        else new PartyOverviewApp().render(true);
+        if (shop) shop.render({ force: true });
+        else new ShopApp().render(true);
+        break;
+      }
+      case "inventory": {
+        // The GM gets the party, a player their own sheet — the same split the
+        // scene toolbar makes, and the one this button's tooltip has been
+        // promising all along. Opening PartyOverviewApp unconditionally also
+        // walked past the GM-only guard that openPartyOverview() applies, so a
+        // player reached the whole party's inventory from here. The party
+        // stores are not lost by the change: they are zones inside the
+        // character's own sheet.
+        const isGM = (game as Game).user?.isGM ?? false;
+        const existing = foundry.applications?.instances?.get(
+          isGM ? "dolmenwood-party-overview" : "dolmenwood-player-inventory"
+        ) as { render: (options?: unknown) => void } | undefined;
+        if (existing) {
+          existing.render({ force: true });
+          break;
+        }
+        if (isGM) {
+          new PartyOverviewApp().render(true);
+          break;
+        }
+        const own = (game as Game).user?.character ?? undefined;
+        if (!own) {
+          ui.notifications?.warn("No actor found. Assign a character to your user first.");
+          break;
+        }
+        new PlayerInventoryApp(own).render(true);
         break;
       }
     }

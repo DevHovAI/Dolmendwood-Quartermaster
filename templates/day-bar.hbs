@@ -160,22 +160,31 @@
               title="{{#if isGM}}Party Inventory{{else}}My Inventory{{/if}}">
         <i class="fas fa-backpack"></i>
       </button>
-      {{#if mayOpenLoot}}
-      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="loot"
-              title="Loot">
-        <i class="fas fa-treasure-chest"></i>
-      </button>
-      {{/if}}
+      {{!-- Same order as the scene toolbar (Leander, 2026-08-25): inventory,
+            trash, shop, inn, loot. Two lists in two places that disagree about
+            their order are two lists to learn. --}}
       {{#if mayOpenTrash}}
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="trash"
               title="Trash">
         <i class="fas fa-trash-can"></i>
       </button>
       {{/if}}
+      {{#if mayOpenShop}}
+      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="shop"
+              title="Shop">
+        <i class="fas fa-store"></i>
+      </button>
+      {{/if}}
       {{#if mayOpenInn}}
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="inn"
               title="Inn">
         <i class="fas fa-beer-mug-empty"></i>
+      </button>
+      {{/if}}
+      {{#if mayOpenLoot}}
+      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="loot"
+              title="Loot">
+        <i class="fas fa-treasure-chest"></i>
       </button>
       {{/if}}
     </div>

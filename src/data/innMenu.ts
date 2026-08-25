@@ -1,4 +1,5 @@
 import { MODULE_ID, SETTINGS } from "../constants";
+import { hashString, mulberry32 } from "./seededRandom";
 import type { InnEntry, InnSection } from "./innData";
 import type { InnConfig } from "./innConfig";
 
@@ -14,31 +15,10 @@ import type { InnConfig } from "./innConfig";
  */
 
 // ─── Seeded RNG ───────────────────────────────────────────────────────────────
-
-/** cyrb53 — a short, well-mixed string hash. Only needs to be stable, not secure. */
-function hashString(str: string): number {
-  let h1 = 0xdeadbeef;
-  let h2 = 0x41c6ce57;
-  for (let i = 0; i < str.length; i++) {
-    const ch = str.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return 4294967296 * (2097151 & h2) + (h1 >>> 0);
-}
-
-/** mulberry32 — small, fast, deterministic PRNG seeded from a 32-bit integer. */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+//
+// The two primitives now live in seededRandom.ts, because the shop needs the
+// same determinism for its X-in-6 stock and an RNG copied into two files is an
+// RNG that drifts.
 
 /** Fisher–Yates against a seeded generator, so the order is reproducible. */
 function seededShuffle<T>(items: T[], rand: () => number): T[] {

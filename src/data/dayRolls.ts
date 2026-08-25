@@ -1051,7 +1051,12 @@ const BOOK_BY_NAME: Record<string, BookId> = {
  * not been written yet to print. Text nodes only: a reference inside a tooltip
  * is an attribute, and rewriting attributes as markup is how cards break.
  */
-function linkBookReferences(root: HTMLElement): void {
+/**
+ * Exported because the shop prints references too: a service copied out of the
+ * Player's Book carries its own page, and a link that works in chat and not on
+ * the shelf is worse than no link.
+ */
+export function linkBookReferences(root: HTMLElement): void {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const found: Text[] = [];
   while (walker.nextNode()) {

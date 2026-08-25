@@ -1,7 +1,9 @@
-import { SOCKET_NAME, SOCKET_EVENTS } from "../constants";
+import { MODULE_ID, SOCKET_NAME, SOCKET_EVENTS } from "../constants";
 import { FlagManager, deductCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { processInnPurchase } from "../data/innPurchase";
+import { processServicePurchase } from "../data/servicePurchase";
+import { processSale } from "../data/shopSale";
 import { addItemWithZones, getEncumbranceMode } from "../data/zoneGrants";
 import { transferZone } from "../data/zoneTransfer";
 import { ensureSharedActor } from "../data/sharedStore";
@@ -15,6 +17,8 @@ import type {
   ShareZonePayload,
   PurchasePayload,
   InnPurchasePayload,
+  ServicePurchasePayload,
+  SellItemPayload,
   Transaction,
   InventoryItem,
   ItemDefinition,
@@ -50,9 +54,26 @@ export class SocketHandler {
    */
   static emitOrHandle(event: string, data: unknown): void {
     if ((game as Game).user?.isGM) {
-      void SocketHandler.runGMAction(event, data).then(() => SocketHandler.onRequestRefresh());
+      // The rejection has to be caught here or it lands as an unhandled promise
+      // in the console and nowhere else: the caller has already returned, and a
+      // failed write looks to the table exactly like a button that does nothing.
+      void SocketHandler.runGMAction(event, data)
+        .then(() => SocketHandler.onRequestRefresh())
+        .catch((err: unknown) => {
+          console.error(`${MODULE_ID} | ${event} failed`, err);
+          ui.notifications?.error(
+            `${event} failed: ${err instanceof Error ? err.message : String(err)}`
+          );
+        });
     } else {
       SocketHandler.emit(event, data);
+      // A player's write needs a GM online to carry it out. Without one the
+      // message goes nowhere and nothing at all happens, which is worth saying.
+      const activeGM = ((game as Game).users as unknown as { activeGM?: unknown } | undefined)
+        ?.activeGM;
+      if (!activeGM) {
+        ui.notifications?.warn("No GM is connected, so that could not be carried out.");
+      }
     }
   }
 
@@ -107,6 +128,16 @@ export class SocketHandler {
 
       case SOCKET_EVENTS.INN_PURCHASE:
         await processInnPurchase(data as InnPurchasePayload);
+        SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+        break;
+
+      case SOCKET_EVENTS.PURCHASE_SERVICE:
+        await processServicePurchase(data as ServicePurchasePayload);
+        SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+        break;
+
+      case SOCKET_EVENTS.SELL_ITEM:
+        await processSale(data as SellItemPayload);
         SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
         break;
     }

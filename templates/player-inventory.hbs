@@ -11,9 +11,14 @@
       {{#if hideDropped}}Show{{else}}Hide{{/if}} left behind ({{droppedCount}})
     </button>
     {{/if}}
-    <button type="button" data-action="openShop" class="btn-toolbar btn-shop" title="Open Shop">
+    {{!-- Opens the shop with this character already selected as the buyer —
+          which is why it is worth having here and not only on the toolbar. --}}
+    {{#if mayOpenGenericShop}}
+    <button type="button" data-action="openShop" class="btn-toolbar btn-shop"
+            title="Open the shop, buying for {{actor.name}}">
       <i class="fas fa-store"></i> Shop
     </button>
+    {{/if}}
   </div>
 
   {{!-- Encumbrance bars. The shared store carries nothing itself — a load bar

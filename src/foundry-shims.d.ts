@@ -4,7 +4,7 @@
  * here keeps the call sites unchanged.
  */
 import type { DeepPartial as FvttDeepPartial } from "@league-of-foundry-developers/foundry-vtt-types/utils";
-import type { ShopState, Transaction, ItemDefinition, CharacterInventory } from "./types";
+import type { ShopState, Transaction, ItemDefinition, ShopEntry, CharacterInventory } from "./types";
 import type { InnQuality } from "./data/innData";
 import type { InnConfig } from "./data/innConfig";
 import type { InnDayLog } from "./data/innMenu";
@@ -36,7 +36,9 @@ declare global {
     "dolmenwood-party-inventory.innDay": number;
     "dolmenwood-party-inventory.innDayLog": InnDayLog;
     "dolmenwood-party-inventory.localHidden": Record<string, string[]>;
-    "dolmenwood-party-inventory.localCustomItems": Record<string, ItemDefinition[]>;
+    "dolmenwood-party-inventory.localCustomItems": Record<string, ShopEntry[]>;
+    "dolmenwood-party-inventory.serviceLibrary": ShopEntry[];
+    "dolmenwood-party-inventory.shopVisits": Record<string, number>;
     "dolmenwood-party-inventory.encumbranceMode": "slots" | "weight";
     "dolmenwood-party-inventory.sharedActorId": string;
     "dolmenwood-party-inventory.hideDroppedZones": boolean;
@@ -44,6 +46,10 @@ declare global {
     "dolmenwood-party-inventory.playerToolbarInn": boolean;
     "dolmenwood-party-inventory.playerToolbarLoot": boolean;
     "dolmenwood-party-inventory.playerToolbarTrash": boolean;
+    "dolmenwood-party-inventory.playerGenericShop": boolean;
+    "dolmenwood-party-inventory.playerAddCustomItem": boolean;
+    "dolmenwood-party-inventory.shopsNeedPartyPresent": boolean;
+    "dolmenwood-party-inventory.partyMarkerActor": string;
     "dolmenwood-party-inventory.trashLimit": number;
     "dolmenwood-party-inventory.dayState": DayState;
     "dolmenwood-party-inventory.showDayBar": boolean;
