@@ -10,6 +10,7 @@ import type { InnConfig } from "./data/innConfig";
 import type { InnDayLog } from "./data/innMenu";
 import type { DayState } from "./data/dayDuties";
 import type { DayContext } from "./data/dayContext";
+import type { CharacterExtras } from "./data/characterSheet";
 
 declare global {
   type DeepPartial<T extends object> = FvttDeepPartial<T>;
@@ -73,6 +74,8 @@ declare global {
         inventory: CharacterInventory;
         /** Present only on loot boxes. Legacy boxes carry a bare `true`. */
         loot: true | { icon?: string };
+        /** The half of the attribute sheet the game system has no home for. */
+        sheet: CharacterExtras;
       };
     };
     JournalEntry: {
