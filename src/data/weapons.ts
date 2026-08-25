@@ -53,15 +53,27 @@ const SIZES = /^\s*(small|medium|large)\s*$/i;
 /**
  * Read one row as a weapon, or nothing if it is not one.
  *
- * Category rather than a guess from the qualities: a Bag of Holding whose
- * description happens to contain "1d8" is not a weapon, and the catalogue
- * already says which things are.
+ * **A bare damage die in the qualities is what makes a weapon**, not the
+ * category. This started out the other way round and was wrong twice over:
+ *
+ * - **An item invented by hand has no category at all.** The custom-item
+ *   dialogs build a partial definition with an icon, a size and a weight and
+ *   nothing else, so a Referee's own sword — qualities perfectly typed — could
+ *   never have rolled. The field would have been decoration.
+ * - **The category was doing no work.** Across all 425 catalogue entries,
+ *   exactly 20 carry a bare `NdM` quality and all 20 are the weapons. The die
+ *   is already a perfect discriminator, which `check-weapons` asserts over the
+ *   whole catalogue so that a future entry breaking it fails loudly.
+ *
+ * A quality of exactly "1d8" is a deliberate statement in a way a description
+ * containing "1d8" would not be, which is why this reads qualities and nothing
+ * else.
  */
 export function weaponFromItem(
   item: InventoryItem,
   def: ItemDefinition | undefined
 ): Weapon | undefined {
-  if (!def || def.category !== "Weapons") return undefined;
+  if (!def) return undefined;
 
   let damage: string | undefined;
   let melee = false;
@@ -219,12 +231,7 @@ export function parseQualities(text: string): string[] {
  * understood it, and anyone can see at a glance whether `1d8` landed.
  */
 export function describeQualities(qualities: string[]): string {
-  const fake = {
-    id: "preview",
-    name: "preview",
-    category: "Weapons",
-    qualities,
-  } as unknown as ItemDefinition;
+  const fake = { id: "preview", name: "preview", qualities } as unknown as ItemDefinition;
   const weapon = weaponFromItem({ id: "preview" } as InventoryItem, fake);
 
   if (!weapon) return "No damage die, so this is not rolled as a weapon.";
