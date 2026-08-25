@@ -1,5 +1,88 @@
 import { FlagManager, addCoinsToZone } from "./FlagManager";
-import type { SellItemPayload, Transaction } from "../types";
+import { CURRENCY_IN_CP } from "./coins";
+import { containerCapacity, isBundle, stackUnits, setStackUnits } from "./consumables";
+import { definitionFor } from "./itemDefs";
+import type { SellItemPayload, Transaction, InventoryItem, ItemDefinition } from "../types";
+
+/**
+ * What a row is worth to a shop, and in what units it is sold.
+ *
+ * The catalogue prices a **full** thing. A quiver is "Arrows (Quiver of 20)"
+ * at 5gp and a single arrow is 25cp — twenty of which is exactly 5gp, so the
+ * price of a quiver *is* its arrows and nothing is being paid for the leather.
+ * A quiver with seven arrows left is therefore worth seven arrows, and paying
+ * a full quiver's price for it was simply wrong.
+ *
+ * The three shapes the module already distinguishes each sell differently:
+ *
+ * - a **bundle** (torches, firewood, candles) is loose units in a running
+ *   total, so it sells by the unit and one unit is the definition's price
+ *   divided by the bundle size;
+ * - a **single container** (quiver, case, bottle, cask) is one object whose
+ *   `uses` is a fill level, so it sells as one thing, priced by how full;
+ * - anything else sells by the piece at its own price.
+ *
+ * Rounding is deliberately floor, and the floor is 0: a nearly empty quiver is
+ * worth nothing to a shop, which is the same answer the price rule already
+ * gives for anything valueless.
+ */
+export interface SaleValue {
+  kind: "bundle" | "container" | "plain";
+  /** How many sellable units this row holds — what "how many?" is asking about. */
+  units: number;
+  /** Full value of one unit in cp, before the shop's buy-back rate. */
+  unitCp: number;
+  /** Fill level, for saying "7 of 20" — only set for a container. */
+  fill?: { used: number; capacity: number };
+}
+
+export function saleValue(
+  item: InventoryItem,
+  def: ItemDefinition | undefined
+): SaleValue {
+  const fullCp = def ? def.cost.amount * CURRENCY_IN_CP[def.cost.currency] : 0;
+
+  const capacity = containerCapacity(item, def);
+  if (capacity !== undefined) {
+    const used = Math.max(0, Math.min(capacity, item.uses ?? capacity));
+    return {
+      kind: "container",
+      units: 1,
+      unitCp: Math.floor((fullCp * used) / capacity),
+      fill: { used, capacity },
+    };
+  }
+
+  if (isBundle(item, def)) {
+    const size = def!.maxUses!;
+    return {
+      kind: "bundle",
+      units: stackUnits(item, size),
+      unitCp: Math.floor(fullCp / size),
+    };
+  }
+
+  return { kind: "plain", units: item.quantity, unitCp: fullCp };
+}
+
+/**
+ * Take `count` units off a row, in whatever unit that row counts in.
+ * Returns false when the row is spent and the caller should drop it.
+ */
+export function removeSoldUnits(
+  item: InventoryItem,
+  def: ItemDefinition | undefined,
+  count: number
+): boolean {
+  const value = saleValue(item, def);
+  if (value.kind === "bundle") {
+    return setStackUnits(item, def!.maxUses!, value.units - count);
+  }
+  // A container is one object: selling it sells the object, part-full or not.
+  if (value.kind === "container") return false;
+  item.quantity -= count;
+  return item.quantity > 0;
+}
 
 /**
  * Sells one row out of a character's inventory to the shop standing in front
@@ -34,15 +117,15 @@ export async function processSale(payload: SellItemPayload): Promise<boolean> {
     if (idx === -1) return inv;
 
     const row = inv.items[idx];
-    const count = Math.max(1, Math.min(payload.quantity, row.quantity));
+    // Units, not rows: three torches out of a bundle, or one part-full quiver.
+    // definitionFor reads the row's own customDefinition where it has one, so a
+    // GM-invented bottle is valued by the same rule as a catalogue quiver.
+    const def = definitionFor(row);
+    const count = Math.max(1, Math.min(payload.quantity, saleValue(row, def).units));
 
     sold = { definitionId: row.definitionId, name: row.name, quantity: count };
 
-    if (count >= row.quantity) {
-      inv.items.splice(idx, 1);
-    } else {
-      row.quantity -= count;
-    }
+    if (!removeSoldUnits(row, def, count)) inv.items.splice(idx, 1);
 
     inv.coinsByZone ??= { equipped: { ...inv.coins } };
     addCoinsToZone(inv.coinsByZone, {

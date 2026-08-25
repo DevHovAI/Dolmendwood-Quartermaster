@@ -19,6 +19,7 @@ import {
   shopBuys,
 } from "../data/shopStock";
 import { inStock, shopVisit, bumpShopVisit } from "../data/shopAvailability";
+import { saleValue } from "../data/shopSale";
 import { definitionFor } from "../data/itemDefs";
 import { linkBookReferences, activateBookLinks } from "../data/dayRolls";
 import { CURRENCY_IN_CP as IN_CP, cpToCoin, withPriceFactor } from "../data/coins";
@@ -364,16 +365,21 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       .filter((row) => shopBuys(definitionFor(row, catalog)?.category, buys))
       .map((row) => {
         const def = definitionFor(row, catalog);
-        const unitCp = def ? def.cost.amount * IN_CP[def.cost.currency] : 0;
-        const perItem = Math.floor((unitCp * this.buyBackRate) / 100);
+        // saleValue is the shared answer to "how many, and what is one worth" —
+        // the same one processSale writes by, so the price shown and the price
+        // paid cannot drift apart. It also fixes the count: a bundle's row
+        // quantity is 1 however many torches are loose in it.
+        const value = saleValue(row, def);
+        const perItem = Math.floor((value.unitCp * this.buyBackRate) / 100);
         return {
           id: row.id,
           name: row.name,
-          quantity: row.quantity,
+          quantity: value.units,
+          fill: value.fill,
           icon: def?.icon,
           worthless: perItem <= 0,
           perItem: cpToCoin(perItem),
-          total: cpToCoin(perItem * row.quantity),
+          total: cpToCoin(perItem * value.units),
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -824,31 +830,38 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       return;
     }
 
-    const unitCp = def ? def.cost.amount * IN_CP[def.cost.currency] : 0;
-    const perItemCp = Math.floor((unitCp * this.buyBackRate) / 100);
+    const value = saleValue(row, def);
+    const perItemCp = Math.floor((value.unitCp * this.buyBackRate) / 100);
     if (perItemCp <= 0) {
-      ui.notifications?.warn(`${row.name} is worth nothing to this shop.`);
+      // A part-full container can land here on its own: three arrows out of
+      // twenty is a fifteenth of five gold, and at half rate that rounds away.
+      ui.notifications?.warn(
+        value.fill && value.fill.used < value.fill.capacity
+          ? `${row.name} is too nearly empty to be worth anything here.`
+          : `${row.name} is worth nothing to this shop.`
+      );
       return;
     }
 
-    // How many of a stack. A single row skips the question entirely rather
-    // than asking "how many of your one sword".
+    // How many units. A single one skips the question entirely rather than
+    // asking "how many of your one sword" — and a part-full quiver is one
+    // object, so it is never asked about either.
     let quantity = 1;
-    if (row.quantity > 1) {
+    if (value.units > 1) {
       const answer = await new Promise<number>((resolve) => {
         new Dialog({
           title: "Sell",
           content: `
             <p>Sell how many of <strong>${escapeHTML(row.name)}</strong>?</p>
-            <p class="qm-hint">${cpToCoin(perItemCp).amount} ${cpToCoin(perItemCp).currency} each, ${row.quantity} in hand.</p>
+            <p class="qm-hint">${cpToCoin(perItemCp).amount} ${cpToCoin(perItemCp).currency} each, ${value.units} in hand.</p>
             <div class="form-group">
-              <input type="number" id="sell-qty" value="1" min="1" max="${row.quantity}" />
+              <input type="number" id="sell-qty" value="1" min="1" max="${value.units}" />
             </div>`,
           buttons: {
             sell: {
               label: "Sell",
               callback: (html: JQuery) =>
-                resolve(Math.max(1, Math.min(row.quantity, parseInt(html.find("#sell-qty").val() as string, 10) || 1))),
+                resolve(Math.max(1, Math.min(value.units, parseInt(html.find("#sell-qty").val() as string, 10) || 1))),
             },
             cancel: { label: "Cancel", callback: () => resolve(0) },
           },
@@ -865,9 +878,11 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
         title: "Sell",
         content: `<p>Sell ${quantity} × <strong>${escapeHTML(row.name)}</strong> for <strong>${proceeds.amount} ${proceeds.currency}</strong>?</p>
           <p class="qm-hint">${
-            row.quantity - quantity > 0
-              ? `${escapeHTML(actor.name ?? "")} keeps ${row.quantity - quantity} of ${row.quantity}.`
-              : `That is the last of ${row.quantity === 1 ? "them" : `all ${row.quantity}`}.`
+            value.fill
+              ? `${value.fill.used} of ${value.fill.capacity} left in it — the shop pays for what is in it, not for the empty ${escapeHTML(row.name.toLowerCase())}.`
+              : value.units - quantity > 0
+                ? `${escapeHTML(actor.name ?? "")} keeps ${value.units - quantity} of ${value.units}.`
+                : `That is the last of ${value.units === 1 ? "them" : `all ${value.units}`}.`
           }</p>
           <p class="qm-hint">${this.localName ?? "The shop"} pays ${this.buyBackRate}% of what a thing is worth.</p>`,
         buttons: {

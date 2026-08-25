@@ -114,7 +114,11 @@
           <span class="shop-item-name">
             <i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-sack{{/if}} shop-item-icon"></i>
             {{this.name}}
+            {{#if this.fill}}
+            <span class="shop-sell-count" title="The shop pays for what is in it, not for the empty container">{{this.fill.used}} of {{this.fill.capacity}}</span>
+            {{else}}
             <span class="shop-sell-count" title="How many {{@root.selectedActor.name}} still carries">{{this.quantity}} in hand</span>
+            {{/if}}
           </span>
         </div>
         <div class="shop-item-meta">
