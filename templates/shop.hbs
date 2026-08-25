@@ -31,9 +31,9 @@
           number you want while shopping was the one you had to leave the window
           to find. --}}
     {{#if selectedActor}}
-    <div class="shop-purse" title="What {{selectedActor.name}} is carrying, across every pocket and pack">
+    <div class="shop-coins" title="Every coin {{selectedActor.name}} is carrying, wherever it is stowed — belt, pack, cart and all">
       <i class="fas fa-coins"></i>
-      <span class="shop-purse-label">Purse:</span>
+      <span class="shop-coins-label">Coins:</span>
       {{#if (gt selectedInventory.coins.pp 0)}}<span class="coin-val">{{selectedInventory.coins.pp}}<span class="coin-unit pp">pp</span></span>{{/if}}
       <span class="coin-val">{{selectedInventory.coins.gp}}<span class="coin-unit gp">gp</span></span>
       <span class="coin-val">{{selectedInventory.coins.sp}}<span class="coin-unit sp">sp</span></span>

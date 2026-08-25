@@ -4748,10 +4748,12 @@ span.day-bar-panel-tick {
   border-color: var(--dw-border);
 }
 
-/* The buyer's purse, in the shop header beside the encumbrance bar. The two
-   questions a shopper actually has are "can I afford it" and "can I carry it",
-   and until now the window answered only the second. */
-.shop-purse {
+/* What the buyer is carrying, in the shop header beside the encumbrance bar.
+   Called "Coins" to match the character sheet's own section, not "purse": the
+   total spans every zone the character has, so naming one pocket would be a
+   small lie. The two questions a shopper actually has are "can I afford it"
+   and "can I carry it", and until now the window answered only the second. */
+.shop-coins {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -4764,7 +4766,7 @@ span.day-bar-panel-tick {
   white-space: nowrap;
 }
 
-.shop-purse-label {
+.shop-coins-label {
   font-weight: bold;
   color: var(--dw-secondary);
 }
