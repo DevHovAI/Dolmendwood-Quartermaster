@@ -31,9 +31,14 @@ Tracks slot-based encumbrance, coins, a full Dolmenwood item catalog, and everyt
 - Full built-in catalog of Dolmenwood equipment (weapons, armour, camping gear, tools, clothing, and more)
 - **Pipeleaf** — pipes and 20 blends with Dolmenwood-accurate prices
 - **Animals & Vehicles** — horses, hounds, carts, wagons, barges, and accessories
-- Filter by category tags, full-text search, and "show only affordable items" toggle
+- Filter by category tags, full-text search, and "show only affordable items" toggle — which covers the shop's own shelf as well as the catalogue
 - Purchase items directly (deducts coins automatically) or grant them for free (GM)
+- The header shows **what the buyer is carrying**, so you can see what they can afford without leaving the window
 - **Local Shops** via map Notes — configure a name and which categories a specific shop sells; clicking the Note opens the shop pre-filtered to that selection
+- **Services** — priced lines that are used where they are bought and never enter an inventory, with the Player's Book's 21 specialists as a library you can add to, reprice and prune
+- **A shop of its own** — a shop may keep to its own shelf and show nothing from the catalogue, and any line can be given an **X-in-6 chance** of being in stock this visit
+- **Selling** — give a shop a **buy-back rate** and the party can sell to it, reckoned on an item's own value. A shop buys only what it deals in, and a part-full quiver is worth what is in it
+- **Shops are places** — by default a player can open a shop, market, inn or hoard note only where the party's token is standing. The GM is never restricted, and one setting turns it off
 
 ### Inn
 - Menus for **Lodgings**, **Stabling** (incl. horse feed), **Food**, and **Beverages**
@@ -126,7 +131,8 @@ qm.openInn("The Rusty Flagon", "poor");          // Pre-configured inn
 
 | Foundry VTT | Status |
 |-------------|--------|
-| v13 | ✅ Verified |
+| v13 | ✅ Minimum — runs, and the manifest keeps it supported |
+| v14 | ✅ Verified |
 
 Designed specifically for the **Dolmenwood** game system. Encumbrance slots, item categories, and coin denominations (cp / sp / gp / pp) follow Dolmenwood Player's Book rules.
 
@@ -190,6 +196,24 @@ styles/
 ---
 
 ## Changelog
+
+### v1.8.2
+- **A shop can be a particular shop** — **services** that are used where they are bought and never enter an inventory, with 21 Player's Book specialists as a library you can add to, reprice and prune; a shop that keeps to its **own shelf** and shows nothing from the catalogue; and stock with an **X-in-6 chance** of being there this visit
+- **Selling** — set a shop's **buy-back rate** on its map note or market stall and the party can sell to it, reckoned on an item's own value rather than that shop's asking price. A shop buys only what it deals in, and a half-empty quiver fetches what is in it: a quiver of 20 costs 5gp and one arrow 25cp, so seven arrows are seven arrows
+- **The map means something** — a player opens a shop, market, inn or hoard only where the party is standing: the same hex on a hex map, or the same scene where there is no hex grid. The Referee is never restricted, and one setting turns it off. The place-less general shop is off for players by default
+- **The shop says what the buyer can spend** — it always knew, since the Affordable filter is built on that figure, but never printed it. That filter now also reaches the shop's own shelf
+- A **Shop button on the scene toolbar**; the toolbar and day bar share one order: inventory, trash, shop, inn, loot
+- Players' **Add Custom Item** can be switched off
+- Fixed: the day bar's backpack opened the whole party's inventory for players instead of their own
+- Fixed: the disclosure arrow in **From Catalogue** never drew — it asked for FontAwesome 5 and 6, and Foundry ships 7
+- Fixed: windows that grow to fit no longer walk off the bottom of the screen with the Create button
+- Fixed: an action that failed looked exactly like a dead button. Everything that can refuse now says why, including telling a player that no Referee is connected to carry it out
+
+### v1.8.1
+- Fixed: **the hex box was as good as invisible** on some tables — a form control does not inherit its colour, and v13 and v14 do not hand an input the same one. It states its own colours now
+- **The inventory no longer opens itself** when a player logs in; there is a world setting for it, off by default
+- **The day bar starts visible.** A client that has already switched it off keeps its own answer
+- Fixed: the **Dolmenwood Encounters** folder is hidden from players, who could see its name but none of its contents
 
 ### v1.8.0
 - **The catalogue holds what the books hold** — 273 entries added: the Player's Book's Common Fungi and Herbs (20), and the whole of the Campaign Book's Treasures and Oddments (253) across thirteen categories, from Rare Herbs to Magic Weapons. Every figure was rebuilt into the book's own line and checked against its page
