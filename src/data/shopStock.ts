@@ -337,6 +337,12 @@ export interface ShopEntryForm {
   availability?: number;
   service: boolean;
   edible: boolean;
+  /**
+   * Free text, comma-split before it gets here. This is what makes a
+   * hand-written sword rollable: the character sheet reads "1d8" and "Melee"
+   * off exactly these.
+   */
+  qualities?: string[];
   /** Whichever of the two the running encumbrance mode puts on screen. */
   size?: ItemSize;
   weight?: number;
@@ -358,7 +364,6 @@ export function mergeShopEntry(was: ShopEntry | undefined, form: ShopEntryForm):
   const merged: ShopEntry = {
     size: "normal",
     cannotBeStowed: false,
-    qualities: [],
     tags: [],
     weight: 0,
     ...(was ?? {}),
@@ -371,6 +376,12 @@ export function mergeShopEntry(was: ShopEntry | undefined, form: ShopEntryForm):
     icon: form.icon,
     isCustom: true,
     description: form.description,
+    // The form's answer wins where it gave one — including an empty list, which
+    // is how a quality is removed rather than only ever added. **Omitted is not
+    // the same as empty:** a caller that does not ask about qualities leaves
+    // them alone, so stocking a catalogue weapon onto a shelf through some
+    // future path cannot silently strip the "1d8" that makes it swingable.
+    qualities: form.qualities ?? was?.qualities ?? [],
   };
 
   // Absent means "always", so a chance has to be removable and not merely

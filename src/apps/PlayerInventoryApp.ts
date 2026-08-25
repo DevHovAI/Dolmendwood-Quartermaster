@@ -1,4 +1,6 @@
 import { TEMPLATES, SOCKET_EVENTS, SETTINGS, MODULE_ID } from "../constants";
+import { QUALITIES_HINT, parseQualities } from "../data/weapons";
+import { activateQualitiesPreview } from "../helpers/handlebars";
 import { ShopApp } from "./ShopApp";
 import { buildPartySummary, buildPartyConvoy } from "./PartyOverviewApp";
 import { FlagManager, totalZoneCoins, addCoinsToZone } from "../data/FlagManager";
@@ -1772,6 +1774,12 @@ export class AddItemDialog extends Dialog {
               <input type="checkbox" id="add-custom-edible" />
               <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
             </div>
+            <div class="form-group">
+              <label>Qualities</label>
+              <input type="text" id="add-custom-qualities" placeholder="e.g. 1d8, Melee, Two-handed" style="width:100%;" />
+              <span class="qm-hint">${escapeHTML(QUALITIES_HINT)}</span>
+              <span class="qm-hint" data-read-for="add-custom-qualities"></span>
+            </div>
           </details>
         </form>
       `,
@@ -1796,6 +1804,7 @@ export class AddItemDialog extends Dialog {
               }
               if (customDesc) customDef.description = customDesc;
               if (html.find("#add-custom-edible").is(":checked")) customDef.edible = true;
+              customDef.qualities = parseQualities((html.find("#add-custom-qualities").val() as string) ?? "");
               const newItem: InventoryItem = {
                 id: foundry.utils.randomID(),
                 definitionId: "",
@@ -1852,6 +1861,7 @@ export class AddItemDialog extends Dialog {
   override activateListeners(html: JQuery): void {
     super.activateListeners(html);
     activateIconPicker(html);
+    activateQualitiesPreview(html[0] ?? html.get(0), "add-custom-qualities");
     // The dialog is sized once, when the custom section is still collapsed.
     // Without this the extra fields appear inside a small scrolling box.
     html.find("details").on("toggle", () => {
@@ -1918,6 +1928,12 @@ export class AddCustomItemDialog extends Dialog {
             <input type="checkbox" id="custom-edible" />
             <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
           </div>
+          <div class="form-group">
+            <label>Qualities</label>
+            <input type="text" id="custom-qualities" placeholder="e.g. 1d8, Melee, Two-handed" style="width:100%;" />
+            <span class="qm-hint">${escapeHTML(QUALITIES_HINT)}</span>
+            <span class="qm-hint" data-read-for="custom-qualities"></span>
+          </div>
         </form>
       `,
       buttons: {
@@ -1939,6 +1955,7 @@ export class AddCustomItemDialog extends Dialog {
             }
             if (description) customDef.description = description;
             if (html.find("#custom-edible").is(":checked")) customDef.edible = true;
+            customDef.qualities = parseQualities((html.find("#custom-qualities").val() as string) ?? "");
             const newItem: InventoryItem = {
               id: foundry.utils.randomID(),
               definitionId: "",
@@ -1967,6 +1984,7 @@ export class AddCustomItemDialog extends Dialog {
   override activateListeners(html: JQuery): void {
     super.activateListeners(html);
     activateIconPicker(html);
+    activateQualitiesPreview(html[0] ?? html.get(0), "custom-qualities");
   }
 }
 

@@ -6,7 +6,7 @@ import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { zoneRejection } from "../data/zoneGrants";
 import { getPartyActors } from "../data/sharedStore";
 import { SocketHandler } from "../socket/SocketHandler";
-import { buildIconPickerHTML, activateIconPicker, buildZoneOptionsHTML, escapeHTML } from "../helpers/handlebars";
+import { buildIconPickerHTML, activateIconPicker, buildZoneOptionsHTML, escapeHTML, activateQualitiesPreview } from "../helpers/handlebars";
 import {
   shopEntries,
   setShopEntries,
@@ -22,6 +22,7 @@ import {
   shopBuys,
 } from "../data/shopStock";
 import { inStock, shopVisit, bumpShopVisit } from "../data/shopAvailability";
+import { QUALITIES_HINT, parseQualities, describeQualities } from "../data/weapons";
 import { saleValue } from "../data/shopSale";
 import { definitionFor } from "../data/itemDefs";
 import { linkBookReferences, activateBookLinks } from "../data/dayRolls";
@@ -991,6 +992,12 @@ class AddCustomShopItemDialog extends Dialog {
             <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
           </div>
           <div class="form-group">
+            <label>Qualities</label>
+            <input type="text" id="custom-qualities" placeholder="e.g. 1d8, Melee, Two-handed" style="width:100%;" />
+            <span class="qm-hint">${escapeHTML(QUALITIES_HINT)}</span>
+            <span class="qm-hint" data-read-for="custom-qualities"></span>
+          </div>
+          <div class="form-group">
             <label>Secret?</label>
             <input type="checkbox" id="custom-secret" />
           </div>
@@ -1016,6 +1023,7 @@ class AddCustomShopItemDialog extends Dialog {
             }
             if (description) customDef.description = description;
             if (html.find("#custom-edible").is(":checked")) customDef.edible = true;
+            customDef.qualities = parseQualities((html.find("#custom-qualities").val() as string) ?? "");
 
             // Same zone rules as moving an item by hand
             if (targetActor) {
@@ -1050,6 +1058,7 @@ class AddCustomShopItemDialog extends Dialog {
   override activateListeners(html: JQuery): void {
     super.activateListeners(html);
     activateIconPicker(html);
+    activateQualitiesPreview(html[0] ?? html.get(0), "custom-qualities");
   }
 }
 
@@ -1367,6 +1376,15 @@ class AddToShopDialog extends Dialog {
             </div>
             <p class="qm-hint">Gives the row an Eat button that feeds the character for the day.</p>
           </div>
+          <div class="form-group">
+            <label for="shop-item-qualities">Qualities</label>
+            <div class="qm-field">
+              <input type="text" id="shop-item-qualities" value="${escapeHTML((was?.qualities ?? []).join(", "))}"
+                     placeholder="e.g. 1d8, Melee, Two-handed" />
+            </div>
+            <p class="qm-hint">${escapeHTML(QUALITIES_HINT)}</p>
+            <p class="qm-hint" data-read-for="shop-item-qualities"></p>
+          </div>
         </form>
       `,
       buttons: {
@@ -1402,6 +1420,7 @@ class AddToShopDialog extends Dialog {
               availability: Number.isFinite(availability) ? availability : undefined,
               service: isService,
               edible: html.find("#shop-item-edible").is(":checked") as boolean,
+              qualities: parseQualities((html.find("#shop-item-qualities").val() as string) ?? ""),
               ...(isService
                 ? {}
                 : encMode === "weight"
@@ -1428,6 +1447,7 @@ class AddToShopDialog extends Dialog {
   override activateListeners(html: JQuery): void {
     super.activateListeners(html);
     activateIconPicker(html);
+    activateQualitiesPreview(html[0] ?? html.get(0), "shop-item-qualities");
 
     // Size, weight and Edible describe a thing that gets carried. Asking them
     // about a bath is how a form teaches people to ignore it.

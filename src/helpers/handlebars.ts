@@ -1,5 +1,6 @@
 import { TEMPLATES } from "../constants";
 import { speedColorClass } from "../data/EncumbranceCalculator";
+import { QUALITIES_HINT, describeQualities, parseQualities } from "../data/weapons";
 
 /** Map Animals & Vehicles subcategory to a Font Awesome icon class. */
 export function subcategoryToIcon(subcategory?: string): string {
@@ -381,4 +382,51 @@ export async function registerHandlebarsPartials(): Promise<void> {
     "zone-section": TEMPLATES.PARTIALS.ZONE_SECTION,
     dayBarDuty: TEMPLATES.PARTIALS.DAY_BAR_DUTY,
   });
+}
+
+/**
+ * The qualities field, for every dialog that invents an item.
+ *
+ * **Qualities are what make a weapon roll.** The catalogue writes them as plain
+ * text — `1d8`, `Melee`, `Missile (10'/20'/30')` — and the character sheet reads
+ * the equipped weapons straight out of that. An item invented by hand or put on
+ * a shop's shelf had no way to say any of it, so a Referee's own sword could be
+ * carried but never swung. This is that way.
+ *
+ * It goes in **four** dialogs, not one: the GM's Add Item, the player's Add
+ * Custom Item, the shop's grant-an-item, and the shop's own shelf. That lesson
+ * is already written in this repo's history — the edible flag was put in one of
+ * them and missed the three that mattered — so the four are listed here as a
+ * reminder rather than rediscovered.
+ */
+export function buildQualitiesFieldHTML(current: string[] = [], id = "item-qualities"): string {
+  return `<div class="form-group qm-qualities">
+      <label for="${id}">Qualities</label>
+      <div class="form-fields">
+        <input type="text" id="${id}" value="${escapeHTML(current.join(", "))}"
+               placeholder="e.g. 1d8, Melee, Two-handed" />
+      </div>
+      <p class="hint qm-qualities-hint" data-for="${id}">${escapeHTML(QUALITIES_HINT)}</p>
+      <p class="hint qm-qualities-read" data-read-for="${id}"></p>
+    </div>`;
+}
+
+/**
+ * Say back how the qualities were understood, as they are typed.
+ *
+ * Free text has to stay free — the whole point is that a table can invent a
+ * weapon the books never printed — but free text makes a typo silent, and a
+ * sword that quietly refuses to roll is worse than one that says why.
+ */
+export function activateQualitiesPreview(root: HTMLElement, id = "item-qualities"): void {
+  const input = root.querySelector<HTMLInputElement>(`#${id}`);
+  const readout = root.querySelector<HTMLElement>(`[data-read-for="${id}"]`);
+  if (!input || !readout) return;
+
+  const update = (): void => {
+    const qualities = parseQualities(input.value);
+    readout.textContent = qualities.length ? describeQualities(qualities) : "";
+  };
+  input.addEventListener("input", update);
+  update();
 }

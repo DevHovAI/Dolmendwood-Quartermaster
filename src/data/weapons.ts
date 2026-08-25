@@ -198,3 +198,53 @@ export function attackModes(weapon: Weapon): { missile: boolean; label: string }
   if (weapon.ranges) modes.push({ missile: true, label: "Missile" });
   return modes;
 }
+
+// ─── Writing qualities by hand ────────────────────────────────────────────────
+
+/** Split a typed line into qualities. Commas, because the catalogue reads that way. */
+export function parseQualities(text: string): string[] {
+  return text
+    .split(",")
+    .map((q) => q.trim())
+    .filter(Boolean);
+}
+
+/**
+ * How the module reads a set of qualities, in words.
+ *
+ * The point of saying it back. Qualities are free text — they have to be, since
+ * the whole design is that a table can invent a weapon the books never printed —
+ * but free text means a typo is silent, and a weapon that quietly refuses to
+ * roll is worse than one that says why. So the dialog reads the line back as it
+ * understood it, and anyone can see at a glance whether `1d8` landed.
+ */
+export function describeQualities(qualities: string[]): string {
+  const fake = {
+    id: "preview",
+    name: "preview",
+    category: "Weapons",
+    qualities,
+  } as unknown as ItemDefinition;
+  const weapon = weaponFromItem({ id: "preview" } as InventoryItem, fake);
+
+  if (!weapon) return "No damage die, so this is not rolled as a weapon.";
+
+  const parts: string[] = [`${weapon.damage} damage`];
+  if (weapon.melee) parts.push("melee");
+  if (weapon.ranges) {
+    parts.push(`missile ${weapon.ranges.short}'/${weapon.ranges.medium}'/${weapon.ranges.long}'`);
+  }
+  if (weapon.notes.length) parts.push(`kept as notes: ${weapon.notes.join(", ")}`);
+  return `Read as ${parts.join(", ")}.`;
+}
+
+/**
+ * What to write for a weapon, shown under the field.
+ *
+ * Deliberately the catalogue's own wording, so a hand-written weapon and a
+ * printed one are spelled the same and nobody has to learn a second format.
+ */
+export const QUALITIES_HINT =
+  "Comma separated. A weapon needs its damage die (1d8) and Melee " +
+  "and/or Missile (10'/20'/30'). Anything else — Two-handed, Reach, Brace — is " +
+  "kept and shown, but left for the table to rule on.";
