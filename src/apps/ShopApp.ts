@@ -16,13 +16,16 @@ import {
   setServiceLibrary,
   mergeShopEntry,
   buyCategories,
+  removeFromLibrary,
+  isOwnLibraryEntry,
+  SPECIAL_SERVICES,
   shopBuys,
 } from "../data/shopStock";
 import { inStock, shopVisit, bumpShopVisit } from "../data/shopAvailability";
 import { saleValue } from "../data/shopSale";
 import { definitionFor } from "../data/itemDefs";
 import { linkBookReferences, activateBookLinks } from "../data/dayRolls";
-import { CURRENCY_IN_CP as IN_CP, cpToCoin, withPriceFactor } from "../data/coins";
+import { CURRENCY_IN_CP as IN_CP, coinToCp, cpToCoin, withPriceFactor } from "../data/coins";
 import type {
   ItemDefinition,
   ShopEntry,
@@ -219,17 +222,15 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
           i.subcategory.toLowerCase().includes(q)
       );
     }
+    // What the selected character could actually pay, at this shop's prices.
+    // Shared with the shop's own shelf below: the filter used to reach only the
+    // catalogue, so a player with 2gp saw a filtered catalogue sitting beside
+    // an unfiltered 300gp potion and concluded the filter was broken.
+    const canAfford = (cost: ItemDefinition["cost"]) =>
+      availableCp >= Math.max(1, Math.round((coinToCp(cost) * this.priceFactor) / 100));
+
     if (this.showAffordableOnly && selectedInventory) {
-      const factor = this.priceFactor;
-      items = items.filter((i) => {
-        const rawCostCp =
-          i.cost.currency === "cp" ? i.cost.amount :
-          i.cost.currency === "sp" ? i.cost.amount * 10 :
-          i.cost.currency === "gp" ? i.cost.amount * 100 :
-          i.cost.amount * 500;
-        const adjCostCp = Math.max(1, Math.round(rawCostCp * factor / 100));
-        return availableCp >= adjCostCp;
-      });
+      items = items.filter((i) => canAfford(i.cost));
     }
 
     // Apply hidden-item filter: global shop uses shopState.hiddenItems; local shop uses localHidden map
@@ -293,6 +294,13 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       // A price of 0 is not free — it is a price the book declines to print,
       // and the row says so rather than offering a bath for nothing.
       const byArrangement = item.cost.amount === 0;
+
+      // The affordability filter reaches the shop's own shelf too. A row whose
+      // price the book declines to print is never filtered out: there is no
+      // number to compare, and hiding it would be a guess.
+      if (this.showAffordableOnly && selectedInventory && !byArrangement && !canAfford(item.cost)) {
+        continue;
+      }
 
       addToGrouped({
         ...item,
@@ -1444,6 +1452,10 @@ class AddToShopDialog extends Dialog {
  * rewrite the first.
  */
 class StockFromLibraryDialog extends Dialog {
+  /** Kept so the dialog can rebuild itself after the library is pruned. */
+  private shopName!: string;
+  private onComplete!: () => void;
+
   constructor(shopName: string, onComplete: () => void) {
     const services = allLibraryServices();
 
@@ -1467,6 +1479,16 @@ class StockFromLibraryDialog extends Dialog {
               <span class="dw-stock-name">${escapeHTML(entry.name)}</span>
               <span class="dw-stock-sub">${escapeHTML(entry.unit && entry.unit !== "piece" ? entry.unit : "")}</span>
               <span class="dw-stock-cost">${entry.cost.amount === 0 ? "—" : `${entry.cost.amount}${entry.cost.currency}`}</span>
+              ${
+                isOwnLibraryEntry(entry.id)
+                  ? `<button type="button" class="dw-stock-prune" data-prune="${escapeHTML(entry.id)}"
+                             title="${
+                               SPECIAL_SERVICES.some((s) => s.id === entry.id)
+                                 ? "Give the book's own price back"
+                                 : "Take this out of the library"
+                             }"><i class="fas fa-trash-can"></i></button>`
+                  : ""
+              }
             </label>`
           )
           .join("");
@@ -1493,7 +1515,9 @@ class StockFromLibraryDialog extends Dialog {
             <span class="dw-stock-chosen">nothing picked</span>
           </div>
           <div class="dw-stock-list">${sections}</div>
-          <p class="qm-hint">A copy goes on this shop's shelf. Repricing it here leaves the library alone.</p>
+          <p class="qm-hint">A copy goes on this shop's shelf. Repricing it here leaves the library alone.
+            The bin removes an entry you wrote; on one of the book's own specialists it gives the printed
+            price back. Shelves already stocked from it keep what they have.</p>
         </div>`,
       buttons: {
         add: {
@@ -1518,6 +1542,9 @@ class StockFromLibraryDialog extends Dialog {
       },
       default: "add",
     });
+
+    this.shopName = shopName;
+    this.onComplete = onComplete;
   }
 
   /** The same four behaviours the catalogue picker has; see its own note. */
@@ -1526,5 +1553,50 @@ class StockFromLibraryDialog extends Dialog {
     const root = html[0] ?? html.get(0);
     if (!root) return;
     wireStockPicker(root);
+
+    // Pruning the library. The button sits inside the row's <label>, so the
+    // click has to be stopped or it toggles the checkbox on its way out.
+    for (const btn of root.querySelectorAll<HTMLElement>("[data-prune]")) {
+      btn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const id = btn.dataset.prune!;
+        const name = btn.closest(".dw-stock-row")?.querySelector(".dw-stock-name")?.textContent ?? id;
+        const isBuiltIn = SPECIAL_SERVICES.some((s) => s.id === id);
+        new Dialog({
+          title: isBuiltIn ? "Restore the book's price" : "Remove from the library",
+          content: isBuiltIn
+            ? `<p>Give <strong>${escapeHTML(name)}</strong> the Player's Book's own wording and price back?</p>
+               <p class="qm-hint">Your version is discarded. Shops already stocked with it keep their copy.</p>`
+            : `<p>Take <strong>${escapeHTML(name)}</strong> out of the service library?</p>
+               <p class="qm-hint">Shops already stocked with it keep their copy — this only tidies the library.</p>`,
+          buttons: {
+            yes: {
+              label: isBuiltIn ? "Restore" : "Remove",
+              icon: `<i class="fas ${isBuiltIn ? "fa-rotate-left" : "fa-trash-can"}"></i>`,
+              callback: async () => {
+                const what = await removeFromLibrary(id);
+                if (what === "missing") {
+                  ui.notifications?.warn(`${name} was not in the library.`);
+                  return;
+                }
+                ui.notifications?.info(
+                  what === "reverted"
+                    ? `${name} is the book's own again.`
+                    : `${name} is out of the library.`
+                );
+                // Reopen rather than patch the DOM: a restored built-in has to
+                // come back with the book's price, and the list was built from
+                // a snapshot taken before any of this.
+                await this.close();
+                new StockFromLibraryDialog(this.shopName, this.onComplete).render(true);
+              },
+            },
+            cancel: { label: "Cancel" },
+          },
+          default: "cancel",
+        }).render(true);
+      });
+    }
   }
 }

@@ -69,7 +69,7 @@ export const SETTINGS = {
   PLAYER_TOOLBAR_TRASH: "playerToolbarTrash", // may players open the trash from the toolbar? (read-only for them)
   PLAYER_GENERIC_SHOP: "playerGenericShop", // may players open the place-less shop from the toolbar/day bar?
   PLAYER_ADD_CUSTOM_ITEM: "playerAddCustomItem", // may players invent items in their own inventory?
-  SHOPS_NEED_PARTY_PRESENT: "shopsNeedPartyPresent", // must the party marker be where a shop/market/inn note is?
+  SHOPS_NEED_PARTY_PRESENT: "shopsNeedPartyPresent", // must the party marker be where a shop/market/inn/loot note is?
   PARTY_MARKER_ACTOR: "partyMarkerActor", // name or id of the actor whose token stands for the party
   TRASH_LIMIT: "trashLimit", // how many deleted rows each actor's bin keeps before the oldest fall out
   DAY_STATE: "dayState", // the day's mode, which duties are ticked, and the rest-day counter

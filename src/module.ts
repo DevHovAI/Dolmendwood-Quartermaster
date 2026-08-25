@@ -229,7 +229,7 @@ Hooks.once("init", () => {
 
   game.settings!.register(MODULE_ID, SETTINGS.SHOPS_NEED_PARTY_PRESENT, {
     name: "Places open only where the party is standing",
-    hint: "On by default. A player may open a shop, market or inn note only if the party's token is in the same hex on a hex map, or simply on the same scene where there is no hex grid — a village map, say. The GM is never restricted. Turn this off to let players open any of them from anywhere, as before.",
+    hint: "On by default. A player may open a shop, market, inn or loot note only if the party's token is in the same hex on a hex map, or simply on the same scene where there is no hex grid — a village map, say. The GM is never restricted. Turn this off to let players open any of them from anywhere, as before.",
     scope: "world",
     config: true,
     type: Boolean,
@@ -431,8 +431,12 @@ Hooks.once("init", () => {
         if (refusePlaceIfAway(doc, shopFlag.name ?? "That shop")) return;
         openShop(shopFlag.name, shopFlag.categories ?? [], shopFlag.priceFactor, shopFlag.ownStockOnly, shopFlag.buyBackRate); return;
       }
-      const lootFlag = getFlag("loot");
-      if (lootFlag) { void openLootFromNote(this.document as Parameters<typeof openLootFromNote>[0]); return; }
+      const lootFlag = getFlag("loot") as true | { name?: string } | undefined;
+      if (lootFlag) {
+        const lootName = typeof lootFlag === "object" ? lootFlag.name : undefined;
+        if (refusePlaceIfAway(doc, lootName ?? "That hoard")) return;
+        void openLootFromNote(this.document as Parameters<typeof openLootFromNote>[0]); return;
+      }
       return _origClick.call(this, event);
     };
   }
@@ -932,8 +936,10 @@ Hooks.once("ready", async () => {
       openShop(shopData.name, shopData.categories ?? [], shopData.priceFactor, shopData.ownStockOnly, shopData.buyBackRate); return false;
     }
 
-    const lootData = getFlag("loot");
+    const lootData = getFlag("loot") as true | { name?: string } | undefined;
     if (lootData) {
+      const lootName = typeof lootData === "object" ? lootData.name : undefined;
+      if (refusePlaceIfAway(placeDoc, lootName ?? "That hoard")) return false;
       const doc = (asDoc.document ?? asDoc) as Parameters<typeof openLootFromNote>[0];
       void openLootFromNote(doc);
       return false;

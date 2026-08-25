@@ -431,3 +431,28 @@ export function shopBuys(category: string | undefined, buys: Set<string> | null)
   if (!buys) return true;
   return !!category && buys.has(category);
 }
+
+/**
+ * Take one entry out of the Referee's own service library.
+ *
+ * Two different things can happen, and the caller should say which:
+ * a library entry that carries a **built-in id** is an override of one of the
+ * Player's Book specialists, so removing it does not delete a service — it
+ * gives the book's own wording and price back. An entry with an id of its own
+ * is a Referee's invention and is simply gone.
+ *
+ * Shelves already stocked from it are untouched: `addShopEntries` copies, so a
+ * shop that bought a copy keeps it. Pruning the library is tidying the source,
+ * not recalling what was made from it.
+ */
+export async function removeFromLibrary(id: string): Promise<"reverted" | "removed" | "missing"> {
+  const own = serviceLibrary();
+  if (!own.some((e) => e.id === id)) return "missing";
+  await setServiceLibrary(own.filter((e) => e.id !== id));
+  return SPECIAL_SERVICES.some((e) => e.id === id) ? "reverted" : "removed";
+}
+
+/** Whether this id is one the Referee wrote or repriced, and so can be pruned. */
+export function isOwnLibraryEntry(id: string): boolean {
+  return serviceLibrary().some((e) => e.id === id);
+}

@@ -4390,6 +4390,34 @@ body > #dolmenwood-day-bar {
   white-space: nowrap;
 }
 
+/* Pruning the service library. Faint until the row is under the pointer: this
+   is tidying, not one of the row's normal controls, and a bin on every line
+   would read as the point of the list. */
+.dw-stock-prune {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  padding: 0 4px;
+  margin: 0 0 0 4px;
+  line-height: 1;
+  border: none;
+  background: none;
+  color: var(--dw-tertiary, #7a6a55);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+
+.dw-stock-row:hover .dw-stock-prune,
+.dw-stock-prune:focus-visible {
+  opacity: 0.75;
+}
+
+.dw-stock-prune:hover {
+  opacity: 1;
+  color: var(--dw-danger, #8c2f2f);
+}
+
 /* The hex's own exception to the check — what an encounter here is likely to
    be, a ley line crossing. Clipped to one line: it is a reminder, and the page
    link beside it is where the whole of it lives. */
