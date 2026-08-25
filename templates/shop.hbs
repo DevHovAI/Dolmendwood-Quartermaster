@@ -26,6 +26,21 @@
     </div>
     {{/if}}
 
+    {{!-- What the buyer can actually spend. The shop has always known this —
+          the Affordable filter is built on it — but never said it, so the one
+          number you want while shopping was the one you had to leave the window
+          to find. --}}
+    {{#if selectedActor}}
+    <div class="shop-purse" title="What {{selectedActor.name}} is carrying, across every pocket and pack">
+      <i class="fas fa-coins"></i>
+      <span class="shop-purse-label">Purse:</span>
+      {{#if (gt selectedInventory.coins.pp 0)}}<span class="coin-val">{{selectedInventory.coins.pp}}<span class="coin-unit pp">pp</span></span>{{/if}}
+      <span class="coin-val">{{selectedInventory.coins.gp}}<span class="coin-unit gp">gp</span></span>
+      <span class="coin-val">{{selectedInventory.coins.sp}}<span class="coin-unit sp">sp</span></span>
+      <span class="coin-val">{{selectedInventory.coins.cp}}<span class="coin-unit cp">cp</span></span>
+    </div>
+    {{/if}}
+
     {{!-- Selected actor encumbrance summary --}}
     {{#if selectedActor}}
     <div class="shop-target-summary">

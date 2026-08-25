@@ -4748,6 +4748,27 @@ span.day-bar-panel-tick {
   border-color: var(--dw-border);
 }
 
+/* The buyer's purse, in the shop header beside the encumbrance bar. The two
+   questions a shopper actually has are "can I afford it" and "can I carry it",
+   and until now the window answered only the second. */
+.shop-purse {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  background: var(--dw-bg-dark);
+  color: var(--dw-text);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.shop-purse-label {
+  font-weight: bold;
+  color: var(--dw-secondary);
+}
+
 .shop-sell-note {
   margin: 0 0 8px;
   padding: 6px 8px;
