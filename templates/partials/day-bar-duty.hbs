@@ -2,7 +2,11 @@
 {{!-- A duty with a table behind it is two controls, not one: the tick still
       toggles by hand (a Referee who rolled on paper should not be forced
       through the dice), and the die rolls it. The result reads under the
-      label, so today's weather is on screen without opening anything. --}}
+      label, so today's weather is on screen without opening anything.
+
+      What the day knows *before* a roll rides on the chip's own tooltip
+      instead: a line naming three characters costs the strip too much room for
+      something read once. --}}
 <span class="day-bar-duty day-bar-duty-rollable {{#if this.done}}is-done{{/if}}" title="{{this.hint}}">
   <button type="button" class="day-bar-duty-tick"
           data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
@@ -22,7 +26,7 @@
   {{else}}
   <button type="button" class="day-bar-duty-roll" data-action="rollDuty" data-duty-id="{{this.id}}"
           title="Roll it. The dice are real dice and the result is whispered to the GMs.">
-    <i class="fas fa-dice-d20"></i>
+    <i class="fas {{#if this.rollIcon}}{{this.rollIcon}}{{else}}fa-dice-d20{{/if}}"></i>
   </button>
   {{/if}}
 </span>

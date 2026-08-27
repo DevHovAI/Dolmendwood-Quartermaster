@@ -1,6 +1,8 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { getPartyActors, getSharedActor } from "../data/sharedStore";
+import { getExtras } from "../data/characterSheet";
 import { getDayContext, terrainInfo } from "../data/dayContext";
-import { SITUATIONAL_MODIFIERS, SKILL_TARGETS } from "../data/checks";
+import { SITUATIONAL_MODIFIERS } from "../data/checks";
 import {
   DEFAULT_SURVIVAL_TARGET,
   FOOD_METHODS,
@@ -16,41 +18,89 @@ import {
  * a combat rather than a meal, and only foraging cares what season it is. So
  * the duty asks before it rolls.
  *
+ * **Whose check it is, is asked** — the same rule the camp's rolls follow, and
+ * this dialog was the odd one out until Leander said so. Picking a character
+ * fills the target in from their own Survival skill and prints it beside the
+ * name.
+ *
  * **The Skill Target, not a chance.** A Survival Check is 1d6 plus modifiers
  * against the character's Skill Target, which defaults to 6 and only comes
  * *down* through Kindred or Class (PB p144) — so a lower number here is a
- * better forager, and the group uses the best one among them. It is asked for
- * rather than read off a sheet because this world runs on OSE, which records no
- * Dolmenwood skills. Remembered between rolls, per client, since it is a
- * convenience and not a fact about the world.
+ * better forager, and where several could try, the best of them goes.
+ *
+ * **There is no box to type the target into.** There was one, and it went the
+ * moment the dialog started naming characters: two ways to say the same thing
+ * is one way too many, and the character's own number is the true one. Where a
+ * table wants to change it, the place to change it is the character, not the
+ * roll — which is what the attribute sheet's Survival field is for.
  */
-
-const TARGET_KEY = "dolmenwood-party-inventory.survivalTarget";
-
-function rememberedTarget(): number {
-  const raw = Number(window.localStorage?.getItem(TARGET_KEY));
-  return (SKILL_TARGETS as readonly number[]).includes(raw) ? raw : DEFAULT_SURVIVAL_TARGET;
-}
-
-function rememberTarget(value: number): void {
-  try {
-    window.localStorage?.setItem(TARGET_KEY, String(value));
-  } catch {
-    // A browser refusing storage is not a reason to fail the roll.
-  }
-}
 
 export interface FindFoodChoice {
   method: FoodMethod;
   target: number;
   fullDay: boolean;
   situational: number;
+  /** Who made the attempt, for the card. */
+  forager?: string;
+  /** Whose pack the rations go into. Absent means nothing is written down. */
+  storeToId?: string;
+}
+
+export interface FoodHolder {
+  actorId: string;
+  name: string;
+  /** The party's own store — a pack rather than a person. */
+  shared?: boolean;
+}
+
+/**
+ * Everyone who could carry a haul: the party, and the shared store last.
+ *
+ * The store is offered because the arithmetic demands it. A fresh ration is one
+ * gear slot and 20 coins (Player's Book p116, p149), and a good day's fishing is
+ * 2d6 of them — twelve slots is more than a backpack holds. The party's own
+ * store, usually a pack animal, is what the rules expect a party to answer with,
+ * and it is one click away rather than a rummage afterwards.
+ */
+export function foodHolders(): FoodHolder[] {
+  const holders: FoodHolder[] = getPartyActors().map((actor) => ({
+    actorId: actor.id ?? "",
+    name: actor.name ?? "Someone",
+  }));
+  const shared = getSharedActor();
+  if (shared?.id) holders.push({ actorId: shared.id, name: shared.name ?? "Party Stores", shared: true });
+  return holders;
 }
 
 export async function promptFindFood(): Promise<FindFoodChoice | null> {
   const ctx = getDayContext();
   const terrain = terrainInfo(ctx.terrain);
-  const remembered = rememberedTarget();
+
+  // The party, with the Survival target each of them carries. Read from the
+  // module's own extras rather than the system: OSE has no Dolmenwood skills,
+  // and this is one of the fields the attribute sheet exists to hold.
+  const foragers = getPartyActors().map((actor) => ({
+    actorId: actor.id ?? "",
+    name: actor.name ?? "Someone",
+    survival: getExtras(actor).skills.survival,
+  }));
+  // The best forager is the lowest target, which is who the party would send.
+  const best = foragers.reduce(
+    (a, b) => (b.survival < a.survival ? b : a),
+    foragers[0] ?? { actorId: "", name: "", survival: DEFAULT_SURVIVAL_TARGET }
+  );
+
+  const who = foragers
+    .map(
+      (f) => `
+      <label class="dw-camp-member">
+        <input type="radio" name="dw-food-who" value="${escapeHTML(f.actorId)}"
+               data-survival="${f.survival}" ${f.actorId === best.actorId ? "checked" : ""}>
+        <span class="dw-camp-member-name">${escapeHTML(f.name)}</span>
+        <span class="dw-camp-member-stat">(Survival ${f.survival}+)</span>
+      </label>`
+    )
+    .join("");
 
   const methods = FOOD_METHODS.map(
     (m) => `
@@ -65,12 +115,17 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
       </label>`
   ).join("");
 
-  const targets = SKILL_TARGETS.map(
-    (n) =>
-      `<option value="${n}" ${n === remembered ? "selected" : ""}>${n}+${
-        n === DEFAULT_SURVIVAL_TARGET ? " (untrained)" : ""
-      }</option>`
-  ).join("");
+  // Where the haul lands. Starts on whoever is going out, since that is the
+  // answer nine times in ten, and moves with them if the Referee picks another.
+  const holders = foodHolders();
+  const storeOptions = holders
+    .map(
+      (h) =>
+        `<option value="${escapeHTML(h.actorId)}" ${h.actorId === best.actorId ? "selected" : ""}>${escapeHTML(
+          h.name
+        )}${h.shared ? " (the party's own store)" : ""}</option>`
+    )
+    .join("");
 
   const modifiers = SITUATIONAL_MODIFIERS.map(
     (n) =>
@@ -86,21 +141,37 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
         <form class="dw-food-form">
           <div class="dw-food-methods">${methods}</div>
 
-          <div class="form-group">
-            <label for="dw-food-target">Best Survival target</label>
-            <select id="dw-food-target">${targets}</select>
-          </div>
+          ${
+            foragers.length
+              ? `<p class="hint"><strong>Who goes looking.</strong> The target follows whoever is
+                   picked — the best forager is the lowest number.</p>
+                 <div class="dw-camp-members">${who}</div>`
+              : ""
+          }
           <p class="hint dw-food-hint">
-            1d6 plus modifiers, meeting or exceeding the target. Skills default to
-            <strong>6</strong>; Kindred or Class bring it down, and a lower number is the
-            better forager — use the best in the group. A natural 1 always fails and a
-            natural 6 always succeeds, whatever the modifiers.
+            1d6 plus modifiers, meeting or exceeding the forager's own Survival target. A natural 1
+            always fails and a natural 6 always succeeds, whatever the modifiers.
           </p>
 
           <div class="form-group">
             <label for="dw-food-mod">Situational modifier</label>
             <select id="dw-food-mod">${modifiers}</select>
           </div>
+
+          ${
+            holders.length
+              ? `<div class="form-group">
+                   <label for="dw-food-store">Rations go to</label>
+                   <select id="dw-food-store">${storeOptions}</select>
+                 </div>
+                 <p class="hint dw-food-hint">
+                   A fresh ration is <strong>1 gear slot</strong> and <strong>20 coins</strong> of
+                   weight (Player's Book p116, p149), so a good day's fishing is a real load — the
+                   party's own store is there for exactly that. Hunting stores nothing yet: its card
+                   carries a button for once the game is down.
+                 </p>`
+              : ""
+          }
 
           <label class="dw-food-fullday" for="dw-food-day">
             <input type="checkbox" id="dw-food-day">
@@ -120,16 +191,38 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
           callback: (html: JQuery) => {
             const method =
               (html.find('input[name="dw-food-method"]:checked').val() as FoodMethod) ?? "forage";
-            const target = Number(html.find("#dw-food-target").val()) || DEFAULT_SURVIVAL_TARGET;
             const situational = Number(html.find("#dw-food-mod").val()) || 0;
             const fullDay = !!html.find("#dw-food-day").prop("checked");
-            rememberTarget(target);
-            resolve({ method, target, fullDay, situational });
+            const actorId = String(html.find('input[name="dw-food-who"]:checked').val() ?? "");
+            const storeToId = String(html.find("#dw-food-store").val() ?? "");
+            // The target is the forager's own, off their sheet. There is no box
+            // to type it in any more: picking the character *is* the answer.
+            const target =
+              foragers.find((f) => f.actorId === actorId)?.survival ?? DEFAULT_SURVIVAL_TARGET;
+            resolve({
+              method,
+              target,
+              fullDay,
+              situational,
+              ...(actorId
+                ? { forager: foragers.find((f) => f.actorId === actorId)?.name }
+                : {}),
+              ...(storeToId ? { storeToId } : {}),
+            });
           },
         },
         cancel: { label: "Cancel", callback: () => resolve(null) },
       },
       default: "ok",
+      // Picking a character moves the target with them, and leaves it editable:
+      // the module's own Survival skill has no window to set it in yet, so the
+      // Referee is often the only one who knows a character forages well.
+      render: (html: JQuery) => {
+        html.on("change", 'input[name="dw-food-who"]', (event) => {
+          // The pack follows the forager, and stays editable afterwards.
+          html.find("#dw-food-store").val((event.currentTarget as HTMLInputElement).value);
+        });
+      },
       close: () => resolve(null),
     }).render(true);
   });

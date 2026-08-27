@@ -1,6 +1,7 @@
 import { MODULE_ID, SETTINGS } from "../constants";
 import { getInnDay, advanceInnDay } from "./innMenu";
 import { rollOverCharacterDays } from "./characterDay";
+import type { CampState, MorningState } from "./camping";
 import type { WeatherResult } from "./weather";
 import type { LostResult } from "./gettingLost";
 import type { FoodResult } from "./findingFood";
@@ -135,7 +136,9 @@ export const DUTIES: Duty[] = [
     icon: "fa-fire",
     modes: ["camp"],
     group: "camp-setup",
-    hint: "Step 2 — automatic given a tinder box and wood; 4-in-6 or worse in troublesome conditions. A campfire moves every row of the sleep difficulty table in the party's favour.",
+    // Not "every row": a campfire is worth nothing at all to a character lying
+    // on bare ground — see the table itself in camping.ts.
+    hint: "Step 2 — automatic given a tinder box and wood; 4-in-6 or worse in troublesome conditions. A campfire eases the sleep difficulty for everyone who has bedding, and for nobody who has not.",
   },
   {
     id: "cooking",
@@ -159,7 +162,7 @@ export const DUTIES: Duty[] = [
     icon: "fa-tower-observation",
     modes: ["camp"],
     group: "camp-setup",
-    hint: "Step 3 — usually four characters taking 2 hour watches across 8 hours. Under 6 hours of sleep is not a good night's rest, and a broken night makes spell preparation harder.",
+    hint: "Step 3 — usually four characters taking 2 hour watches across 8 hours. Under 6 hours of sleep is not a good night's rest, and a broken night makes spell preparation harder. Rolling it uses the optional falling-asleep-on-watch rule.",
   },
 
   // ── The night ──
@@ -169,6 +172,17 @@ export const DUTIES: Duty[] = [
     icon: "fa-moon",
     modes: ["camp", "settlement"],
     hint: "One nighttime wandering-monster check — the terrain's chance while camping, 1-in-6 in a settlement if the party is active. Sleeping characters are automatically surprised.",
+  },
+  {
+    id: "sleep",
+    label: "Sleep",
+    icon: "fa-bed",
+    modes: ["camp"],
+    // Step 5, and the last thing the camp does — which is why it is not inside
+    // the "Making camp" group: it is rolled after the night's encounter check,
+    // and it is the only camp roll whose result follows the characters into
+    // tomorrow.
+    hint: "Step 5 — bedding down. Fire, bedding and the season set the difficulty; an easy night is automatic, a moderate or difficult one is a Constitution Check, and an impossible one fails outright. Failing it means exhaustion until they do sleep well.",
   },
 ];
 
@@ -225,6 +239,24 @@ export interface DayState {
   encounterDay?: EncounterResult;
   encounterNight?: EncounterResult;
   /**
+   * What the camp rolled tonight: the woodpile, the fire, supper, songs, the
+   * watch, and who slept.
+   *
+   * One field for the six rather than six fields, because they are read
+   * together — the night's Constitution Checks want to know whether the fire is
+   * burning and whether anybody cooked, and a card that had to gather that from
+   * six places would gather it wrongly one day. Cleared with the rest of the
+   * day: last night's fire is not tonight's.
+   */
+  camp?: CampState;
+  /**
+   * What waking up produced: who healed, and which spells the night cost.
+   *
+   * Apart from `camp` because it is not the camp's — a party that slept at an
+   * inn still wakes up, heals and prepares spells.
+   */
+  morning?: MorningState;
+  /**
    * The world-clock day this counter was last aligned with, when following a
    * calendar module. Absent while not following, or before the first sighting.
    */
@@ -257,6 +289,8 @@ export function getDayState(): DayState {
       food: undefined,
       encounterDay: undefined,
       encounterNight: undefined,
+      camp: undefined,
+      morning: undefined,
     };
   }
   return { ...stored, travelPointsUsed: stored.travelPointsUsed ?? 0, forcedMarch: stored.forcedMarch ?? false };
@@ -419,6 +453,43 @@ export async function setDutyResult(
 }
 
 /**
+ * Record what the camp rolled, and tick the duty that rolled it.
+ *
+ * Takes the duty id rather than deriving it from the patch, because the two do
+ * not always share a name: the duty is called `entertainment` and the record it
+ * writes is `camaraderie`. A patch whose value is `undefined` clears the field
+ * and unticks the duty, which is what the strip's undo arrow does.
+ */
+export async function setCampResult(
+  dutyId: string,
+  patch: Partial<CampState>
+): Promise<void> {
+  const state = getDayState();
+  const camp = { ...(state.camp ?? {}), ...patch };
+  const value = Object.values(patch)[0];
+  await writeState({
+    ...state,
+    camp,
+    done: { ...state.done, [dutyId]: value !== undefined },
+  });
+}
+
+/** The same, for what waking up produced. See `setCampResult`. */
+export async function setMorningResult(
+  dutyId: string,
+  patch: Partial<MorningState>
+): Promise<void> {
+  const state = getDayState();
+  const morning = { ...(state.morning ?? {}), ...patch };
+  const value = Object.values(patch)[0];
+  await writeState({
+    ...state,
+    morning,
+    done: { ...state.done, [dutyId]: value !== undefined },
+  });
+}
+
+/**
  * Tick or clear several duties in one write.
  *
  * A loop of setDutyDone calls would write the world setting once per duty:
@@ -446,6 +517,8 @@ export async function resetDuties(): Promise<void> {
     food: undefined,
     encounterDay: undefined,
     encounterNight: undefined,
+    camp: undefined,
+    morning: undefined,
   });
 }
 

@@ -5047,3 +5047,481 @@ span.day-bar-panel-tick {
   opacity: 0.7;
   white-space: nowrap;
 }
+
+/* ── The camp's rolls ────────────────────────────────────────────────────────
+   Two places, one look: the dialogs that ask whose check it is, and the rows a
+   camp card prints back. Both are lists of names carrying a number, so both are
+   laid out as one. */
+
+.dw-camp-form .dw-camp-members {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 8px 0;
+}
+
+.dw-camp-member {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 7px;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.dw-camp-member:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+}
+
+.dw-camp-member input {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.dw-camp-member-name {
+  font-weight: 600;
+}
+
+/* The stat the roll is about to use, which is the whole reason the dialog names
+   characters rather than letting the module pick one. */
+.dw-camp-member-stat {
+  color: var(--dw-secondary);
+  font-size: 0.9em;
+}
+
+/* ── The sleep form ───────────────────────────────────────────────────────── */
+
+/* One grid for the whole list, not one per row: a grid per row lines its own
+   controls up and nothing lines up with the row above it, which is exactly what
+   "die einzelnen elemente sind noch lose" looks like. The rows become
+   display:contents so their cells sit in the list's own columns. */
+.dw-sleep-rows {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 8px 0;
+}
+
+.dw-sleep-row {
+  display: contents;
+}
+
+/* The banding a row can no longer draw for itself. */
+.dw-sleep-row > * {
+  padding: 4px 0;
+  border-top: 1px solid var(--dw-border-light);
+}
+
+.dw-sleep-row:first-child > * {
+  border-top: none;
+}
+
+.dw-sleep-row .dw-sleep-bedding {
+  width: auto;
+  min-width: 118px;
+  height: 22px;
+  font-size: 0.85em;
+}
+
+.dw-sleep-short {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--dw-tertiary);
+  font-size: 0.85em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dw-sleep-short input {
+  margin: 0;
+}
+
+/* Recomputed live as the fire and the bedding change — the Sleep Difficulty
+   table is the part of camping a table looks up wrongly. */
+.dw-sleep-difficulty {
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dw-sleep-difficulty.is-easy {
+  color: var(--speed-green);
+}
+
+.dw-sleep-difficulty.is-moderate {
+  color: var(--dw-secondary);
+}
+
+.dw-sleep-difficulty.is-difficult {
+  color: var(--speed-orange);
+}
+
+.dw-sleep-difficulty.is-impossible {
+  color: var(--speed-red);
+}
+
+.dw-sleep-fire {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dw-sleep-fire input {
+  margin: 0;
+}
+
+/* ── What a camp card prints ─────────────────────────────────────────────── */
+
+.dw-camp-rows {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  list-style: disc;
+}
+
+.dw-camp-rows li {
+  margin: 1px 0;
+  line-height: 1.3;
+}
+
+/* ── A rolling step inside the Making camp window ────────────────────────────
+   A div rather than a button, because it holds two of its own — so the hover
+   and the strike-through the plain steps get from .duty-group-step have to be
+   said again for it. */
+
+.duty-group-step-rollable {
+  cursor: default;
+}
+
+.duty-group-tick-btn,
+.duty-group-roll {
+  display: flex;
+  align-items: flex-start;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0 2px;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1em;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.duty-group-roll {
+  margin-left: auto;
+  color: var(--dw-tertiary);
+}
+
+.duty-group-roll:hover {
+  color: var(--dw-accent);
+  text-shadow: none;
+}
+
+.duty-group-step-rollable .duty-group-text {
+  flex: 1 1 auto;
+}
+
+/* What the dice said, where the hint was before it. */
+.duty-group-result {
+  color: var(--dw-secondary);
+  font-size: 0.85em;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+/* A character who is not in this camp: shown, so the Referee can see they were
+   considered, and left entirely alone. */
+.dw-sleep-row.is-away {
+  opacity: 0.55;
+}
+
+.dw-sleep-difficulty.is-away {
+  color: var(--dw-tertiary);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.dw-sleep-in {
+  margin: 0;
+}
+
+/* ── The meal, and the watch order ───────────────────────────────────────────
+   Both are lists whose columns must line up across rows, so both are one grid
+   with display:contents rows — the same fix the sleep list needed. */
+
+.dw-meal-rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 8px 0;
+}
+
+.dw-meal-row {
+  display: contents;
+}
+
+.dw-meal-row > * {
+  padding: 3px 0;
+  border-top: 1px solid var(--dw-border-light);
+}
+
+.dw-meal-row:first-child > * {
+  border-top: none;
+}
+
+#dw-watch-hours {
+  width: 58px;
+  height: 22px;
+  text-align: center;
+}
+
+/* The live readouts: how many the pot feeds, how long each watcher sleeps. */
+.dw-meal-count,
+.dw-watch-count {
+  margin: 4px 0 0;
+  color: var(--dw-secondary);
+  font-size: 0.9em;
+}
+
+.dw-meal-count.is-short,
+.dw-watch-count.is-short {
+  color: var(--speed-orange);
+  font-weight: 600;
+}
+
+.dw-meal-empty {
+  font-style: italic;
+}
+
+/* ── Waking up ─────────────────────────────────────────────────────────────── */
+
+.dw-spell-rows {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 8px 0;
+}
+
+.dw-spell-row {
+  display: contents;
+}
+
+.dw-spell-row > * {
+  padding: 3px 0;
+  border-top: 1px solid var(--dw-border-light);
+}
+
+.dw-spell-row:first-child > * {
+  border-top: none;
+}
+
+/* The running total on the butchering dialog: forty rations is forty slots,
+   and a Referee should see that before pressing the button. */
+.dw-spoils-count {
+  margin: 4px 0 0;
+  color: var(--dw-secondary);
+  font-size: 0.9em;
+}
+
+.dw-spoils-count.is-short {
+  color: var(--speed-orange);
+  font-weight: 600;
+}
+
+/* ── The watch list, which is dragged ────────────────────────────────────────
+   Flexbox rather than the display:contents grid the other lists use: a row with
+   no box of its own cannot be picked up, and this one has to be. The columns
+   line up because they are given widths, not because a grid does it. */
+
+.dw-watch-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 8px 0;
+}
+
+.dw-watch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+}
+
+.dw-watch-row.is-on {
+  border-color: var(--dw-accent);
+}
+
+.dw-watch-row input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.dw-watch-row .dw-camp-member-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dw-watch-grip {
+  color: var(--dw-tertiary);
+  cursor: grab;
+}
+
+.dw-watch-row.is-dragging {
+  opacity: 0.4;
+}
+
+.dw-watch-row.is-over {
+  border-color: var(--dw-accent);
+  box-shadow: 0 0 0 1px var(--dw-accent) inset;
+}
+
+/* The watch's own number, or a dash for a row nobody ticked. */
+.dw-watch-number {
+  flex: 0 0 auto;
+  width: 18px;
+  color: var(--dw-secondary);
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ── Counting with buttons rather than a keyboard ───────────────────────────── */
+
+.dw-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Whatever class the reader wants on it, a stepper's box is the same size. */
+.dw-stepper input {
+  width: 46px;
+  height: 22px;
+  text-align: center;
+}
+
+.dw-step-up,
+.dw-step-down {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  background: var(--dw-bg);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+  color: var(--dw-secondary);
+  font-size: 0.85em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dw-step-up:hover,
+.dw-step-down:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
+  color: var(--dw-accent);
+}
+
+/* ── Loose gear, said once for the whole party ────────────────────────────────
+   The one thing to settle before travel, camp or a shop: items carried but
+   packed into nothing. Weight mode only — slot mode has no such state. */
+
+.party-unsorted {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  background: var(--speed-orange-bg, var(--dw-accent-light));
+  border: 1px solid var(--speed-orange);
+  border-radius: 4px;
+  color: var(--dw-text);
+  line-height: 1.3;
+}
+
+.party-unsorted > i {
+  margin-top: 2px;
+  color: var(--speed-orange);
+}
+
+/* ── An inventory row with lanes ─────────────────────────────────────────────
+   The row was a bare flex, so every optional part shifted the ones after it:
+   a two-digit quantity moved the notes, an item with uses moved the icons, and
+   an edible one moved them again. Each part now has a width of its own, the
+   notes absorb what is left, and the buttons sit in one right-hand block — so a
+   column of trash cans is a column. */
+
+.item-row > .item-qty-controls,
+.item-row > .item-qty-readonly {
+  justify-content: center;
+  width: 62px;
+  text-align: center;
+}
+
+.item-row > .item-uses-controls {
+  justify-content: center;
+  width: 74px;
+}
+
+.item-row > .item-coin-capacity {
+  justify-content: flex-end;
+  width: 58px;
+}
+
+/* The notes are the elastic part: they give way so everything after them stays
+   where it is, rather than the other way round. */
+.item-row > .item-notes-input {
+  flex: 1 1 140px;
+  width: auto;
+  min-width: 90px;
+  max-width: 220px;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* An absent button still owns its place in the line. */
+.icon-slot {
+  display: block;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+}
+
+/* The Referee's own line on an item row: what the thing really is, while the
+   row itself says only what the party can tell by looking. */
+.item-gm-note {
+  display: block;
+  margin-top: 1px;
+  /* A colour of its own, deliberately outside the speed palette: this line
+     belongs to the Referee, not to the rules. */
+  color: #6b4f9e;
+  font-size: 0.78em;
+  font-style: italic;
+  line-height: 1.25;
+}
+
+.item-gm-note > i {
+  margin-right: 3px;
+  opacity: 0.8;
+}

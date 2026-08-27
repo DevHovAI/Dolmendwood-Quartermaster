@@ -170,6 +170,37 @@ export function travelPointPenalty(result: WeatherResult | undefined): number {
   return hasEffect(result, "I") ? TRAVEL_IMPEDED_COST : 0;
 }
 
+/**
+ * What today's weather takes off the firewood roll.
+ *
+ * The Player's Book gives the Referee three examples and no table: "-1 for damp
+ * conditions, -2 in snow, -4 in heavy rain" (p158). The day's weather already
+ * says which of the three the party is standing in, so the module reads it
+ * rather than asking — Leander's point, and it is right: the roll was made an
+ * hour ago and the answer is on the card.
+ *
+ * **The wet-conditions letter decides whether there is a penalty at all**, and
+ * the words decide how big. A dry day takes nothing off however cold it is: a
+ * deep freeze is bad for the party and fine for firewood. Read in order, so the
+ * decisive word wins — a snow storm is snow, not a storm.
+ *
+ * Always a suggestion. The dialog fills the select in with it and the Referee
+ * can overrule, because "damp" and "snow" is a judgement the words on a d12
+ * table cannot always settle.
+ */
+export function firewoodPenalty(result: WeatherResult | undefined): number {
+  if (!hasEffect(result, "W")) return 0;
+  const text = (result?.text ?? "").toLowerCase();
+  const bands: [RegExp, number][] = [
+    [/blizzard|snow|sleet/, -2],
+    [/torrential|driving rain|pouring|downpour|thunder storm/, -4],
+  ];
+  for (const [pattern, penalty] of bands) if (pattern.test(text)) return penalty;
+  // Everything else the letter marks is damp: drizzle, dew, seeping mist, a
+  // gentle rain.
+  return -1;
+}
+
 /** A one-line summary for the strip: "Rolling fog (poor visibility)". */
 export function weatherSummary(result: WeatherResult): string {
   if (!result.effects.length) return result.text;

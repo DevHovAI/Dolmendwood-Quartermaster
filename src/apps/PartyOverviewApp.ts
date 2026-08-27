@@ -242,6 +242,15 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
           zoneSections.push({ id: "_unassigned", name: "Unassigned", items: unassignedItems });
         }
 
+        // **Unsorted gear is a question, not a state.** In weight mode the
+        // stowed pile is what a character has picked up and not yet put into a
+        // container: it counts against them, it has no home, and the table
+        // should settle it before the day moves on. Leander's ask, and the
+        // right place for it is the party window, where the whole party is
+        // visible at once rather than one sheet at a time.
+        const unsortedCount =
+          encMode === "weight" ? visibleItems.filter((i) => i.zone === "stowed").length : 0;
+
         return {
           actor,
           actorId: actor.id,
@@ -249,6 +258,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
           zoneSections,
           encumbrance,
           isOwner: actor.isOwner,
+          unsortedCount,
         };
       }
     };
@@ -275,9 +285,23 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     // how fast the party actually travels.
     const partyConvoy = buildPartyConvoy(summaryActors, encMode);
 
+    // One line for the whole party, because "somebody has loose gear" is a
+    // party-level fact: it is the thing to settle before travel, camp or a shop.
+    const unsortedMembers = [...members, ...(sharedMember ? [sharedMember] : [])].filter(
+      (m) => (m.unsortedCount ?? 0) > 0
+    );
+    const unsorted = unsortedMembers.length
+      ? {
+          items: unsortedMembers.reduce((sum, m) => sum + (m.unsortedCount ?? 0), 0),
+          who: unsortedMembers.map((m) => m.actor.name ?? "Someone").join(", "),
+          several: unsortedMembers.length > 1,
+        }
+      : undefined;
+
     return {
       members,
       sharedMember,
+      unsorted,
       partyConvoy,
       hasColumns: members.length > 0 || !!sharedMember,
       // minmax(…, 1fr), not a bare 1fr: `1fr` is shorthand for `minmax(auto, 1fr)`,

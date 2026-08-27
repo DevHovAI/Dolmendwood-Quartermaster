@@ -47,6 +47,7 @@ import {
 import {
   clearDayRoll,
   dutyResultLine,
+  dutyHoverNote,
   rollEncounter,
   rollFindingFood,
   rollGettingLost,
@@ -55,6 +56,10 @@ import {
   type RollableDuty,
 } from "../data/dayRolls";
 import { promptFindFood } from "./FindFoodDialog";
+import { runCampDuty } from "./CampDuties";
+import { runMorningDuty } from "./MorningDuties";
+import { CAMP_ROLL_DUTIES } from "../data/campRolls";
+import { MORNING_ROLL_DUTIES } from "../data/morningRolls";
 import { travelPointPenalty, hasEffect, weatherSummary, weatherIcon } from "../data/weather";
 import { lostChance } from "../data/gettingLost";
 
@@ -490,12 +495,25 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     else if (id === "lost") await rollGettingLost();
     else if (id === "encounter-day") await rollEncounter("day");
     else if (id === "encounter-night") await rollEncounter("night");
+    // The camp's six ask their own questions first — who fetched the wood, whose
+    // Wisdom is cooking, who is sleeping on what.
+    else if (id && CAMP_ROLL_DUTIES.has(id)) await runCampDuty(id);
+    // Waking up: the healing that a good night earns, and the spells a bad one
+    // threatens.
+    else if (id && MORNING_ROLL_DUTIES.has(id)) await runMorningDuty(id);
     else if (id === "forage") {
       // Three procedures share this duty and need different things, so it asks
       // before it rolls. Cancelling leaves the duty exactly as it was.
       const choice = await promptFindFood();
       if (!choice) return;
-      await rollFindingFood(choice.method, choice.target, choice.fullDay, choice.situational);
+      await rollFindingFood(
+        choice.method,
+        choice.target,
+        choice.fullDay,
+        choice.situational,
+        choice.forager,
+        choice.storeToId
+      );
     }
     this.render();
   }
@@ -764,7 +782,24 @@ interface DutyBlock {
     rollable?: boolean;
     /** What the table produced today, shown under the label once it has. */
     result?: string;
+    /** The face of the button that performs it — not every duty throws dice. */
+    rollIcon?: string;
   }[];
+}
+
+/**
+ * What the button that performs a duty should look like.
+ *
+ * Waking up heals; it does not roll. A d20 on that button would be a small lie,
+ * and the one thing a Referee reads before clicking is the icon.
+ */
+function rollIconFor(dutyId: string): string {
+  return dutyId === "healing" ? "fa-hand-holding-heart" : "fa-dice-d20";
+}
+
+/** The duty's own explanation, with today's answer added where there is one. */
+function withNote(hint: string, note: string | undefined): string {
+  return note ? `${note}. ${hint}` : hint;
 }
 
 /**
@@ -784,12 +819,15 @@ function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean): DutyBlock[] 
       id: duty.id,
       label: duty.label,
       icon: duty.icon,
-      hint: duty.hint,
+      // What the day already knows goes on the hover, not into the strip: the
+      // strip is a checklist, and a line naming three characters unbalances it.
+      hint: withNote(duty.hint, dutyHoverNote(duty.id)),
       done: isDone(duty),
       rollable,
       // Only meaningful once rolled; the strip prints it under the label so the
       // Referee reads today's weather without opening anything.
       result: rollable ? dutyResultLine(duty.id) : undefined,
+      rollIcon: rollIconFor(duty.id),
     };
     if (last && last.groupId === duty.group) last.duties.push(entry);
     else
@@ -920,6 +958,8 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
     window: { title: "Duties", icon: "fas fa-campground", resizable: false },
     actions: {
       toggleDuty: DutyGroupApp._onToggleDuty,
+      rollDuty: DutyGroupApp._onRollDuty,
+      clearDuty: DutyGroupApp._onClearDuty,
       tickAll: DutyGroupApp._onTickAll,
       clearAll: DutyGroupApp._onClearAll,
     },
@@ -951,13 +991,21 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
 
   override async _prepareContext(): Promise<Record<string, unknown>> {
     let state = getDayState();
-    const duties = this.steps().map((d) => ({
-      id: d.id,
-      label: d.label,
-      icon: d.icon,
-      hint: d.hint,
-      done: state.done[d.id] === true,
-    }));
+    const duties = this.steps().map((d) => {
+      const rollable = ROLLABLE_DUTIES.has(d.id);
+      return {
+        id: d.id,
+        label: d.label,
+        icon: d.icon,
+        hint: withNote(d.hint, dutyHoverNote(d.id)),
+        done: state.done[d.id] === true,
+        rollable,
+        // The result takes the hint's place once there is one: the hint is what
+        // the step is for, and after the dice the Referee wants what it said.
+        result: rollable ? dutyResultLine(d.id) : undefined,
+        rollIcon: rollIconFor(d.id),
+      };
+    });
     const doneCount = duties.filter((d) => d.done).length;
     return {
       duties,
@@ -975,6 +1023,37 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
     const id = target.dataset.dutyId;
     if (!id) return;
     await setDutyDone(id, target.dataset.done !== "true");
+    this.render();
+    refreshDayBar();
+  }
+
+  /**
+   * Roll one of the camp's steps from the window it lives in.
+   *
+   * The strip's own die does the same thing through the same `runCampDuty`, so
+   * a Referee who rolls the firewood from the Camp tab and the cooking from
+   * this window gets the same dialogs and the same cards.
+   */
+  private static async _onRollDuty(
+    this: DutyGroupApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const id = target.dataset.dutyId;
+    if (!id || !CAMP_ROLL_DUTIES.has(id)) return;
+    await runCampDuty(id);
+    this.render();
+    refreshDayBar();
+  }
+
+  private static async _onClearDuty(
+    this: DutyGroupApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const id = target.dataset.dutyId;
+    if (!id || !ROLLABLE_DUTIES.has(id)) return;
+    await clearDayRoll(id as RollableDuty);
     this.render();
     refreshDayBar();
   }

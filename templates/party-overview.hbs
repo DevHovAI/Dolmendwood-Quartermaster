@@ -17,6 +17,20 @@
     </div>
   </div>
 
+  {{!-- Loose gear is the thing to settle before anything else moves: it counts
+        against the carrier, it has no home, and only this window shows the
+        whole party at once. --}}
+  {{#if unsorted}}
+  <div class="party-unsorted">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span>
+      <strong>{{unsorted.items}} unsorted {{#if (eq unsorted.items 1)}}item{{else}}items{{/if}}</strong>
+      — {{unsorted.who}} {{#if unsorted.several}}have{{else}}has{{/if}} gear that is carried but
+      packed into nothing. Sort it into a container before the party moves on.
+    </span>
+  </div>
+  {{/if}}
+
   {{#if hasColumns}}
   {{!-- Party Grid --}}
   <div class="party-grid" style="grid-template-columns: {{gridTemplate}};">

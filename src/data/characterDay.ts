@@ -37,6 +37,8 @@ function emptyDay(day: number): CharacterDay {
     day,
     ate: false,
     sleptWell: false,
+    sleptWellLastNight: false,
+    healed: false,
     daysWithoutFood: 0,
     daysWithoutSleep: 0,
     travelDaysSinceRest: 0,
@@ -54,6 +56,8 @@ function normalise(raw: CharacterDay & { slept?: boolean }): CharacterDay {
     day: raw.day,
     ate: raw.ate ?? false,
     sleptWell: raw.sleptWell ?? raw.slept ?? false,
+    sleptWellLastNight: raw.sleptWellLastNight ?? false,
+    healed: raw.healed ?? false,
     daysWithoutFood: raw.daysWithoutFood ?? 0,
     daysWithoutSleep: raw.daysWithoutSleep ?? 0,
     travelDaysSinceRest: raw.travelDaysSinceRest ?? 0,
@@ -74,7 +78,17 @@ export function getCharacterDay(actor: Actor): CharacterDay {
   const stored = FlagManager.getInventory(actor).day;
   if (!stored) return emptyDay(day);
   const clean = normalise(stored);
-  if (clean.day !== day) return { ...clean, day, ate: false, sleptWell: false };
+  // A stale record read on a later day answers the way the roll-over is about
+  // to write it, so the morning sees the same night either side of it.
+  if (clean.day !== day)
+    return {
+      ...clean,
+      day,
+      ate: false,
+      sleptWell: false,
+      sleptWellLastNight: clean.sleptWell,
+      healed: false,
+    };
   return clean;
 }
 
@@ -125,6 +139,17 @@ export async function setRested(actor: Actor): Promise<void> {
 }
 
 /**
+ * Mark that this character has taken the morning's Hit Point.
+ *
+ * The guard against healing twice is on the character rather than on the duty:
+ * the duty's tick is one thing for the whole party, and a Referee who heals,
+ * then unticks to add a latecomer, must not pay everyone else a second time.
+ */
+export async function setHealed(actor: Actor, healed: boolean): Promise<void> {
+  await patchCharacterDay(actor, { healed });
+}
+
+/**
  * Move every party member on to the new day.
  *
  * - Hunger: cleared by eating, otherwise a day longer.
@@ -155,6 +180,11 @@ export async function rollOverCharacterDays(
       day: newDay,
       ate: false,
       sleptWell: false,
+      // Carried out of the day that just ended, because the morning pays for it:
+      // healing, and the warning over spell preparation, both ask what last
+      // night was like after the flag that knew has been cleared.
+      sleptWellLastNight: prev.sleptWell,
+      healed: false,
       daysWithoutFood: prev.ate ? 0 : prev.daysWithoutFood + 1,
       daysWithoutSleep: prev.sleptWell ? 0 : prev.daysWithoutSleep + 1,
       travelDaysSinceRest: travelledToday
@@ -205,6 +235,42 @@ export function isEdible(item: Pick<InventoryItem, "definitionId" | "customDefin
  * Written by whoever owns the actors, so a player feeds their own character with
  * no GM online. A bundle loses one unit rather than the whole row.
  */
+/**
+ * Take portions off a row without anybody eating them.
+ *
+ * The cook's pot is the reason this exists beside `eatItem`: ingredients go into
+ * a meal whether or not the meal turns out edible, and on a natural 1 with a
+ * failed Save Versus Doom they are wasted outright — food gone, nobody fed. A
+ * function that could only take food *and* feed someone could not express that.
+ *
+ * Returns how many portions were actually taken, which may be fewer than asked
+ * for if the row is smaller than the caller believed.
+ */
+export async function consumeFood(source: Actor, itemId: string, count: number): Promise<number> {
+  if (count <= 0) return 0;
+  const item = FlagManager.getInventory(source).items.find((i) => i.id === itemId);
+  if (!item || !isEdible(item)) return 0;
+  const def = definitionFor(item);
+
+  let taken = 0;
+  await FlagManager.updateInventory(source, (draft) => {
+    const target = draft.items.find((i) => i.id === itemId);
+    if (!target) return draft;
+    while (taken < count) {
+      const survives = isBundle(target, def)
+        ? reduceItem(target, def, 1)
+        : --target.quantity > 0;
+      taken++;
+      if (!survives) {
+        draft.items = draft.items.filter((i) => i.id !== itemId);
+        break;
+      }
+    }
+    return draft;
+  });
+  return taken;
+}
+
 export async function eatItem(
   source: Actor,
   itemId: string,

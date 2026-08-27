@@ -1,9 +1,44 @@
 {{!-- The steps behind one grouped tick in the day bar. A window rather than
       seven more chips in the strip: the Camp tab was twice the width of every
-      other one, and the steps are read in order anyway. --}}
+      other one, and the steps are read in order anyway.
+
+      A step that rolls is three controls in a row and therefore a div, not a
+      button — the tick still works by hand for a Referee who rolled on paper,
+      the die rolls it, and the arrow takes the roll back. Nested buttons are
+      not markup, which is why the plain steps and the rolling ones are drawn
+      differently. --}}
 <div class="duty-group-window">
   <div class="duty-group-list">
     {{#each duties}}
+    {{#if this.rollable}}
+    <div class="duty-group-step duty-group-step-rollable {{#if this.done}}is-done{{/if}}">
+      <button type="button" class="duty-group-tick-btn"
+              data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
+              title="Tick off by hand, without rolling">
+        <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} duty-group-tick"></i>
+      </button>
+      <i class="fas {{this.icon}} duty-group-icon"></i>
+      <span class="duty-group-text">
+        <span class="duty-group-label">{{this.label}}</span>
+        {{#if this.result}}
+        <span class="duty-group-result">{{this.result}}</span>
+        {{else}}
+        <span class="duty-group-hint">{{this.hint}}</span>
+        {{/if}}
+      </span>
+      {{#if this.result}}
+      <button type="button" class="duty-group-roll" data-action="clearDuty" data-duty-id="{{this.id}}"
+              title="Take this roll back so it can be made again">
+        <i class="fas fa-rotate-left"></i>
+      </button>
+      {{else}}
+      <button type="button" class="duty-group-roll" data-action="rollDuty" data-duty-id="{{this.id}}"
+              title="{{this.hint}}">
+        <i class="fas {{#if this.rollIcon}}{{this.rollIcon}}{{else}}fa-dice-d20{{/if}}"></i>
+      </button>
+      {{/if}}
+    </div>
+    {{else}}
     <button type="button" class="duty-group-step {{#if this.done}}is-done{{/if}}"
             data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}">
       <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} duty-group-tick"></i>
@@ -13,6 +48,7 @@
         <span class="duty-group-hint">{{this.hint}}</span>
       </span>
     </button>
+    {{/if}}
     {{/each}}
   </div>
 

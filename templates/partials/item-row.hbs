@@ -27,6 +27,12 @@
           custom item it already IS customDefinition. Printing both rendered the
           description twice. --}}
     {{#if item.def.description}}<span class="item-description">{{item.def.description}}</span>{{/if}}
+    {{!-- What the Referee knows and the row does not say: the true name of an
+          unidentified find, and what eating it does. Rendered for the GM alone
+          — the row itself stays in plain sight. --}}
+    {{#if isGM}}{{#if item.gmNote}}
+    <span class="item-gm-note" title="Only you can see this"><i class="fas fa-user-secret"></i> {{item.gmNote}}</span>
+    {{/if}}{{/if}}
   </span>
 
   {{!-- A quiver, bottle or cask is one object per row, so its quantity is
@@ -88,40 +94,49 @@
             placeholder="Notes…" title="Notes" rows="1">{{item.notes}}</textarea>
   {{/if}}
 
-  {{#if isOwner}}
-  <button type="button" data-action="toggleSecret" data-item-id="{{item.id}}"
-          class="icon-btn secret-btn" title="{{#if item.isSecret}}Make visible{{else}}Make secret{{/if}}">
-    <i class="fas {{#if item.isSecret}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
-  </button>
-  {{/if}}
+  {{!-- The buttons live in one block of fixed lanes so that the same icon sits
+        in the same column on every row. Only the Eat button varies from row to
+        row — the others follow the viewer's permissions, which are the same all
+        the way down the list — so an inedible item is given an empty lane
+        rather than closing the gap and pulling the trash can leftwards. --}}
+  <span class="item-actions">
+    {{#if isOwner}}
+    <button type="button" data-action="toggleSecret" data-item-id="{{item.id}}"
+            class="icon-btn secret-btn" title="{{#if item.isSecret}}Make visible{{else}}Make secret{{/if}}">
+      <i class="fas {{#if item.isSecret}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
+    </button>
+    {{/if}}
 
-  {{#if item.isEdible}}
-  {{#if isOwner}}
-  <button type="button" data-action="eatItem" data-item-id="{{item.id}}"
-          class="icon-btn eat-btn" title="Eat one — feeds this character for the day">
-    <i class="fas fa-drumstick-bite"></i>
-  </button>
-  {{/if}}
-  {{/if}}
+    {{#if isOwner}}
+    {{#if item.isEdible}}
+    <button type="button" data-action="eatItem" data-item-id="{{item.id}}"
+            class="icon-btn eat-btn" title="Eat one — feeds this character for the day">
+      <i class="fas fa-drumstick-bite"></i>
+    </button>
+    {{else}}
+    <span class="icon-slot" aria-hidden="true"></span>
+    {{/if}}
+    {{/if}}
 
-  {{#if isOwner}}
-  <button type="button" data-action="renameItem" data-item-id="{{item.id}}"
-          class="icon-btn rename-btn" title="Rename item">
-    <i class="fas fa-pen"></i>
-  </button>
-  {{/if}}
+    {{#if isOwner}}
+    <button type="button" data-action="renameItem" data-item-id="{{item.id}}"
+            class="icon-btn rename-btn" title="Rename item">
+      <i class="fas fa-pen"></i>
+    </button>
+    {{/if}}
 
-  {{#if canEdit}}
-  <button type="button" data-action="deleteItem" data-item-id="{{item.id}}"
-          class="icon-btn delete-btn" title="Remove item">
-    <i class="fas fa-trash"></i>
-  </button>
-  {{/if}}
+    {{#if canEdit}}
+    <button type="button" data-action="deleteItem" data-item-id="{{item.id}}"
+            class="icon-btn delete-btn" title="Remove item">
+      <i class="fas fa-trash"></i>
+    </button>
+    {{/if}}
 
-  {{#if canGive}}
-  <button type="button" data-action="giveItem" data-item-id="{{item.id}}"
-          class="icon-btn give-btn" title="Give item to another player">
-    <i class="fas fa-share"></i>
-  </button>
-  {{/if}}
+    {{#if canGive}}
+    <button type="button" data-action="giveItem" data-item-id="{{item.id}}"
+            class="icon-btn give-btn" title="Give item to another player">
+      <i class="fas fa-share"></i>
+    </button>
+    {{/if}}
+  </span>
 </div>

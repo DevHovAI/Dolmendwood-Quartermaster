@@ -1,4 +1,37 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { announce, isGM, noteLine, rollDice, total, whisperToGMs } from "./rollCard";
+
+/**
+ * A named herb or fungus a hex grows on top of the usual harvest.
+ *
+ * Kept as data rather than only as a sentence, because it has two destinations
+ * that must not agree: the Referee's card, where it is named, and the party's
+ * packs, where it is not.
+ */
+interface HexFind {
+  name: string;
+  count: number;
+  book: BookId;
+  page: number;
+}
+
+/** "Player's Book", "Campaign Book" — for a line that is read rather than clicked. */
+function bookName(id: BookId): string {
+  return BOOKS[id].label;
+}
+import {
+  campResultLine,
+  clearCampRoll,
+  CAMP_ROLL_DUTIES,
+  type CampRollDuty,
+} from "./campRolls";
+import {
+  clearMorningRoll,
+  morningResultLine,
+  morningWarningLine,
+  MORNING_ROLL_DUTIES,
+  type MorningRollDuty,
+} from "./morningRolls";
 import {
   getDayContext,
   regionInfo,
@@ -39,6 +72,15 @@ import { getDayState, setDutyResult } from "./dayDuties";
 import { lostChance, lostConsequence, type LostResult } from "./gettingLost";
 import { skillCheck } from "./checks";
 import {
+  KILL_YIELD,
+  hexFind,
+  rationWeight,
+  rationsFromKill,
+  storeRations,
+  type FoundFood,
+} from "./rations";
+import { promptHuntSpoils } from "../apps/HuntSpoilsDialog";
+import {
   FISH,
   FULL_DAY_BONUS,
   FUNGI,
@@ -62,11 +104,8 @@ import {
  * Rolling the day's tables.
  *
  * Everything here goes through Foundry's own `Roll`, never `Math.random`, and
- * **the Roll objects travel with the chat message**. That second part is not
- * decoration: Dice So Nice animates what it finds in `message.rolls`, so a card
- * whose dice were rolled separately and merely described in its HTML gets no
- * animation at all. Passing them also puts the real dice in the log, where a
- * Referee can inspect one or argue with it.
+ * the dice and the card that carries them come from `rollCard.ts` — see there
+ * for why the `Roll` objects must travel with the message.
  *
  * Each roll writes its result onto the day and posts a card. The card is
  * whispered to the GMs rather than shown at the table, because half of what
@@ -78,36 +117,6 @@ import {
  * do not agree and are not meant to, so printing "day 14" on a result was
  * saying something untrue about the fiction.
  */
-
-async function rollDice(formula: string): Promise<Roll> {
-  return new Roll(formula).evaluate();
-}
-
-const total = (roll: Roll): number => roll.total ?? 0;
-
-/** GM-only, and only ever seen by GMs. */
-async function whisperToGMs(content: string, rolls: Roll[] = []): Promise<void> {
-  const g = game as Game;
-  const gmIds = (g.users?.filter?.((u: { isGM?: boolean; id?: string }) => !!u.isGM) ?? [])
-    .map((u: { id?: string }) => u.id)
-    .filter((id): id is string => !!id);
-  await ChatMessage.create({
-    content,
-    rolls,
-    // Without this the card lands silently: Foundry plays the dice sound only
-    // for messages it can tell are rolls.
-    sound: rolls.length ? CONFIG.sounds.dice : undefined,
-    whisper: gmIds,
-  } as Parameters<typeof ChatMessage.create>[0]);
-}
-
-function isGM(): boolean {
-  return !!(game as Game).user?.isGM;
-}
-
-function noteLine(note: string | undefined): string {
-  return note ? `<p class="dw-day-roll-consequence">${escapeHTML(note)}</p>` : "";
-}
 
 // ─── Weather ───────────────────────────────────────────────────────────────────
 
@@ -144,7 +153,11 @@ export async function rollWeather(): Promise<WeatherResult | undefined> {
       ? `<p class="dw-day-roll-note">${escapeHTML(info.label)} has no weather table of its own — rolled on ${escapeHTML(table)}.</p>`
       : "";
 
-  await whisperToGMs(
+  // Public: the characters can see the sky. Hiding the weather from the table
+  // was never a secret worth keeping, and the effects it carries — impeded
+  // travel, poor visibility, wet wood — are exactly what the players are about
+  // to argue about.
+  await announce(
     `<div class="dw-day-roll">
       <h3><i class="fas fa-cloud-sun-rain"></i> Weather</h3>
       <p class="dw-day-roll-headline">${escapeHTML(entry.text)}</p>
@@ -238,6 +251,55 @@ export async function rollGettingLost(): Promise<LostResult | undefined> {
 // ─── Finding food ──────────────────────────────────────────────────────────────
 
 /**
+ * Put what was found into a pack, and say where it went.
+ *
+ * Silent about a target that no longer exists rather than throwing: the dialog
+ * offered whatever the world held a moment ago, and a Referee who deleted an
+ * actor mid-roll should get their card, not an error.
+ */
+async function stockRations(
+  holderId: string | undefined,
+  count: number,
+  found?: FoundFood
+): Promise<{ count: number; holder: string; name?: string } | undefined> {
+  if (!holderId || count <= 0) return undefined;
+  const holder = (game as Game).actors?.get(holderId);
+  if (!holder) return undefined;
+  await storeRations(holder, count, found);
+  return { count, holder: holder.name ?? "Someone", ...(found?.name ? { name: found.name } : {}) };
+}
+
+/**
+ * What the card says about the packs, once the food is in them.
+ *
+ * It names the food rather than the rule: a row that says "Bogbell" is worth
+ * more at the table than one that says "fresh rations", and the encumbrance is
+ * the same either way — which is the sentence that follows.
+ */
+function storedLine(
+  stored: { count: number; holder: string; name?: string } | undefined
+): string {
+  if (!stored) return "";
+  const weight = stored.count * rationWeight();
+  const what = stored.name
+    ? `${stored.count} × ${escapeHTML(stored.name)}`
+    : `${stored.count} fresh ration${stored.count === 1 ? "" : "s"}`;
+  return `<p class="dw-day-roll-yield"><i class="fas fa-sack"></i>
+    <strong>${what}</strong> added to
+    ${escapeHTML(stored.holder)} — ${stored.count} slot${stored.count === 1 ? "" : "s"},
+    ${weight} coins of weight, edible.
+    Fresh food keeps a week, or a day in dank conditions.</p>`;
+}
+
+/** The one button a hunt's card carries that an encounter's does not. */
+function huntSpoilsButton(): string {
+  return `<button type="button" class="dw-encounter-btn" data-encounter-action="spoils"
+     title="Once the game is down: turn its Hit Points into fresh rations and put them in a pack.">
+      <i class="fas fa-drumstick-bite"></i> Rations from the kill
+     </button>`;
+}
+
+/**
  * Fish, forage, or hunt.
  *
  * The Survival Skill Target comes from the caller rather than the character
@@ -254,7 +316,9 @@ export async function rollFindingFood(
   method: FoodMethod,
   target: number,
   fullDay: boolean,
-  situational = 0
+  situational = 0,
+  forager?: string,
+  storeToId?: string
 ): Promise<FoodResult | undefined> {
   if (!isGM()) return undefined;
 
@@ -270,6 +334,33 @@ export async function rollFindingFood(
   const success = check.success;
   const dice = [checkDie];
 
+  /**
+   * How many rations actually go into a pack — which is not always what
+   * `result.rations.total` says: Colliggwyld doubles foraged fungi, and a hunt
+   * produces nothing until the game has been killed.
+   */
+  let harvest = 0;
+
+  /**
+   * The half of this roll the table does not get to see, and its dice.
+   *
+   * Finding food is public — the party knows what it ate — but two parts of it
+   * are not: **what a hex secretly grows**, which is the Referee's to reveal at
+   * their own pace, and **a quarry's stat line**, which is the Monster Book's
+   * business rather than the players'. Both go out in a second, whispered card,
+   * with their own dice, so a 1d3 of rare herbs does not announce itself in the
+   * dice log.
+   */
+  let secret = "";
+  const secretDice: Roll[] = [];
+  /**
+   * The herbs and fungi this hex grows on top of the table. The common ones go
+   * into the packs under their own names; the rare ones go in covered.
+   */
+  let hexFinds: HexFind[] = [];
+  /** Referee advice that is only worth a card when there is already one. */
+  let hint = "";
+
   const result: FoodResult = {
     method,
     roll,
@@ -277,7 +368,12 @@ export async function rollFindingFood(
     target,
     fullDay,
     success,
+    ...(forager ? { forager } : {}),
     ...(check.natural ? { natural: check.natural } : {}),
+    // Written down here so the hunt's butchering dialog can start from the
+    // answer already given, rather than asking the same question twice and
+    // taking whichever name happens to sort first.
+    ...(storeToId ? { storeToId } : {}),
   };
 
   let body = "";
@@ -304,14 +400,26 @@ export async function rollFindingFood(
 
     // Colliggwyld doubles fungi specifically, not the whole harvest.
     const doubled = ctx.season === "colliggwyld" && kind === "fungi";
+    harvest = doubled ? result.rations.total * 2 : result.rations.total;
     body = `<p class="dw-day-roll-headline">${escapeHTML(entry.name)}</p>
       <p class="dw-day-roll-sub">${kind === "fungi" ? "Fungi" : "Plants"} (1d6 = ${total(kindDie)}), 1d20 = ${which}</p>
       ${noteLine(entry.note)}
       <p class="dw-day-roll-yield"><strong>${result.rations.total}${doubled ? ` × 2 = ${result.rations.total * 2}` : ""} fresh rations</strong>
         (${y.formula}, ${escapeHTML(y.why)})${doubled ? " — Colliggwyld doubles foraged fungi." : ""}</p>
-      <p class="dw-day-roll-sub">${bookRef("campaign", kind === "fungi" ? 118 : 119, "Campaign Book p" + (kind === "fungi" ? 118 : 119))}</p>
-      ${hexExtra.html}`;
-    dice.push(...hexExtra.dice);
+      <p class="dw-day-roll-sub">${bookRef("campaign", kind === "fungi" ? 118 : 119, "Campaign Book p" + (kind === "fungi" ? 118 : 119))}</p>`;
+
+    // What the hex grows is the Referee's to reveal: it goes on the whispered
+    // card, and into the packs unnamed.
+    if (hexExtra.finds.length) {
+      secret += hexExtra.html;
+      secretDice.push(...hexExtra.dice);
+      hexFinds = hexExtra.finds;
+    } else {
+      // The "type the hex on the bar" nudge is worth saying, but not worth a
+      // whispered card of its own on every forage — it rides along only when
+      // there is something to whisper anyway.
+      hint = hexExtra.html;
+    }
   } else if (method === "fish") {
     const whichDie = await rollDice("1d20");
     dice.push(whichDie);
@@ -328,21 +436,22 @@ export async function rollFindingFood(
       const yieldDie = await rollDice(formula);
       dice.push(yieldDie);
       result.rations = { formula, total: total(yieldDie), why: "fishing" };
+      harvest = result.rations.total;
       yieldLine = `<p class="dw-day-roll-yield"><strong>${result.rations.total} fresh rations</strong> (${formula})</p>`;
     }
 
     // One of the twenty catches fights back, and that one has a page like any
     // other creature. The other nineteen are fish the Campaign Book invented for
-    // this table alone, and the Monster Book has never heard of them.
-    const fishBlock = monsterInfo(entry.name)
-      ? `${creatureBookLine(entry.name)}${creatureStatLine(entry.name)}${creatureFlavour(entry.name)}`
-      : "";
+    // this table alone, and the Monster Book has never heard of them. The stat
+    // line is the Referee's, so it goes on the whispered card.
+    if (monsterInfo(entry.name)) {
+      secret += `${creatureBookLine(entry.name)}${creatureStatLine(entry.name)}${creatureFlavour(entry.name)}`;
+    }
 
     body = `<p class="dw-day-roll-headline">${escapeHTML(entry.name)}</p>
       <p class="dw-day-roll-sub">1d20 = ${which} &middot; ${bookRef("campaign", 116, "Campaign Book p116")}</p>
       ${noteLine(entry.note)}
-      ${yieldLine}
-      ${fishBlock}`;
+      ${yieldLine}`;
   } else {
     const t = terrainInfo(ctx.terrain);
     const whichDie = await rollDice("1d20");
@@ -369,25 +478,95 @@ export async function rollFindingFood(
     body = `<p class="dw-day-roll-headline">${escapeHTML(name)} &times;${total(countDie)}</p>
       <p class="dw-day-roll-sub">${escapeHTML(t.label)}, 1d20 = ${which}; number ${numberDice} = ${total(countDie)}</p>
       <p class="dw-day-roll-consequence">The party has crept up on them. The kill is a normal combat encounter: the party has surprise and begins <strong>${feet} feet</strong> away (1d4 &times; 30 = ${total(distanceDie)} &times; 30).</p>
-      <p class="dw-day-roll-yield"><strong>Rations by Hit Points of what falls</strong> — 1 per HP for small game, 2 for medium, 4 for large (Player's Book p152).</p>
-      ${creatureBookLine(name)}
+      <p class="dw-day-roll-yield"><strong>Rations by Hit Points of what falls</strong> — 1 per HP for small game, 2 for medium, 4 for large (Player's Book p152).</p>`;
+
+    // The quarry's page, stat line and the buttons that roll its own tables are
+    // the Referee's half: the party can see the deer, not its Hit Dice.
+    secret += `${creatureBookLine(name)}
       ${creatureStatLine(name)}
       ${creatureFlavour(name)}
-      ${extras ? `<div class="dw-encounter-buttons">${extras}</div>` : ""}`;
+      <div class="dw-encounter-buttons">
+        ${extras}
+        ${huntSpoilsButton()}
+      </div>`;
   }
 
-  await setDutyResult("forage", { food: result });
+  // The food goes into somebody's pack, which is the point of finding it. Only
+  // where the procedure actually produced rations: a hunt has not been fought
+  // yet, and the giant catfish is a monster rather than a meal, so both leave
+  // the packs alone and offer a button instead.
+  // The row is named after what the table produced, so a cap of bogbell reaches
+  // the pack as bogbell — with the book's own line about it in the notes.
+  const stored = await stockRations(
+    storeToId,
+    harvest,
+    result.find ? { name: result.find.name, ...(result.find.note ? { note: result.find.note } : {}) } : undefined
+  );
+  // What a hex grows on top of the table goes into the same pack. A **common**
+  // herb goes in under its own name — the party can be assumed to know the
+  // Player's Book table. A **rare** one goes in covered: the row reads "Rare
+  // herb", the truth is on the Referee's own line, and the players rename it
+  // once somebody identifies it. `hexFind` decides which; the `gmNote` it
+  // returns is how this loop can tell what it got back.
+  const hidden: string[] = [];
+  const named: string[] = [];
+  for (const find of hexFinds) {
+    const where = `${bookName(find.book)} p${find.page}`;
+    const food = hexFind(find.name, where);
+    const packed = await stockRations(storeToId, find.count, food);
+    if (!packed) continue;
+    if (food.gmNote)
+      hidden.push(`${packed.count} × ${escapeHTML(find.name)} (${escapeHTML(where)})`);
+    else named.push(`${packed.count} × ${escapeHTML(find.name)}`);
+  }
 
-  await whisperToGMs(
+  await setDutyResult("forage", { food: { ...result, ...(stored ? { stored } : {}) } });
+
+  // The table's card. Everything a character living through the day would know:
+  // what was looked for, whether it was found, and what went into the packs.
+  await announce(
     `<div class="dw-day-roll">
       <h3><i class="fas ${info.icon}"></i> ${escapeHTML(info.label)}</h3>
-      <p class="dw-day-roll-sub">Survival ${escapeHTML(check.explain)}${
+      <p class="dw-day-roll-sub">${forager ? escapeHTML(forager) + "&rsquo;s " : ""}Survival ${escapeHTML(check.explain)}${
         fullDay ? " Includes +2 for a whole day given to it." : ""
       }</p>
       ${body}
+      ${storedLine(stored)}
+      ${
+        named.length
+          ? `<p class="dw-day-roll-yield"><i class="fas fa-seedling"></i>
+              This ground grows more than the table knows: <strong>${named.join(", ")}</strong>
+              went into the packs as well.</p>`
+          : ""
+      }
+      ${
+        hidden.length
+          ? `<p class="dw-day-roll-note">Something unusual came up with the harvest, and nobody can name it yet.</p>`
+          : ""
+      }
     </div>`,
     dice
   );
+
+  // …and the Referee's, when there is one: what the hex grows, what it does,
+  // and the quarry's stat line.
+  if (secret || hidden.length) {
+    await whisperToGMs(
+      `<div class="dw-day-roll">
+        <h3><i class="fas fa-user-secret"></i> ${escapeHTML(info.label)} — for you</h3>
+        ${secret}
+        ${hint}
+        ${
+          hidden.length
+            ? `<p class="dw-day-roll-yield">Packed away unidentified: ${hidden.join(", ")}.
+                 The row reads “Rare herb” or “Rare fungus” to the players; your own line on it says
+                 what it really is.</p>`
+            : ""
+        }
+      </div>`,
+      secretDice
+    );
+  }
 
   return result;
 }
@@ -671,16 +850,20 @@ function creatureBookLine(name: string | undefined, mark?: EncounterMark): strin
  * "DPB" is the Player's Book's Common Fungi and Herbs table on p130; a bare
  * page number is the Campaign Book's own treasure chapter.
  */
-async function hexForageLine(hex: string | undefined): Promise<{ html: string; dice: Roll[] }> {
+async function hexForageLine(
+  hex: string | undefined
+): Promise<{ html: string; dice: Roll[]; finds: HexFind[] }> {
   const here = hexInfo(hex);
   if (!here?.forage) {
     return {
       html: '<p class="dw-day-roll-note">Some hexes list their own plants or fungi, instead of or as well as this. Type the hex on the bar and it is rolled here.</p>',
       dice: [],
+      finds: [],
     };
   }
   const dice: Roll[] = [];
   const parts: string[] = [];
+  const finds: HexFind[] = [];
   // "1d3 portions of Hogscap (DPB) or Prancing Mandrake (p430)" — the second
   // choice inherits the first one's count rather than restating it, so it is
   // written back in before anything is matched.
@@ -700,11 +883,20 @@ async function hexForageLine(hex: string | undefined): Promise<{ html: string; d
     const where =
       source === "DPB" ? bookRef("players", 130, escapeHTML(name.trim())) : bookRef("campaign", Number(source.slice(1)), escapeHTML(name.trim()));
     parts.push(`<strong>${howMany}</strong> &times; ${where}${/d/.test(formula) ? ` (${formula})` : ""}`);
+    // Kept apart from the sentence, because these go into a pack as well as
+    // onto a card — and they go in without their names.
+    finds.push({
+      name: name.trim(),
+      count: howMany,
+      book: source === "DPB" ? "players" : "campaign",
+      page: source === "DPB" ? 130 : Number(source.slice(1)),
+    });
   }
   if (!parts.length) {
     return {
       html: `<p class="dw-day-roll-note">${escapeHTML(here.hex)} also grants: ${escapeHTML(here.forage)}</p>`,
       dice: [],
+      finds: [],
     };
   }
   const joiner = / or /.test(here.forage) ? " <em>or</em> " : " and ";
@@ -713,6 +905,7 @@ async function hexForageLine(hex: string | undefined): Promise<{ html: string; d
         This hex as well: ${parts.join(joiner)} &middot; ${escapeHTML(here.hex)} ${escapeHTML(here.name)},
         ${bookRef("campaign", here.page, "Campaign Book p" + here.page)}</p>`,
     dice,
+    finds,
   };
 }
 
@@ -1159,6 +1352,9 @@ export function activateEncounterChatButtons(html: HTMLElement): void {
           break;
         case "other":
           void rollOtherCreature(period);
+          break;
+        case "spoils":
+          void recordHuntSpoils();
           break;
       }
     });
@@ -1687,6 +1883,8 @@ async function rollOtherCreature(period: "day" | "night"): Promise<void> {
 /** Take a roll back, so it can be made again. Unticks the duty with it. */
 export async function clearDayRoll(dutyId: RollableDuty): Promise<void> {
   if (!isGM()) return;
+  if (CAMP_ROLL_DUTIES.has(dutyId)) return clearCampRoll(dutyId as CampRollDuty);
+  if (MORNING_ROLL_DUTIES.has(dutyId)) return clearMorningRoll(dutyId as MorningRollDuty);
   if (dutyId === "weather") await setDutyResult("weather", { weather: undefined });
   else if (dutyId === "lost") await setDutyResult("lost", { lost: undefined });
   else if (dutyId === "forage") await setDutyResult("forage", { food: undefined });
@@ -1694,19 +1892,43 @@ export async function clearDayRoll(dutyId: RollableDuty): Promise<void> {
   else await setDutyResult(dutyId, { encounterNight: undefined });
 }
 
-export type RollableDuty = "weather" | "lost" | "forage" | "encounter-day" | "encounter-night";
+export type RollableDuty =
+  | "weather"
+  | "lost"
+  | "forage"
+  | "encounter-day"
+  | "encounter-night"
+  | CampRollDuty
+  | MorningRollDuty;
 
-/** Which duties roll on a table rather than merely being ticked off. */
+/**
+ * Which duties roll on a table rather than merely being ticked off.
+ *
+ * The camp's six and the morning's two join the day's five here rather than
+ * keeping lists of their own: the strip, the group window and the undo arrow all
+ * ask this one question, and two sets that could disagree about the answer would
+ * eventually disagree.
+ *
+ * **This set is what puts the die on a duty.** A duty missing from it is
+ * ticked-off-by-hand and nothing more — no button, no result line, no warning —
+ * which is exactly how healing and spell preparation came to be invisible after
+ * they were built. `check-camp-forms.js` now asserts the membership.
+ */
 export const ROLLABLE_DUTIES = new Set<string>([
   "weather",
   "lost",
   "forage",
   "encounter-day",
   "encounter-night",
+  ...CAMP_ROLL_DUTIES,
+  ...MORNING_ROLL_DUTIES,
 ]);
 
 /** The line the strip shows under a rolled duty, or nothing if it has not been rolled. */
 export function dutyResultLine(dutyId: string): string | undefined {
+  if (CAMP_ROLL_DUTIES.has(dutyId)) return campResultLine(dutyId);
+  if (MORNING_ROLL_DUTIES.has(dutyId)) return morningResultLine(dutyId);
+
   const state = getDayState();
 
   if (dutyId === "weather" && state.weather) return weatherSummary(state.weather);
@@ -1743,4 +1965,65 @@ export function dutyResultLine(dutyId: string): string | undefined {
   }
 
   return undefined;
+}
+
+/**
+ * What a duty knows *before* anybody rolls it — for its tooltip, not for the
+ * strip.
+ *
+ * It was a line under the label for a day, and Leander was right that it cost
+ * too much room: two duties naming three characters each pushed the whole strip
+ * out of shape for something a Referee reads once. **The strip is a checklist,
+ * not a report.** So the answer now hangs off the hover, and the full account
+ * arrives on the card when the duty is pressed.
+ */
+export function dutyHoverNote(dutyId: string): string | undefined {
+  return morningWarningLine(dutyId);
+}
+
+/**
+ * What the kill was worth, once the game is down.
+ *
+ * The hunt is the one method the book cannot pay out when it is rolled: it
+ * sends the party into a combat first, and only then converts Hit Points into
+ * meat. So the card carries a button rather than a number, and this asks the
+ * two things only the table knows — how many Hit Points fell, and how big the
+ * animal was.
+ *
+ * **The multiplier is the book's, not a house rule**: 1 ration per Hit Point
+ * for Small game, 2 for Medium, 4 for Large (Player's Book p152).
+ */
+export async function recordHuntSpoils(): Promise<void> {
+  if (!isGM()) return;
+
+  // Everything the hunt already decided, handed to the dialog so it need not be
+  // decided again: what fell, whose pack was chosen when the roll was made, and
+  // what size the book calls the quarry.
+  const food = getDayState().food;
+  const beast = food?.find?.name;
+  const choice = await promptHuntSpoils(beast, food?.storeToId);
+  if (!choice) return;
+
+  const count = rationsFromKill(choice.hitPoints, choice.size);
+  const stored = await stockRations(choice.holderId, count, { name: choice.name });
+  if (!stored) {
+    ui.notifications?.warn("Nothing was stored — no Hit Points, or no pack to put them in.");
+    return;
+  }
+
+  const band = KILL_YIELD.find((k) => k.size === choice.size);
+  await whisperToGMs(
+    `<div class="dw-day-roll">
+      <h3><i class="fas fa-drumstick-bite"></i> Butchering the kill</h3>
+      <p class="dw-day-roll-headline">${stored.count} fresh ration${stored.count === 1 ? "" : "s"}</p>
+      <p class="dw-day-roll-sub">${escapeHTML(beast ?? "Game")} &middot; ${choice.hitPoints} Hit Point${
+        choice.hitPoints === 1 ? "" : "s"
+      } &times; ${band?.per ?? 1} (${escapeHTML(choice.size)}) &middot; ${bookRef(
+        "players",
+        152,
+        "Player's Book p152"
+      )}</p>
+      ${storedLine(stored)}
+    </div>`
+  );
 }

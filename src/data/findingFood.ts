@@ -477,8 +477,10 @@ export interface FoodResult {
   roll: number;
   /** Everything added to the die: the full day, and the Referee's own call. */
   modifier: number;
-  /** The party's best Survival Skill Target. Lower is better. */
+  /** The Survival Skill Target of whoever made the attempt. Lower is better. */
   target: number;
+  /** Who went looking. Named because the check is theirs, not the party's. */
+  forager?: string;
   fullDay: boolean;
   success: boolean;
   /** Set where a natural 1 or 6 decided it regardless of the total. */
@@ -489,4 +491,78 @@ export interface FoodResult {
   number?: string;
   /** Rations gained, where the procedure gives a number at all. */
   rations?: { formula: string; total: number; why: string };
+  /**
+   * What actually went into a pack, and whose.
+   *
+   * Not the same number as `rations.total`: Colliggwyld doubles foraged fungi,
+   * and a Referee may send the haul to the shared store rather than the forager.
+   */
+  stored?: { count: number; holder: string };
+  /**
+   * Which pack the Referee chose when the roll was made — kept because a hunt
+   * asks the question *before* it can answer it.
+   *
+   * The kill is a combat, so the meat is butchered minutes later through a
+   * button on the card, and that second dialog used to start from the top of an
+   * alphabetical list and quietly overrule the answer already given (Leander,
+   * 2026-08-27). Remembering the id is the whole fix; the dialog still lets it
+   * be changed, because forty rations of red deer do not fit in the pack the
+   * hunter set out with.
+   */
+  storeToId?: string;
+}
+
+/**
+ * How big the Monster Book says each quarry is — which is the only thing the
+ * butchering dialog needs and cannot work out.
+ *
+ * Rations from a kill are **1 per Hit Point for Small game, 2 for Medium and 4
+ * for Large** (Player's Book p152), so this multiplies the party's supper by
+ * four at the top end and is worth taking from the book rather than guessing.
+ * Each figure is the first word of the creature's own stat block — "Small
+ * Animal", "Medium Animal", "Large Animal" — on Monster Book pages 112-119.
+ *
+ * Fifteen names cover every column of the Game Animals table. A quarry that is
+ * not here (a Referee who typed their own) leaves the dialog on its old default
+ * of Medium, which is the middle of the three and the least wrong guess.
+ */
+export interface GameAnimalStats {
+  size: "small" | "medium" | "large";
+  /** Hit Points as the stat block prints them, and the average in brackets. */
+  hp: string;
+  average: number;
+  /** Monster Book page, so the dialog can say where the figure comes from. */
+  page: number;
+}
+
+export const GAME_ANIMAL_STATS: Record<string, GameAnimalStats> = {
+  "Boar":           { size: "medium", hp: "3d8", average: 13, page: 113 },
+  "False Unicorn":  { size: "medium", hp: "2d8", average: 9,  page: 114 },
+  "Gelatinous Ape": { size: "small",  hp: "2d8", average: 9,  page: 114 },
+  "Gobble":         { size: "small",  hp: "1d4", average: 2,  page: 115 },
+  "Headhog":        { size: "small",  hp: "1d4", average: 2,  page: 115 },
+  "Honey Badger":   { size: "small",  hp: "1d8", average: 4,  page: 115 },
+  "Lurkey":         { size: "small",  hp: "1d8", average: 4,  page: 115 },
+  "Merriman":       { size: "small",  hp: "1d8", average: 4,  page: 116 },
+  "Moss Mole":      { size: "small",  hp: "1d4", average: 2,  page: 116 },
+  "Puggle":         { size: "small",  hp: "1d8", average: 4,  page: 116 },
+  "Red Deer":       { size: "large",  hp: "3d8", average: 13, page: 117 },
+  "Swamp Sloth":    { size: "small",  hp: "1d8", average: 4,  page: 118 },
+  "Trotteling":     { size: "small",  hp: "1d8", average: 4,  page: 118 },
+  "Woad":           { size: "small",  hp: "1d8", average: 4,  page: 119 },
+  "Yegril":         { size: "large",  hp: "4d8", average: 18, page: 119 },
+};
+
+/** What the book says about a quarry, if the book knows it. */
+export function gameAnimalStats(name: string | undefined): GameAnimalStats | undefined {
+  if (!name) return undefined;
+  const key = Object.keys(GAME_ANIMAL_STATS).find(
+    (k) => k.toLowerCase() === name.trim().toLowerCase()
+  );
+  return key ? GAME_ANIMAL_STATS[key] : undefined;
+}
+
+/** The book's size for a quarry, which is the one thing the butchering needs. */
+export function gameAnimalSize(name: string | undefined): "small" | "medium" | "large" | undefined {
+  return gameAnimalStats(name)?.size;
 }

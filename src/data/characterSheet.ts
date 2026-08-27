@@ -87,6 +87,16 @@ export interface CharacterExtras {
   skills: { listen: number; search: number; survival: number };
   /** Feet per turn while exploring — printed beside Speed on the paper sheet. */
   exploring: string;
+  /**
+   * How many spells this character sets about preparing of a morning. **Zero
+   * means "not a spell-caster"**, which is why one number carries both answers.
+   *
+   * It lives on the character because that is what it is a fact about — not
+   * every adventurer casts, and the morning's dialog should not ask the Referee
+   * to remember which ones do, every day, for the rest of the campaign. Written
+   * by that dialog, so the answer given once is the answer offered next time.
+   */
+  prepares: number;
   blocks: CharacterBlock[];
 }
 
@@ -169,6 +179,9 @@ export function defaultExtras(): CharacterExtras {
       survival: DEFAULT_SKILL_TARGET,
     },
     exploring: "",
+    // Nobody is assumed to cast: a party of fighters should never be asked to
+    // untick four boxes on its first morning.
+    prepares: 0,
     blocks: [],
   };
 }

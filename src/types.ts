@@ -54,6 +54,16 @@ export interface InventoryItem {
   notes: string;
   uses?: number;                       // remaining uses (only for items where def.maxUses is set)
   customDefinition?: Partial<ItemDefinition>;
+  /**
+   * A line only the Referee can read.
+   *
+   * Not the same thing as `isSecret`, which hides the row from everyone but the
+   * GM and the owner. This keeps the row in plain sight and holds back what it
+   * *is* — the rare herb a hex grows goes into a player's pack as "Rare herb",
+   * with its true name and its effect written here. The players rename it when
+   * somebody identifies it; the Referee has known all along.
+   */
+  gmNote?: string;
 }
 
 /**
@@ -84,6 +94,17 @@ export interface CharacterDay {
   ate: boolean;
   /** A *good* night's rest, not merely lying down — see Player's Book p159. */
   sleptWell: boolean;
+  /**
+   * Whether the night *before* this day was a good one.
+   *
+   * Kept because the morning needs it and `sleptWell` no longer has it: the
+   * sleep roll is made on the evening of day N and the healing that pays for it
+   * happens on the morning of day N+1, by which time the roll-over has cleared
+   * the flag. Written once, by the roll-over, out of the day that just ended.
+   */
+  sleptWellLastNight?: boolean;
+  /** Has this character already taken the morning's 1 HP? One per day, per character. */
+  healed?: boolean;
   daysWithoutFood: number;     // consecutive days ending yesterday
   daysWithoutSleep: number;    // exhaustion: -1 per day until a good night's rest
   travelDaysSinceRest: number;
