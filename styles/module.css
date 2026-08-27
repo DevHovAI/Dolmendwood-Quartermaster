@@ -5538,3 +5538,471 @@ span.day-bar-panel-tick {
   margin-right: 3px;
   opacity: 0.8;
 }
+
+/* ══ The attribute sheet ═════════════════════════════════════════════════════
+   Page one of the printed sheet, in the same reading order: who they are, the
+   six scores, what defends them, how they move, what they know, what they
+   hold, and then the long free part the table fills in itself.
+
+   Laid out in lanes like the inventory rows, and for the same reason: every
+   number here is compared down a column, so a box that sizes itself to its
+   contents makes the column crooked the moment somebody rolls an 18. */
+
+.dw-sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 10px 14px;
+  color: var(--dw-text);
+}
+
+.dw-sheet-warning {
+  margin: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--speed-orange);
+  border-radius: 4px;
+  background: rgba(147, 48, 10, 0.08);
+  color: var(--speed-orange);
+  font-size: 0.85em;
+}
+
+/* ── Who they are ── */
+
+.dw-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.dw-sheet-portrait {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--dw-border);
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.dw-sheet-identity {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dw-sheet-name {
+  margin: 0 0 4px;
+  font-size: 1.25em;
+  font-weight: 700;
+}
+
+/* Six one-line facts, wrapping — not a form to be filled in twice. */
+.dw-sheet-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 4px 8px;
+}
+
+.dw-sheet-fields label,
+.dw-vital-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+}
+
+.dw-sheet-fields input,
+.dw-vital-grid input {
+  width: 100%;
+  font-size: 1.15em;
+  text-transform: none;
+  letter-spacing: normal;
+  opacity: 1;
+}
+
+.dw-sheet-head-actions {
+  flex: 0 0 auto;
+}
+
+/* ── The one-off modifier ── */
+
+.dw-sheet-situational {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px dashed var(--dw-border-light);
+  border-radius: 4px;
+  background: var(--dw-bg-parchment);
+  font-size: 0.8em;
+}
+
+.dw-sheet-situational input[type="number"] {
+  /* Sized for -4, not for the number 100. */
+  width: 56px;
+  text-align: center;
+}
+
+.dw-sheet-magic {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+/* ── Sections ── */
+
+.dw-sheet-section {
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  padding: 6px 9px 9px;
+  background: var(--dw-bg-parchment);
+}
+
+.dw-sheet-section > h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--dw-border-light);
+  font-size: 0.82em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dw-sheet-section > h3 > .dw-sheet-add {
+  margin-left: auto;
+  width: auto;
+  font-size: 0.95em;
+}
+
+.dw-sheet-hint {
+  margin: 4px 0 0;
+  font-size: 0.78em;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* Everything between the scores and the weapons reads across, not down. */
+.dw-sheet-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+/* ── The six ── */
+
+.dw-sheet-abilities {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+}
+
+.dw-ability {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 4px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.dw-ability-label {
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dw-ability-numbers {
+  display: flex;
+  gap: 4px;
+}
+
+/* The score is the big one; the modifier is the one that gets rolled. Sized in
+   that order, which is not quite the order the eye expects. */
+.dw-ability-score input {
+  width: 46px;
+  font-size: 1.35em;
+  font-weight: 700;
+  text-align: center;
+}
+
+.dw-ability-mod input {
+  width: 38px;
+  text-align: center;
+}
+
+.dw-ability-governs {
+  font-size: 0.68em;
+  line-height: 1.2;
+  opacity: 0.7;
+}
+
+/* ── Saves and skills: label, target, die ── */
+
+.dw-save-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.dw-save-label {
+  /* An elastic lane, so five targets line up under one another however long
+     the words in front of them are. */
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.85em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dw-save-row input {
+  flex: 0 0 auto;
+  width: 48px;
+  text-align: center;
+}
+
+.dw-vital-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
+  gap: 5px 7px;
+}
+
+/* ── The roll buttons ── */
+
+.dw-roll-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  padding: 2px 7px;
+  border: 1px solid var(--dw-border);
+  border-radius: 3px;
+  background: var(--dw-bg-dark);
+  color: var(--dw-primary);
+  font-size: 0.78em;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dw-roll-btn:hover {
+  background: var(--dw-accent-light);
+}
+
+/* Damage is a different act from hitting, and the eye should not have to read
+   the label to tell them apart. */
+.dw-roll-btn.is-damage {
+  border-color: var(--speed-orange);
+  color: var(--speed-orange);
+}
+
+/* ── Weapons ── */
+
+.dw-weapon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dw-weapon-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  padding: 4px 6px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+}
+
+.dw-weapon-name {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.dw-weapon-damage {
+  margin-left: 5px;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: var(--dw-bg-dark);
+  font-size: 0.8em;
+  font-weight: 700;
+}
+
+.dw-weapon-band {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 170px;
+  font-size: 0.78em;
+}
+
+.dw-weapon-buttons {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* What the module read off the item and deliberately did not compute — Brace,
+   Reach, Splash. Each is a ruling, so they are shown and left alone. */
+.dw-weapon-notes {
+  flex: 1 1 100%;
+  font-size: 0.75em;
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* ── Blocks ── */
+
+.dw-block-group + .dw-block-group {
+  margin-top: 8px;
+}
+
+.dw-block-group > h4 {
+  margin: 0 0 3px;
+  font-size: 0.78em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+.dw-block {
+  padding: 3px 6px;
+  border-left: 2px solid var(--dw-border-light);
+  margin-bottom: 3px;
+}
+
+.dw-block.is-prepared {
+  border-left-color: var(--dw-accent);
+  background: rgba(200, 160, 80, 0.1);
+}
+
+.dw-block-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dw-block-name {
+  font-weight: 600;
+}
+
+.dw-block-value {
+  padding: 0 5px;
+  border-radius: 3px;
+  background: var(--dw-bg-dark);
+  font-size: 0.8em;
+  font-weight: 700;
+}
+
+/* The address is the point of a block, so it is shown rather than hidden — but
+   quietly, because it is read once and then remembered. */
+.dw-block-address {
+  font-size: 0.72em;
+  opacity: 0.55;
+}
+
+.dw-block-uses {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dw-uses-btn {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--dw-border);
+  border-radius: 3px;
+  background: var(--dw-bg-dark);
+  font-size: 0.75em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dw-block-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.dw-block-text {
+  margin: 2px 0 0;
+  font-size: 0.85em;
+  line-height: 1.35;
+  opacity: 0.9;
+}
+
+/* The address preview in the block dialog, live while the name is typed. */
+.dw-block-slug {
+  font-weight: 700;
+}
+
+/* Only the questions the chosen kind asks are shown; the rest are hidden by
+   the dialog itself, so this is only about the ones that stay. */
+.dw-block-form hr {
+  margin: 8px 0;
+  border: none;
+  border-top: 1px solid var(--dw-border-light);
+}
+
+/* A door to the sheet from the party window's column header. */
+.player-sheet-btn {
+  width: auto;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.player-sheet-btn:hover {
+  opacity: 1;
+}
+
+/* ── The card a sheet roll posts ── */
+
+.dw-sheet-roll .dw-sheet-total {
+  margin-right: 6px;
+  font-size: 1.5em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The arithmetic, for a Referee who disagrees with a modifier and would rather
+   see it than take the module's word for the sum. */
+.dw-sheet-maths {
+  font-family: monospace;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+/* What the day already costs, said once above the weapons — never a tick, only
+   a report of what the formulas are doing anyway. */
+.dw-sheet-penalty {
+  margin: 0 0 6px;
+  padding: 3px 7px;
+  border-radius: 3px;
+  background: rgba(147, 48, 10, 0.09);
+  color: var(--speed-orange);
+  font-size: 0.78em;
+}
+
+.dw-sheet-penalty > i {
+  margin-right: 4px;
+}

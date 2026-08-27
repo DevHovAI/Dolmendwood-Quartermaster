@@ -1,0 +1,304 @@
+{{!-- Page one of the printed Dolmenwood sheet, in the order it prints it:
+      who they are, the six scores, what defends them, how they move, what they
+      know, what they carry, and — the largest part of the paper and of this —
+      whatever the table wrote down for them. --}}
+
+<div class="dw-sheet-body">
+
+  {{#unless hasSystem}}
+  <p class="dw-sheet-warning">
+    <i class="fas fa-triangle-exclamation"></i>
+    This actor has no ability scores this module can read. The boxes below will stay empty and
+    write nothing — the sheet expects an OSE character.
+  </p>
+  {{/unless}}
+
+  {{!-- ── Who they are ─────────────────────────────────────────────────── --}}
+  <header class="dw-sheet-head">
+    {{#if img}}<img class="dw-sheet-portrait" src="{{img}}" alt="">{{/if}}
+    <div class="dw-sheet-identity">
+      <h2 class="dw-sheet-name">{{name}}</h2>
+      <div class="dw-sheet-fields">
+        <label>Kindred
+          <input type="text" data-extra="kindred" value="{{identity.kindred}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label>Class
+          <input type="text" data-field="class" value="{{identity.class}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label>Background
+          <input type="text" data-extra="background" value="{{identity.background}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label>Alignment
+          <input type="text" data-field="alignment" value="{{identity.alignment}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label>Affiliation
+          <input type="text" data-extra="affiliation" value="{{identity.affiliation}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label>Moon Sign
+          <input type="text" data-extra="moonSign" value="{{identity.moonSign}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+      </div>
+    </div>
+    <div class="dw-sheet-head-actions">
+      <button type="button" data-action="openInventory" title="This character's inventory — the module's own, which is where their gear lives">
+        <i class="fas fa-backpack"></i> Inventory
+      </button>
+    </div>
+  </header>
+
+  {{!-- One box for the whole window: a modifier the Referee called for this
+        roll and no other. It rides on whatever is clicked next and is never
+        stored, because a stored one is eventually a forgotten one. --}}
+  <div class="dw-sheet-situational">
+    <label for="dw-sheet-situational">This roll only</label>
+    <input type="number" id="dw-sheet-situational" value="0" step="1"
+           title="Added to the next thing you click — an Ability Check, a save, a skill, an attack or its damage. Never saved.">
+    <label class="dw-sheet-magic" title="Dolmenwood adds the Wisdom modifier to Saving Throws against magical effects. Tick it before rolling one.">
+      <input type="checkbox" id="dw-sheet-magical"> vs magic (+WIS)
+    </label>
+  </div>
+
+  {{!-- ── The six ──────────────────────────────────────────────────────── --}}
+  <section class="dw-sheet-section">
+    <h3>Ability Scores</h3>
+    <div class="dw-sheet-abilities">
+      {{#each abilities}}
+      <div class="dw-ability">
+        <span class="dw-ability-label">{{this.label}}</span>
+        <div class="dw-ability-numbers">
+          <label class="dw-ability-score" title="Score">
+            <input type="number" data-field="score-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
+          </label>
+          <label class="dw-ability-mod" title="Modifier">
+            <input type="number" data-field="mod-{{this.key}}" value="{{this.bonus}}" {{#unless ../canEdit}}disabled{{/unless}}>
+          </label>
+        </div>
+        <button type="button" class="dw-roll-btn" data-action="rollAbility" data-ability="{{this.key}}"
+                title="Ability Check: 1d6 {{this.signed}}, at or over 4">
+          <i class="fas fa-dice-d6"></i> Check
+        </button>
+        <span class="dw-ability-governs">{{this.governs}}</span>
+      </div>
+      {{/each}}
+    </div>
+  </section>
+
+  {{!-- ── What defends them ────────────────────────────────────────────── --}}
+  <div class="dw-sheet-columns">
+
+    <section class="dw-sheet-section dw-sheet-saves">
+      <h3>Save Targets</h3>
+      {{#each saves}}
+      <div class="dw-save-row">
+        <span class="dw-save-label">{{this.label}}</span>
+        <input type="number" data-field="save-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
+        <button type="button" class="dw-roll-btn" data-action="rollSave" data-save="{{this.key}}"
+                title="1d20, at or over {{this.value}}">
+          <i class="fas fa-dice-d20"></i>
+        </button>
+      </div>
+      {{/each}}
+    </section>
+
+    <section class="dw-sheet-section dw-sheet-vitals">
+      <h3>In a fight</h3>
+      <div class="dw-vital-grid">
+        <label>HP
+          <input type="number" data-field="hp" value="{{hp.value}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label>Max HP
+          <input type="number" data-field="hpMax" value="{{hp.max}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        {{!-- AC is the one number OSE derives from the armour worn, so an edit
+              here becomes a change to the modifier rather than the total. --}}
+        <label title="OSE works this out from the armour worn. Typing a total here writes the difference into the modifier, which is the part that is yours to set.">AC
+          <input type="number" data-field="ac" value="{{ac}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label>Attack
+          <input type="number" data-field="attack" value="{{attack}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label title="On the printed sheet this is the Wisdom modifier. Left free for a table that rules otherwise — {{magicResistanceDerived}} is what Wisdom says.">Magic Resistance
+          <input type="text" data-extra="magicResistance" value="{{magicResistance}}"
+                 placeholder="{{magicResistanceDerived}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label>Level
+          <input type="number" data-field="level" value="{{level}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+      </div>
+    </section>
+
+    <section class="dw-sheet-section dw-sheet-movement">
+      <h3>Movement</h3>
+      <div class="dw-vital-grid">
+        <label title="Feet per Round">Speed
+          <input type="number" data-field="speed" value="{{speed}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label title="Feet per Turn while exploring">Exploring
+          <input type="text" data-extra="exploring" value="{{exploring}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label title="Overland: Speed divided by 5, the same figure the day bar counts the march against">
+          Travel Points
+          <input type="number" value="{{travelPoints}}" disabled>
+        </label>
+      </div>
+    </section>
+
+    <section class="dw-sheet-section dw-sheet-skills">
+      <h3>Skill Targets</h3>
+      <p class="dw-sheet-hint">Six is everybody's, and Kindred or Class only ever lowers it.</p>
+      {{#each skills}}
+      <div class="dw-save-row">
+        <span class="dw-save-label">{{this.label}}</span>
+        <input type="number" data-extra="skill-{{this.key}}" min="1" max="6" value="{{this.target}}" {{#unless ../canEdit}}disabled{{/unless}}>
+        <button type="button" class="dw-roll-btn" data-action="rollSkill" data-skill="{{this.key}}"
+                title="1d6, at or over {{this.target}}">
+          <i class="fas fa-dice-d6"></i>
+        </button>
+      </div>
+      {{/each}}
+    </section>
+
+    <section class="dw-sheet-section dw-sheet-learning">
+      <h3>Experience</h3>
+      <div class="dw-vital-grid">
+        <label>XP
+          <input type="number" data-field="xp" value="{{xp.value}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label>Next level
+          <input type="number" data-field="xpNext" value="{{xp.next}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label title="The percentage bonus a high prime requisite earns">Modifier
+          <input type="number" data-field="xpBonus" value="{{xp.bonus}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label title="How many spells this character sets about preparing of a morning. Nought means they are not a spell-caster, and the morning's duty will not ask about them.">
+          Spells prepared
+          <input type="number" data-extra="prepares" min="0" max="20" value="{{prepares}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+      </div>
+      <p class="dw-sheet-hint">Languages: {{#if languages}}{{languages}}{{else}}<em>none recorded</em>{{/if}}</p>
+    </section>
+
+  </div>
+
+  {{!-- ── What they are holding ────────────────────────────────────────── --}}
+  <section class="dw-sheet-section">
+    <h3>Weapons in hand</h3>
+    {{!-- Only when it costs something. A fed and rested character gets no line,
+          because "no penalty" is not news. --}}
+    {{#if penalties}}
+    <p class="dw-sheet-penalty"><i class="fas fa-face-tired"></i> {{penalties}}</p>
+    {{/if}}
+    {{#if hasWeapons}}
+    <div class="dw-weapon-list">
+      {{#each weapons}}
+      <div class="dw-weapon-row">
+        <span class="dw-weapon-name">
+          <i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-gavel{{/if}}"></i>
+          {{this.name}}
+          <span class="dw-weapon-damage">{{this.damage}}</span>
+        </span>
+        {{#if this.bands}}
+        <select class="dw-weapon-band" data-item-id="{{this.itemId}}" title="Which range band the shot is at">
+          {{#each this.bands}}
+          <option value="{{this.key}}"{{#if (eq this.key "medium")}} selected{{/if}}>{{this.label}}</option>
+          {{/each}}
+        </select>
+        {{/if}}
+        <span class="dw-weapon-buttons">
+          {{#each this.modes}}
+          <button type="button" class="dw-roll-btn" data-action="rollAttack"
+                  data-item-id="{{../this.itemId}}" data-missile="{{this.missile}}"
+                  title="{{this.label}} Attack Roll">
+            <i class="fas fa-crosshairs"></i> {{this.label}}
+          </button>
+          {{/each}}
+          {{#each this.modes}}
+          <button type="button" class="dw-roll-btn is-damage" data-action="rollDamage"
+                  data-item-id="{{../this.itemId}}" data-missile="{{this.missile}}"
+                  title="{{this.label}} damage{{#unless this.missile}} — Strength is added to melee damage and not to missile damage{{/unless}}">
+            <i class="fas fa-burst"></i> {{this.label}} dmg
+          </button>
+          {{/each}}
+        </span>
+        {{#if this.notesLine}}<span class="dw-weapon-notes" title="Read off the item and left for you to rule on">{{this.notesLine}}</span>{{/if}}
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <p class="dw-sheet-hint">Nothing equipped. A weapon rolls from here once it is
+      <strong>equipped</strong> in the inventory and its qualities carry a damage die.</p>
+    {{/if}}
+  </section>
+
+  {{!-- ── And everything the table wrote ───────────────────────────────── --}}
+  <section class="dw-sheet-section dw-sheet-blocks">
+    <h3>
+      Traits, abilities and spells
+      {{#if canEdit}}
+      <button type="button" class="dw-sheet-add" data-action="addBlock" title="Write a new block">
+        <i class="fas fa-plus"></i> Add
+      </button>
+      {{/if}}
+    </h3>
+
+    {{#if hasBlocks}}
+    {{#each groups}}
+    <div class="dw-block-group">
+      <h4>{{this.label}}</h4>
+      {{#each this.blocks}}
+      <div class="dw-block {{#if this.prepared}}is-prepared{{/if}}">
+        <div class="dw-block-head">
+          {{#if this.uses}}
+          <span class="dw-block-uses" title="Uses left today">
+            {{#if ../../canEdit}}
+            <button type="button" class="dw-uses-btn" data-action="spendUse" data-block-id="{{this.id}}"
+                    title="Use one">&minus;</button>
+            {{/if}}
+            <span>{{this.uses.value}}/{{this.uses.max}}</span>
+            {{#if ../../canEdit}}
+            <button type="button" class="dw-uses-btn" data-action="restoreUses" data-block-id="{{this.id}}"
+                    title="Back to full — what a night's rest does">
+              <i class="fas fa-rotate-left"></i>
+            </button>
+            {{/if}}
+          </span>
+          {{/if}}
+          <span class="dw-block-name">{{this.name}}</span>
+          {{#if this.value}}<span class="dw-block-value" title="What @b.{{this.slug}} stands for">{{this.value}}</span>{{/if}}
+          <code class="dw-block-address" title="How another formula on this sheet reaches it">@b.{{this.slug}}</code>
+          <span class="dw-block-actions">
+            {{#if this.rollable}}
+            <button type="button" class="dw-roll-btn" data-action="rollBlock" data-block-id="{{this.id}}"
+                    title="Roll it">
+              <i class="fas fa-dice-d20"></i> Roll
+            </button>
+            {{/if}}
+            {{#if ../../canEdit}}
+            <button type="button" class="icon-btn" data-action="togglePrepared" data-block-id="{{this.id}}"
+                    title="Mark it prepared for today">
+              <i class="fas {{#if this.prepared}}fa-book-bookmark{{else}}fa-book{{/if}}"></i>
+            </button>
+            <button type="button" class="icon-btn" data-action="editBlock" data-block-id="{{this.id}}" title="Edit">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button type="button" class="icon-btn delete-btn" data-action="deleteBlock" data-block-id="{{this.id}}" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+            {{/if}}
+          </span>
+        </div>
+        {{#if this.text}}<p class="dw-block-text">{{this.text}}</p>{{/if}}
+      </div>
+      {{/each}}
+    </div>
+    {{/each}}
+    {{else}}
+    <p class="dw-sheet-hint">
+      Nothing written yet. A block is a trait, a class ability, a spell or a skill of its own —
+      the module ships no lists on purpose, so write what you play. Every block gets an address
+      like <code>@b.keen-nose</code>, and any other formula on this sheet can lean on it.
+    </p>
+    {{/if}}
+  </section>
+
+</div>

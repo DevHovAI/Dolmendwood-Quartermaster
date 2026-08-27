@@ -5,6 +5,7 @@ import { definitionFor } from "../data/itemDefs";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { ShopApp } from "./ShopApp";
 import { PlayerInventoryApp } from "./PlayerInventoryApp";
+import { CharacterSheetApp } from "./CharacterSheetApp";
 import { getPartyActors, getSharedActor, isSharedActor } from "../data/sharedStore";
 import { displayQuantity } from "../data/consumables";
 import type { PartyConvoy } from "../types";
@@ -175,6 +176,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     classes: ["dolmenwood-party-inventory", "party-overview"],
     actions: {
       openShop: PartyOverviewApp._onOpenShop,
+      openSheet: PartyOverviewApp._onOpenSheet,
     },
   };
 
@@ -344,6 +346,12 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
 
   private static _onOpenShop(this: PartyOverviewApp): void {
     new ShopApp().render(true);
+  }
+
+  /** The attribute sheet for one member — the party window is where the GM is. */
+  private static _onOpenSheet(this: PartyOverviewApp, _e: Event, target: HTMLElement): void {
+    const actor = (game as Game).actors?.get(target.dataset.actorId ?? "");
+    if (actor) CharacterSheetApp.open(actor);
   }
 
 }

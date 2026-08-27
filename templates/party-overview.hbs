@@ -41,6 +41,13 @@
       {{!-- Player header. No inventory button — clicking the column opens it. --}}
       <div class="player-col-header">
         <span class="player-name" title="{{this.actor.name}}">{{this.actor.name}}</span>
+        {{!-- The column itself opens the inventory, so the sheet needs a door of
+              its own. A button, because the column's own handler steps aside for
+              one. --}}
+        <button type="button" class="player-sheet-btn" data-action="openSheet"
+                data-actor-id="{{this.actorId}}" title="{{this.actor.name}}'s attributes, saves and traits">
+          <i class="fas fa-scroll"></i>
+        </button>
         <span class="player-speed {{speedColor this.encumbrance.finalSpeed}}">
           {{speedLabel this.encumbrance.finalSpeed}}
           {{#if (eq ../encMode "slots")}}

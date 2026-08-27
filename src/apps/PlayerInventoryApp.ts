@@ -2,6 +2,7 @@ import { TEMPLATES, SOCKET_EVENTS, SETTINGS, MODULE_ID } from "../constants";
 import { QUALITIES_HINT, parseQualities } from "../data/weapons";
 import { activateQualitiesPreview } from "../helpers/handlebars";
 import { ShopApp } from "./ShopApp";
+import { CharacterSheetApp } from "./CharacterSheetApp";
 import { buildPartySummary, buildPartyConvoy } from "./PartyOverviewApp";
 import { FlagManager, totalZoneCoins, addCoinsToZone } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
@@ -1171,6 +1172,11 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
    * shop would otherwise default to. That is the whole reason the button earns
    * a place inside an inventory as well.
    */
+  /** This character's attribute sheet — the other half of the same character. */
+  private static _onOpenSheet(this: PlayerInventoryApp): void {
+    CharacterSheetApp.open(this.actor);
+  }
+
   private static _onOpenShop(this: PlayerInventoryApp): void {
     // Hiding the button is presentation; this is the rule. The action stays
     // registered whatever the template renders.

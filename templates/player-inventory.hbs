@@ -19,6 +19,12 @@
       <i class="fas fa-store"></i> Shop
     </button>
     {{/if}}
+    {{!-- The other half of the character: the sheet's own Inventory button
+          comes back here, so the two windows point at each other. --}}
+    <button type="button" data-action="openSheet" class="btn-toolbar btn-sheet"
+            title="{{actor.name}}'s attributes, saves, skills and traits">
+      <i class="fas fa-scroll"></i> Attributes
+    </button>
   </div>
 
   {{!-- Encumbrance bars. The shared store carries nothing itself — a load bar

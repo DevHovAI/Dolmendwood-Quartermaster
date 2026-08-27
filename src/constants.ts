@@ -20,6 +20,7 @@ export const TEMPLATES = {
   DAY_BAR: `modules/${MODULE_ID}/templates/day-bar.hbs`,
   DAY_BAR_GROUP: `modules/${MODULE_ID}/templates/day-bar-group.hbs`,
   MARKET: `modules/${MODULE_ID}/templates/market.hbs`,
+  CHARACTER_SHEET: `modules/${MODULE_ID}/templates/character-sheet.hbs`,
   PARTIALS: {
     INVENTORY_ZONE: `modules/${MODULE_ID}/templates/partials/inventory-zone.hbs`,
     ITEM_ROW: `modules/${MODULE_ID}/templates/partials/item-row.hbs`,

@@ -5,6 +5,7 @@ import { fitToViewport } from "./helpers/fitToViewport";
 import { SocketHandler } from "./socket/SocketHandler";
 import { PartyOverviewApp } from "./apps/PartyOverviewApp";
 import { PlayerInventoryApp } from "./apps/PlayerInventoryApp";
+import { CharacterSheetApp } from "./apps/CharacterSheetApp";
 import { ShopApp } from "./apps/ShopApp";
 import { InnApp } from "./apps/InnApp";
 import { MarketApp } from "./apps/MarketApp";
@@ -971,6 +972,13 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
   // Releasing a loot box changes only `ownership`, not a flag — without this the
   // players' clients would never notice the hoard becoming available.
   const ownershipChanged = "ownership" in diff;
+
+  // The attribute sheet reads the actor's **system** data as much as our own
+  // flag — the six scores, HP, the saves — so it has to notice writes the rest
+  // of the module has no interest in, and cannot sit behind the early return
+  // below. Bounded by the number of open sheets, which is nought or one.
+  CharacterSheetApp.refreshAll();
+
   if (!flagDiff && !ownershipChanged) return;
 
   // Re-render any open window that belongs to this actor or the party overview
@@ -1136,12 +1144,25 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
   } as SceneControlTool;
   }
 
+  // Beside the inventory, because they are the two halves of one character and
+  // the sheet's own header points back at the other one.
+  if (!barOnly) {
+    (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-character"] = {
+      name: "dolmenwood-character",
+      title: "Attributes",
+      icon: "fas fa-scroll",
+      order: existingToolCount + 1,
+      button: true,
+      onChange: () => openCharacterSheet(),
+    } as SceneControlTool;
+  }
+
   if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH))) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-trash"] = {
       name: "dolmenwood-trash",
       title: "Trash",
       icon: "fas fa-trash-can",
-      order: existingToolCount + 1,
+      order: existingToolCount + 2,
       button: true,
       onChange: () => openTrash(),
     } as SceneControlTool;
@@ -1154,7 +1175,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
       name: "dolmenwood-shop",
       title: "Shop",
       icon: "fas fa-store",
-      order: existingToolCount + 2,
+      order: existingToolCount + 3,
       button: true,
       onChange: () => openShop(),
     } as SceneControlTool;
@@ -1166,7 +1187,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
       name: "dolmenwood-inn",
       title: "Inn",
       icon: "fas fa-beer-mug-empty",
-      order: existingToolCount + 3,
+      order: existingToolCount + 4,
       button: true,
       onChange: () => openInn(),
     } as SceneControlTool;
@@ -1177,7 +1198,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
       name: "dolmenwood-loot",
       title: "Loot",
       icon: "fas fa-treasure-chest",
-      order: existingToolCount + 4,
+      order: existingToolCount + 5,
       button: true,
       onChange: () => openLootBrowser(),
     } as SceneControlTool;
@@ -1188,7 +1209,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
       name: "dolmenwood-day-bar",
       title: "Day Duties",
       icon: "fas fa-calendar-day",
-      order: existingToolCount + 5,
+      order: existingToolCount + 6,
       button: true,
       onChange: () => void toggleDayBar(),
     } as SceneControlTool;
@@ -1325,6 +1346,37 @@ function openPlayerInventory(actorOrId?: Actor | string): void {
   } else {
     new PlayerInventoryApp(actor).render(true);
   }
+}
+
+/**
+ * The attribute sheet, for whoever is meant.
+ *
+ * **A Referee has no one character**, so the selected token stands in for the
+ * assignment a player has: click a token, press the button, read that
+ * character's saves. Falling back that way rather than opening a picker keeps
+ * one button doing one thing, and the party window has a door per member for
+ * when nothing is selected.
+ */
+function openCharacterSheet(actorOrId?: Actor | string): void {
+  const g = game as Game;
+  let actor: Actor | undefined;
+
+  if (typeof actorOrId === "string") actor = g.actors?.get(actorOrId);
+  else if (actorOrId instanceof Actor) actor = actorOrId;
+  else {
+    actor =
+      g.user?.character ??
+      (canvas?.tokens?.controlled?.[0]?.actor as Actor | undefined) ??
+      undefined;
+  }
+
+  if (!actor) {
+    ui.notifications?.warn(
+      "No character. Assign one to your user, or select a token, or open one from the party window."
+    );
+    return;
+  }
+  CharacterSheetApp.open(actor);
 }
 
 function openShop(
