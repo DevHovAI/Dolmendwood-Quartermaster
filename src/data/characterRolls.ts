@@ -72,6 +72,13 @@ export function buildRollData(actor: Actor): Record<string, unknown> {
   for (const b of extras.blocks) blocks[b.slug] = b.value ?? 0;
   data.b = blocks;
 
+  // The table's own skill targets, under a namespace of their own for the same
+  // reason. The three printed ones keep their bare names, since those are what
+  // the book calls them and what a formula would reach for first.
+  const more: Record<string, number> = {};
+  for (const s of extras.moreSkills) more[s.slug] = s.target;
+  data.s = more;
+
   return data;
 }
 

@@ -5574,13 +5574,16 @@ span.day-bar-panel-tick {
   gap: 10px;
 }
 
+/* A portrait, not a token. It is the one thing on the page that says who this
+   is rather than what they can do, so it gets the room to. */
 .dw-sheet-portrait {
   flex: 0 0 auto;
-  width: 64px;
-  height: 64px;
+  width: 132px;
+  height: 176px;
   border: 1px solid var(--dw-border);
   border-radius: 4px;
   object-fit: cover;
+  object-position: top center;
 }
 
 .dw-sheet-identity {
@@ -5612,10 +5615,17 @@ span.day-bar-panel-tick {
   opacity: 0.75;
 }
 
+/* **Boxes you can actually type in.** The first cut sized them by their
+   contents, which is right for a printed sheet and wrong for a form: a field
+   holding "Grimalkin" has to hold "Grimalkin of the Nine Hollows" too, and one
+   holding 18 has to be clickable without aiming. Everything here is at least a
+   comfortable line high, and the text fields fill their column. */
 .dw-sheet-fields input,
 .dw-vital-grid input {
   width: 100%;
-  font-size: 1.15em;
+  height: 30px;
+  padding: 2px 6px;
+  font-size: 1.05em;
   text-transform: none;
   letter-spacing: normal;
   opacity: 1;
@@ -5627,28 +5637,48 @@ span.day-bar-panel-tick {
 
 /* ── The one-off modifier ── */
 
+/* Up in the header now, beside the Inventory button: it applies to everything
+   on the page, so it belongs where the page is titled rather than in a stripe
+   between two sections it does not favour. */
+.dw-sheet-head-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+}
+
 .dw-sheet-situational {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 6px;
   border: 1px dashed var(--dw-border-light);
   border-radius: 4px;
-  background: var(--dw-bg-parchment);
-  font-size: 0.8em;
+  font-size: 0.75em;
+  white-space: nowrap;
 }
 
 .dw-sheet-situational input[type="number"] {
   /* Sized for -4, not for the number 100. */
-  width: 56px;
+  width: 50px;
+  height: 24px;
   text-align: center;
 }
 
+/* Lives in the Save Targets section, because `magical` exists on exactly one of
+   the six roll kinds and adding Wisdom to an attack is not a thing the book
+   does. */
 .dw-sheet-magic {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  margin-left: auto;
+  gap: 5px;
+  margin: 0 0 5px;
+  font-size: 0.8em;
+}
+
+.dw-sheet-magic em {
+  opacity: 0.7;
 }
 
 /* ── Sections ── */
@@ -5728,15 +5758,26 @@ span.day-bar-panel-tick {
 /* The score is the big one; the modifier is the one that gets rolled. Sized in
    that order, which is not quite the order the eye expects. */
 .dw-ability-score input {
-  width: 46px;
-  font-size: 1.35em;
+  width: 60px;
+  height: 38px;
+  font-size: 1.45em;
   font-weight: 700;
   text-align: center;
 }
 
 .dw-ability-mod input {
-  width: 38px;
+  width: 50px;
+  height: 38px;
+  font-size: 1.15em;
   text-align: center;
+}
+
+/* The modifier is filled in from the score by the book's table, so one that has
+   been set by hand is worth marking — it is the only number on the page that
+   the sheet would otherwise be expected to keep in step. */
+.dw-ability-mod.is-house-ruled input {
+  border-color: var(--dw-accent);
+  background: rgba(200, 160, 80, 0.16);
 }
 
 .dw-ability-governs {
@@ -5767,14 +5808,16 @@ span.day-bar-panel-tick {
 
 .dw-save-row input {
   flex: 0 0 auto;
-  width: 48px;
+  width: 58px;
+  height: 30px;
+  font-size: 1.05em;
   text-align: center;
 }
 
 .dw-vital-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(86px, 1fr));
-  gap: 5px 7px;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 7px 8px;
 }
 
 /* ── The roll buttons ── */

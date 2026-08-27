@@ -65,6 +65,37 @@ export const SAVES: { key: SaveKey; label: string; ose: string }[] = [
 /** An Ability Check succeeds on 1d6 + the ability's modifier at or above this. */
 export const ABILITY_CHECK_TARGET = 4;
 
+/**
+ * The modifier an Ability Score carries (Player's Book p22).
+ *
+ * Printed as a table of ranges rather than a formula, and kept as one here: the
+ * bands are not symmetric — 9-12 is four scores wide and 16-17 only two — so a
+ * `Math.floor((score - 10) / 3)` would be wrong at both ends and right in the
+ * middle, which is the worst way for it to be wrong.
+ */
+const ABILITY_MODIFIER_TABLE: { upTo: number; mod: number }[] = [
+  { upTo: 3, mod: -3 },
+  { upTo: 5, mod: -2 },
+  { upTo: 8, mod: -1 },
+  { upTo: 12, mod: 0 },
+  { upTo: 15, mod: 1 },
+  { upTo: 17, mod: 2 },
+  { upTo: Infinity, mod: 3 },
+];
+
+/**
+ * What the book says a score is worth.
+ *
+ * **The sheet fills the modifier in when a score is typed** — Leander's ask,
+ * and the arithmetic is the book's, not a house rule. The field stays editable
+ * afterwards, because a ring or a curse can move a modifier without moving the
+ * score, and the sheet says so when the two have come apart.
+ */
+export function abilityModifier(score: number): number {
+  if (!Number.isFinite(score) || score <= 0) return 0;
+  return ABILITY_MODIFIER_TABLE.find((band) => score <= band.upTo)?.mod ?? 0;
+}
+
 /** A skill with nothing said about it. Kindred and Class only ever lower it. */
 export const DEFAULT_SKILL_TARGET = 6;
 
@@ -83,8 +114,18 @@ export interface CharacterExtras {
   moonSign: string;
   /** Dolmenwood's own defence against magic; the sheet derives it from Wisdom. */
   magicResistance: string;
-  /** The three every adventurer has. Further ones are blocks. */
+  /** The three every adventurer has, printed on the paper sheet. */
   skills: { listen: number; search: number; survival: number };
+  /**
+   * Skill targets the table added — Leander's ask, 2026-08-27.
+   *
+   * The printed sheet has three lines and a Class hands out more than three, so
+   * the list has to grow. Kept beside the three rather than folded into
+   * `blocks` because a skill target is one number rolled one way, and asking a
+   * player to write a block for "Climb: 4" is asking too much for too little.
+   * Each is addressable as `@s.<slug>`, the same way a block is `@b.<slug>`.
+   */
+  moreSkills: { id: string; name: string; slug: string; target: number }[];
   /** Feet per turn while exploring — printed beside Speed on the paper sheet. */
   exploring: string;
   /**
@@ -178,6 +219,7 @@ export function defaultExtras(): CharacterExtras {
       search: DEFAULT_SKILL_TARGET,
       survival: DEFAULT_SKILL_TARGET,
     },
+    moreSkills: [],
     exploring: "",
     // Nobody is assumed to cast: a party of fighters should never be asked to
     // untick four boxes on its first morning.
@@ -222,6 +264,7 @@ export function getExtras(actor: Actor): CharacterExtras {
     ...base,
     ...stored,
     skills: { ...base.skills, ...(stored.skills ?? {}) },
+    moreSkills: (stored.moreSkills ?? []).map((s) => ({ ...s, slug: s.slug || slugify(s.name) })),
     blocks: (stored.blocks ?? []).map((b) => ({ ...b, slug: b.slug || slugify(b.name) })),
   };
 }

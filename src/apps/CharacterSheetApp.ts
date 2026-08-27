@@ -3,10 +3,12 @@ import {
   ABILITIES,
   DEFAULT_SKILL_TARGET,
   SAVES,
+  abilityModifier,
   getExtras,
   getSystemFields,
   hasSystemFields,
   setSystemField,
+  uniqueSlug,
   updateExtras,
   type CharacterBlock,
 } from "../data/characterSheet";
@@ -95,6 +97,8 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       addBlock: CharacterSheetApp._onAddBlock,
       editBlock: CharacterSheetApp._onEditBlock,
       deleteBlock: CharacterSheetApp._onDeleteBlock,
+      addSkill: CharacterSheetApp._onAddSkill,
+      deleteSkill: CharacterSheetApp._onDeleteSkill,
       spendUse: CharacterSheetApp._onSpendUse,
       restoreUses: CharacterSheetApp._onRestoreUses,
       togglePrepared: CharacterSheetApp._onTogglePrepared,
@@ -123,18 +127,34 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     const extras = getExtras(actor);
     const canEdit = !!actor.isOwner;
 
-    const abilities = ABILITIES.map((a) => ({
-      ...a,
-      value: sys.scores[a.key].value,
-      bonus: sys.scores[a.key].bonus,
-      // "+2" reads as a modifier; "2" reads as a second score.
-      signed: signed(sys.scores[a.key].bonus),
-    }));
+    const abilities = ABILITIES.map((a) => {
+      const { value, bonus } = sys.scores[a.key];
+      const byTheBook = abilityModifier(value);
+      return {
+        ...a,
+        value,
+        bonus,
+        // "+2" reads as a modifier; "2" reads as a second score.
+        signed: signed(bonus),
+        // Typing a score fills the modifier in from the book's table, so the two
+        // only come apart when somebody says so — a ring, a curse, a Referee's
+        // ruling. Worth pointing out when they have, and worth not undoing.
+        houseRuled: value > 0 && bonus !== byTheBook,
+        byTheBook: signed(byTheBook),
+      };
+    });
 
     const skills = [
-      { key: "listen", label: "Listen", target: extras.skills.listen },
-      { key: "search", label: "Search", target: extras.skills.search },
-      { key: "survival", label: "Survival", target: extras.skills.survival },
+      { key: "listen", label: "Listen", target: extras.skills.listen, custom: false, address: "@listen" },
+      { key: "search", label: "Search", target: extras.skills.search, custom: false, address: "@search" },
+      { key: "survival", label: "Survival", target: extras.skills.survival, custom: false, address: "@survival" },
+      ...extras.moreSkills.map((s) => ({
+        key: s.id,
+        label: s.name,
+        target: s.target,
+        custom: true,
+        address: `@s.${s.slug}`,
+      })),
     ];
 
     const weapons = equippedWeapons(actor).map((w) => ({
@@ -176,11 +196,11 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       ac: sys.ac,
       attack: sys.attack,
       attackSigned: signed(sys.attack),
-      speed: sys.speed,
-      exploring: extras.exploring,
-      // The printed sheet has an Overland box reading "Travel Points / day", and
-      // it is the same division the day bar makes: Speed / 5.
-      travelPoints: sys.speed ? Math.floor(sys.speed / 5) : 0,
+      // **Movement is not on this sheet**, Leander's call, 2026-08-27. The
+      // printed page has Speed, Exploring and Travel Points on it; the module
+      // works all three out from what the character is carrying and shows them
+      // in the inventory, on the party window and on the day bar. A fourth
+      // copy here would be the only one that could disagree with the load.
       // Dolmenwood's Magic Resistance *is* the Wisdom modifier on the printed
       // sheet, so the derived figure is offered and the field is left free for a
       // table that rules otherwise.
@@ -222,6 +242,16 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
         const field = input.dataset.field!;
         const value = input.type === "number" ? Number(input.value) || 0 : input.value;
         await setSystemField(this.actor, field, value);
+
+        // **Typing a score fills in what the book says it is worth** (p22) —
+        // Leander's ask, and it saves looking the table up six times per
+        // character. The modifier stays editable afterwards, because a ring or
+        // a curse moves it without moving the score; the sheet only offers the
+        // book's answer, it does not insist on it.
+        if (field.startsWith("score-")) {
+          const key = field.slice(6);
+          await setSystemField(this.actor, `mod-${key}`, abilityModifier(Number(value) || 0));
+        }
         void this.render(false);
       });
     });
@@ -232,8 +262,17 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
         const value = input.type === "number" ? Number(input.value) || 0 : input.value;
         await updateExtras(this.actor, (x) => {
           if (field.startsWith("skill-")) {
-            const key = field.slice(6) as "listen" | "search" | "survival";
-            x.skills[key] = Number(value) || DEFAULT_SKILL_TARGET;
+            const key = field.slice(6);
+            const target = Number(value) || DEFAULT_SKILL_TARGET;
+            // **The table's own skills are keyed by id, the printed three by
+            // name**, and the box says only "skill-<something>". Asking the
+            // list first is what keeps a skill called "Climb" from writing
+            // itself into a fourth printed skill nobody can see.
+            const own = x.moreSkills.find((s) => s.id === key);
+            if (own) own.target = target;
+            else if (key in x.skills) {
+              x.skills[key as "listen" | "search" | "survival"] = target;
+            }
           } else {
             (x as unknown as Record<string, unknown>)[field] = value;
           }
@@ -313,14 +352,22 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     _e: Event,
     target: HTMLElement
   ): Promise<void> {
-    const key = target.dataset.skill as "listen" | "search" | "survival";
+    const key = target.dataset.skill ?? "";
     const extras = getExtras(this.actor);
-    const label = key.charAt(0).toUpperCase() + key.slice(1);
+
+    // The three printed ones are keyed by name; the table's own are keyed by
+    // id, because two characters may both have a "Climb" and the sheet must not
+    // care. One lookup answers for both.
+    const printed = (extras.skills as Record<string, number | undefined>)[key];
+    const own = extras.moreSkills.find((s) => s.id === key);
+    if (printed === undefined && !own) return;
+
+    const label = own ? own.name : key.charAt(0).toUpperCase() + key.slice(1);
     await performRoll(
       this.actor,
       planRoll(fauxBlock(label), {
         kind: "skill",
-        target: extras.skills[key] ?? DEFAULT_SKILL_TARGET,
+        target: own ? own.target : printed ?? DEFAULT_SKILL_TARGET,
         ...bonusFor(this.#situational()),
       }),
       { icon: "fa-dice-d6" }
@@ -443,6 +490,45 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     void this.render(false);
   }
 
+  /**
+   * One more skill target than the paper has room for.
+   *
+   * The printed sheet prints three and a Class hands out more, so the list has
+   * to grow. Asked for by name rather than picked from a list, because the
+   * module ships no Class data and never will.
+   */
+  private static async _onAddSkill(this: CharacterSheetApp): Promise<void> {
+    const name = await promptText("New skill target", "What is it called?", "Climb");
+    if (!name) return;
+    await updateExtras(this.actor, (x) => {
+      const taken = [
+        ...Object.keys(x.skills),
+        ...x.moreSkills.map((s) => s.slug),
+      ];
+      x.moreSkills.push({
+        id: foundry.utils.randomID(),
+        name,
+        slug: uniqueSlug(name, taken),
+        target: DEFAULT_SKILL_TARGET,
+      });
+      return x;
+    });
+    void this.render(false);
+  }
+
+  private static async _onDeleteSkill(
+    this: CharacterSheetApp,
+    _e: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const id = target.dataset.skillId;
+    await updateExtras(this.actor, (x) => {
+      x.moreSkills = x.moreSkills.filter((s) => s.id !== id);
+      return x;
+    });
+    void this.render(false);
+  }
+
   private static async _onSpendUse(
     this: CharacterSheetApp,
     _e: Event,
@@ -497,6 +583,43 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
 
 function signed(n: number): string {
   return n > 0 ? `+${n}` : `${n}`;
+}
+
+/**
+ * One line of text, asked for.
+ *
+ * Small enough to live here rather than earn a file: the only thing on this
+ * sheet that needs it is naming a new skill target, and a whole dialog module
+ * for one box would be more machinery than question.
+ */
+async function promptText(title: string, label: string, placeholder = ""): Promise<string | null> {
+  return new Promise<string | null>((resolve) => {
+    let settled = false;
+    const done = (v: string | null) => {
+      if (settled) return;
+      settled = true;
+      resolve(v);
+    };
+    new Dialog({
+      title,
+      content: `<form class="dw-camp-form">
+          <div class="form-group">
+            <label for="dw-text-value">${label}</label>
+            <input type="text" id="dw-text-value" placeholder="${placeholder}" autofocus>
+          </div>
+        </form>`,
+      buttons: {
+        ok: {
+          label: "Add",
+          icon: '<i class="fas fa-check"></i>',
+          callback: (html: JQuery) => done(String(html.find("#dw-text-value").val() ?? "").trim() || null),
+        },
+        cancel: { label: "Cancel", callback: () => done(null) },
+      },
+      default: "ok",
+      close: () => done(null),
+    }).render(true);
+  });
 }
 
 /**

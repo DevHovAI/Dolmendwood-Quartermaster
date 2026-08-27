@@ -221,6 +221,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       giveCoins: PlayerInventoryApp._onGiveCoins,
       grantCoins: PlayerInventoryApp._onGrantCoins,
       openShop: PlayerInventoryApp._onOpenShop,
+      openSheet: PlayerInventoryApp._onOpenSheet,
       incrementQty: PlayerInventoryApp._onIncrementQty,
       decrementQty: PlayerInventoryApp._onDecrementQty,
       incrementUnits: PlayerInventoryApp._onIncrementUnits,

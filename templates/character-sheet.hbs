@@ -15,6 +15,8 @@
 
   {{!-- ── Who they are ─────────────────────────────────────────────────── --}}
   <header class="dw-sheet-head">
+    {{!-- Big enough to be a portrait rather than a token: it is the one thing
+          on the page that says who this is rather than what they can do. --}}
     {{#if img}}<img class="dw-sheet-portrait" src="{{img}}" alt="">{{/if}}
     <div class="dw-sheet-identity">
       <h2 class="dw-sheet-name">{{name}}</h2>
@@ -40,23 +42,19 @@
       </div>
     </div>
     <div class="dw-sheet-head-actions">
+      {{!-- Small, and up here rather than in a band of its own: it applies to
+            everything on the page, so it belongs where the page is titled and
+            not in a stripe between two sections it does not favour. Never
+            stored, because a stored one is eventually a forgotten one. --}}
+      <label class="dw-sheet-situational" title="Added to the next thing you click — an Ability Check, a save, a skill, an attack or its damage. Never saved.">
+        <span>This roll</span>
+        <input type="number" id="dw-sheet-situational" value="0" step="1">
+      </label>
       <button type="button" data-action="openInventory" title="This character's inventory — the module's own, which is where their gear lives">
         <i class="fas fa-backpack"></i> Inventory
       </button>
     </div>
   </header>
-
-  {{!-- One box for the whole window: a modifier the Referee called for this
-        roll and no other. It rides on whatever is clicked next and is never
-        stored, because a stored one is eventually a forgotten one. --}}
-  <div class="dw-sheet-situational">
-    <label for="dw-sheet-situational">This roll only</label>
-    <input type="number" id="dw-sheet-situational" value="0" step="1"
-           title="Added to the next thing you click — an Ability Check, a save, a skill, an attack or its damage. Never saved.">
-    <label class="dw-sheet-magic" title="Dolmenwood adds the Wisdom modifier to Saving Throws against magical effects. Tick it before rolling one.">
-      <input type="checkbox" id="dw-sheet-magical"> vs magic (+WIS)
-    </label>
-  </div>
 
   {{!-- ── The six ──────────────────────────────────────────────────────── --}}
   <section class="dw-sheet-section">
@@ -69,7 +67,8 @@
           <label class="dw-ability-score" title="Score">
             <input type="number" data-field="score-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
           </label>
-          <label class="dw-ability-mod" title="Modifier">
+          <label class="dw-ability-mod {{#if this.houseRuled}}is-house-ruled{{/if}}"
+                 title="Modifier. Filled in from the score by the book's own table (Player's Book p22){{#if this.houseRuled}} — the book says {{this.byTheBook}} for a score of {{this.value}}, so this one has been set by hand and is left alone{{/if}}.">
             <input type="number" data-field="mod-{{this.key}}" value="{{this.bonus}}" {{#unless ../canEdit}}disabled{{/unless}}>
           </label>
         </div>
@@ -88,6 +87,13 @@
 
     <section class="dw-sheet-section dw-sheet-saves">
       <h3>Save Targets</h3>
+      {{!-- It belongs here and nowhere else: `magical` exists on exactly one of
+            the six roll kinds, and adding Wisdom to an Ability Check or an
+            attack is not a thing the book ever does. --}}
+      <label class="dw-sheet-magic" title="Dolmenwood adds the Wisdom modifier to a Saving Throw against a magical effect, and only the table knows which effects those are. Tick it before rolling one.">
+        <input type="checkbox" id="dw-sheet-magical">
+        <span>against magic <em>(+WIS)</em></span>
+      </label>
       {{#each saves}}
       <div class="dw-save-row">
         <span class="dw-save-label">{{this.label}}</span>
@@ -127,33 +133,35 @@
       </div>
     </section>
 
-    <section class="dw-sheet-section dw-sheet-movement">
-      <h3>Movement</h3>
-      <div class="dw-vital-grid">
-        <label title="Feet per Round">Speed
-          <input type="number" data-field="speed" value="{{speed}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        <label title="Feet per Turn while exploring">Exploring
-          <input type="text" data-extra="exploring" value="{{exploring}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        <label title="Overland: Speed divided by 5, the same figure the day bar counts the march against">
-          Travel Points
-          <input type="number" value="{{travelPoints}}" disabled>
-        </label>
-      </div>
-    </section>
+    {{!-- No Movement box. Speed, Exploring and Travel Points are all worked out
+          from what the character is actually carrying, and the inventory, the
+          party window and the day bar already show them. A fourth copy here
+          would be the only one able to disagree with the load. --}}
 
     <section class="dw-sheet-section dw-sheet-skills">
-      <h3>Skill Targets</h3>
+      <h3>
+        Skill Targets
+        {{#if canEdit}}
+        <button type="button" class="dw-sheet-add" data-action="addSkill" title="Add a skill target of your own">
+          <i class="fas fa-plus"></i> Add
+        </button>
+        {{/if}}
+      </h3>
       <p class="dw-sheet-hint">Six is everybody's, and Kindred or Class only ever lowers it.</p>
       {{#each skills}}
       <div class="dw-save-row">
-        <span class="dw-save-label">{{this.label}}</span>
+        <span class="dw-save-label" title="Reachable from any formula as {{this.address}}">{{this.label}}</span>
         <input type="number" data-extra="skill-{{this.key}}" min="1" max="6" value="{{this.target}}" {{#unless ../canEdit}}disabled{{/unless}}>
         <button type="button" class="dw-roll-btn" data-action="rollSkill" data-skill="{{this.key}}"
                 title="1d6, at or over {{this.target}}">
           <i class="fas fa-dice-d6"></i>
         </button>
+        {{#if this.custom}}{{#if ../canEdit}}
+        <button type="button" class="icon-btn delete-btn" data-action="deleteSkill" data-skill-id="{{this.key}}"
+                title="Remove this skill target">
+          <i class="fas fa-trash"></i>
+        </button>
+        {{/if}}{{/if}}
       </div>
       {{/each}}
     </section>

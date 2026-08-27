@@ -1144,9 +1144,12 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
   } as SceneControlTool;
   }
 
-  // Beside the inventory, because they are the two halves of one character and
-  // the sheet's own header points back at the other one.
-  if (!barOnly) {
+  // **Players only**, his call (2026-08-27), and for a good reason on both
+  // sides: a player has one character and this is the fastest way into it,
+  // while a Referee has none in particular and already has a door per member in
+  // the party window. It also keeps the Referee's tool column — which is the
+  // long one — from wrapping into a second column that Foundry then clips.
+  if (!barOnly && !isGM) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-character"] = {
       name: "dolmenwood-character",
       title: "Attributes",
