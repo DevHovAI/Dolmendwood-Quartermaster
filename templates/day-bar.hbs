@@ -172,6 +172,18 @@
       {{!-- Same order as the scene toolbar (Leander, 2026-08-25): inventory,
             trash, shop, inn, loot. Two lists in two places that disagree about
             their order are two lists to learn. --}}
+      {{!-- The sheet, for a player. Here as well as on the scene toolbar
+            because BAR_ONLY_ACCESS takes the toolbar buttons away — a door that
+            existed only there would vanish for a table using that setting, and
+            that is exactly what happened when this one was first built. Not for
+            the Referee, whose door is a button per member in the party
+            window. --}}
+      {{#unless isGM}}
+      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="character"
+              title="My attributes, saves, skills and traits">
+        <i class="fas fa-scroll"></i>
+      </button>
+      {{/unless}}
       {{#if mayOpenTrash}}
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="trash"
               title="Trash">

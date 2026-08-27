@@ -58,6 +58,7 @@ import {
   type RollableDuty,
 } from "../data/dayRolls";
 import { promptFindFood } from "./FindFoodDialog";
+import { CharacterSheetApp } from "./CharacterSheetApp";
 import { runCampDuty } from "./CampDuties";
 import { runMorningDuty } from "./MorningDuties";
 import { CAMP_ROLL_DUTIES } from "../data/campRolls";
@@ -561,6 +562,17 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       case "trash":
         openTrash();
         break;
+      case "character": {
+        // Their own character, or whatever token they have selected. A player
+        // usually has one assigned and never thinks about this; the fallback is
+        // for the table where nobody has.
+        const g = game as Game;
+        const actor =
+          g.user?.character ?? (canvas?.tokens?.controlled?.[0]?.actor as Actor | undefined);
+        if (actor) CharacterSheetApp.open(actor);
+        else ui.notifications?.warn("No character assigned to you, and no token selected.");
+        break;
+      }
       case "inn": {
         const inn = foundry.applications?.instances?.get("dolmenwood-inn") as
           | { render: (options?: unknown) => void }
