@@ -64,21 +64,26 @@
           <span>Affiliation</span>
           <input type="text" data-extra="affiliation" value="{{identity.affiliation}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
+        {{!-- Languages sit up here with the other one-word facts. OSE keeps them
+              as an array; the sheet asks for one line and splits on commas. --}}
         <label class="dw-field">
-          <span>Moon Sign</span>
-          <input type="text" data-extra="moonSign" value="{{identity.moonSign}}" {{#unless canEdit}}disabled{{/unless}}>
+          <span>Languages</span>
+          <input type="text" data-field="languages" value="{{languages}}"
+                 placeholder="Woldish, Sylvan"
+                 title="Separated by commas. Extra languages come from Intelligence."
+                 {{#unless canEdit}}disabled{{/unless}}>
         </label>
       </div>
 
-      {{!-- A line of its own, because it is a list and lists want room. OSE
-            keeps languages as an array; the sheet writes back whatever is
-            typed, split on commas. --}}
+      {{!-- **The moon sign gets the whole line and room to breathe.** It is not
+            a label but a rule: each sign carries effects the table has to be
+            able to write down and read back, and a one-word box would have made
+            it a name with the mechanics kept somewhere else. --}}
       <label class="dw-field dw-field-wide">
-        <span>Languages</span>
-        <input type="text" data-field="languages" value="{{languages}}"
-               placeholder="Woldish, Sylvan, Old Woldish"
-               title="Separated by commas. Extra languages come from Intelligence."
-               {{#unless canEdit}}disabled{{/unless}}>
+        <span>Moon Sign</span>
+        <textarea data-extra="moonSign" rows="2"
+                  placeholder="The sign, and what it does"
+                  {{#unless canEdit}}disabled{{/unless}}>{{identity.moonSign}}</textarea>
       </label>
     </div>
   </header>
@@ -319,7 +324,13 @@
           </span>
           {{/if}}
           <span class="dw-block-name">{{this.name}}</span>
-          {{#if this.value}}<span class="dw-block-value" title="What @b.{{this.slug}} stands for">{{this.value}}</span>{{/if}}
+          {{#if this.spell}}
+          <span class="dw-block-spell is-{{this.spell}}"
+                title="{{#if this.isArcane}}Arcane: memorised after a night's rest, from spell books that must be to hand (Player's Book p78).{{else}}Holy: prayed for after a night's rest, one hour, and any spell of the right Rank may be chosen (Player's Book p100).{{/if}}">
+            {{#if this.isArcane}}<i class="fas fa-hat-wizard"></i> Arcane{{else}}<i class="fas fa-hands-praying"></i> Holy{{/if}}
+          </span>
+          {{/if}}
+          {{#if this.value}}<span class="dw-block-value" title="The number @b.{{this.slug}} lends to other rolls">{{this.value}}</span>{{/if}}
           <code class="dw-block-address" title="How another formula on this sheet reaches it">@b.{{this.slug}}</code>
           <span class="dw-block-actions">
             {{#if this.rollable}}
@@ -329,10 +340,14 @@
             </button>
             {{/if}}
             {{#if ../../canEdit}}
+            {{!-- Only a spell. Ticking a Kindred trait as "prepared for today"
+                  is a control with nothing behind it. --}}
+            {{#if this.spell}}
             <button type="button" class="icon-btn" data-action="togglePrepared" data-block-id="{{this.id}}"
-                    title="Mark it prepared for today">
+                    title="{{#if this.isArcane}}Memorised for today{{else}}Bestowed for today{{/if}} — {{#if this.prepared}}click to clear it{{else}}click to mark it{{/if}}">
               <i class="fas {{#if this.prepared}}fa-book-bookmark{{else}}fa-book{{/if}}"></i>
             </button>
+            {{/if}}
             <button type="button" class="icon-btn" data-action="editBlock" data-block-id="{{this.id}}" title="Edit">
               <i class="fas fa-pen"></i>
             </button>

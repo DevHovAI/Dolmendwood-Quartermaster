@@ -256,7 +256,9 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       });
     });
 
-    el.querySelectorAll<HTMLInputElement>("[data-extra]").forEach((input) => {
+    // A textarea as well as an input, since the moon sign holds a rule rather
+    // than a name. Both carry `.value` and `.type`, so one handler serves them.
+    el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-extra]").forEach((input) => {
       input.addEventListener("change", async () => {
         const field = input.dataset.extra!;
         const value = input.type === "number" ? Number(input.value) || 0 : input.value;
@@ -666,16 +668,16 @@ function bonusFor(situational: number): { bonus?: string } {
  */
 function groupBlocks(
   blocks: CharacterBlock[]
-): { label: string; blocks: (CharacterBlock & { rollable: boolean })[] }[] {
+): { label: string; blocks: (CharacterBlock & { rollable: boolean; isArcane: boolean })[] }[] {
   const order: string[] = [];
-  const byGroup = new Map<string, (CharacterBlock & { rollable: boolean })[]>();
+  const byGroup = new Map<string, (CharacterBlock & { rollable: boolean; isArcane: boolean })[]>();
   for (const b of blocks) {
     const key = b.group.trim() || "Other";
     if (!byGroup.has(key)) {
       byGroup.set(key, []);
       order.push(key);
     }
-    byGroup.get(key)!.push({ ...b, rollable: !!b.roll });
+    byGroup.get(key)!.push({ ...b, rollable: !!b.roll, isArcane: b.spell === "arcane" });
   }
   return order.map((label) => ({ label, blocks: byGroup.get(label)! }));
 }

@@ -5637,6 +5637,41 @@ span.day-bar-panel-tick {
   margin-top: var(--dw-sheet-gap);
 }
 
+/* The moon sign holds a rule rather than a name, so its box is a paragraph and
+   sized like one — the only field on the sheet that is. */
+.dw-sheet-body .dw-field textarea {
+  width: 100%;
+  min-height: 52px;
+  padding: 4px 8px;
+  font-size: 0.95em;
+  line-height: 1.35;
+  resize: vertical;
+}
+
+/* Arcane and holy, told apart at a glance: which one it is decides what has to
+   be to hand of a morning. */
+.dw-block-spell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.72em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dw-block-spell.is-arcane {
+  background: rgba(107, 79, 158, 0.16);
+  color: #5b3f8e;
+}
+
+.dw-block-spell.is-holy {
+  background: rgba(200, 160, 80, 0.22);
+  color: var(--dw-tertiary);
+}
+
 /* ── Who they are ── */
 
 .dw-sheet-head {

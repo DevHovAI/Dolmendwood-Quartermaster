@@ -176,6 +176,25 @@ export interface CharacterBlock {
   roll?: BlockRoll;
   /** For a per-day ability or a memorised spell. Absent means neither. */
   uses?: { value: number; max: number };
+  /**
+   * Is this block a spell, and of which kind — Leander's ask, 2026-08-27.
+   *
+   * **Absent means it is not a spell at all**, which is the common case: a
+   * trait, a class ability, a knack. Only a spell gets the prepared/bestowed
+   * tick, because ticking a Kindred trait as "prepared for today" is a control
+   * with nothing behind it.
+   *
+   * **Arcane and holy are kept apart because the books keep them apart**, and
+   * the difference that reaches this module is a real one: an arcane caster
+   * memorises from **spell books that must be to hand** (Player's Book p78),
+   * while a holy caster prays and needs nothing but the hour — and may choose
+   * *any* spell of their Rank rather than only what they have written down
+   * (p100). Everything else that differs — one hand free, being bound, Rank 6
+   * against Rank 5, blessings at shrines — is a ruling at the table rather than
+   * a number this sheet holds. The morning's 1-in-6 loss after a bad night
+   * applies to both alike: the book says "memorising or praying" (p159).
+   */
+  spell?: "arcane" | "holy";
   prepared?: boolean;
 }
 

@@ -140,6 +140,20 @@ export async function promptBlock(
                    value="${b?.uses?.max ?? ""}" placeholder="—">
           </div>
 
+          <div class="form-group">
+            <label for="dw-block-spell">Is it a spell?</label>
+            <select id="dw-block-spell">
+              <option value=""${b?.spell ? "" : " selected"}>No — a trait, an ability, a knack</option>
+              <option value="arcane"${b?.spell === "arcane" ? " selected" : ""}>Arcane — memorised from a book</option>
+              <option value="holy"${b?.spell === "holy" ? " selected" : ""}>Holy — prayed for</option>
+            </select>
+          </div>
+          <p class="hint">Only a spell gets the prepared tick on the sheet. The two kinds are kept
+            apart because the books do: an <strong>arcane</strong> caster memorises from spell books
+            that <em>must be to hand</em> and only from what they have written down (p78), while a
+            <strong>holy</strong> caster prays for an hour and may choose any spell of their Rank
+            (p100). The morning's 1-in-6 loss after a broken night falls on both alike.</p>
+
           <hr>
 
           <div class="form-group">
@@ -275,7 +289,13 @@ export async function promptBlock(
                     },
                   }
                 : {}),
-              ...(existing?.prepared ? { prepared: true } : {}),
+              ...(() => {
+                const kind = val("dw-block-spell");
+                return kind === "arcane" || kind === "holy" ? { spell: kind } : {};
+              })(),
+              // A block that has stopped being a spell should not keep a tick
+              // that only spells have.
+              ...(existing?.prepared && val("dw-block-spell") ? { prepared: true } : {}),
             });
           },
         },
