@@ -299,7 +299,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     // What one point costs the clock, off the *speed's* allowance rather than
     // the weather-reduced one: bad weather means the party gets less far in the
     // day, not that each league takes longer.
-    const perPointLabel = describeDuration(travelPointSeconds(marched));
+    const perPointLabel = describeDuration(travelPointSeconds(marched, state.forcedMarch));
     // The party is not what it was when the day began. Said, not acted on: only
     // the GM decides whether that is a new day's march or the same one.
     const stale =
@@ -432,7 +432,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
             ? "No party convoy to read a Speed from, so there is no allowance to count against."
             : `${state.travelPointsUsed} of the day's ${budget} Travel Points spent. The allowance is fixed when the day starts — the party's Speed divided by 5, and half as many again on a forced march (Player's Book p156) — so it does not shift under the march when a load or a ration changes. Unspent points are lost at nightfall.${
                 perPointLabel
-                  ? ` Twelve hours on the road split ${marched} ways: each point spent is ${perPointLabel}, and the world clock moves with it.`
+                  ? ` ${state.forcedMarch ? "Sixteen" : "Twelve"} hours on the road split ${marched} ways: each point spent is ${perPointLabel}, and the world clock moves with it.`
                   : ""
               }${weatherCost ? ` The weather takes ${weatherCost} off: ${state.weather?.text}.` : ""}${weatherStopped ? " That leaves nothing at all — the party can only progress by forced marching today." : ""}${state.travelPointsUsed > budget ? " More has been spent than the allowance now allows: the extra points were walked under a forced march that has since been called off." : ""}`,
         refreshTitle: stale

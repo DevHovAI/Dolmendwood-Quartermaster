@@ -395,20 +395,26 @@ async function advanceWorldClock(seconds: number): Promise<void> {
 }
 
 /**
- * How long the party is actually on the road in a day: **twelve hours, breaks
- * included** — the figure on Leander's own travel sheet.
+ * How long the party is actually on the road: **twelve hours in a normal day,
+ * sixteen on a forced march** — breaks included in both.
  *
- * That sheet is the whole rule here, and it is one division: the day's Travel
- * Points are spread across the twelve hours, so each one costs `12h ÷ budget`.
- * Every row of it comes out exactly — 8 points at 1h30, 6 at 2h, 4 at 3h, 2 at
- * 6h, and a forced march's 12 at 1h, 9 at 1h20, 6 at 2h, 3 at 4h.
+ * Twelve is the figure on Leander's own travel sheet. Sixteen is the Player's
+ * Book's (p156), and it is what the bar's forced-march tooltip has always
+ * promised; asked which should win, he said the book (2026-08-27).
  *
- * **A forced march makes the points smaller, not the day longer**, which is the
- * sheet's reading and not quite the Player's Book's — the book calls a forced
- * march a sixteen-hour day (p156), and the bar's own tooltip still says so.
- * Following the sheet is deliberate; it is the table Leander plays from.
+ * The rule is then one division: the day's Travel Points are spread across the
+ * day's hours, so each one costs `hours ÷ budget`. A normal day reproduces the
+ * sheet exactly — 8 points at 1h30, 6 at 2h, 4 at 3h, 2 at 6h.
+ *
+ * **The forced march column no longer matches the sheet, and that is the
+ * change he asked for.** Sixteen hours is a longer day than the sheet assumed,
+ * so the same points are spread thinner: 12 at 1h20 rather than 1h, 9 at 1h47,
+ * 6 at 2h40, 3 at 5h20. The numbers stop being round, which is what happens
+ * when 16 is divided by 9; the arithmetic is right and the sheet's column was
+ * built on twelve.
  */
 export const TRAVEL_HOURS_PER_DAY = 12;
+export const FORCED_MARCH_HOURS_PER_DAY = 16;
 
 /**
  * What one Travel Point costs the clock, in seconds.
@@ -417,9 +423,13 @@ export const TRAVEL_HOURS_PER_DAY = 12;
  * read a Speed from has no allowance either, and the bar already says so rather
  * than inventing one.
  */
-export function travelPointSeconds(budget: number | undefined): number | undefined {
+export function travelPointSeconds(
+  budget: number | undefined,
+  forcedMarch = false
+): number | undefined {
   if (budget === undefined || budget <= 0) return undefined;
-  return Math.round((TRAVEL_HOURS_PER_DAY * 3600) / budget);
+  const hours = forcedMarch ? FORCED_MARCH_HOURS_PER_DAY : TRAVEL_HOURS_PER_DAY;
+  return Math.round((hours * 3600) / budget);
 }
 
 /** "1h 30min", "2h", "20min" — a duration the way the travel sheet writes one. */
@@ -616,7 +626,9 @@ export async function spendTravelPoints(delta: number, budget: number): Promise<
   await writeState({ ...state, travelPointsUsed: used });
 
   if (!walked) return;
-  const perPoint = travelPointSeconds(budget);
+  // The day in force for *this* click. A forced march declared after points are
+  // walked does not re-time them: those hours are already gone.
+  const perPoint = travelPointSeconds(budget, state.forcedMarch);
   if (perPoint && (game as Game).settings.get(MODULE_ID, SETTINGS.FOLLOW_WORLD_TIME)) {
     await advanceWorldClock(walked * perPoint);
   }
