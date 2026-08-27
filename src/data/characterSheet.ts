@@ -397,6 +397,18 @@ export async function setSystemField(actor: Actor, field: string, value: unknown
     return;
   }
 
+  // OSE keeps languages as an **array**, and the sheet asks for them as one
+  // line — because that is how a player writes a list. Split on commas, blanks
+  // dropped, so "Woldish, Sylvan," is two languages and not three.
+  if (field === "languages") {
+    const list = String(value)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    await sys.update?.({ "system.languages.value": list });
+    return;
+  }
+
   const path = SYSTEM_PATHS[field];
   if (!path) return;
   await sys.update?.({ [path]: value });
@@ -407,7 +419,9 @@ export async function setSystemField(actor: Actor, field: string, value: unknown
  *
  * Data rather than a switch, so the template can carry the key on the input and
  * one handler serves every box — the trick the zone coin inputs already use.
- * `ac` is deliberately absent: it goes through the derivation above.
+ * `ac` and `languages` are deliberately absent: one is derived from the armour
+ * worn and the other is an array written from one line of commas, so both go
+ * through their own cases above.
  */
 export const SYSTEM_PATHS: Record<string, string> = {
   hp: "system.hp.value",

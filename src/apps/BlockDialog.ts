@@ -123,12 +123,16 @@ export async function promptBlock(
           </div>
 
           <div class="form-group">
-            <label for="dw-block-value">Stands for</label>
+            <label for="dw-block-value">Lends this number to other rolls</label>
             <input type="number" id="dw-block-value" value="${b?.value ?? ""}" placeholder="—">
           </div>
-          <p class="hint">Optional. A block with a number can be referred to from any other
-            formula as <code class="dw-block-slug">@b.${escapeHTML(b?.slug ?? "…")}</code> — which is
-            how one thing on this sheet leans on another.</p>
+          <p class="hint"><strong>Optional, and only useful if something else should read it.</strong>
+            Give this block a number and any other formula on the sheet can borrow it by name:
+            write <code class="dw-block-slug">@b.${escapeHTML(b?.slug ?? "…")}</code> in another
+            block's <em>Added to the roll</em> box and it will add this number.
+            <br>So a trait called <em>Keen Nose</em> holding <strong>2</strong> lets a Search check
+            be written as <code>@b.keen-nose</code>, and changing the 2 later changes every roll
+            that leans on it. Leave it empty if nothing needs to refer to this block.</p>
 
           <div class="form-group">
             <label for="dw-block-uses">Uses per day</label>

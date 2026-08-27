@@ -1,7 +1,12 @@
-{{!-- Page one of the printed Dolmenwood sheet, in the order it prints it:
-      who they are, the six scores, what defends them, how they move, what they
-      know, what they carry, and — the largest part of the paper and of this —
-      whatever the table wrote down for them. --}}
+{{!-- Page one of the printed Dolmenwood sheet, in the paper's own reading
+      order: who they are, what they speak, the six scores, what defends them,
+      what they know, what they have earned, what they hold, and then the long
+      free part the table fills in itself.
+
+      **Every box is on a shared grid.** The fields were sized by their contents
+      at first, which is right for a printed sheet and wrong for a form: the
+      column went crooked the moment somebody rolled an 18 or earned a fifth
+      digit of experience. One field class, one height, one lane per column. --}}
 
 <div class="dw-sheet-body">
 
@@ -15,44 +20,66 @@
 
   {{!-- ── Who they are ─────────────────────────────────────────────────── --}}
   <header class="dw-sheet-head">
-    {{!-- Big enough to be a portrait rather than a token: it is the one thing
-          on the page that says who this is rather than what they can do. --}}
+    {{!-- A portrait, not a token. It is the one thing on the page that says who
+          this is rather than what they can do. --}}
     {{#if img}}<img class="dw-sheet-portrait" src="{{img}}" alt="">{{/if}}
+
     <div class="dw-sheet-identity">
-      <h2 class="dw-sheet-name">{{name}}</h2>
-      <div class="dw-sheet-fields">
-        <label>Kindred
+      <div class="dw-sheet-titlebar">
+        <h2 class="dw-sheet-name">{{name}}</h2>
+        <div class="dw-sheet-head-actions">
+          {{!-- Applies to everything on the page, so it belongs where the page
+                is titled and not in a stripe between two sections it does not
+                favour. Never stored: a stored one is eventually a forgotten
+                one. --}}
+          <label class="dw-sheet-situational" title="Added to the next thing you click — an Ability Check, a save, a skill, an attack or its damage. Never saved.">
+            <span>This roll</span>
+            <input type="number" id="dw-sheet-situational" value="0" step="1">
+          </label>
+          <button type="button" class="dw-sheet-btn" data-action="openInventory"
+                  title="This character's inventory — the module's own, which is where their gear lives">
+            <i class="fas fa-backpack"></i> Inventory
+          </button>
+        </div>
+      </div>
+
+      <div class="dw-fields dw-fields-3">
+        <label class="dw-field">
+          <span>Kindred</span>
           <input type="text" data-extra="kindred" value="{{identity.kindred}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
-        <label>Class
+        <label class="dw-field">
+          <span>Class</span>
           <input type="text" data-field="class" value="{{identity.class}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
-        <label>Background
-          <input type="text" data-extra="background" value="{{identity.background}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        <label>Alignment
+        <label class="dw-field">
+          <span>Alignment</span>
           <input type="text" data-field="alignment" value="{{identity.alignment}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
-        <label>Affiliation
+        <label class="dw-field">
+          <span>Background</span>
+          <input type="text" data-extra="background" value="{{identity.background}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label class="dw-field">
+          <span>Affiliation</span>
           <input type="text" data-extra="affiliation" value="{{identity.affiliation}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
-        <label>Moon Sign
+        <label class="dw-field">
+          <span>Moon Sign</span>
           <input type="text" data-extra="moonSign" value="{{identity.moonSign}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
       </div>
-    </div>
-    <div class="dw-sheet-head-actions">
-      {{!-- Small, and up here rather than in a band of its own: it applies to
-            everything on the page, so it belongs where the page is titled and
-            not in a stripe between two sections it does not favour. Never
-            stored, because a stored one is eventually a forgotten one. --}}
-      <label class="dw-sheet-situational" title="Added to the next thing you click — an Ability Check, a save, a skill, an attack or its damage. Never saved.">
-        <span>This roll</span>
-        <input type="number" id="dw-sheet-situational" value="0" step="1">
+
+      {{!-- A line of its own, because it is a list and lists want room. OSE
+            keeps languages as an array; the sheet writes back whatever is
+            typed, split on commas. --}}
+      <label class="dw-field dw-field-wide">
+        <span>Languages</span>
+        <input type="text" data-field="languages" value="{{languages}}"
+               placeholder="Woldish, Sylvan, Old Woldish"
+               title="Separated by commas. Extra languages come from Intelligence."
+               {{#unless canEdit}}disabled{{/unless}}>
       </label>
-      <button type="button" data-action="openInventory" title="This character's inventory — the module's own, which is where their gear lives">
-        <i class="fas fa-backpack"></i> Inventory
-      </button>
     </div>
   </header>
 
@@ -82,10 +109,39 @@
     </div>
   </section>
 
-  {{!-- ── What defends them ────────────────────────────────────────────── --}}
+  {{!-- ── What defends them, what they know, what they have earned ─────── --}}
   <div class="dw-sheet-columns">
 
-    <section class="dw-sheet-section dw-sheet-saves">
+    <section class="dw-sheet-section">
+      <h3>In a fight</h3>
+      <div class="dw-fields dw-fields-2">
+        <label class="dw-field">
+          <span>Hit Points</span>
+          <input type="number" class="is-number" data-field="hp" value="{{hp.value}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label class="dw-field">
+          <span>Max HP</span>
+          <input type="number" class="is-number" data-field="hpMax" value="{{hp.max}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        {{!-- AC is the one number OSE derives from the armour worn, so an edit
+              here becomes a change to the modifier rather than the total. --}}
+        <label class="dw-field" title="OSE works this out from the armour worn. Typing a total here writes the difference into the modifier, which is the part that is yours to set.">
+          <span>Armour Class</span>
+          <input type="number" class="is-number" data-field="ac" value="{{ac}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label class="dw-field">
+          <span>Attack</span>
+          <input type="number" class="is-number" data-field="attack" value="{{attack}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label class="dw-field dw-field-span" title="On the printed sheet this is the Wisdom modifier. Left free for a table that rules otherwise — {{magicResistanceDerived}} is what Wisdom says.">
+          <span>Magic Resistance</span>
+          <input type="text" data-extra="magicResistance" value="{{magicResistance}}"
+                 placeholder="{{magicResistanceDerived}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+      </div>
+    </section>
+
+    <section class="dw-sheet-section">
       <h3>Save Targets</h3>
       {{!-- It belongs here and nowhere else: `magical` exists on exactly one of
             the six roll kinds, and adding Wisdom to an Ability Check or an
@@ -94,51 +150,22 @@
         <input type="checkbox" id="dw-sheet-magical">
         <span>against magic <em>(+WIS)</em></span>
       </label>
-      {{#each saves}}
-      <div class="dw-save-row">
-        <span class="dw-save-label">{{this.label}}</span>
-        <input type="number" data-field="save-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
-        <button type="button" class="dw-roll-btn" data-action="rollSave" data-save="{{this.key}}"
-                title="1d20, at or over {{this.value}}">
-          <i class="fas fa-dice-d20"></i>
-        </button>
-      </div>
-      {{/each}}
-    </section>
-
-    <section class="dw-sheet-section dw-sheet-vitals">
-      <h3>In a fight</h3>
-      <div class="dw-vital-grid">
-        <label>HP
-          <input type="number" data-field="hp" value="{{hp.value}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        <label>Max HP
-          <input type="number" data-field="hpMax" value="{{hp.max}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        {{!-- AC is the one number OSE derives from the armour worn, so an edit
-              here becomes a change to the modifier rather than the total. --}}
-        <label title="OSE works this out from the armour worn. Typing a total here writes the difference into the modifier, which is the part that is yours to set.">AC
-          <input type="number" data-field="ac" value="{{ac}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        <label>Attack
-          <input type="number" data-field="attack" value="{{attack}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        <label title="On the printed sheet this is the Wisdom modifier. Left free for a table that rules otherwise — {{magicResistanceDerived}} is what Wisdom says.">Magic Resistance
-          <input type="text" data-extra="magicResistance" value="{{magicResistance}}"
-                 placeholder="{{magicResistanceDerived}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        <label>Level
-          <input type="number" data-field="level" value="{{level}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
+      <div class="dw-rows">
+        {{#each saves}}
+        <div class="dw-row">
+          <span class="dw-row-label">{{this.label}}</span>
+          <input type="number" class="is-number" data-field="save-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
+          <button type="button" class="dw-roll-btn is-icon" data-action="rollSave" data-save="{{this.key}}"
+                  title="1d20, at or over {{this.value}}">
+            <i class="fas fa-dice-d20"></i>
+          </button>
+          <span class="dw-row-trail"></span>
+        </div>
+        {{/each}}
       </div>
     </section>
 
-    {{!-- No Movement box. Speed, Exploring and Travel Points are all worked out
-          from what the character is actually carrying, and the inventory, the
-          party window and the day bar already show them. A fourth copy here
-          would be the only one able to disagree with the load. --}}
-
-    <section class="dw-sheet-section dw-sheet-skills">
+    <section class="dw-sheet-section">
       <h3>
         Skill Targets
         {{#if canEdit}}
@@ -148,42 +175,55 @@
         {{/if}}
       </h3>
       <p class="dw-sheet-hint">Six is everybody's, and Kindred or Class only ever lowers it.</p>
-      {{#each skills}}
-      <div class="dw-save-row">
-        <span class="dw-save-label" title="Reachable from any formula as {{this.address}}">{{this.label}}</span>
-        <input type="number" data-extra="skill-{{this.key}}" min="1" max="6" value="{{this.target}}" {{#unless ../canEdit}}disabled{{/unless}}>
-        <button type="button" class="dw-roll-btn" data-action="rollSkill" data-skill="{{this.key}}"
-                title="1d6, at or over {{this.target}}">
-          <i class="fas fa-dice-d6"></i>
-        </button>
-        {{#if this.custom}}{{#if ../canEdit}}
-        <button type="button" class="icon-btn delete-btn" data-action="deleteSkill" data-skill-id="{{this.key}}"
-                title="Remove this skill target">
-          <i class="fas fa-trash"></i>
-        </button>
-        {{/if}}{{/if}}
+      <div class="dw-rows">
+        {{#each skills}}
+        <div class="dw-row">
+          <span class="dw-row-label" title="Reachable from any formula as {{this.address}}">{{this.label}}</span>
+          <input type="number" class="is-number" data-extra="skill-{{this.key}}" min="1" max="6" value="{{this.target}}" {{#unless ../canEdit}}disabled{{/unless}}>
+          <button type="button" class="dw-roll-btn is-icon" data-action="rollSkill" data-skill="{{this.key}}"
+                  title="1d6, at or over {{this.target}}">
+            <i class="fas fa-dice-d6"></i>
+          </button>
+          {{!-- A lane that stays whether or not there is a bin in it, so three
+                printed rows and one added one still line up. --}}
+          <span class="dw-row-trail">
+            {{#if this.custom}}{{#if ../canEdit}}
+            <button type="button" class="icon-btn delete-btn" data-action="deleteSkill" data-skill-id="{{this.key}}"
+                    title="Remove this skill target">
+              <i class="fas fa-trash"></i>
+            </button>
+            {{/if}}{{/if}}
+          </span>
+        </div>
+        {{/each}}
       </div>
-      {{/each}}
     </section>
 
-    <section class="dw-sheet-section dw-sheet-learning">
+    <section class="dw-sheet-section">
       <h3>Experience</h3>
-      <div class="dw-vital-grid">
-        <label>XP
-          <input type="number" data-field="xp" value="{{xp.value}}" {{#unless canEdit}}disabled{{/unless}}>
+      <div class="dw-fields dw-fields-2">
+        {{!-- Level lives here, not among the fighting numbers: it is what
+              experience buys, and the box beside it is the one that says how
+              much more is needed (Leander, 2026-08-27). --}}
+        <label class="dw-field">
+          <span>Level</span>
+          <input type="number" class="is-number" data-field="level" value="{{level}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
-        <label>Next level
-          <input type="number" data-field="xpNext" value="{{xp.next}}" {{#unless canEdit}}disabled{{/unless}}>
+        <label class="dw-field" title="The percentage a high Prime Ability earns — Player's Book p22.">
+          <span>XP Modifier %</span>
+          <input type="number" class="is-number" data-field="xpBonus" value="{{xp.bonus}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
-        <label title="The percentage bonus a high prime requisite earns">Modifier
-          <input type="number" data-field="xpBonus" value="{{xp.bonus}}" {{#unless canEdit}}disabled{{/unless}}>
+        {{!-- Wide, because these hold five and six digits, and a box that cuts
+              a number in half is worse than no box at all. --}}
+        <label class="dw-field dw-field-span">
+          <span>Experience</span>
+          <input type="number" class="is-wide" data-field="xp" value="{{xp.value}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
-        <label title="How many spells this character sets about preparing of a morning. Nought means they are not a spell-caster, and the morning's duty will not ask about them.">
-          Spells prepared
-          <input type="number" data-extra="prepares" min="0" max="20" value="{{prepares}}" {{#unless canEdit}}disabled{{/unless}}>
+        <label class="dw-field dw-field-span">
+          <span>Next level at</span>
+          <input type="number" class="is-wide" data-field="xpNext" value="{{xp.next}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
       </div>
-      <p class="dw-sheet-hint">Languages: {{#if languages}}{{languages}}{{else}}<em>none recorded</em>{{/if}}</p>
     </section>
 
   </div>
@@ -241,7 +281,14 @@
   {{!-- ── And everything the table wrote ───────────────────────────────── --}}
   <section class="dw-sheet-section dw-sheet-blocks">
     <h3>
-      Traits, abilities and spells
+      <span class="dw-sheet-heading-text">Traits, abilities and spells</span>
+      {{!-- The spell count lives with the spells. Nought means "not a
+            spell-caster", which is why one number carries both answers and why
+            the morning's duty need not be told twice. --}}
+      <label class="dw-sheet-prepares" title="How many spells this character sets about preparing of a morning. Nought means they are not a spell-caster, and the morning's duty will not ask about them.">
+        <span>Spells prepared daily</span>
+        <input type="number" class="is-number" data-extra="prepares" min="0" max="20" value="{{prepares}}" {{#unless canEdit}}disabled{{/unless}}>
+      </label>
       {{#if canEdit}}
       <button type="button" class="dw-sheet-add" data-action="addBlock" title="Write a new block">
         <i class="fas fa-plus"></i> Add

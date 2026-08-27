@@ -5540,19 +5540,27 @@ span.day-bar-panel-tick {
 }
 
 /* ══ The attribute sheet ═════════════════════════════════════════════════════
-   Page one of the printed sheet, in the same reading order: who they are, the
-   six scores, what defends them, how they move, what they know, what they
-   hold, and then the long free part the table fills in itself.
+   Page one of the printed sheet, in the paper's own reading order.
 
-   Laid out in lanes like the inventory rows, and for the same reason: every
-   number here is compared down a column, so a box that sizes itself to its
-   contents makes the column crooked the moment somebody rolls an 18. */
+   **One field, one height, one lane per column.** The first cut sized every box
+   by its contents, which is right for a printed sheet and wrong for a form: the
+   column went crooked the moment somebody rolled an 18 or earned a fifth digit
+   of experience, and half the boxes were too small to click at. Everything
+   editable on this page is now a `.dw-field` on a grid, and the only widths
+   that vary are the two that have to. */
+
+:root {
+  /* One height for every box on the sheet. Changing it here changes all of
+     them, which is the point of there being one. */
+  --dw-sheet-input-h: 32px;
+  --dw-sheet-gap: 8px;
+}
 
 .dw-sheet-body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 8px 10px 14px;
+  padding: 10px 12px 16px;
   color: var(--dw-text);
 }
 
@@ -5566,20 +5574,83 @@ span.day-bar-panel-tick {
   font-size: 0.85em;
 }
 
+/* ── The shared field ── */
+
+.dw-fields {
+  display: grid;
+  gap: var(--dw-sheet-gap);
+}
+
+/* Fixed column counts rather than auto-fit: the sections sit side by side and
+   their boxes should line up across the whole page, not each find their own
+   comfortable width. */
+.dw-fields-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dw-fields-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* A field that wants the whole row of its grid. */
+.dw-field-span { grid-column: 1 / -1; }
+
+.dw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dw-field > span {
+  font-size: 0.7em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dw-field > input,
+.dw-sheet-body input[type="text"],
+.dw-sheet-body input[type="number"] {
+  width: 100%;
+  height: var(--dw-sheet-input-h);
+  padding: 2px 8px;
+  font-size: 1.05em;
+  line-height: 1.2;
+}
+
+/* A number is read at a glance and compared down a column, so it is centred and
+   a shade larger. Experience is the exception: five and six digits want the
+   room, and cutting one in half is worse than no box at all. */
+.dw-sheet-body input.is-number {
+  text-align: center;
+  font-size: 1.15em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dw-sheet-body input.is-wide {
+  text-align: right;
+  font-size: 1.2em;
+  font-variant-numeric: tabular-nums;
+}
+
+.dw-field-wide {
+  margin-top: var(--dw-sheet-gap);
+}
+
 /* ── Who they are ── */
 
 .dw-sheet-head {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
 }
 
-/* A portrait, not a token. It is the one thing on the page that says who this
-   is rather than what they can do, so it gets the room to. */
+/* A portrait, not a token: the one thing on the page that says who this is
+   rather than what they can do. */
 .dw-sheet-portrait {
   flex: 0 0 auto;
-  width: 132px;
-  height: 176px;
+  width: 176px;
+  height: 236px;
   border: 1px solid var(--dw-border);
   border-radius: 4px;
   object-fit: cover;
@@ -5589,96 +5660,63 @@ span.day-bar-panel-tick {
 .dw-sheet-identity {
   flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dw-sheet-titlebar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .dw-sheet-name {
-  margin: 0 0 4px;
-  font-size: 1.25em;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.5em;
   font-weight: 700;
-}
-
-/* Six one-line facts, wrapping — not a form to be filled in twice. */
-.dw-sheet-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 4px 8px;
-}
-
-.dw-sheet-fields label,
-.dw-vital-grid label {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  font-size: 0.72em;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.75;
-}
-
-/* **Boxes you can actually type in.** The first cut sized them by their
-   contents, which is right for a printed sheet and wrong for a form: a field
-   holding "Grimalkin" has to hold "Grimalkin of the Nine Hollows" too, and one
-   holding 18 has to be clickable without aiming. Everything here is at least a
-   comfortable line high, and the text fields fill their column. */
-.dw-sheet-fields input,
-.dw-vital-grid input {
-  width: 100%;
-  height: 30px;
-  padding: 2px 6px;
-  font-size: 1.05em;
-  text-transform: none;
-  letter-spacing: normal;
-  opacity: 1;
+  line-height: 1.1;
 }
 
 .dw-sheet-head-actions {
   flex: 0 0 auto;
-}
-
-/* ── The one-off modifier ── */
-
-/* Up in the header now, beside the Inventory button: it applies to everything
-   on the page, so it belongs where the page is titled rather than in a stripe
-   between two sections it does not favour. */
-.dw-sheet-head-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 5px;
-}
-
-.dw-sheet-situational {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
-  padding: 2px 6px;
-  border: 1px dashed var(--dw-border-light);
-  border-radius: 4px;
-  font-size: 0.75em;
+}
+
+.dw-sheet-btn {
+  width: auto;
+  height: var(--dw-sheet-input-h);
+  padding: 0 10px;
   white-space: nowrap;
 }
 
-.dw-sheet-situational input[type="number"] {
-  /* Sized for -4, not for the number 100. */
-  width: 50px;
-  height: 24px;
-  text-align: center;
-}
-
-/* Lives in the Save Targets section, because `magical` exists on exactly one of
-   the six roll kinds and adding Wisdom to an attack is not a thing the book
-   does. */
-.dw-sheet-magic {
+/* Applies to the whole page, so it sits where the page is titled rather than in
+   a stripe between two sections it does not favour. */
+.dw-sheet-situational {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin: 0 0 5px;
-  font-size: 0.8em;
+  gap: 6px;
+  height: var(--dw-sheet-input-h);
+  padding: 0 8px;
+  border: 1px dashed var(--dw-border-light);
+  border-radius: 4px;
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+  white-space: nowrap;
 }
 
-.dw-sheet-magic em {
-  opacity: 0.7;
+.dw-sheet-body .dw-sheet-situational input[type="number"] {
+  width: 52px;
+  height: 24px;
+  padding: 0 2px;
+  text-align: center;
+  font-size: 1em;
 }
 
 /* ── Sections ── */
@@ -5686,41 +5724,76 @@ span.day-bar-panel-tick {
 .dw-sheet-section {
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
-  padding: 6px 9px 9px;
+  padding: 8px 10px 10px;
   background: var(--dw-bg-parchment);
 }
 
+/* **An explicit colour.** Foundry's own heading rules reach in here and left the
+   text nearly invisible against the parchment; a section title has to be read
+   before anything under it can be. */
 .dw-sheet-section > h3 {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 6px;
-  padding-bottom: 3px;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding-bottom: 4px;
   border-bottom: 1px solid var(--dw-border-light);
-  font-size: 0.82em;
+  color: var(--dw-primary);
+  font-size: 0.85em;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  text-shadow: none;
+}
+
+.dw-sheet-heading-text {
+  flex: 0 0 auto;
 }
 
 .dw-sheet-section > h3 > .dw-sheet-add {
   margin-left: auto;
   width: auto;
+  height: 26px;
+  padding: 0 8px;
   font-size: 0.95em;
 }
 
+/* The spell count lives with the spells, in the heading that owns them. */
+.dw-sheet-prepares {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 0.85em;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.dw-sheet-section > h3 > .dw-sheet-prepares + .dw-sheet-add {
+  margin-left: 0;
+}
+
+.dw-sheet-body .dw-sheet-prepares input[type="number"] {
+  width: 56px;
+  height: 26px;
+}
+
 .dw-sheet-hint {
-  margin: 4px 0 0;
+  margin: 0 0 6px;
   font-size: 0.78em;
   font-style: italic;
   opacity: 0.75;
 }
 
-/* Everything between the scores and the weapons reads across, not down. */
+/* Four sections across, dropping to two and then one as the window narrows.
+   `align-items: start` so a short section does not stretch to match a tall one. */
 .dw-sheet-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--dw-sheet-gap);
   align-items: start;
 }
 
@@ -5728,16 +5801,20 @@ span.day-bar-panel-tick {
 
 .dw-sheet-abilities {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+}
+
+@media (max-width: 760px) {
+  .dw-sheet-abilities { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 .dw-ability {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 5px 4px;
+  gap: 4px;
+  padding: 7px 5px;
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
   text-align: center;
@@ -5752,32 +5829,33 @@ span.day-bar-panel-tick {
 
 .dw-ability-numbers {
   display: flex;
-  gap: 4px;
+  gap: 5px;
 }
 
-/* The score is the big one; the modifier is the one that gets rolled. Sized in
-   that order, which is not quite the order the eye expects. */
-.dw-ability-score input {
-  width: 60px;
-  height: 38px;
-  font-size: 1.45em;
+/* The score is the big one; the modifier is the one that gets rolled. */
+.dw-sheet-body .dw-ability-score input {
+  width: 62px;
+  height: 42px;
+  font-size: 1.5em;
   font-weight: 700;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
-.dw-ability-mod input {
-  width: 50px;
-  height: 38px;
-  font-size: 1.15em;
+.dw-sheet-body .dw-ability-mod input {
+  width: 52px;
+  height: 42px;
+  font-size: 1.2em;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
-/* The modifier is filled in from the score by the book's table, so one that has
-   been set by hand is worth marking — it is the only number on the page that
-   the sheet would otherwise be expected to keep in step. */
-.dw-ability-mod.is-house-ruled input {
+/* The modifier fills itself in from the score by the book's table, so one set by
+   hand is worth marking — it is the only number here the sheet would otherwise
+   be expected to keep in step. */
+.dw-sheet-body .dw-ability-mod.is-house-ruled input {
   border-color: var(--dw-accent);
-  background: rgba(200, 160, 80, 0.16);
+  background: rgba(200, 160, 80, 0.18);
 }
 
 .dw-ability-governs {
@@ -5786,38 +5864,49 @@ span.day-bar-panel-tick {
   opacity: 0.7;
 }
 
-/* ── Saves and skills: label, target, die ── */
+/* ── Rows: a label, a target, a die, and a lane for the bin ── */
 
-.dw-save-row {
+.dw-rows {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 0;
+  flex-direction: column;
+  gap: 5px;
 }
 
-.dw-save-label {
-  /* An elastic lane, so five targets line up under one another however long
-     the words in front of them are. */
-  flex: 1 1 auto;
+/* Four fixed lanes, so five saves and four skills line up with each other and
+   with themselves — including the row that has no bin in it. */
+.dw-row {
+  display: grid;
+  grid-template-columns: 1fr 62px 40px 26px;
+  align-items: center;
+  gap: 6px;
+}
+
+.dw-row-label {
   min-width: 0;
-  font-size: 0.85em;
+  font-size: 0.9em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dw-save-row input {
-  flex: 0 0 auto;
-  width: 58px;
-  height: 30px;
-  font-size: 1.05em;
-  text-align: center;
+.dw-row-trail {
+  display: flex;
+  justify-content: center;
 }
 
-.dw-vital-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-  gap: 7px 8px;
+/* Lives in the Save Targets section, because `magical` exists on exactly one of
+   the six roll kinds and adding Wisdom to an attack is not a thing the book
+   does. */
+.dw-sheet-magic {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 7px;
+  font-size: 0.82em;
+}
+
+.dw-sheet-magic em {
+  opacity: 0.7;
 }
 
 /* ── The roll buttons ── */
@@ -5826,17 +5915,24 @@ span.day-bar-panel-tick {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 5px;
   width: auto;
-  padding: 2px 7px;
+  height: 26px;
+  padding: 0 8px;
   border: 1px solid var(--dw-border);
   border-radius: 3px;
   background: var(--dw-bg-dark);
   color: var(--dw-primary);
-  font-size: 0.78em;
-  line-height: 1.5;
+  font-size: 0.8em;
+  line-height: 1;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.dw-roll-btn.is-icon {
+  width: 100%;
+  padding: 0;
 }
 
 .dw-roll-btn:hover {
@@ -5855,44 +5951,45 @@ span.day-bar-panel-tick {
 .dw-weapon-list {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .dw-weapon-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 5px 8px;
-  padding: 4px 6px;
+  gap: 6px 8px;
+  padding: 6px 8px;
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
 }
 
 .dw-weapon-name {
-  flex: 1 1 160px;
+  flex: 1 1 170px;
   min-width: 0;
   font-weight: 600;
 }
 
 .dw-weapon-damage {
-  margin-left: 5px;
-  padding: 0 5px;
+  margin-left: 6px;
+  padding: 1px 6px;
   border-radius: 3px;
   background: var(--dw-bg-dark);
-  font-size: 0.8em;
+  font-size: 0.82em;
   font-weight: 700;
 }
 
-.dw-weapon-band {
+.dw-sheet-body .dw-weapon-band {
   flex: 0 0 auto;
   width: auto;
-  max-width: 170px;
-  font-size: 0.78em;
+  max-width: 180px;
+  height: 26px;
+  font-size: 0.8em;
 }
 
 .dw-weapon-buttons {
   display: inline-flex;
-  gap: 4px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
@@ -5900,30 +5997,45 @@ span.day-bar-panel-tick {
    Reach, Splash. Each is a ruling, so they are shown and left alone. */
 .dw-weapon-notes {
   flex: 1 1 100%;
-  font-size: 0.75em;
+  font-size: 0.76em;
   font-style: italic;
   opacity: 0.7;
+}
+
+/* What the day already costs, said once and never ticked. */
+.dw-sheet-penalty {
+  margin: 0 0 7px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: rgba(147, 48, 10, 0.09);
+  color: var(--speed-orange);
+  font-size: 0.8em;
+}
+
+.dw-sheet-penalty > i {
+  margin-right: 5px;
 }
 
 /* ── Blocks ── */
 
 .dw-block-group + .dw-block-group {
-  margin-top: 8px;
+  margin-top: 9px;
 }
 
 .dw-block-group > h4 {
-  margin: 0 0 3px;
-  font-size: 0.78em;
+  margin: 0 0 4px;
+  color: var(--dw-secondary);
+  font-size: 0.8em;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  opacity: 0.7;
+  text-shadow: none;
 }
 
 .dw-block {
-  padding: 3px 6px;
+  padding: 4px 7px;
   border-left: 2px solid var(--dw-border-light);
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .dw-block.is-prepared {
@@ -5934,7 +6046,7 @@ span.day-bar-panel-tick {
 .dw-block-head {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   flex-wrap: wrap;
 }
 
@@ -5943,36 +6055,36 @@ span.day-bar-panel-tick {
 }
 
 .dw-block-value {
-  padding: 0 5px;
+  padding: 1px 6px;
   border-radius: 3px;
   background: var(--dw-bg-dark);
-  font-size: 0.8em;
+  font-size: 0.82em;
   font-weight: 700;
 }
 
 /* The address is the point of a block, so it is shown rather than hidden — but
    quietly, because it is read once and then remembered. */
 .dw-block-address {
-  font-size: 0.72em;
+  font-size: 0.74em;
   opacity: 0.55;
 }
 
 .dw-block-uses {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.8em;
+  gap: 4px;
+  font-size: 0.82em;
   font-variant-numeric: tabular-nums;
 }
 
 .dw-uses-btn {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border: 1px solid var(--dw-border);
   border-radius: 3px;
   background: var(--dw-bg-dark);
-  font-size: 0.75em;
+  font-size: 0.78em;
   line-height: 1;
   cursor: pointer;
 }
@@ -5980,13 +6092,13 @@ span.day-bar-panel-tick {
 .dw-block-actions {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   margin-left: auto;
 }
 
 .dw-block-text {
-  margin: 2px 0 0;
-  font-size: 0.85em;
+  margin: 3px 0 0;
+  font-size: 0.87em;
   line-height: 1.35;
   opacity: 0.9;
 }
@@ -5996,10 +6108,8 @@ span.day-bar-panel-tick {
   font-weight: 700;
 }
 
-/* Only the questions the chosen kind asks are shown; the rest are hidden by
-   the dialog itself, so this is only about the ones that stay. */
 .dw-block-form hr {
-  margin: 8px 0;
+  margin: 9px 0;
   border: none;
   border-top: 1px solid var(--dw-border-light);
 }
@@ -6033,19 +6143,4 @@ span.day-bar-panel-tick {
   font-family: monospace;
   font-size: 0.8em;
   opacity: 0.7;
-}
-
-/* What the day already costs, said once above the weapons — never a tick, only
-   a report of what the formulas are doing anyway. */
-.dw-sheet-penalty {
-  margin: 0 0 6px;
-  padding: 3px 7px;
-  border-radius: 3px;
-  background: rgba(147, 48, 10, 0.09);
-  color: var(--speed-orange);
-  font-size: 0.78em;
-}
-
-.dw-sheet-penalty > i {
-  margin-right: 4px;
 }
