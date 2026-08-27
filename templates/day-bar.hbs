@@ -104,7 +104,16 @@
       {{/if}}
       {{#if isGM}}
       <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="1"
-              {{#unless travelPoints.left}}disabled{{/unless}} title="Spend a Travel Point">+</button>
+              {{#unless travelPoints.left}}disabled{{/unless}}
+              title="Spend a Travel Point{{#if travelPoints.perPoint}} — {{travelPoints.perPoint}} of the day{{/if}}">+</button>
+      {{/if}}
+      {{!-- What a point costs the clock. Small and beside the counter, because
+            it is the number that answers "can we still make it before dark?"
+            and it changes only when the march does. --}}
+      {{#if travelPoints.perPoint}}
+      <span class="day-bar-tp-clock" title="{{travelPoints.budgetTitle}}">
+        <i class="fas fa-clock"></i>{{travelPoints.perPoint}}
+      </span>
       {{/if}}
       {{#if isGM}}
       <button type="button" class="day-bar-tp-refresh {{#if travelPoints.stale}}is-stale{{/if}}"

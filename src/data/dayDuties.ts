@@ -374,7 +374,61 @@ async function advanceWorldClockToMorning(): Promise<void> {
   // Always forwards, and always to the *next* morning: pressing the button at
   // 06:00 means the day is over, not that it has not begun.
   const delta = 86400 - secondsIntoDay + morning;
-  await (g.time as unknown as { advance: (s: number) => Promise<unknown> }).advance(delta);
+  await advanceWorldClock(delta);
+}
+
+/**
+ * Move the world clock by a number of seconds.
+ *
+ * The one place the clock is touched, so there is one answer to "does this
+ * module set the time?" — it does not. `game.time.advance` takes a delta, every
+ * calendar module in play reads the same `worldTime`, and a delta needs no
+ * module's API. A **negative** delta is still a delta: handing a Travel Point
+ * back has to walk the clock back with it, or one misclick strands the
+ * afternoon somewhere it never was.
+ */
+async function advanceWorldClock(seconds: number): Promise<void> {
+  if (!seconds) return;
+  const g = game as Game;
+  if (typeof g.time?.worldTime !== "number") return;
+  await (g.time as unknown as { advance: (s: number) => Promise<unknown> }).advance(seconds);
+}
+
+/**
+ * How long the party is actually on the road in a day: **twelve hours, breaks
+ * included** — the figure on Leander's own travel sheet.
+ *
+ * That sheet is the whole rule here, and it is one division: the day's Travel
+ * Points are spread across the twelve hours, so each one costs `12h ÷ budget`.
+ * Every row of it comes out exactly — 8 points at 1h30, 6 at 2h, 4 at 3h, 2 at
+ * 6h, and a forced march's 12 at 1h, 9 at 1h20, 6 at 2h, 3 at 4h.
+ *
+ * **A forced march makes the points smaller, not the day longer**, which is the
+ * sheet's reading and not quite the Player's Book's — the book calls a forced
+ * march a sixteen-hour day (p156), and the bar's own tooltip still says so.
+ * Following the sheet is deliberate; it is the table Leander plays from.
+ */
+export const TRAVEL_HOURS_PER_DAY = 12;
+
+/**
+ * What one Travel Point costs the clock, in seconds.
+ *
+ * Undefined where there is no budget to divide by — a party with no convoy to
+ * read a Speed from has no allowance either, and the bar already says so rather
+ * than inventing one.
+ */
+export function travelPointSeconds(budget: number | undefined): number | undefined {
+  if (budget === undefined || budget <= 0) return undefined;
+  return Math.round((TRAVEL_HOURS_PER_DAY * 3600) / budget);
+}
+
+/** "1h 30min", "2h", "20min" — a duration the way the travel sheet writes one. */
+export function describeDuration(seconds: number | undefined): string | undefined {
+  if (!seconds || seconds <= 0) return undefined;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.round((seconds % 3600) / 60);
+  if (!hours) return `${minutes}min`;
+  return minutes ? `${hours}h ${minutes}min` : `${hours}h`;
 }
 
 export async function startNewDay(): Promise<void> {
@@ -523,17 +577,49 @@ export async function resetDuties(): Promise<void> {
 }
 
 /**
- * Spend or hand back Travel Points.
+ * Spend or hand back Travel Points — and let the day wear on as they go.
  *
  * Clamped at both ends: nothing spent at one, the whole budget at the other, so
  * the readout can never go negative. `budget` comes from the caller because it
  * is derived from the convoy's speed, which this module deliberately does not
  * reach for.
+ *
+ * **The clock follows the points**, Leander's ask and the travel sheet's own
+ * arithmetic: a party of Speed 30 has eight points in a twelve-hour day, so
+ * each one walked is an hour and a half off the afternoon. Three things about
+ * that are deliberate:
+ *
+ * - **It moves by what actually changed**, not by what was asked for. Clicking
+ *   ▶ on the last point of the day spends nothing, so it must cost nothing.
+ * - **It is symmetric.** Handing a point back rewinds the same span, because
+ *   the button beside it exists for the click that should not have happened.
+ * - **It is tied to the same setting as the day counter.** A table with no
+ *   calendar in play has a `worldTime` of 0 that nobody looks at, and moving it
+ *   under them would be a surprise rather than a service.
+ *
+ * A forced march declared *after* points are walked does not re-time them. The
+ * hours are already gone, and the budget the caller hands in is the one in
+ * force for this click.
  */
 export async function spendTravelPoints(delta: number, budget: number): Promise<void> {
   const state = getDayState();
   const used = Math.min(Math.max(0, budget), Math.max(0, state.travelPointsUsed + delta));
+  // What the counter actually moved by — **capped at the size of the click**.
+  // The two come apart in exactly one situation: a forced march called off
+  // leaves more points spent than the smaller budget allows, and the next click
+  // snaps the counter the whole way back. That is right for a counter and wrong
+  // for a clock: one press of − should give back one point's worth of
+  // afternoon, not two, and the module does not record what rate each point was
+  // walked at to give back any more honestly than that.
+  const moved = used - state.travelPointsUsed;
+  const walked = Math.sign(moved) * Math.min(Math.abs(moved), Math.abs(delta));
   await writeState({ ...state, travelPointsUsed: used });
+
+  if (!walked) return;
+  const perPoint = travelPointSeconds(budget);
+  if (perPoint && (game as Game).settings.get(MODULE_ID, SETTINGS.FOLLOW_WORLD_TIME)) {
+    await advanceWorldClock(walked * perPoint);
+  }
 }
 
 // ─── Following a calendar module ───────────────────────────────────────────────

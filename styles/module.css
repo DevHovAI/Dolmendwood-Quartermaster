@@ -3568,6 +3568,19 @@ body > #dolmenwood-day-bar {
   font-weight: 600;
 }
 
+/* ── What a Travel Point costs the clock ── */
+
+.day-bar-tp-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  /* Quieter than the counter beside it: this is a rate, not a running total,
+     and it only changes when the march does. */
+  opacity: 0.75;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
 /* ── Rolled results in chat ── */
 
 .dw-day-roll h3 {

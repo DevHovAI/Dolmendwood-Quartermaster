@@ -25,6 +25,8 @@ import {
   setForcedMarch,
   setTravelPointBudget,
   spendTravelPoints,
+  travelPointSeconds,
+  describeDuration,
   startNewDay,
   type Duty,
   type DutyMode,
@@ -294,6 +296,10 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     // progress by forced marching" (CB p112) — worth saying out loud, since a
     // 0 TP day otherwise just looks broken.
     const weatherStopped = weatherCost > 0 && budget === 0 && !state.forcedMarch;
+    // What one point costs the clock, off the *speed's* allowance rather than
+    // the weather-reduced one: bad weather means the party gets less far in the
+    // day, not that each league takes longer.
+    const perPointLabel = describeDuration(travelPointSeconds(marched));
     // The party is not what it was when the day began. Said, not acted on: only
     // the GM decides whether that is a new day's march or the same one.
     const stale =
@@ -417,10 +423,18 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         derived,
         weatherCost,
         weatherStopped,
+        // What one point costs the clock. Read off the *speed's* allowance
+        // rather than the weather-reduced one: bad weather means the party gets
+        // less far in the day, not that each league takes longer.
+        perPoint: perPointLabel,
         budgetTitle:
           budget === undefined
             ? "No party convoy to read a Speed from, so there is no allowance to count against."
-            : `${state.travelPointsUsed} of the day's ${budget} Travel Points spent. The allowance is fixed when the day starts — the party's Speed divided by 5, and half as many again on a forced march (Player's Book p156) — so it does not shift under the march when a load or a ration changes. Unspent points are lost at nightfall.${weatherCost ? ` The weather takes ${weatherCost} off: ${state.weather?.text}.` : ""}${weatherStopped ? " That leaves nothing at all — the party can only progress by forced marching today." : ""}${state.travelPointsUsed > budget ? " More has been spent than the allowance now allows: the extra points were walked under a forced march that has since been called off." : ""}`,
+            : `${state.travelPointsUsed} of the day's ${budget} Travel Points spent. The allowance is fixed when the day starts — the party's Speed divided by 5, and half as many again on a forced march (Player's Book p156) — so it does not shift under the march when a load or a ration changes. Unspent points are lost at nightfall.${
+                perPointLabel
+                  ? ` Twelve hours on the road split ${marched} ways: each point spent is ${perPointLabel}, and the world clock moves with it.`
+                  : ""
+              }${weatherCost ? ` The weather takes ${weatherCost} off: ${state.weather?.text}.` : ""}${weatherStopped ? " That leaves nothing at all — the party can only progress by forced marching today." : ""}${state.travelPointsUsed > budget ? " More has been spent than the allowance now allows: the extra points were walked under a forced march that has since been called off." : ""}`,
         refreshTitle: stale
           ? `The party would be worth ${derived} Travel Points as they stand now, against the ${normalBudget} this day was started with. Click to adopt ${derived} — the points already spent stay spent.`
           : "Re-read the day's allowance from the party as they stand now. It is fixed at the start of the day on purpose, so this is only for when their circumstances really have changed.",        forced: state.forcedMarch,
@@ -686,7 +700,12 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     target: HTMLElement
   ): Promise<void> {
     const delta = Number(target.dataset.delta ?? 0);
-    const budget = forcedBudget(convoyTravelPoints(), getDayState().forcedMarch);
+    const state = getDayState();
+    // **The frozen figure, the same one the readout counts against.** Reading
+    // the convoy live here meant a mule sold at noon could change the clamp —
+    // and now the length of the afternoon — under a march already half walked.
+    // The live figure is only the fallback for a day that never froze one.
+    const budget = forcedBudget(state.travelPointBudget ?? convoyTravelPoints(), state.forcedMarch);
     if (!delta || budget === undefined) return;
     await spendTravelPoints(delta, budget);
     this.render();
