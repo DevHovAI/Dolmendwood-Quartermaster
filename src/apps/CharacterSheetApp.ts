@@ -2,6 +2,7 @@ import { TEMPLATES } from "../constants";
 import {
   ABILITIES,
   DEFAULT_SKILL_TARGET,
+  PERSONA_FIELDS,
   SAVES,
   abilityModifier,
   getExtras,
@@ -224,6 +225,11 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
 
       groups: groupBlocks(extras.blocks),
       hasBlocks: extras.blocks.length > 0,
+
+      // Free text, every one of it, and never read by a formula. Folded away by
+      // default: it is written once and read at the table, not during a round.
+      persona: PERSONA_FIELDS.map((f) => ({ ...f, value: extras.persona[f.key] ?? "" })),
+      hasPersona: PERSONA_FIELDS.some((f) => !!extras.persona[f.key]),
     };
   }
 
@@ -263,7 +269,10 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
         const field = input.dataset.extra!;
         const value = input.type === "number" ? Number(input.value) || 0 : input.value;
         await updateExtras(this.actor, (x) => {
-          if (field.startsWith("skill-")) {
+          if (field.startsWith("persona-")) {
+            const key = field.slice(8) as keyof typeof x.persona;
+            if (key in x.persona) x.persona[key] = String(value);
+          } else if (field.startsWith("skill-")) {
             const key = field.slice(6);
             const target = Number(value) || DEFAULT_SKILL_TARGET;
             // **The table's own skills are keyed by id, the printed three by

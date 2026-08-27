@@ -283,6 +283,29 @@
     {{/if}}
   </section>
 
+  {{!-- ── Who this person is when they are not rolling dice ────────────── --}}
+  {{!-- A <details>, and no script behind it: this is written once and read at
+        the table, never during a round, so it should not cost a screenful of
+        the page it shares with the numbers. Opens itself when there is
+        something in it. --}}
+  <details class="dw-sheet-section dw-sheet-persona" {{#if hasPersona}}open{{/if}}>
+    <summary><i class="fas fa-chevron-right dw-sheet-persona-caret"></i>Appearance and bearing</summary>
+    <div class="dw-fields dw-fields-3">
+      {{#each persona}}
+      <label class="dw-field {{#if this.wide}}dw-field-span{{/if}}">
+        <span>{{this.label}}</span>
+        {{#if this.wide}}
+        <textarea data-extra="persona-{{this.key}}" rows="2" {{#unless ../canEdit}}disabled{{/unless}}>{{this.value}}</textarea>
+        {{else}}
+        <input type="text" data-extra="persona-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
+        {{/if}}
+      </label>
+      {{/each}}
+    </div>
+    <p class="dw-sheet-hint">None of this is ever read by a formula. It is here because a sheet
+      that can say a character's Attack but not their demeanour is a statistics block.</p>
+  </details>
+
   {{!-- ── And everything the table wrote ───────────────────────────────── --}}
   <section class="dw-sheet-section dw-sheet-blocks">
     <h3>

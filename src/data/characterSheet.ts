@@ -66,6 +66,44 @@ export const SAVES: { key: SaveKey; label: string; ose: string }[] = [
 export const ABILITY_CHECK_TARGET = 4;
 
 /**
+ * The eleven things a character is besides their numbers.
+ *
+ * Ordered as they are read rather than alphabetically: the body from the top
+ * down, then how it carries itself, then what is inside it, and the three plain
+ * facts last. `wide` marks the two that hold a sentence rather than a phrase.
+ */
+export const PERSONA_FIELDS: { key: PersonaKey; label: string; wide?: boolean }[] = [
+  { key: "head", label: "Head" },
+  { key: "face", label: "Face" },
+  { key: "body", label: "Body" },
+  { key: "speech", label: "Speech" },
+  { key: "demeanour", label: "Demeanour" },
+  { key: "dress", label: "Dress" },
+  { key: "desires", label: "Desires", wide: true },
+  { key: "beliefs", label: "Beliefs", wide: true },
+  { key: "birthday", label: "Birthday" },
+  { key: "height", label: "Height" },
+  { key: "weight", label: "Weight" },
+];
+
+export type PersonaKey =
+  | "head"
+  | "face"
+  | "body"
+  | "speech"
+  | "demeanour"
+  | "dress"
+  | "desires"
+  | "beliefs"
+  | "birthday"
+  | "height"
+  | "weight";
+
+export function emptyPersona(): Record<PersonaKey, string> {
+  return Object.fromEntries(PERSONA_FIELDS.map((f) => [f.key, ""])) as Record<PersonaKey, string>;
+}
+
+/**
  * The modifier an Ability Score carries (Player's Book p22).
  *
  * Printed as a table of ranges rather than a formula, and kept as one here: the
@@ -128,6 +166,21 @@ export interface CharacterExtras {
   moreSkills: { id: string; name: string; slug: string; target: number }[];
   /** Feet per turn while exploring — printed beside Speed on the paper sheet. */
   exploring: string;
+  /**
+   * Who this person is when they are not rolling dice — Leander's ask,
+   * 2026-08-27.
+   *
+   * All free text and none of it mechanical, which is the point: the module
+   * ships no tables of faces or beliefs, and none of these fields is ever read
+   * by a formula. They are here because a character sheet that can say a
+   * character's Attack but not their demeanour is a statistics block, and
+   * because the Referee's own NPC tables in the Monster Book are written in
+   * exactly these terms — head, face, body, speech, demeanour, dress.
+   *
+   * Kept in one object rather than eleven loose keys so `getExtras` merges them
+   * the way it merges the skills, and so the section can be walked in order.
+   */
+  persona: Record<PersonaKey, string>;
   /**
    * How many spells this character sets about preparing of a morning. **Zero
    * means "not a spell-caster"**, which is why one number carries both answers.
@@ -240,6 +293,7 @@ export function defaultExtras(): CharacterExtras {
     },
     moreSkills: [],
     exploring: "",
+    persona: emptyPersona(),
     // Nobody is assumed to cast: a party of fighters should never be asked to
     // untick four boxes on its first morning.
     prepares: 0,
@@ -284,6 +338,7 @@ export function getExtras(actor: Actor): CharacterExtras {
     ...stored,
     skills: { ...base.skills, ...(stored.skills ?? {}) },
     moreSkills: (stored.moreSkills ?? []).map((s) => ({ ...s, slug: s.slug || slugify(s.name) })),
+    persona: { ...base.persona, ...(stored.persona ?? {}) },
     blocks: (stored.blocks ?? []).map((b) => ({ ...b, slug: b.slug || slugify(b.name) })),
   };
 }

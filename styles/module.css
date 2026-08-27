@@ -5684,12 +5684,14 @@ span.day-bar-panel-tick {
    rather than what they can do. */
 .dw-sheet-portrait {
   flex: 0 0 auto;
-  width: 176px;
-  height: 236px;
+  /* Square, because that is the shape Foundry's own actor art comes in and a
+     tall crop was cutting the bottom off every token-shaped picture. */
+  width: 200px;
+  height: 200px;
   border: 1px solid var(--dw-border);
   border-radius: 4px;
   object-fit: cover;
-  object-position: top center;
+  object-position: center;
 }
 
 .dw-sheet-identity {
@@ -6178,4 +6180,45 @@ span.day-bar-panel-tick {
   font-family: monospace;
   font-size: 0.8em;
   opacity: 0.7;
+}
+
+/* ── Who this person is when they are not rolling dice ── */
+
+/* A <details>, so folding it costs no script and no stored state. */
+.dw-sheet-persona > summary {
+  cursor: pointer;
+  color: var(--dw-primary);
+  font-size: 0.85em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  list-style: none;
+}
+
+.dw-sheet-persona > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* **A real icon element, never a CSS `content` glyph.** Naming a FontAwesome
+   family in a stylesheet drew nothing at all the last time this project tried
+   it — Foundry does not ship the family the name asks for — so the caret is an
+   <i> in the markup and this only turns it. `check-forms.js` asserts no rule
+   has gone back to the other way. */
+.dw-sheet-persona-caret {
+  flex: none;
+  width: 10px;
+  margin-right: 5px;
+  font-size: 0.8em;
+  opacity: 0.6;
+  transition: transform 120ms ease;
+}
+
+.dw-sheet-persona[open] > summary .dw-sheet-persona-caret {
+  transform: rotate(90deg);
+}
+
+.dw-sheet-persona[open] > summary {
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--dw-border-light);
 }
