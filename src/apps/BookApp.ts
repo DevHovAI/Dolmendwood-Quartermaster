@@ -1,4 +1,12 @@
-import { BOOKS, bookPath, bookViewerURL, mayOpenBook, type BookId } from "../data/books";
+import {
+  BOOKS,
+  bookPageOffset,
+  bookPath,
+  bookViewerURL,
+  mayOpenBook,
+  spreadModeFor,
+  type BookId,
+} from "../data/books";
 
 /**
  * pdf.js reads its scroll and spread modes from its own settings, not from the
@@ -7,12 +15,11 @@ import { BOOKS, bookPath, bookViewerURL, mayOpenBook, type BookId } from "../dat
  * document open.
  *
  * The numbers are pdf.js's own enumerations, which have not moved in years:
- * `ScrollMode.PAGE` shows one spread at a time and turns rather than scrolls,
- * `SpreadMode.ODD` pairs page 2 with 3 and leaves page 1 standing alone, which
- * is what a book with a title page looks like when it is open on the table.
+ * `ScrollMode.PAGE` shows one spread at a time and turns rather than scrolls.
+ * Which spread mode opens the book correctly is not a constant — it follows the
+ * page offset, and `spreadModeFor` in `books.ts` works it out.
  */
 const SCROLL_MODE_PAGE = 3;
-const SPREAD_MODE_ODD = 1;
 
 interface PDFViewerApplication {
   initializedPromise?: Promise<void>;
@@ -79,7 +86,8 @@ export class BookApp extends foundry.applications.api.ApplicationV2 {
           try {
             const viewer = app.pdfViewer;
             if (!viewer) return;
-            viewer.spreadMode = SPREAD_MODE_ODD;
+            // Even page on the left, odd on the right — the way it is bound.
+            viewer.spreadMode = spreadModeFor(bookPageOffset());
             viewer.scrollMode = SCROLL_MODE_PAGE;
             viewer.currentScaleValue = "page-fit";
             viewer.currentPageNumber = page;

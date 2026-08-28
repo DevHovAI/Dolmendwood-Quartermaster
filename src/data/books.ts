@@ -63,6 +63,40 @@ export function bookPageOffset(): number {
 }
 
 /**
+ * pdf.js's two spread modes, by their own numbering.
+ *
+ * The names are about which page **leads** a spread, which is the opposite of
+ * how they read: `ODD` pairs (1,2), (3,4) and puts the odd page on the left;
+ * `EVEN` leaves page 1 standing alone and then pairs (2,3), (4,5), putting the
+ * even page on the left. Derived from the viewer's own `_updateSpreadMode`,
+ * which starts a new spread wherever `index % 2 === spreadMode - 1`.
+ */
+export const SPREAD_MODE_ODD = 1;
+export const SPREAD_MODE_EVEN = 2;
+
+/**
+ * The mode that makes the book fall open the way a book does.
+ *
+ * *"gerade Seitenzahl links und ungerade rechts"* (Leander, 2026-08-28), which
+ * is simply how a printed book is bound: the even page is the verso, on the
+ * left, and the odd page facing it is the recto. The viewer had been pairing
+ * them the other way round — p157 on the left of p158 — so every spread
+ * straddled a turn the real book never makes.
+ *
+ * **Which mode does that depends on the offset**, and so it cannot be a
+ * constant. The reader is told a *printed* page, the viewer knows only *PDF*
+ * pages, and the two differ by the front matter the printing does not count.
+ * With an even offset the parities agree and the even PDF page must lead
+ * (`EVEN`); with an odd offset they are inverted and the odd one must
+ * (`ODD`). The default offset is 2, so the everyday answer is `EVEN`.
+ */
+export function spreadModeFor(offset: number): number {
+  // A negative remainder is still a parity; `%` in JavaScript keeps the sign.
+  const even = Math.abs(Math.round(offset)) % 2 === 0;
+  return even ? SPREAD_MODE_EVEN : SPREAD_MODE_ODD;
+}
+
+/**
  * May this user open this book?
  *
  * The Player's Book is the players' own and always was; the Campaign and
