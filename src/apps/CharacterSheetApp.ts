@@ -104,6 +104,8 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       restoreUses: CharacterSheetApp._onRestoreUses,
       togglePrepared: CharacterSheetApp._onTogglePrepared,
       openInventory: CharacterSheetApp._onOpenInventory,
+      showPortrait: CharacterSheetApp._onShowPortrait,
+      pickPortrait: CharacterSheetApp._onPickPortrait,
     },
   };
 
@@ -145,18 +147,35 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       };
     });
 
-    const skills = [
+    // **Two columns of three** (Leander, 2026-08-28): the book's three on the
+    // left, the table's own on the right, and an empty lane on the right is the
+    // button that fills it. *"Mehr als 6 wird niemand haben"* — so the section
+    // has a height that never moves, which is the whole point: it can be pinned
+    // to Experience beside it.
+    const printed = [
       { key: "listen", label: "Listen", target: extras.skills.listen, custom: false, address: "@listen" },
       { key: "search", label: "Search", target: extras.skills.search, custom: false, address: "@search" },
       { key: "survival", label: "Survival", target: extras.skills.survival, custom: false, address: "@survival" },
-      ...extras.moreSkills.map((s) => ({
-        key: s.id,
-        label: s.name,
-        target: s.target,
-        custom: true,
-        address: `@s.${s.slug}`,
-      })),
     ];
+    const own = extras.moreSkills.map((s) => ({
+      key: s.id,
+      label: s.name,
+      target: s.target,
+      custom: true,
+      address: `@s.${s.slug}`,
+    }));
+    // A sheet that already carries more than three of its own keeps every one
+    // of them: the grid grows a row rather than hiding a skill.
+    const skillRows = Math.max(printed.length, own.length);
+    const skills: object[] = [];
+    for (let i = 0; i < skillRows; i++) {
+      // **Woven, one row at a time**, rather than one column after the other:
+      // an ordinary two-column grid fills row by row, and interleaving here is
+      // what puts the printed three down the left and the table's own down the
+      // right without the stylesheet having to count anything. Only the right
+      // offers to add — a new skill appears there, never among the book's.
+      skills.push(printed[i] ?? { empty: true }, own[i] ?? { empty: true, add: true });
+    }
 
     const weapons = equippedWeapons(actor).map((w) => ({
       ...w,
@@ -237,6 +256,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
 
   override async _onRender(): Promise<void> {
     const el = this.element;
+    this.#measurePortrait();
     if (!this.actor.isOwner) return;
 
     // One handler for every box, keyed by what the input says it is. The
@@ -292,6 +312,43 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
         void this.render(false);
       });
     });
+  }
+
+  /**
+   * What the portrait file actually is, said out loud.
+   *
+   * *"Die Portraits in den Attributes sind noch relativ niedrigauflösend"*
+   * (Leander, 2026-08-28) has two possible causes, and the window is the only
+   * thing here that can tell them apart. The box is {@link PORTRAIT_BOX} CSS
+   * pixels, which is twice that in real ones on most screens; a 128-pixel token
+   * picture is therefore being stretched more than three times over. **No
+   * stylesheet can fix that — only a bigger file can.** So the sheet measures
+   * what loaded, puts the numbers in the tooltip, and tints the picker button
+   * when the file is the reason.
+   *
+   * An SVG is skipped: it has no resolution to be short of.
+   */
+  #measurePortrait(): void {
+    const box = this.element.querySelector<HTMLElement>(".dw-sheet-portrait-box");
+    const img = box?.querySelector<HTMLImageElement>(".dw-sheet-portrait");
+    if (!box || !img) return;
+    if (/\.svg(\?|$)/i.test(img.getAttribute("src") ?? "")) return;
+
+    const report = (): void => {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      if (!w || !h) return;
+      // What the screen will ask of the file, not what CSS calls it.
+      const wanted = Math.round(PORTRAIT_BOX * (window.devicePixelRatio || 1));
+      const short = Math.min(w, h) < wanted;
+      box.classList.toggle("is-upscaled", short);
+      img.title = short
+        ? `${w} × ${h} — smaller than the ${wanted} pixels this box is drawn at, so it is being stretched. Click to see the file itself; the button beside it picks a larger one.`
+        : `${w} × ${h}. Click to see this picture at its own size.`;
+    };
+
+    if (img.complete) report();
+    else img.addEventListener("load", report, { once: true });
   }
 
   /** The one-off modifier box above the rolls, read at the moment of clicking. */
@@ -588,7 +645,57 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
   private static async _onOpenInventory(this: CharacterSheetApp): Promise<void> {
     new PlayerInventoryApp(this.actor).render(true);
   }
+
+  // ─── The portrait ────────────────────────────────────────────────────────────
+
+  /**
+   * The picture at its own size, in Foundry's own viewer.
+   *
+   * The box on the sheet is 200 pixels and a good portrait is rather more than
+   * that; this is where the rest of it can be looked at. Passing the actor's
+   * `uuid` is what lets a Referee share the image with the table from the
+   * viewer's own header.
+   */
+  private static async _onShowPortrait(this: CharacterSheetApp): Promise<void> {
+    const src = this.actor.img;
+    if (!src) return;
+    await new foundry.applications.apps.ImagePopout({
+      src,
+      window: { title: this.actor.name ?? "Portrait" },
+      uuid: this.actor.uuid,
+    }).render(true);
+  }
+
+  /**
+   * Choose a different picture without leaving the sheet.
+   *
+   * It writes `actor.img`, which is the portrait Foundry itself uses — one home
+   * per value, the same rule the rest of this window follows. The token art is
+   * a separate field and is deliberately left alone: a 64-pixel token and a
+   * 512-pixel portrait are both right for their own jobs.
+   */
+  private static async _onPickPortrait(this: CharacterSheetApp): Promise<void> {
+    if (!this.actor.isOwner) return;
+    const Picker = foundry.applications.apps.FilePicker.implementation;
+    await new Picker({
+      type: "image",
+      current: this.actor.img ?? "",
+      callback: async (path: string) => {
+        await this.actor.update({ img: path });
+        void this.render(false);
+      },
+    }).render(true);
+  }
 }
+
+/**
+ * The side of the portrait box, in CSS pixels, as the stylesheet draws it.
+ *
+ * Here as well as in the stylesheet because the window has to be able to say
+ * *why* a picture looks soft, and that answer is a comparison against this
+ * number. The two are checked against each other by `render-sheet.js`.
+ */
+const PORTRAIT_BOX = 200;
 
 // ─── Small shared pieces ───────────────────────────────────────────────────────
 

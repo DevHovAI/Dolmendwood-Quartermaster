@@ -1,7 +1,12 @@
-{{!-- Page one of the printed Dolmenwood sheet, in the paper's own reading
-      order: who they are, what they speak, the six scores, what defends them,
-      what they know, what they have earned, what they hold, and then the long
-      free part the table fills in itself.
+{{!-- Page one of the printed Dolmenwood sheet, laid out for a window rather
+      than for paper (Leander, 2026-08-28):
+
+        who they are  ·  who they are when not rolling dice (folded)
+        the six scores
+        the five saves
+        what they hold  |  what keeps them standing
+        everything the table wrote
+        what they are good at  |  what they have earned
 
       **Every box is on a shared grid.** The fields were sized by their contents
       at first, which is right for a printed sheet and wrong for a form: the
@@ -21,8 +26,26 @@
   {{!-- ── Who they are ─────────────────────────────────────────────────── --}}
   <header class="dw-sheet-head">
     {{!-- A portrait, not a token. It is the one thing on the page that says who
-          this is rather than what they can do. --}}
-    {{#if img}}<img class="dw-sheet-portrait" src="{{img}}" alt="">{{/if}}
+          this is rather than what they can do.
+
+          **The box cannot make a small file bigger.** It is drawn at 200px on a
+          screen that is often twice that in real pixels, so a 128px token
+          picture arrives soft however the stylesheet is written. Two answers,
+          both here: click it to see the file at its own size, and the button
+          picks a better one. `_onRender` measures what actually loaded and says
+          so in the tooltip, rather than leaving it a mystery. --}}
+    <div class="dw-sheet-portrait-box">
+      {{#if img}}
+      <img class="dw-sheet-portrait" src="{{img}}" alt="" data-action="showPortrait"
+           title="Click to see this picture at its own size">
+      {{/if}}
+      {{#if canEdit}}
+      <button type="button" class="dw-portrait-edit" data-action="pickPortrait"
+              title="Choose a different picture. A file of at least 400 by 400 stays sharp in this box.">
+        <i class="fas fa-image"></i>
+      </button>
+      {{/if}}
+    </div>
 
     <div class="dw-sheet-identity">
       <div class="dw-sheet-titlebar">
@@ -65,11 +88,12 @@
           <input type="text" data-extra="affiliation" value="{{identity.affiliation}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
         {{!-- Languages sit up here with the other one-word facts. OSE keeps them
-              as an array; the sheet asks for one line and splits on commas. --}}
+              as an array; the sheet asks for one line and splits on commas.
+              **No example in the box** — Leander, 2026-08-28: a greyed-out
+              "Woldish, Sylvan" reads as though it were already filled in. --}}
         <label class="dw-field">
           <span>Languages</span>
           <input type="text" data-field="languages" value="{{languages}}"
-                 placeholder="Woldish, Sylvan"
                  title="Separated by commas. Extra languages come from Intelligence."
                  {{#unless canEdit}}disabled{{/unless}}>
         </label>
@@ -87,6 +111,31 @@
       </label>
     </div>
   </header>
+
+  {{!-- ── Who this person is when they are not rolling dice ────────────── --}}
+  {{!-- A <details>, and no script behind it. It sits with the other things that
+        say who this is — up by the portrait and the kindred — and **starts
+        folded whether or not there is anything in it** (Leander, 2026-08-28).
+        It used to open itself when filled, which was right at the foot of the
+        page and wrong above the scores: it would push every number down the
+        window on exactly the sheets that had most written on them. --}}
+  <details class="dw-sheet-section dw-sheet-persona">
+    <summary><i class="fas fa-chevron-right dw-sheet-persona-caret"></i>Appearance and bearing</summary>
+    <div class="dw-fields dw-fields-3">
+      {{#each persona}}
+      <label class="dw-field {{#if this.wide}}dw-field-span{{/if}}">
+        <span>{{this.label}}</span>
+        {{#if this.wide}}
+        <textarea data-extra="persona-{{this.key}}" rows="2" {{#unless ../canEdit}}disabled{{/unless}}>{{this.value}}</textarea>
+        {{else}}
+        <input type="text" data-extra="persona-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
+        {{/if}}
+      </label>
+      {{/each}}
+    </div>
+    <p class="dw-sheet-hint">None of this is ever read by a formula. It is here because a sheet
+      that can say a character's Attack but not their demeanour is a statistics block.</p>
+  </details>
 
   {{!-- ── The six ──────────────────────────────────────────────────────── --}}
   <section class="dw-sheet-section">
@@ -114,8 +163,90 @@
     </div>
   </section>
 
-  {{!-- ── What defends them, what they know, what they have earned ─────── --}}
-  <div class="dw-sheet-columns">
+  {{!-- ── The five ─────────────────────────────────────────────────────── --}}
+  {{!-- A row of its own under the scores (Leander, 2026-08-28), which is what
+        gives the weapons and the fighting numbers their width back. **Across
+        rather than down**: five stacked rows in a full-width section would be a
+        tall stripe of empty paper, and the saves read like the scores above
+        them because they are the same kind of thing — a number you roll
+        against. --}}
+  <section class="dw-sheet-section">
+    <h3>
+      Save Targets
+      {{!-- It belongs here and nowhere else: `magical` exists on exactly one of
+            the six roll kinds, and adding Wisdom to an Ability Check or an
+            attack is not a thing the book ever does. --}}
+      <label class="dw-sheet-magic" title="Dolmenwood adds the Wisdom modifier to a Saving Throw against a magical effect, and only the table knows which effects those are. Tick it before rolling one.">
+        <input type="checkbox" id="dw-sheet-magical">
+        <span>against magic <em>(+WIS)</em></span>
+      </label>
+    </h3>
+    <div class="dw-sheet-saves">
+      {{#each saves}}
+      <div class="dw-save">
+        <span class="dw-save-label">{{this.label}}</span>
+        <input type="number" class="is-number" data-field="save-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
+        <button type="button" class="dw-roll-btn" data-action="rollSave" data-save="{{this.key}}"
+                title="1d20, at or over {{this.value}}">
+          <i class="fas fa-dice-d20"></i> Save
+        </button>
+      </div>
+      {{/each}}
+    </div>
+  </section>
+
+  {{!-- ── The fighting pair ────────────────────────────────────────────── --}}
+  {{!-- Half the window each, and one height between them. --}}
+  <div class="dw-sheet-columns is-pair">
+
+    <section class="dw-sheet-section">
+      <h3>Weapons in hand</h3>
+      {{!-- Only when it costs something. A fed and rested character gets no line,
+            because "no penalty" is not news. --}}
+      {{#if penalties}}
+      <p class="dw-sheet-penalty"><i class="fas fa-face-tired"></i> {{penalties}}</p>
+      {{/if}}
+      {{#if hasWeapons}}
+      <div class="dw-weapon-list">
+        {{#each weapons}}
+        <div class="dw-weapon-row">
+          <span class="dw-weapon-name">
+            <i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-gavel{{/if}}"></i>
+            {{this.name}}
+            <span class="dw-weapon-damage">{{this.damage}}</span>
+          </span>
+          {{#if this.bands}}
+          <select class="dw-weapon-band" data-item-id="{{this.itemId}}" title="Which range band the shot is at">
+            {{#each this.bands}}
+            <option value="{{this.key}}"{{#if (eq this.key "medium")}} selected{{/if}}>{{this.label}}</option>
+            {{/each}}
+          </select>
+          {{/if}}
+          <span class="dw-weapon-buttons">
+            {{#each this.modes}}
+            <button type="button" class="dw-roll-btn" data-action="rollAttack"
+                    data-item-id="{{../this.itemId}}" data-missile="{{this.missile}}"
+                    title="{{this.label}} Attack Roll">
+              <i class="fas fa-crosshairs"></i> {{this.label}}
+            </button>
+            {{/each}}
+            {{#each this.modes}}
+            <button type="button" class="dw-roll-btn is-damage" data-action="rollDamage"
+                    data-item-id="{{../this.itemId}}" data-missile="{{this.missile}}"
+                    title="{{this.label}} damage{{#unless this.missile}} — Strength is added to melee damage and not to missile damage{{/unless}}">
+              <i class="fas fa-burst"></i> {{this.label}} dmg
+            </button>
+            {{/each}}
+          </span>
+          {{#if this.notesLine}}<span class="dw-weapon-notes" title="Read off the item and left for you to rule on">{{this.notesLine}}</span>{{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{else}}
+      <p class="dw-sheet-hint">Nothing equipped. A weapon rolls from here once it is
+        <strong>equipped</strong> in the inventory and its qualities carry a damage die.</p>
+      {{/if}}
+    </section>
 
     <section class="dw-sheet-section">
       <h3>In a fight</h3>
@@ -146,167 +277,12 @@
       </div>
     </section>
 
-    <section class="dw-sheet-section">
-      <h3>Save Targets</h3>
-      {{!-- It belongs here and nowhere else: `magical` exists on exactly one of
-            the six roll kinds, and adding Wisdom to an Ability Check or an
-            attack is not a thing the book ever does. --}}
-      <label class="dw-sheet-magic" title="Dolmenwood adds the Wisdom modifier to a Saving Throw against a magical effect, and only the table knows which effects those are. Tick it before rolling one.">
-        <input type="checkbox" id="dw-sheet-magical">
-        <span>against magic <em>(+WIS)</em></span>
-      </label>
-      <div class="dw-rows">
-        {{#each saves}}
-        <div class="dw-row">
-          <span class="dw-row-label">{{this.label}}</span>
-          <input type="number" class="is-number" data-field="save-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
-          <button type="button" class="dw-roll-btn is-icon" data-action="rollSave" data-save="{{this.key}}"
-                  title="1d20, at or over {{this.value}}">
-            <i class="fas fa-dice-d20"></i>
-          </button>
-          <span class="dw-row-trail"></span>
-        </div>
-        {{/each}}
-      </div>
-    </section>
-
-    <section class="dw-sheet-section">
-      <h3>
-        Skill Targets
-        {{#if canEdit}}
-        <button type="button" class="dw-sheet-add" data-action="addSkill" title="Add a skill target of your own">
-          <i class="fas fa-plus"></i> Add
-        </button>
-        {{/if}}
-      </h3>
-      <p class="dw-sheet-hint">Six is everybody's, and Kindred or Class only ever lowers it.</p>
-      <div class="dw-rows">
-        {{#each skills}}
-        <div class="dw-row">
-          <span class="dw-row-label" title="Reachable from any formula as {{this.address}}">{{this.label}}</span>
-          <input type="number" class="is-number" data-extra="skill-{{this.key}}" min="1" max="6" value="{{this.target}}" {{#unless ../canEdit}}disabled{{/unless}}>
-          <button type="button" class="dw-roll-btn is-icon" data-action="rollSkill" data-skill="{{this.key}}"
-                  title="1d6, at or over {{this.target}}">
-            <i class="fas fa-dice-d6"></i>
-          </button>
-          {{!-- A lane that stays whether or not there is a bin in it, so three
-                printed rows and one added one still line up. --}}
-          <span class="dw-row-trail">
-            {{#if this.custom}}{{#if ../canEdit}}
-            <button type="button" class="icon-btn delete-btn" data-action="deleteSkill" data-skill-id="{{this.key}}"
-                    title="Remove this skill target">
-              <i class="fas fa-trash"></i>
-            </button>
-            {{/if}}{{/if}}
-          </span>
-        </div>
-        {{/each}}
-      </div>
-    </section>
-
-    <section class="dw-sheet-section">
-      <h3>Experience</h3>
-      <div class="dw-fields dw-fields-2">
-        {{!-- Level lives here, not among the fighting numbers: it is what
-              experience buys, and the box beside it is the one that says how
-              much more is needed (Leander, 2026-08-27). --}}
-        <label class="dw-field">
-          <span>Level</span>
-          <input type="number" class="is-number" data-field="level" value="{{level}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        <label class="dw-field" title="The percentage a high Prime Ability earns — Player's Book p22.">
-          <span>XP Modifier %</span>
-          <input type="number" class="is-number" data-field="xpBonus" value="{{xp.bonus}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        {{!-- Wide, because these hold five and six digits, and a box that cuts
-              a number in half is worse than no box at all. --}}
-        <label class="dw-field dw-field-span">
-          <span>Experience</span>
-          <input type="number" class="is-wide" data-field="xp" value="{{xp.value}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-        <label class="dw-field dw-field-span">
-          <span>Next level at</span>
-          <input type="number" class="is-wide" data-field="xpNext" value="{{xp.next}}" {{#unless canEdit}}disabled{{/unless}}>
-        </label>
-      </div>
-    </section>
-
   </div>
 
-  {{!-- ── What they are holding ────────────────────────────────────────── --}}
-  <section class="dw-sheet-section">
-    <h3>Weapons in hand</h3>
-    {{!-- Only when it costs something. A fed and rested character gets no line,
-          because "no penalty" is not news. --}}
-    {{#if penalties}}
-    <p class="dw-sheet-penalty"><i class="fas fa-face-tired"></i> {{penalties}}</p>
-    {{/if}}
-    {{#if hasWeapons}}
-    <div class="dw-weapon-list">
-      {{#each weapons}}
-      <div class="dw-weapon-row">
-        <span class="dw-weapon-name">
-          <i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-gavel{{/if}}"></i>
-          {{this.name}}
-          <span class="dw-weapon-damage">{{this.damage}}</span>
-        </span>
-        {{#if this.bands}}
-        <select class="dw-weapon-band" data-item-id="{{this.itemId}}" title="Which range band the shot is at">
-          {{#each this.bands}}
-          <option value="{{this.key}}"{{#if (eq this.key "medium")}} selected{{/if}}>{{this.label}}</option>
-          {{/each}}
-        </select>
-        {{/if}}
-        <span class="dw-weapon-buttons">
-          {{#each this.modes}}
-          <button type="button" class="dw-roll-btn" data-action="rollAttack"
-                  data-item-id="{{../this.itemId}}" data-missile="{{this.missile}}"
-                  title="{{this.label}} Attack Roll">
-            <i class="fas fa-crosshairs"></i> {{this.label}}
-          </button>
-          {{/each}}
-          {{#each this.modes}}
-          <button type="button" class="dw-roll-btn is-damage" data-action="rollDamage"
-                  data-item-id="{{../this.itemId}}" data-missile="{{this.missile}}"
-                  title="{{this.label}} damage{{#unless this.missile}} — Strength is added to melee damage and not to missile damage{{/unless}}">
-            <i class="fas fa-burst"></i> {{this.label}} dmg
-          </button>
-          {{/each}}
-        </span>
-        {{#if this.notesLine}}<span class="dw-weapon-notes" title="Read off the item and left for you to rule on">{{this.notesLine}}</span>{{/if}}
-      </div>
-      {{/each}}
-    </div>
-    {{else}}
-    <p class="dw-sheet-hint">Nothing equipped. A weapon rolls from here once it is
-      <strong>equipped</strong> in the inventory and its qualities carry a damage die.</p>
-    {{/if}}
-  </section>
-
-  {{!-- ── Who this person is when they are not rolling dice ────────────── --}}
-  {{!-- A <details>, and no script behind it: this is written once and read at
-        the table, never during a round, so it should not cost a screenful of
-        the page it shares with the numbers. Opens itself when there is
-        something in it. --}}
-  <details class="dw-sheet-section dw-sheet-persona" {{#if hasPersona}}open{{/if}}>
-    <summary><i class="fas fa-chevron-right dw-sheet-persona-caret"></i>Appearance and bearing</summary>
-    <div class="dw-fields dw-fields-3">
-      {{#each persona}}
-      <label class="dw-field {{#if this.wide}}dw-field-span{{/if}}">
-        <span>{{this.label}}</span>
-        {{#if this.wide}}
-        <textarea data-extra="persona-{{this.key}}" rows="2" {{#unless ../canEdit}}disabled{{/unless}}>{{this.value}}</textarea>
-        {{else}}
-        <input type="text" data-extra="persona-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
-        {{/if}}
-      </label>
-      {{/each}}
-    </div>
-    <p class="dw-sheet-hint">None of this is ever read by a formula. It is here because a sheet
-      that can say a character's Attack but not their demeanour is a statistics block.</p>
-  </details>
-
-  {{!-- ── And everything the table wrote ───────────────────────────────── --}}
+  {{!-- ── Everything the table wrote ───────────────────────────────────── --}}
+  {{!-- The whole width, because it is the one part of this sheet that grows
+        without limit: a Knight has four traits and a Friar at ninth level has
+        two dozen blocks. --}}
   <section class="dw-sheet-section dw-sheet-blocks">
     <h3>
       <span class="dw-sheet-heading-text">Traits, abilities and spells</span>
@@ -393,5 +369,82 @@
     </p>
     {{/if}}
   </section>
+
+  {{!-- ── The foot: what they are good at, and what they have earned ───── --}}
+  <div class="dw-sheet-columns is-foot">
+
+    <section class="dw-sheet-section">
+      <h3>Skill Targets</h3>
+      <p class="dw-sheet-hint">Six is everybody's, and Kindred or Class only ever lowers it.</p>
+      {{!-- **Two columns of three** (Leander, 2026-08-28): the book's three on
+            the left, the table's own on the right, and **an empty lane is the
+            button that fills it** — no Add in the heading, because the place
+            the new row will appear is a better door than a button somewhere
+            else. Nobody plays a character with more than six, so the section
+            has a height that never moves, which is what lets it and Experience
+            be pinned to each other. A sheet that somehow carries more keeps
+            them all: the grid grows a row rather than hiding one. --}}
+      <div class="dw-skill-grid">
+        {{#each skills}}
+        {{#if this.empty}}
+        {{#if this.add}}{{#if ../canEdit}}
+        <button type="button" class="dw-skill-empty" data-action="addSkill"
+                title="Add a skill target of your own">
+          <i class="fas fa-plus"></i> Add
+        </button>
+        {{else}}<span class="dw-skill-blank"></span>{{/if}}
+        {{else}}<span class="dw-skill-blank"></span>{{/if}}
+        {{else}}
+        <div class="dw-row">
+          <span class="dw-row-label" title="Reachable from any formula as {{this.address}}">{{this.label}}</span>
+          <input type="number" class="is-number" data-extra="skill-{{this.key}}" min="1" max="6" value="{{this.target}}" {{#unless ../canEdit}}disabled{{/unless}}>
+          <button type="button" class="dw-roll-btn is-icon" data-action="rollSkill" data-skill="{{this.key}}"
+                  title="1d6, at or over {{this.target}}">
+            <i class="fas fa-dice-d6"></i>
+          </button>
+          {{!-- A lane that stays whether or not there is a bin in it, so the
+                book's rows and the table's own still line up. --}}
+          <span class="dw-row-trail">
+            {{#if this.custom}}{{#if ../canEdit}}
+            <button type="button" class="icon-btn delete-btn" data-action="deleteSkill" data-skill-id="{{this.key}}"
+                    title="Remove this skill target">
+              <i class="fas fa-trash"></i>
+            </button>
+            {{/if}}{{/if}}
+          </span>
+        </div>
+        {{/if}}
+        {{/each}}
+      </div>
+    </section>
+
+    <section class="dw-sheet-section">
+      <h3>Experience</h3>
+      <div class="dw-fields dw-fields-2">
+        {{!-- Level lives here, not among the fighting numbers: it is what
+              experience buys, and the box beside it is the one that says how
+              much more is needed (Leander, 2026-08-27). --}}
+        <label class="dw-field">
+          <span>Level</span>
+          <input type="number" class="is-number" data-field="level" value="{{level}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label class="dw-field" title="The percentage a high Prime Ability earns — Player's Book p22.">
+          <span>XP Modifier %</span>
+          <input type="number" class="is-number" data-field="xpBonus" value="{{xp.bonus}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        {{!-- Wide, because these hold five and six digits, and a box that cuts
+              a number in half is worse than no box at all. --}}
+        <label class="dw-field dw-field-span">
+          <span>Experience</span>
+          <input type="number" class="is-wide" data-field="xp" value="{{xp.value}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+        <label class="dw-field dw-field-span">
+          <span>Next level at</span>
+          <input type="number" class="is-wide" data-field="xpNext" value="{{xp.next}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
+      </div>
+    </section>
+
+  </div>
 
 </div>
