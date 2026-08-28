@@ -28,6 +28,8 @@ import {
   portionOf,
 } from "../data/consumables";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
+import { saleValue } from "../data/shopSale";
+import { cpToCoin } from "../data/coins";
 import { SocketHandler } from "../socket/SocketHandler";
 import { buildIconPickerHTML, activateIconPicker, buildColorPickerHTML, activateColorPicker, buildZoneOptionsHTML, escapeHTML, ZONE_ICONS } from "../helpers/handlebars";
 import { requireActiveGM } from "../helpers/gm";
@@ -40,7 +42,7 @@ import {
   ensureSharedActor,
   isSharedActor,
 } from "../data/sharedStore";
-import type { InventoryItem, ExtraZone, ZoneCoins, CharacterInventory, EncumbranceResult } from "../types";
+import type { InventoryItem, ItemDefinition, ExtraZone, ZoneCoins, CharacterInventory, EncumbranceResult } from "../types";
 
 /**
  * Per-zone view model for the inventory template. Built once for the character's
@@ -70,11 +72,29 @@ function enrichItems(items: InventoryItem[]) {
     // Bundles show one running total of loose units instead of a bundle count
     // next to a uses counter
     const bundle = isBundle(item, def);
+    // **What the row is worth, for the Referee** (Leander, 2026-08-28).
+    // Through `saleValue`, which is already the module's one answer to "what is
+    // this worth": so the number in the inventory and the number a shop offers
+    // can never drift apart, and a half-empty quiver is half a quiver here too.
+    const worth = saleValue(item, def);
+    const valueCp = worth.units * worth.unitCp;
+    // Gold or smaller: pellucidium is five gold and makes a column of values a
+    // sum nobody can do at a glance.
+    const asCoin = cpToCoin(valueCp, "gp");
     return {
       ...item,
       uses,
       def,
       effectiveWeight,
+      valueCp,
+      // Empty rather than "0" where the catalogue names no price: a thing with
+      // no price on it is not a thing worth nothing.
+      valueLabel: valueCp > 0 ? `${asCoin.amount}${asCoin.currency}` : "",
+      valueTitle: def?.cost?.amount
+        ? `${def.cost.amount}${def.cost.currency} ${
+            worth.kind === "container" ? "full" : "each"
+          } · ${worth.units} → ${asCoin.amount}${asCoin.currency}`
+        : "The catalogue puts no price on this one.",
       isBundle: bundle,
       // A quiver, bottle or cask holds one fill level and a row holds one of
       // them, so its quantity is always 1 and printing it would only add noise
@@ -85,6 +105,22 @@ function enrichItems(items: InventoryItem[]) {
       isEdible: isEdible(item),
     };
   });
+}
+
+/**
+ * What every item on a character adds up to, as one coin.
+ *
+ * Through `saleValue`, like the rows, so the total is exactly the sum of the
+ * numbers printed beside them and nobody can find a penny of difference.
+ */
+function totalValueOf(items: InventoryItem[]): string {
+  const cp = items.reduce((sum, item) => {
+    const worth = saleValue(item, definitionFor(item));
+    return sum + worth.units * worth.unitCp;
+  }, 0);
+  if (cp <= 0) return "";
+  const coin = cpToCoin(cp, "gp");
+  return `${coin.amount}${coin.currency}`;
 }
 
 function buildZoneViews(
@@ -239,7 +275,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       shareZone: PlayerInventoryApp._onShareZone,
       unshareZone: PlayerInventoryApp._onUnshareZone,
       addCustomAnimal: PlayerInventoryApp._onAddCustomAnimal,
-      renameItem: PlayerInventoryApp._onRenameItem,
+      editItem: PlayerInventoryApp._onEditItem,
     },
   };
 
@@ -368,6 +404,12 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       encumbrance,
       isGM,
       isOwner,
+      // **What the pack is worth, all told** — the Referee's question, and the
+      // one the rows alone cannot answer without adding up eleven lines. Coins
+      // are deliberately left out: they are counted, shown and split elsewhere,
+      // and a total that mixed carried cash with sellable goods would answer
+      // neither question. Every item on the character, whichever zone it is in.
+      totalValue: totalValueOf(inventory.items),
       // The shop button belongs in a character sheet after all (his call, twice
       // over): from here it opens with *this* character as the buyer, which is
       // the one thing the toolbar and day-bar buttons cannot do. Players see it
@@ -1412,7 +1454,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     new AddCustomAnimalDialog(this.actor, encMode, () => this.render()).render(true);
   }
 
-  private static async _onRenameItem(
+  private static async _onEditItem(
     this: PlayerInventoryApp,
     _event: Event,
     target: HTMLElement
@@ -1422,7 +1464,16 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const inventory = FlagManager.getInventory(owner);
     const item = inventory.items.find((i) => i.id === itemId);
     if (!item) return;
-    new RenameItemDialog(owner, itemId, item.name, () => this.render()).render(true);
+    const isGM = !!(game as Game).user?.isGM;
+    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as
+      | "slots"
+      | "weight";
+    // A table that lets its players invent an item outright cannot coherently
+    // stop them editing one; a table that does not keeps the numbers with the
+    // Referee, and the player still gets the name, the icon and the notes.
+    const mayEditRules =
+      isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_ADD_CUSTOM_ITEM);
+    new EditItemDialog(owner, item, encMode, mayEditRules, isGM, () => this.render()).render(true);
   }
 
   // ─── Drag-and-drop helpers ──────────────────────────────────────────────────
@@ -2797,29 +2848,247 @@ class AddCustomAnimalDialog extends Dialog {
   }
 }
 
-// ─── Rename Item Dialog ─────────────────────────────────────────────────────
+// ─── Edit Item Dialog ───────────────────────────────────────────────────────
 
-class RenameItemDialog extends Dialog {
-  constructor(actor: Actor, itemId: string, currentName: string, onComplete: () => void) {
-    super({
-      title: "Rename Item",
-      content: `
-        <form>
-          <div class="form-group">
-            <label>New Name</label>
-            <input type="text" id="rename-item-name" value="${currentName.replace(/"/g, "&quot;")}" />
+/**
+ * The hidden box the icon tray writes into, and the one this dialog reads.
+ *
+ * Named once because it has to be the same string in three places — the markup,
+ * the listener, and the read-back — and the first cut had it right in two of
+ * them, which is the same as having it wrong.
+ */
+const ICON_BOX = "edit-icon-value";
+
+/**
+ * Everything about one row, in one form.
+ *
+ * It used to ask for a name and nothing else, so a find could be *called* a
+ * Longsword while still weighing whatever the thing it came from weighed, and
+ * a Referee correcting a price had to delete the row and invent a new one.
+ * Leander, 2026-08-28: *"Es wäre super, wenn man beim Bearbeiten von Objekten
+ * im Inventar nicht nur den Namen sondern alles anpassen könnte."*
+ *
+ * **What is stored is the difference, not the whole thing.** A row that came
+ * out of the catalogue keeps its `definitionId`, and only the fields actually
+ * changed go into `customDefinition`; `definitionFor` lays the one over the
+ * other. So an edited item stays the catalogue's in every respect nobody
+ * touched — including the fields this form does not offer, and including a
+ * later correction to the catalogue itself. A row with no catalogue entry goes
+ * on carrying its whole definition, exactly as before.
+ *
+ * **Two levels, because the module already draws that line.** Anyone who could
+ * rename may still rename, and may set the icon, the description and the row's
+ * own notes. The numbers that decide what a thing weighs, costs and does are
+ * the Referee's — unless the table has turned on *players may add custom
+ * items*, since somebody who can invent a sword outright cannot sensibly be
+ * stopped from editing one. The Referee's own note is the Referee's alone.
+ *
+ * Quantity and zone are deliberately **not** here: the row has steppers for the
+ * one and drag-and-drop for the other, and a second way to do a thing is a
+ * second way to get it wrong.
+ */
+class EditItemDialog extends Dialog {
+  constructor(
+    actor: Actor,
+    item: InventoryItem,
+    encMode: "slots" | "weight",
+    mayEditRules: boolean,
+    isGM: boolean,
+    onComplete: () => void
+  ) {
+    const def = definitionFor(item);
+    const size = def?.size ?? "normal";
+    const sizeSel = (v: string) => (size === v ? " selected" : "");
+    const currency = def?.cost?.currency ?? "gp";
+    const currSel = (v: string) => (currency === v ? " selected" : "");
+
+    // Only the Referee, or a table that lets its players invent items, gets the
+    // half of the form that decides what a thing does.
+    const rulesFields = !mayEditRules
+      ? ""
+      : `
+        ${
+          encMode === "weight"
+            ? `<div class="form-group">
+                 <label for="edit-weight">Weight</label>
+                 <div class="qm-field">
+                   <input type="number" id="edit-weight" value="${def?.weight ?? 0}" min="0" step="1" />
+                   <span class="qm-unit">coin wt</span>
+                 </div>
+               </div>`
+            : `<div class="form-group">
+                 <label for="edit-size">Size</label>
+                 <div class="qm-field">
+                   <select id="edit-size">
+                     <option value="tiny"${sizeSel("tiny")}>Tiny (0 slots)</option>
+                     <option value="normal"${sizeSel("normal")}>Normal (1 slot)</option>
+                     <option value="large"${sizeSel("large")}>Large (2 slots)</option>
+                   </select>
+                 </div>
+               </div>`
+        }
+        <div class="form-group">
+          <label for="edit-cost">Price</label>
+          <div class="qm-field">
+            <input type="number" id="edit-cost" value="${def?.cost?.amount ?? 0}" min="0" step="1" />
+            <select id="edit-currency">
+              <option value="cp"${currSel("cp")}>cp</option>
+              <option value="sp"${currSel("sp")}>sp</option>
+              <option value="gp"${currSel("gp")}>gp</option>
+              <option value="pp"${currSel("pp")}>pp</option>
+            </select>
           </div>
+          <p class="qm-hint">What a shop reckons it is worth. One that buys back pays its own share of this.</p>
+        </div>
+        <div class="form-group">
+          <label for="edit-unit">Counted in</label>
+          <div class="qm-field">
+            <input type="text" id="edit-unit" value="${escapeHTML(def?.unit ?? "piece")}" placeholder="piece" />
+          </div>
+          <p class="qm-hint">piece, portion, charge, meter, hour — what one of it is.</p>
+        </div>
+        <div class="form-group">
+          <label for="edit-max-uses">Uses when full</label>
+          <div class="qm-field">
+            <input type="number" id="edit-max-uses" value="${def?.maxUses ?? 0}" min="0" step="1" />
+          </div>
+          <p class="qm-hint">Nought for a plain item. Above nought the row counts portions — a quiver, a flask, a cask.</p>
+        </div>
+        ${
+          def?.maxUses
+            ? `<div class="form-group">
+                 <label for="edit-uses">Uses left</label>
+                 <div class="qm-field">
+                   <input type="number" id="edit-uses" value="${item.uses ?? def.maxUses}" min="0" step="1" />
+                 </div>
+               </div>`
+            : ""
+        }
+        <div class="form-group">
+          <label for="edit-coin-capacity">Holds coins</label>
+          <div class="qm-field">
+            <input type="number" id="edit-coin-capacity" value="${def?.coinCapacity ?? 0}" min="0" step="1" />
+          </div>
+          <p class="qm-hint">Nought for anything that is not a purse. Coins up to this many ride in it without weighing on the zone.</p>
+        </div>
+        <div class="form-group">
+          <label for="edit-edible">Edible</label>
+          <div class="qm-field">
+            <input type="checkbox" id="edit-edible"${def?.edible ? " checked" : ""} />
+          </div>
+          <p class="qm-hint">Gives the row an Eat button that feeds the character for the day.</p>
+        </div>
+        <div class="form-group qm-wide">
+          <label for="edit-qualities">Qualities</label>
+          <div class="qm-field">
+            <input type="text" id="edit-qualities" value="${escapeHTML((def?.qualities ?? []).join(", "))}" placeholder="e.g. 1d8, Melee, Two-handed" />
+          </div>
+          <p class="qm-hint">${escapeHTML(QUALITIES_HINT)}</p>
+          <p class="qm-hint" data-read-for="edit-qualities"></p>
+        </div>`;
+
+    const gmFields = !isGM
+      ? ""
+      : `<div class="form-group qm-wide">
+           <label for="edit-gm-note">Referee's note</label>
+           <div class="qm-field">
+             <textarea id="edit-gm-note" rows="2" placeholder="What this really is, and what it does.">${escapeHTML(item.gmNote ?? "")}</textarea>
+           </div>
+           <p class="qm-hint">Read by the Referee alone. The row stays in plain sight; this is what it is not saying.</p>
+         </div>`;
+
+    super({
+      title: `Edit ${item.name}`,
+      content: `
+        <form class="qm-form">
+          <div class="form-group">
+            <label for="edit-name">Name</label>
+            <div class="qm-field">
+              <input type="text" id="edit-name" value="${escapeHTML(item.name)}" />
+            </div>
+          </div>
+          <div class="form-group qm-wide">
+            <label>Icon</label>
+            <div class="qm-field qm-field-icons">
+              ${buildIconPickerHTML(def?.icon ?? "fa-sack", undefined, ICON_BOX)}
+            </div>
+          </div>
+          ${rulesFields}
+          <div class="form-group qm-wide">
+            <label for="edit-desc">Description</label>
+            <div class="qm-field">
+              <textarea id="edit-desc" rows="2" placeholder="What it is.">${escapeHTML(def?.description ?? "")}</textarea>
+            </div>
+          </div>
+          <div class="form-group qm-wide">
+            <label for="edit-notes">Notes</label>
+            <div class="qm-field">
+              <textarea id="edit-notes" rows="2" placeholder="Yours — where it came from, who it is for.">${escapeHTML(item.notes ?? "")}</textarea>
+            </div>
+          </div>
+          ${gmFields}
         </form>
       `,
       buttons: {
-        rename: {
-          label: "Rename",
+        save: {
+          label: "Save",
           callback: async (html: JQuery) => {
-            const newName = (html.find("#rename-item-name").val() as string).trim();
-            if (!newName) return;
+            const name = (html.find("#edit-name").val() as string).trim();
+            if (!name) { ui.notifications?.warn("Item name is required."); return; }
+
+            // Read whole out of the form and reduced afterwards to what actually
+            // differs. Reading it back rather than tracking which boxes were
+            // touched keeps the two halves of this dialog from having to agree
+            // with each other about what was on the page.
+            const edited: Partial<ItemDefinition> = {
+              icon: (html.find(`#${ICON_BOX}`).val() as string) || "fa-sack",
+              description: (html.find("#edit-desc").val() as string).trim(),
+            };
+            if (mayEditRules) {
+              if (encMode === "weight") {
+                edited.weight = Math.max(0, parseInt(html.find("#edit-weight").val() as string, 10) || 0);
+              } else {
+                edited.size = html.find("#edit-size").val() as "tiny" | "normal" | "large";
+              }
+              edited.cost = {
+                amount: Math.max(0, parseInt(html.find("#edit-cost").val() as string, 10) || 0),
+                currency: html.find("#edit-currency").val() as "cp" | "sp" | "gp" | "pp",
+              };
+              edited.unit = (html.find("#edit-unit").val() as string).trim() || "piece";
+              // Nought means "a plain item", which is the absence of the field
+              // rather than a zero — a maxUses of 0 would be a thing that is
+              // always empty. `onlyChanged` drops what is left out here.
+              const maxUses = Math.max(0, parseInt(html.find("#edit-max-uses").val() as string, 10) || 0);
+              if (maxUses > 0) edited.maxUses = maxUses;
+              const coinCapacity = Math.max(0, parseInt(html.find("#edit-coin-capacity").val() as string, 10) || 0);
+              if (coinCapacity > 0) edited.coinCapacity = coinCapacity;
+              edited.edible = html.find("#edit-edible").is(":checked");
+              edited.qualities = parseQualities((html.find("#edit-qualities").val() as string) ?? "");
+            }
+
+            const notes = (html.find("#edit-notes").val() as string).trim();
+            const gmNote = isGM ? (html.find("#edit-gm-note").val() as string).trim() : undefined;
+            const usesBox = html.find("#edit-uses");
+            const uses = usesBox.length
+              ? Math.max(0, parseInt(usesBox.val() as string, 10) || 0)
+              : undefined;
+
+            const fromCatalog = CatalogManager.getDefinition(item.definitionId);
+
             await FlagManager.updateInventory(actor, (inv) => {
-              const item = inv.items.find((i) => i.id === itemId);
-              if (item) item.name = newName;
+              const row = inv.items.find((i) => i.id === item.id);
+              if (!row) return inv;
+              row.name = name;
+              row.notes = notes;
+              if (isGM) {
+                if (gmNote) row.gmNote = gmNote;
+                else delete row.gmNote;
+              }
+              if (uses !== undefined) row.uses = uses;
+
+              const overrides = onlyChanged(edited, fromCatalog, row.customDefinition, mayEditRules);
+              if (Object.keys(overrides).length) row.customDefinition = overrides;
+              else delete row.customDefinition;
               return inv;
             });
             onComplete();
@@ -2827,7 +3096,58 @@ class RenameItemDialog extends Dialog {
         },
         cancel: { label: "Cancel" },
       },
-      default: "rename",
+      default: "save",
     });
   }
+
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    activateIconPicker(html, ICON_BOX);
+    activateQualitiesPreview(html[0] ?? html.get(0), "edit-qualities");
+  }
+}
+
+/**
+ * The half of an edit worth writing down.
+ *
+ * Against a catalogue entry this keeps only what the form actually changed, so
+ * the row goes on tracking the catalogue for everything else — and a field
+ * edited back to the catalogue's own answer stops being an override rather than
+ * freezing at today's value. Against no catalogue entry there is nothing to
+ * fall back to, so the row keeps its whole definition, with whatever the form
+ * never asked about — a granted zone, a category, `singleContainer` — preserved
+ * from what was already there.
+ */
+function onlyChanged(
+  edited: Partial<ItemDefinition>,
+  fromCatalog: ItemDefinition | undefined,
+  existing: Partial<ItemDefinition> | undefined,
+  hadRulesFields: boolean
+): Partial<ItemDefinition> {
+  const same = (a: unknown, b: unknown): boolean => JSON.stringify(a) === JSON.stringify(b);
+  // Nothing, said four ways. A cleared box and a field the catalogue never had
+  // are the same answer, and writing one down as an override of the other is
+  // how a row stops following the catalogue for no reason anybody chose.
+  const nothing = (v: unknown): boolean =>
+    v === undefined || v === "" || v === false || v === 0 || (Array.isArray(v) && v.length === 0);
+
+  const kept: Record<string, unknown> = { ...(existing ?? {}) };
+  const catalogue = fromCatalog as unknown as Record<string, unknown> | undefined;
+  for (const [key, value] of Object.entries(edited)) {
+    if (catalogue && (same(value, catalogue[key]) || (nothing(value) && nothing(catalogue[key])))) {
+      delete kept[key];
+    } else {
+      kept[key] = value;
+    }
+  }
+  // The form leaves these out when they are nought, and out is what they have
+  // to become: an override merely missing from the form would otherwise keep an
+  // old value alive for ever.
+  if (hadRulesFields) {
+    for (const key of ["maxUses", "coinCapacity"]) {
+      if (!Object.prototype.hasOwnProperty.call(edited, key)) delete kept[key];
+    }
+  }
+  if (!fromCatalog) kept.isCustom = true;
+  return kept as Partial<ItemDefinition>;
 }

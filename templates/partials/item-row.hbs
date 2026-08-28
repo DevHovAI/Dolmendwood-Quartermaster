@@ -94,6 +94,16 @@
             placeholder="Notes…" title="Notes" rows="1">{{item.notes}}</textarea>
   {{/if}}
 
+  {{!-- What the row is worth, for the Referee alone (Leander, 2026-08-28: *"ich
+        als DM hätte gerne die möglichkeit, den Wert von gegenständen im
+        inventar der Spieler zu sehen"*). A lane of its own, drawn on every row
+        whether or not the thing has a price, so the buttons after it stay in
+        their column — and an em dash rather than "0", because a thing the
+        catalogue gives no price is not a thing worth nothing. --}}
+  {{#if isGM}}
+  <span class="item-value" title="{{item.valueTitle}}">{{#if item.valueLabel}}{{item.valueLabel}}{{else}}&mdash;{{/if}}</span>
+  {{/if}}
+
   {{!-- The buttons live in one block of fixed lanes so that the same icon sits
         in the same column on every row. Only the Eat button varies from row to
         row — the others follow the viewer's permissions, which are the same all
@@ -119,8 +129,8 @@
     {{/if}}
 
     {{#if isOwner}}
-    <button type="button" data-action="renameItem" data-item-id="{{item.id}}"
-            class="icon-btn rename-btn" title="Rename item">
+    <button type="button" data-action="editItem" data-item-id="{{item.id}}"
+            class="icon-btn rename-btn" title="Edit this item — its name, and everything else about it">
       <i class="fas fa-pen"></i>
     </button>
     {{/if}}

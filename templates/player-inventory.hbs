@@ -25,6 +25,13 @@
             title="{{actor.name}}'s attributes, saves, skills and traits">
       <i class="fas fa-scroll"></i> Attributes
     </button>
+    {{!-- What the pack is worth, for the Referee alone. Beside the name because
+          it is a fact about this character, not a control. --}}
+    {{#if isGM}}{{#if totalValue}}
+    <span class="inv-total-value" title="Every item this character carries, at catalogue prices — coins not counted. Only you can see this.">
+      <i class="fas fa-sack-dollar"></i> {{totalValue}}
+    </span>
+    {{/if}}{{/if}}
   </div>
 
   {{!-- Encumbrance bars. The shared store carries nothing itself — a load bar

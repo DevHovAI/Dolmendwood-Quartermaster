@@ -216,7 +216,22 @@ export function buildZoneOptionsHTML(
     .join("\n              ");
 }
 
-export function buildIconPickerHTML(selectedIcon = "fa-sack", icons = ITEM_ICONS): string {
+/**
+ * The tray of icons, and the hidden box that holds the answer.
+ *
+ * **The id is a parameter because it used to be a constant**, and a dialog that
+ * read its icon out of any other box got "fa-sack" back for ever — silently,
+ * because a jQuery `.val()` on nothing is `undefined` and the fallback looked
+ * deliberate. That was the item editor's icon on the day it shipped (Leander:
+ * *"das icon ließ sich beim bearbeiten nicht ändern"*). The default keeps every
+ * older caller as it was; a new one passes its own id to **both** functions,
+ * and `render-inventory.js` checks the two agree.
+ */
+export function buildIconPickerHTML(
+  selectedIcon = "fa-sack",
+  icons = ITEM_ICONS,
+  id = "custom-icon-value"
+): string {
   const buttons = icons.map(
     (i) =>
       `<button type="button" class="icon-picker-btn${i.icon === selectedIcon ? " selected" : ""}" ` +
@@ -224,17 +239,17 @@ export function buildIconPickerHTML(selectedIcon = "fa-sack", icons = ITEM_ICONS
   ).join("");
   return (
     `<div class="icon-picker">${buttons}</div>` +
-    `<input type="hidden" id="custom-icon-value" value="${selectedIcon}" />`
+    `<input type="hidden" id="${id}" value="${selectedIcon}" />`
   );
 }
 
-export function activateIconPicker(html: JQuery): void {
+export function activateIconPicker(html: JQuery, id = "custom-icon-value"): void {
   html.find(".icon-picker-btn").on("click", function (e) {
     e.preventDefault();
     const btn = e.currentTarget as HTMLElement;
     html.find(".icon-picker-btn").removeClass("selected");
     btn.classList.add("selected");
-    html.find("#custom-icon-value").val(btn.dataset.icon ?? "fa-sack");
+    html.find(`#${id}`).val(btn.dataset.icon ?? "fa-sack");
   });
 }
 

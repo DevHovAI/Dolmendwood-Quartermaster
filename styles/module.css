@@ -5496,6 +5496,33 @@ span.day-bar-panel-tick {
   width: 58px;
 }
 
+/* The pack's whole worth, beside the character's name. */
+.inv-total-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  background: rgba(200, 160, 80, 0.12);
+  color: var(--dw-tertiary);
+  font-size: 0.8em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* What a row is worth, for the Referee. A lane like the others, and drawn on
+   every row so the buttons after it never move. */
+.item-row > .item-value {
+  flex: 0 0 auto;
+  width: 74px;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--dw-tertiary);
+  opacity: 0.85;
+}
+
 /* The notes are the elastic part: they give way so everything after them stays
    where it is, rather than the other way round. */
 .item-row > .item-notes-input {
@@ -5681,17 +5708,66 @@ span.day-bar-panel-tick {
 }
 
 /* A portrait, not a token: the one thing on the page that says who this is
-   rather than what they can do. */
-.dw-sheet-portrait {
+   rather than what they can do.
+
+   **The box holds the size; the picture fills it.** Square, because that is the
+   shape Foundry's own actor art comes in and a tall crop was cutting the bottom
+   off every token-shaped picture. The box cannot invent detail a small file has
+   not got — 200px here is 400 real pixels on most screens — so it offers the
+   two things that can help instead: the picture at its own size, and a button
+   to choose a bigger file. */
+.dw-sheet-portrait-box {
+  position: relative;
   flex: 0 0 auto;
-  /* Square, because that is the shape Foundry's own actor art comes in and a
-     tall crop was cutting the bottom off every token-shaped picture. */
   width: 200px;
   height: 200px;
+}
+
+.dw-sheet-portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
   border: 1px solid var(--dw-border);
   border-radius: 4px;
   object-fit: cover;
   object-position: center;
+  cursor: zoom-in;
+}
+
+/* It sits *on* the picture, so it cannot borrow `.icon-btn`'s transparent
+   background — over a dark portrait that is a button nobody can see. */
+.dw-sheet-body .dw-portrait-edit {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--dw-border);
+  border-radius: 4px;
+  background: var(--dw-bg-parchment);
+  color: var(--dw-secondary);
+  font-size: 0.85em;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: opacity 120ms ease;
+}
+
+.dw-sheet-portrait-box:hover .dw-portrait-edit,
+.dw-sheet-body .dw-portrait-edit:focus-visible {
+  opacity: 1;
+}
+
+/* The picture that loaded is smaller than the box is drawing it. Said quietly —
+   a tinted button rather than a warning, because a soft portrait is a taste and
+   not a fault, and the button is the thing that fixes it. */
+.dw-sheet-portrait-box.is-upscaled .dw-portrait-edit {
+  opacity: 0.9;
+  border-color: var(--dw-accent);
+  background: rgba(200, 160, 80, 0.35);
 }
 
 .dw-sheet-identity {
@@ -5825,13 +5901,38 @@ span.day-bar-panel-tick {
   opacity: 0.75;
 }
 
-/* Four sections across, dropping to two and then one as the window narrows.
-   `align-items: start` so a short section does not stretch to match a tall one. */
+/* Two rows of sections, and each row says how it is divided (Leander,
+   2026-08-28). Fixed column counts rather than `auto-fit`, for the same reason
+   the fields are: the point is that the cards are the same width as each other,
+   which auto-fit gives up on the moment one of them holds more. */
 .dw-sheet-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: var(--dw-sheet-gap);
   align-items: start;
+}
+
+/* The fighting pair: what they hold, and what keeps them standing. Half the
+   window each. **One height as well as one width** — `stretch`, so two cards of
+   very different contents still read as one band across the page. The saves
+   moved out to a row of their own on 2026-08-28, and that is what gave these
+   two their width back. */
+.dw-sheet-columns.is-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+/* The foot. The skill grid is two columns of lanes and wants the wider half;
+   Experience is four boxes. `stretch` pins the two to one height, and they can
+   hold to it because neither of them changes size any more. */
+.dw-sheet-columns.is-foot {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+/* Narrow enough and half the window is not a column any more. */
+@media (max-width: 780px) {
+  .dw-sheet-columns.is-pair,
+  .dw-sheet-columns.is-foot { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── The six ── */
@@ -5901,6 +6002,48 @@ span.day-bar-panel-tick {
   opacity: 0.7;
 }
 
+/* ── The five ── */
+
+/* Across, not down. Five stacked rows in a full-width section would be a tall
+   stripe of empty paper, and a save reads like a score: a number you roll
+   against. So they are laid out like the six above them. */
+.dw-sheet-saves {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+@media (max-width: 760px) {
+  .dw-sheet-saves { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.dw-save {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 5px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 4px;
+  text-align: center;
+}
+
+.dw-save-label {
+  font-size: 0.72em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dw-sheet-body .dw-save input[type="number"] {
+  width: 62px;
+  height: 42px;
+  font-size: 1.5em;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Rows: a label, a target, a die, and a lane for the bin ── */
 
 .dw-rows {
@@ -5931,15 +6074,76 @@ span.day-bar-panel-tick {
   justify-content: center;
 }
 
-/* Lives in the Save Targets section, because `magical` exists on exactly one of
+/* ── The skill targets: two columns of three ── */
+
+/* *"Mehr als 6 wird niemand haben"* (Leander, 2026-08-28), so the section is
+   built to hold exactly six and to be the same size whether or not it does —
+   which is what lets it and Experience beside it be pinned to one height.
+   An ordinary row-major grid: the context hands the lanes over woven, printed
+   and own alternating, so the book's three land down the left. */
+.dw-skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px 14px;
+}
+
+/* Narrower lanes than the sheet's other rows: two of them share the width one
+   used to have, and a target between 1 and 6 does not need a wide box. */
+.dw-skill-grid .dw-row {
+  grid-template-columns: 1fr 52px 34px 24px;
+  gap: 5px;
+}
+
+/* **An empty lane is the door.** No Add button in the heading: the place the
+   new row will appear is a better one to press than a button somewhere else.
+   It is exactly as tall as a filled lane, which is the whole point. */
+.dw-sheet-body .dw-skill-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: var(--dw-sheet-input-h);
+  padding: 0;
+  border: 1px dashed var(--dw-border-light);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dw-secondary);
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.55;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.dw-sheet-body .dw-skill-empty:hover {
+  opacity: 1;
+  border-style: solid;
+  background: var(--dw-bg-dark);
+}
+
+/* A lane held open with nothing offered in it — a viewer's, or the left-hand
+   padding on a sheet that carries more than three of its own. */
+.dw-skill-blank {
+  display: block;
+  height: var(--dw-sheet-input-h);
+}
+
+/* Lives in the Save Targets heading, because `magical` exists on exactly one of
    the six roll kinds and adding Wisdom to an attack is not a thing the book
-   does. */
+   does. In the heading rather than under it since the saves went sideways:
+   there is no longer a stripe above them to put it in. */
 .dw-sheet-magic {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0 0 7px;
+  margin: 0 0 0 auto;
   font-size: 0.82em;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  white-space: nowrap;
 }
 
 .dw-sheet-magic em {
@@ -6001,8 +6205,12 @@ span.day-bar-panel-tick {
   border-radius: 4px;
 }
 
+/* The name takes the whole line and the buttons sit under it. The weapons live
+   in a third of the window since 2026-08-28, where a name and four buttons on
+   one line is a name and four buttons on three lines, each wrapping somewhere
+   different from the row above. */
 .dw-weapon-name {
-  flex: 1 1 170px;
+  flex: 1 1 100%;
   min-width: 0;
   font-weight: 600;
 }

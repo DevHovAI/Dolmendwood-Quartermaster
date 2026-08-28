@@ -26,10 +26,20 @@ export function coinToCp(cost: Coin): number {
  * Exact on purpose: half of 5gp is 250cp, and saying "2gp" (rounded down) or
  * "3gp" (rounded up) both cheat somebody. 25sp is the same money and reads as
  * easily. Only where nothing divides does it stay in copper.
+ *
+ * **`largest` caps the coin it may answer in.** Pellucidium is worth five gold,
+ * so a pile shown in it is a pile the table has to multiply by five in their
+ * heads; everything from gold down is decimal and adds up on sight. Leander,
+ * 2026-08-28: *"lass in der Wertanzeige bitte die Währung pp aus... ist leichter
+ * umzurechnen mit den 10er Schritten."* The default keeps every older caller —
+ * a shop's price, a hoard's cash — answering as it always did.
  */
-export function cpToCoin(cp: number): Coin {
+/** Largest first — the order the conversion walks down. */
+const COIN_ORDER: Currency[] = ["pp", "gp", "sp", "cp"];
+
+export function cpToCoin(cp: number, largest: Currency = "pp"): Coin {
   if (cp <= 0) return { amount: 0, currency: "cp" };
-  for (const currency of ["pp", "gp", "sp"] as const) {
+  for (const currency of COIN_ORDER.slice(COIN_ORDER.indexOf(largest))) {
     const unit = CURRENCY_IN_CP[currency];
     if (cp % unit === 0) return { amount: cp / unit, currency };
   }
