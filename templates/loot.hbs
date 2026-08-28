@@ -21,14 +21,23 @@
     <button type="button" data-action="addCustomItem"><i class="fas fa-wand-magic-sparkles"></i> Custom</button>
     <button type="button" data-action="editCoins"><i class="fas fa-coins"></i> Coins</button>
     <span class="loot-toolbar-spacer"></span>
+    {{!-- The pin can always be moved. It used to be a label once the box was
+          placed, which meant a body left on the battle map could never come
+          along to the world map — the one thing Leander asked for (2026-08-28).
+          Pinned here: a badge, since dragging is what moves it on this scene.
+          Pinned elsewhere: the badge *and* the button, which takes it up and
+          drops it here. --}}
     {{#if pinnedSceneName}}
-    <span class="loot-pinned-note" title="Already placed in “{{pinnedSceneName}}”">
+    <span class="loot-pinned-note" title="Placed in “{{pinnedSceneName}}”">
       <i class="fas fa-map-pin"></i> {{pinnedSceneName}}
     </span>
-    {{else}}
-    <button type="button" data-action="placeOnMap" class="icon-btn"
-            title="Place this box on the current scene"><i class="fas fa-map-location-dot"></i></button>
     {{/if}}
+    {{#unless pinnedHere}}
+    <button type="button" data-action="placeOnMap" class="icon-btn"
+            title="{{#if pinnedSceneName}}Bring the pin over to this scene — it is taken off “{{pinnedSceneName}}”{{else}}Place this box on the current scene{{/if}}">
+      <i class="fas {{#if pinnedSceneName}}fa-truck-arrow-right{{else}}fa-map-location-dot{{/if}}"></i>
+    </button>
+    {{/unless}}
     <button type="button" data-action="renameBox" class="icon-btn" title="Edit name and icon"><i class="fas fa-pen"></i></button>
     <button type="button" data-action="deleteBox" class="icon-btn loot-danger" title="Delete this box"><i class="fas fa-trash"></i></button>
   </div>

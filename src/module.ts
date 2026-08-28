@@ -18,7 +18,7 @@ import { BookApp } from "./apps/BookApp";
 import type { BookId } from "./data/books";
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
-import { hexOf, tokenPoint, refusePlaceIfAway } from "./data/partyPlace";
+import { hexOf, tokenPoint, refusePlaceIfAway, canReachLoot } from "./data/partyPlace";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
 import { INN_SECTIONS, DEFAULT_INN_NAME } from "./data/innData";
 import type { InnQuality } from "./data/innData";
@@ -435,7 +435,15 @@ Hooks.once("init", () => {
       const lootFlag = getFlag("loot") as true | { name?: string } | undefined;
       if (lootFlag) {
         const lootName = typeof lootFlag === "object" ? lootFlag.name : undefined;
-        if (refusePlaceIfAway(doc, lootName ?? "That hoard")) return;
+        // A body is reached by standing *next* to it, not on it, so loot has a
+        // rule of its own — see `canReachLoot`. `openLootBox` asks the same
+        // question again behind this one; the check here only saves opening a
+        // journal entry the player is about to be refused anyway.
+        const reach = canReachLoot(doc);
+        if (!reach.ok) {
+          ui.notifications?.warn(`${lootName ?? "That hoard"} is out of reach. ${reach.reason}`);
+          return;
+        }
         void openLootFromNote(this.document as Parameters<typeof openLootFromNote>[0]); return;
       }
       return _origClick.call(this, event);

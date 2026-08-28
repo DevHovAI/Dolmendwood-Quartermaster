@@ -71,6 +71,8 @@ import { givenColumns, nameTable, surnameColumn } from "./nameTables";
 import { getDayState, setDutyResult } from "./dayDuties";
 import { lostChance, lostConsequence, type LostResult } from "./gettingLost";
 import { skillCheck } from "./checks";
+import { meanOfDice, parseHoard, parsePossessions } from "./treasure";
+import { rollCreatureHoard } from "./treasureRolls";
 import {
   KILL_YIELD,
   hexFind,
@@ -302,10 +304,11 @@ function huntSpoilsButton(): string {
 /**
  * Fish, forage, or hunt.
  *
- * The Survival Skill Target comes from the caller rather than the character
- * sheet: this world runs on OSE, which records no Dolmenwood skills, so there
- * is nothing to read. The Referee states the party's best target and the module
- * rolls against it — honest about what it does and does not know.
+ * The Survival Skill Target comes from the caller — and since the attribute
+ * sheet was built, the caller reads it off the forager instead of asking for
+ * it. `FindFoodDialog` puts every character's own target on the form and
+ * picking who goes *is* the answer; there is no box to type one in. OSE records
+ * no Dolmenwood skills, which is one of the things that sheet exists to hold.
  *
  * It is a **target to reach, not a chance to roll under**: 1d6 plus modifiers,
  * meeting or exceeding it (PB p144). A natural 1 always fails and a natural 6
@@ -711,6 +714,20 @@ export async function rollEncounter(period: "day" | "night"): Promise<EncounterR
   const uuid = await findCreatureUuid(name);
   if (uuid) result.uuid = uuid;
 
+  // **The lair check comes with the encounter** (Leander, 2026-08-28). It used
+  // to wait for a button, which left the card's own number provisional until
+  // somebody pressed it — and the number is the first thing a Referee reads
+  // out. The button is still there and is a re-roll now, like Reaction's.
+  const lair = await lairRoll(result, dice);
+  if (lair) {
+    result.inLair = lair.inLair;
+    if (lair.inLair) {
+      result.wanderingNumber = lair.wandering;
+      result.number = lair.number;
+    }
+    result.lairRoll = { roll: lair.roll, percent: lair.percent, source: lair.source };
+  }
+
   await setDutyResult(dutyId, resultPatch(period, result));
   await whisperToGMs(encounterCard(result), dice);
   return result;
@@ -849,6 +866,10 @@ function creatureBookLine(name: string | undefined, mark?: EncounterMark): strin
  *
  * "DPB" is the Player's Book's Common Fungi and Herbs table on p130; a bare
  * page number is the Campaign Book's own treasure chapter.
+ *
+ * **Where the book says "or", the party gets one of the two.** Five hexes are
+ * worded that way and both were being granted; a 1d2 settles it here, on the
+ * whispered card, and the Referee is told which name it passed over.
  */
 async function hexForageLine(
   hex: string | undefined
@@ -872,8 +893,38 @@ async function hexForageLine(
     (whole, lead) => whole + lead
   );
   const pattern = /([0-9]+d[0-9]+|[0-9]+)[ ]+(?:portions? of[ ]+)?([A-Za-z'’ -]+?)[ ]*[(](DPB|p[0-9]{1,3})[)]/g;
+  const offers: { formula: string; name: string; source: string }[] = [];
   for (let hit = pattern.exec(spelled); hit; hit = pattern.exec(spelled)) {
-    const [, formula, name, source] = hit;
+    offers.push({ formula: hit[1], name: hit[2].trim(), source: hit[3] });
+  }
+
+  // **"or" means one of them, not both** (Leander, 2026-08-28). Five of the
+  // fifty hexes word their line that way — *"1d3 portions of Hogscap (DPB) or
+  // Prancing Mandrake (p430)"* — and the party was being handed the lot, with
+  // only the word "or" on the card to say otherwise.
+  //
+  // **The die is rolled before the count, not after**, so the alternative that
+  // was not taken never gets a number: rolling both and discarding one would
+  // put a die on the card for a thing nobody found. Nothing is given away by
+  // deciding it here, because the whole hex line is whispered — the players see
+  // neither name — and the Referee is told what the die passed over, which is
+  // what they need to overrule it.
+  //
+  // The whole line is treated as one choice or none. No hex in the book mixes
+  // "and" with "or", and `check-hexfind.js` asserts that none has started to.
+  let granted = offers;
+  let chosen = "";
+  let passedOver = "";
+  if (offers.length > 1 && / or /.test(here.forage)) {
+    const die = await rollDice(`1d${offers.length}`);
+    dice.push(die);
+    const pick = offers[total(die) - 1] ?? offers[0];
+    granted = [pick];
+    chosen = pick.name;
+    passedOver = offers.filter((o) => o !== pick).map((o) => o.name).join(", ");
+  }
+
+  for (const { formula, name, source } of granted) {
     let howMany = Number(formula);
     if (/d/.test(formula)) {
       const die = await rollDice(formula);
@@ -881,12 +932,12 @@ async function hexForageLine(
       howMany = total(die);
     }
     const where =
-      source === "DPB" ? bookRef("players", 130, escapeHTML(name.trim())) : bookRef("campaign", Number(source.slice(1)), escapeHTML(name.trim()));
+      source === "DPB" ? bookRef("players", 130, escapeHTML(name)) : bookRef("campaign", Number(source.slice(1)), escapeHTML(name));
     parts.push(`<strong>${howMany}</strong> &times; ${where}${/d/.test(formula) ? ` (${formula})` : ""}`);
     // Kept apart from the sentence, because these go into a pack as well as
     // onto a card — and they go in without their names.
     finds.push({
-      name: name.trim(),
+      name,
       count: howMany,
       book: source === "DPB" ? "players" : "campaign",
       page: source === "DPB" ? 130 : Number(source.slice(1)),
@@ -899,11 +950,17 @@ async function hexForageLine(
       finds: [],
     };
   }
-  const joiner = / or /.test(here.forage) ? " <em>or</em> " : " and ";
+  // Only "and" can still join two parts: an "or" line has already been reduced
+  // to the one thing the die chose.
+  const decided = passedOver
+    ? `<p class="dw-day-roll-note"><i class="fas fa-dice-two"></i>
+        The book offers either here, so the die chose <strong>${escapeHTML(chosen)}</strong>
+        over ${escapeHTML(passedOver)}. Only the one is in the packs.</p>`
+    : "";
   return {
     html: `<p class="dw-day-roll-yield"><i class="fas fa-seedling"></i>
-        This hex as well: ${parts.join(joiner)} &middot; ${escapeHTML(here.hex)} ${escapeHTML(here.name)},
-        ${bookRef("campaign", here.page, "Campaign Book p" + here.page)}</p>`,
+        This hex as well: ${parts.join(" and ")} &middot; ${escapeHTML(here.hex)} ${escapeHTML(here.name)},
+        ${bookRef("campaign", here.page, "Campaign Book p" + here.page)}</p>${decided}`,
     dice,
     finds,
   };
@@ -978,8 +1035,9 @@ function hpBit(book: BestiaryEntry | undefined): string {
 function creatureButtons(
   name: string | undefined,
   uuid?: string,
-  count?: number
-): Record<"situation" | "trait" | "name" | "hp" | "map", string> {
+  count?: number,
+  period?: "day" | "night"
+): Record<"situation" | "trait" | "name" | "hp" | "map" | "loot" | "possessions", string> {
   const book = creatureEntry(name, monsterInfo(name)?.page);
   const held = escapeHTML(name ?? "");
   return {
@@ -1011,7 +1069,37 @@ function creatureButtons(
            title="Put them on the battle map: one token each, at the middle of the view. An actor of this name is used where the world has one; otherwise a bare one is made, carrying nothing but the name.">
           <i class="fas fa-chess-pawn"></i> To the map
          </button>`,
+    // **One hoard for the group, not one apiece** — the book's own worked
+    // example rolls a hoard for "a group of monsters", and eight goblins do not
+    // carry eight of them. Only offered where the stat block's hoard line has
+    // something a table can be rolled from.
+    loot: hasRollableLoot(book)
+      ? `<button type="button" class="dw-encounter-btn" data-encounter-action="loot" data-name="${held}" data-count="${Math.max(count ?? 1, 1)}"${period ? ` data-period="${period}"` : ""}
+           title="The whole encounter in one box: their hoard where they are in their lair, and what the band carries. Staged until you release it. Possessions ${escapeHTML(book?.possessions ?? "None")}; Hoard ${escapeHTML(book?.hoard ?? "None")}.">
+          <i class="fas fa-skull"></i> Hoard
+         </button>`
+      : "",
+    // **One click, one creature** (Leander, 2026-08-28). Six goblins fall in six
+    // places on the battle map, and one box holding all six cannot be dropped in
+    // six of them — so this rolls one body at a time, numbered, each its own.
+    possessions: parsePossessions(book?.possessions)
+      ? `<button type="button" class="dw-encounter-btn" data-encounter-action="possessions" data-name="${held}"
+           title="One creature, one body: roll what this one was carrying and leave it as its own loot box, ready to drop where it fell. Press again for the next. Possessions ${escapeHTML(book?.possessions ?? "None")}.">
+          <i class="fas fa-hand-holding-heart"></i> Possessions
+         </button>`
+      : "",
   };
+}
+
+/**
+ * Is there anything on this creature a table can be rolled from?
+ *
+ * Either half will do. A skeleton keeps no lair and no hoard but carries 2d6sp,
+ * and a body with silver in its ribs is worth a button (2026-08-28).
+ */
+function hasRollableLoot(book: { hoard?: string; possessions?: string } | undefined): boolean {
+  const { codes, rest } = parseHoard(book?.hoard);
+  return codes.length > 0 || !!rest || !!parsePossessions(book?.possessions);
 }
 
 /**
@@ -1058,6 +1146,16 @@ function encounterCard(r: EncounterResult): string {
           ? `<li><strong>Watch</strong> the ${ORDINALS[r.watch - 1]} of four <span class="dw-encounter-die">(1d4 = ${r.watch}; hours ${r.watch * 2 - 1}–${r.watch * 2} of the rest)</span> &mdash; whoever is on it is awake, and everyone asleep is automatically surprised.</li>`
           : ""
       }
+      ${
+        r.lairRoll
+          ? `<li><strong>${r.inLair ? "In its lair" : "Wandering abroad"}</strong>
+              <span class="dw-encounter-die">(1d100 = ${r.lairRoll.roll}, against ${r.lairRoll.percent}%)</span>${
+                r.inLair && r.wanderingNumber
+                  ? ` &mdash; ${r.wanderingNumber} out on the move becomes <strong>${r.number}</strong> at home. Treasure is kept in lairs, not carried.`
+                  : ""
+              }</li>`
+          : ""
+      }
       <li><strong>Distance</strong> ${escapeHTML(r.distance?.formula ?? "")} = ${r.distance?.feet} feet</li>
       ${
         r.reaction
@@ -1070,7 +1168,9 @@ function encounterCard(r: EncounterResult): string {
   const bookLine = creatureBookLine(r.name, r.mark);
   const statLine = creatureStatLine(r.name) + creatureFlavour(r.name);
 
-  const creature = creatureButtons(r.name, r.uuid, r.number);
+  // The period travels with the buttons so the Loot one can read back what the
+  // lair check said about this very encounter.
+  const creature = creatureButtons(r.name, r.uuid, r.number, r.period);
   const buttons = [
     `<button type="button" class="dw-encounter-btn" data-encounter-action="reaction" data-period="${r.period}"
        title="How it takes the party, on 2d6 — for when that is not already obvious. The speaking character's Charisma Modifier applies when parleying (Player's Book p165).">
@@ -1084,8 +1184,8 @@ function encounterCard(r: EncounterResult): string {
      </button>`,
     r.number !== undefined && lair && r.mark !== "adventurer" && r.mark !== "everyday"
       ? `<button type="button" class="dw-encounter-btn" data-encounter-action="lair" data-period="${r.period}"
-           title="Wandering, or at home? ${escapeHTML(lair.source)}. In its lair there may be up to five times as many.">
-          <i class="fas fa-house-crack"></i> In its lair? (${lair.percent}%)
+           title="Roll it again. ${escapeHTML(lair.source)}. In its lair there may be up to five times as many, and the number on this card is replaced.">
+          <i class="fas fa-house-crack"></i> Lair again (${lair.percent}%)
          </button>`
       : "",
     r.activity && activityNeedsOther(r.activity)
@@ -1097,6 +1197,14 @@ function encounterCard(r: EncounterResult): string {
     creature.name,
     creature.hp,
     creature.map,
+    // **Every key of `creatureButtons` belongs in this list.** The hunt card
+    // takes `Object.values` of it and so gets each new one for nothing; this one
+    // names them, and a button added to the record without being added here
+    // exists everywhere except on the card people actually read. That is how the
+    // Loot button shipped invisible on 2026-08-28. `check-treasure.js` now
+    // compares the two.
+    creature.loot,
+    creature.possessions,
   ]
     .filter(Boolean)
     .join("");
@@ -1352,6 +1460,42 @@ export function activateEncounterChatButtons(html: HTMLElement): void {
           break;
         case "other":
           void rollOtherCreature(period);
+          break;
+        case "loot": {
+          // Only this encounter's own record counts. A hunt's card carries no
+          // period, and today's encounter is a different creature entirely — so
+          // the stored roll is used only when it is demonstrably the same one.
+          const stored = button.dataset.period ? storedEncounter(period) : undefined;
+          const mine = stored?.name === name ? stored : undefined;
+          void rollCreatureHoard(
+            name,
+            creatureEntry(name, monsterInfo(name)?.page)?.hoard,
+            Number(button.dataset.count ?? "1"),
+            {
+              inLair: mine?.inLair,
+              // Before the lair multiplier: the book's smaller-groups rule is
+              // about how many the table called for, not how many are at home.
+              group: mine?.wanderingNumber ?? mine?.number,
+              average: meanOfDice(mine?.numberFormula),
+              page: monsterInfo(name)?.page,
+              possessions: creatureEntry(name, monsterInfo(name)?.page)?.possessions,
+            }
+          );
+          break;
+        }
+        case "possessions":
+          // One creature. No lair question, no hoard: a body is a body wherever
+          // the band keeps the rest of its wealth.
+          void rollCreatureHoard(
+            name,
+            undefined,
+            1,
+            {
+              page: monsterInfo(name)?.page,
+              possessions: creatureEntry(name, monsterInfo(name)?.page)?.possessions,
+            },
+            "body"
+          );
           break;
         case "spoils":
           void recordHuntSpoils();
@@ -1735,19 +1879,43 @@ async function rollNameFromTable(creature: string, tableId: string, page?: numbe
  * the lair is worth: "up to 5 times as many individuals", which is a ceiling
  * rather than a multiplier, so both figures are printed.
  */
-async function rollLairCheck(period: "day" | "night"): Promise<void> {
-  if (!isGM()) return;
-  const stored = storedEncounter(period);
-  if (!stored?.happened || stored.number === undefined) return;
-  // Nothing to roll for a creature the book says keeps no lair; the card has
-  // already said so, and the button is not drawn.
-  const lair = lairChance(stored.name, period);
-  if (!lair) return;
+/**
+ * The lair check itself, without a card around it.
+ *
+ * Rolled from two places since 2026-08-28 — **with the encounter**, which is
+ * where Leander wanted it (*"in its lair sollte am besten beim encounter gleich
+ * mitgerollt werden"*), and again by the button, which is a re-roll now rather
+ * than the only way to get an answer. One function, so the two can never come
+ * to different rules; the caller decides what to say about it.
+ *
+ * Returns nothing where the book gives this creature no lair, or where there is
+ * no number to multiply.
+ */
+async function lairRoll(
+  result: EncounterResult,
+  dice: Roll[]
+): Promise<
+  | {
+      percent: number;
+      source: string;
+      roll: number;
+      inLair: boolean;
+      /** The number the encounter table called for, before any multiplier. */
+      wandering: number;
+      /** What is actually there — the same number, or that many times over. */
+      number: number;
+      multiplier?: number;
+    }
+  | undefined
+> {
+  if (!result.happened || result.number === undefined) return undefined;
+  const lair = lairChance(result.name, result.period);
+  if (!lair) return undefined;
 
   const die = await rollDice("1d100");
+  dice.push(die);
   const roll = total(die);
   const inLair = roll <= lair.percent;
-  const dice = [die];
 
   // How many are actually at home.
   //
@@ -1757,19 +1925,34 @@ async function rollLairCheck(period: "day" | "night"): Promise<void> {
   // between the number that would have been wandering and five times it, which
   // is exactly the range the sentence describes. The card says the die is this
   // module's and not the book's, so a Referee who wants the maximum can take it.
-  const wandering = stored.wanderingNumber ?? stored.number;
-  let lairNumber = wandering;
-  let numberLine = `<p class="dw-day-roll-consequence">The ${wandering === 1 ? "creature is" : "creatures are"} out on the move; the number rolled stands.</p>`;
+  const wandering = result.wanderingNumber ?? result.number;
+  let number = wandering;
+  let multiplier: number | undefined;
   if (inLair) {
     const multiplierDie = await rollDice("1d5");
     dice.push(multiplierDie);
-    const multiplier = total(multiplierDie);
-    lairNumber = wandering * multiplier;
-    numberLine = `<p class="dw-day-roll-consequence">
+    multiplier = total(multiplierDie);
+    number = wandering * multiplier;
+  }
+  return { percent: lair.percent, source: lair.source, roll, inLair, wandering, number, multiplier };
+}
+
+async function rollLairCheck(period: "day" | "night"): Promise<void> {
+  if (!isGM()) return;
+  const stored = storedEncounter(period);
+  if (!stored?.happened || stored.number === undefined) return;
+
+  const dice: Roll[] = [];
+  const outcome = await lairRoll(stored, dice);
+  if (!outcome) return;
+  const { roll, inLair, wandering, multiplier } = outcome;
+  const lairNumber = outcome.number;
+  const numberLine = inLair
+    ? `<p class="dw-day-roll-consequence">
       <strong>${lairNumber}</strong> at home &mdash; ${wandering} &times; ${multiplier}
       <span class="dw-encounter-die">(1d5; the book gives only "up to five times as many", so the multiplier is this module's die)</span>.
-      Treasure is kept in lairs, not carried.</p>`;
-  }
+      Treasure is kept in lairs, not carried.</p>`
+    : `<p class="dw-day-roll-consequence">The ${wandering === 1 ? "creature is" : "creatures are"} out on the move; the number rolled stands.</p>`;
 
   // The bestiary describes four lairs for most creatures that keep one, and
   // this is the moment they are worth reading: the party has just arrived at it.
@@ -1804,7 +1987,7 @@ async function rollLairCheck(period: "day" | "night"): Promise<void> {
     `<div class="dw-day-roll">
       <h3><i class="fas fa-house-crack"></i> ${escapeHTML(stored.name ?? "")} &mdash; lair</h3>
       <p class="dw-day-roll-headline">${inLair ? "In its lair." : "Wandering abroad."}</p>
-      <p class="dw-day-roll-sub">1d100 = ${roll}, against ${lair.percent}% &mdash; ${escapeHTML(lair.source)}.</p>
+      <p class="dw-day-roll-sub">1d100 = ${roll}, against ${outcome.percent}% &mdash; ${escapeHTML(outcome.source)}.</p>
       ${numberLine}
       ${lairLine}
     </div>`,

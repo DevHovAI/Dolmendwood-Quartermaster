@@ -169,6 +169,125 @@ export function partyCanReachNote(note: NoteLike | undefined): Reachability {
     : { ok: false, reason: "The party is not in that hex — travel there first." };
 }
 
+type GridLike = {
+  isHexagonal?: boolean;
+  type?: number;
+  getOffset?: (p: { x: number; y: number }) => { i: number; j: number };
+  getAdjacentOffsets?: (o: { i: number; j: number }) => { i: number; j: number }[];
+};
+
+/**
+ * Which cell of *any* grid a point falls in — square as well as hexagonal.
+ *
+ * Beside `hexOf`, which answers only for hex grids because the shop rule is
+ * written that way on purpose: a village map has no hexes and standing in the
+ * village is the whole test there. **Loot needs the other answer**, and finding
+ * that out cost a live test: Olfmar opened a body from clear across the battle
+ * map, because a battle map is a *square* grid, `hexOf` returned nothing, and
+ * the rule fell open (Leander, 2026-08-28).
+ *
+ * Gridless scenes still answer `undefined`. Every point on one is its own cell,
+ * so "next to" has no meaning and being on the scene is all that can be asked.
+ */
+export function cellOf(
+  scene: SceneLike | undefined,
+  point: { x?: number; y?: number } | undefined
+): string | undefined {
+  const grid = scene?.grid as GridLike | undefined;
+  // 0 is gridless; 1 is square; 2–5 are the four hex layouts.
+  const real = grid?.isHexagonal || (typeof grid?.type === "number" && grid.type >= 1);
+  if (!grid?.getOffset || !real) return undefined;
+  if (typeof point?.x !== "number" || typeof point?.y !== "number") return undefined;
+  const { i, j } = grid.getOffset({ x: point.x, y: point.y });
+  return `${i},${j}`;
+}
+
+/**
+ * That cell and the ring around it.
+ *
+ * Foundry's own `getAdjacentOffsets` is asked rather than the neighbours being
+ * worked out here: a square has eight of them and a hex six, and which hexes
+ * touch which depends on whether the grid is pointy or flat topped and on which
+ * rows are offset. A module that reimplemented that would be wrong on
+ * somebody's map and right on the test's.
+ */
+export function cellsWithinOne(
+  scene: SceneLike | undefined,
+  point: { x?: number; y?: number } | undefined
+): Set<string> | undefined {
+  const grid = scene?.grid as GridLike | undefined;
+  const here = cellOf(scene, point);
+  if (!here || !grid?.getOffset) return undefined;
+  const offset = grid.getOffset({ x: point!.x!, y: point!.y! });
+  const keys = new Set([here]);
+  for (const o of grid.getAdjacentOffsets?.(offset) ?? []) keys.add(`${o.i},${o.j}`);
+  return keys;
+}
+
+/** Every token on this scene the current user owns. */
+export function ownedTokensOn(scene: SceneLike | undefined): TokenLike[] {
+  if (!scene?.tokens) return [];
+  const g = game as Game;
+  const mine = new Set(
+    (g.actors?.contents ?? [])
+      .filter((a) => a.isOwner)
+      .map((a) => a.id ?? "")
+      .filter(Boolean)
+  );
+  return [...scene.tokens].filter((t) => {
+    const id = t.actorId ?? t.actor?.id;
+    return !!id && mine.has(id);
+  });
+}
+
+/**
+ * Whether a player may open the body or hoard this note marks.
+ *
+ * **Two scenarios, two distances** — Leander, 2026-08-28: *"nur wenn party
+ * token drauf (Kartenszenario) oder player token adjacent (Battlemap
+ * szenario)."* Which one applies is decided by *whose* token answers, not by
+ * guessing what kind of scene this is:
+ *
+ *  - **The party marker must be standing on it.** On the world map a hex is a
+ *    day's travel, and looting a body from the hex next door is looting it from
+ *    a mile away. Same rule as a shop's.
+ *  - **A character's own token may be next to it.** On a battle map a hex is a
+ *    few feet, and nobody stands *inside* a corpse — the ring of neighbours is
+ *    where you kneel down. This is the one time the party is not one piece on
+ *    the board, which is why the marker is not the only answer.
+ *
+ * On a scene with no hex grid the test is the scene, exactly as for a shop.
+ */
+export function canReachLoot(note: NoteLike | undefined): Reachability {
+  const g = game as Game;
+  if (g.user?.isGM) return { ok: true, reason: "" };
+  if (!g.settings.get(MODULE_ID, SETTINGS.SHOPS_NEED_PARTY_PRESENT)) {
+    return { ok: true, reason: "" };
+  }
+
+  const scene = note?.parent;
+  const where = scene?.name ?? "this map";
+  const marker = partyTokensOn(scene);
+  const own = ownedTokensOn(scene);
+  if (marker.length === 0 && own.length === 0) {
+    return { ok: false, reason: `You have nobody on ${where}.` };
+  }
+
+  // **Any grid, not only a hex one.** A battle map is usually squares, and
+  // asking `hexOf` there answered "no grid" and let everybody in from anywhere.
+  const noteHex = cellOf(scene, note);
+  if (!noteHex) return { ok: true, reason: "" };
+
+  const markerOnIt = marker.some((t) => cellOf(scene, tokenPoint(scene, t)) === noteHex);
+  const ownBeside = own.some((t) => cellsWithinOne(scene, tokenPoint(scene, t))?.has(noteHex));
+  return markerOnIt || ownBeside
+    ? { ok: true, reason: "" }
+    : {
+        ok: false,
+        reason: "Travel to that hex with the party, or step a token beside it.",
+      };
+}
+
 /** The same question, answered with a notification when the answer is no. */
 export function refusePlaceIfAway(note: NoteLike | undefined, what: string): boolean {
   const verdict = partyCanReachNote(note);

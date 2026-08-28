@@ -1,6 +1,7 @@
 import { MODULE_ID, FLAGS, TEMPLATES, LOOT_ZONE } from "../constants";
 import { CatalogManager } from "../data/CatalogManager";
 import { definitionFor } from "../data/itemDefs";
+import { canReachLoot } from "../data/partyPlace";
 import { FlagManager } from "../data/FlagManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { addItemWithZones, getEncumbranceMode } from "../data/zoneGrants";
@@ -127,6 +128,12 @@ export class LootApp extends foundry.applications.api.HandlebarsApplicationMixin
       // Where the box sits on the map, so the button can say "already placed"
       // instead of quietly refusing a second time
       pinnedSceneName: pinnedTo?.sceneName ?? null,
+      // Whether that scene is the one open now, which decides between "drag it"
+      // and "bring it here".
+      pinnedHere:
+        !!pinnedTo &&
+        pinnedTo.sceneId ===
+          ((game as Game).scenes as unknown as { current?: { id?: string } } | undefined)?.current?.id,
       encMode,
       name: this.actor.name,
       items,
@@ -328,7 +335,32 @@ function getAppInstance(id: string): { render: (force?: boolean) => void } | nul
   return (instances.get(id) as { render: (force?: boolean) => void } | undefined) ?? null;
 }
 
+/**
+ * Open a box — for the Referee always, and for a player only where they are
+ * standing next to it.
+ *
+ * **The check lives here and not on each door**, because there are three of
+ * them: the pin on the map, the browser, and the card in chat. A rule enforced
+ * at one door is a rule with two ways round it (Leander, 2026-08-28).
+ *
+ * Being *released* is still what lets a player read the box at all — that is
+ * Foundry's own ownership and no module can talk its way past it. Standing
+ * beside it is the second half: released says *the party may have this*, the
+ * pin's hex says *this is where it is*.
+ */
 export function openLootBox(actor: Actor): void {
+  const note = lootNoteScene(actor)?.note;
+  if (!(game as Game).user?.isGM) {
+    if (!note) {
+      ui.notifications?.warn(`“${actor.name}” is not on any map, so there is nothing to walk up to.`);
+      return;
+    }
+    const verdict = canReachLoot(note as Parameters<typeof canReachLoot>[0]);
+    if (!verdict.ok) {
+      ui.notifications?.warn(`“${actor.name}” is out of reach. ${verdict.reason}`);
+      return;
+    }
+  }
   const existing = getAppInstance(LootApp.appIdFor(actor));
   if (existing) existing.render(true);
   else new LootApp(actor).render(true);
@@ -851,10 +883,14 @@ export function activateLootChatButtons(html: HTMLElement): void {
     // would otherwise make one click do its work twice over.
     if (button.dataset.dwWired === "1") return;
     button.dataset.dwWired = "1";
-    button.addEventListener("click", () => {
-      const actor = (game as Game).actors?.get(button.dataset.actorId ?? "");
-      if (actor) openLootBox(actor);
-      else ui.notifications?.warn("That loot box no longer exists.");
-    });
+    // **The chat is not a door, for anybody** — Leander, 2026-08-28: *"Loot am
+    // besten auch nicht mehr aus dem Chat öffnen... kann ganz raus."* A card is
+    // the record of something that happened; a body is a place on a map, and it
+    // is reached by going there.
+    //
+    // New cards carry no such button. This meets the ones already posted and
+    // **takes the button off them** as they are re-rendered, rather than
+    // leaving a control that answers a click with an apology.
+    button.remove();
   });
 }

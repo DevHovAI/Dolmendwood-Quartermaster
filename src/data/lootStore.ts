@@ -192,17 +192,28 @@ export async function placeLootNote(actor: Actor): Promise<boolean> {
   const g = game as Game;
   if (!g.user?.isGM) return false;
 
-  const existing = lootNoteScene(actor);
-  if (existing) {
-    ui.notifications?.info(`This box is already on the map, in scene “${existing.sceneName}”.`);
-    return false;
-  }
-
   const scene = (g.scenes as unknown as { current?: Scene } | undefined)?.current;
   if (!scene) {
     ui.notifications?.warn("Open the scene you want to place this box on first.");
     return false;
   }
+
+  // **A pin can be moved to another map** (Leander, 2026-08-28): *"wenn zuerst
+  // auf der Battlemap platziert und wir wechseln wieder zur Weltkarte, dann
+  // möchte ich das Icon gerne auf die große Karte mitnehmen."* A fight happens
+  // on the battle map and the body stays where it fell — until the party walks
+  // away and the hex map is what matters again. The old pin is taken up rather
+  // than left behind, so a box is on exactly one map at a time and cannot be
+  // opened from a scene the party is not standing on.
+  const existing = lootNoteScene(actor);
+  const movedFrom = existing && existing.sceneId !== (scene as unknown as { id?: string }).id
+    ? existing.sceneName
+    : undefined;
+  if (existing && !movedFrom) {
+    ui.notifications?.info(`This box is already on “${existing.sceneName}” — drag its pin to move it.`);
+    return false;
+  }
+  if (movedFrom) await removeLootNotes(actor);
 
   const name = actor.name ?? "Loot";
   const entry = await JournalEntry.create({
@@ -238,7 +249,9 @@ export async function placeLootNote(actor: Actor): Promise<boolean> {
   // GM-only until the Release button says otherwise. That keeps one rule true —
   // only releasing ever grants the party access to anything.
   ui.notifications?.info(
-    `“${name}” placed at the centre of this scene — drag the pin where you want it.`
+    movedFrom
+      ? `“${name}” moved from “${movedFrom}” to the centre of this scene — drag the pin where you want it.`
+      : `“${name}” placed at the centre of this scene — drag the pin where you want it.`
   );
   if (isLootReleased(actor)) {
     ui.notifications?.warn(

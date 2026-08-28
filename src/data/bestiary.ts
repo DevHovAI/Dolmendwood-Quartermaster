@@ -48,6 +48,23 @@ export interface BestiaryEntry {
   morale?: number;
   behaviour?: string;
   speech?: string;
+  /**
+   * What the creature carries on its person, as the book prints it.
+   *
+   * **Not the same thing as the hoard, and the difference decides what a body is
+   * worth.** The Monster Book (p9): *Possessions* are "items and treasures
+   * carried by the creature on its person (or shared between a group of
+   * creatures)"; a *Hoard* is "items and treasures found in the creature's
+   * lair". So a wandering band is worth this line and nothing else, and only a
+   * lair is worth the hoard.
+   *
+   * `"None"` is a fact and is stored as one: it says the book looked and there
+   * is nothing, which is a different answer from a creature this module never
+   * imported. **"Carried by group:"** is the book's own wording where one lot is
+   * shared out rather than carried by each — worth keeping verbatim, because it
+   * is the difference between eight coins and eight purses.
+   */
+  possessions?: string;
   /** The treasure code for what is kept in the lair, absent when it keeps none. */
   hoard?: string;
   /** d6 — one detail that tells this individual from the rest of its kind. */
@@ -88,6 +105,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Ruthless, hateful, avaricious",
     speech: "None. Understand Woldish and Old Woldish",
+    possessions: "None",
     hoard: "C4 + R4 + M1",
     traits: [
       "Wields a scythe or ancient sword (damage as per touch).",
@@ -125,6 +143,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 10,
     behaviour: "Coldly brilliant, bitter, vengeful",
     speech: "Rasping whisper. High Elfish, Old Woldish",
+    possessions: "None",
     hoard: "C6 + R7 + M4",
     namesNote: "See Cold Prince faction, Campaign Book.",
     nameTable: "frost-elf",
@@ -164,6 +183,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Sharp-witted, wild, tricksome",
     speech: "Tinny voice emanating from head-pot.",
+    possessions: "None",
     hoard: "C4 + R4 + M1 + 4d20 pots or jugs",
     names: ["Fiddlethumb", "Hob", "Jack-a-Napes", "Nob", "Tom-a-Merry", "Willbegone"],
     traits: [
@@ -202,6 +222,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Languid, curious",
     speech: "Gravelly hissing",
+    possessions: "None",
     hoard: "C9 + R5 + M10",
     traits: [
       "Midway through shedding skin.",
@@ -239,6 +260,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 10,
     behaviour: "Relentless, brutal",
     speech: "None",
+    possessions: "None",
     traits: [
       "Straggly, hand-like appendages at ends of tentacles.",
       "Water around the monster bubbles and roils.",
@@ -269,6 +291,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 12,
     behaviour: "Hateful, savage",
     speech: "Incoherent moaning",
+    possessions: "None",
     hoard: "C3 + R3 + M3",
     traits: [
       "Headless.",
@@ -306,6 +329,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Dull-witted, sluggish with frenzied",
     speech: "Bestial slurping and wheezing",
+    possessions: "None",
     hoard: "C3 + R3 + M3 (remains of victims)",
     traits: [
       "Purplish veins and organs visible through skin.",
@@ -343,6 +367,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Cruel captors, man-eaters, slow-witted",
     speech: "Loon-like gibbering. Basic Woldish, Boggin",
+    possessions: "None",
     hoard: "C3 + R3 + M3 + earths and ores (1d10 × 100gp)",
     names: ["Drregl", "Gorgrrgl", "Hodgellgr", "Lrrkrodge", "Rredgrelg", "Slrrgrelp"],
     traits: [
@@ -381,6 +406,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 6,
     behaviour: "Sneaky, ravenous",
     speech: "Excited squealing. Understand basic Sylvan,",
+    possessions: "None",
     traits: [
       "Keens and purrs when attacking.",
       "Tiny human faces (of victims) on upper side.",
@@ -411,6 +437,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Sneaky, mindlessly follow commands",
     speech: "None. Understand Drunic, but cannot speak",
+    possessions: "Binding scroll (see below)",
     traits: [
       "Crown of thorns.",
       "Intermingled with pretty wildflowers.",
@@ -441,6 +468,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Scheming, haughty, callous",
     speech: "Eloquent, condescending. Woldish, Caprice,",
+    possessions: "2d6gp",
     hoard: "C5 + R2 + M8",
     namesNote: "See Longhorn Nobility faction, Campaign Book. See also: Breggle Kindred, Player's Book.",
     nameTable: "noble-breggle",
@@ -480,6 +508,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Merry, grudgingly servile",
     speech: "Mellow, rustic. Woldish, Gaffe, basic Caprice",
+    possessions: "3d6sp",
     hoard: "C1",
     namesNote: "See Breggle Kindred, Player's Book.",
     nameTable: "breggle",
@@ -519,6 +548,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Feverish, brutal, furious",
     speech: "Semi-comprehensible bellowing.",
+    possessions: "3d6sp + Chaotic item (see below)",
     hoard: "C2 + R1",
     names: ["Burlgarsh", "Dingrab", "Dregbor", "Grogbor", "Sklord", "Umbrogd"],
     traits: [
@@ -558,6 +588,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Wild, jovial, philosophical",
     speech: "Gentle murmuring and wild whinnying.",
     names: ["Houyhnhnm", "Llhwn", "Nnhooun", "Ouhllwoun", "Whynloul", "Wwlolyn"],
+    possessions: "Carried by group: 4d20pp + M2",
     traits: [
       "Decorated with hunting trophies.",
       "Clad in wolf-skin.",
@@ -588,6 +619,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 6,
     behaviour: "Shrewd, cautious, merry",
     speech: "Rustic squeaks and croaks. Woldish, Gaffe",
+    possessions: "3d6sp",
     hoard: "C3 + R3 + M3",
     names: ["Dingle", "Dob", "Merry", "Nuncle", "Timble", "Umber"],
     traits: [
@@ -626,6 +658,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Rambunctious capering",
     speech: "Agitated squawking",
+    possessions: "None",
     hoard: "C6 + R7 + M4",
     traits: [
       "Comb resembles an elaborate crown.",
@@ -663,6 +696,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Brutish, wild, merciless",
     speech: "Obscenity-laced bleating. Gaffe, basic Wold-",
+    possessions: "3d6sp",
     hoard: "C4 + R4 + M1",
     namesNote: "See Atanuwë faction, Campaign Book.",
     nameTable: "crookhorn",
@@ -702,6 +736,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Peaceful, curious, emotionless",
     speech: "Resonant keening. Dwelve",
+    possessions: "None",
     hoard: "C4 + 4d4 gems",
     names: ["Eemhleem", "Hloonwoon", "Jreen", "Shormooloon", "Shwoon", "Wimmer"],
     traits: [
@@ -741,6 +776,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Spirited, flighty, devotional",
     speech: "Melodious. Woldish, Deorling, Sylvan",
     names: ["Brewhendre", "Celiwhend", "Hundra", "Louhlawi", "Huwendre", "Wohaa"],
+    possessions: "Carried by group: C2 + R1 + 1d4 Deorling Balm doses (DCB)",
     traits: [
       "Dappled skin.",
       "Long necklaces of wooden beads and bones.",
@@ -772,6 +808,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Single-minded, proud, belligerent",
     speech: "Blunt bellowing. Woldish, Deorling",
     names: ["Awawol", "Boghan", "Ghandre", "Hoolourd", "Mendre", "Wheleg"],
+    possessions: "Ancestral sword (see below)",
     traits: [
       "Horrid scars amid patches of shredded fur.",
       "Antlers draped with shedding velvet.",
@@ -796,6 +833,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Careful cunning, rapacious",
     speech: "Harsh bleating. Basic understanding of",
+    possessions: "None",
     traits: [
       "Central eye weeps bloody tears.",
       "Hooves spark red flames.",
@@ -826,6 +864,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 10,
     behaviour: "Fierce, fanatical, ruthless",
     speech: "Fearsome, brooding. Woldish, Drunic, Sylvan",
+    possessions: "2d4gp + platinum torc (350gp)",
     hoard: "C3 + R3 + M3 + M6",
     namesNote: "See above.",
     nameTable: "drune",
@@ -853,6 +892,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     speech: "Melodic, coy. Woldish, Drunic",
     namesNote: "See Drune faction, Campaign Book.",
     nameTable: "drune",
+    possessions: "3d6sp + talisman (see below) + herbal trade goods (DCB, 2-in-6 chance)",
     traits: [
       "Albino—white hair and pink eyes.",
       "Human knuckle bones hanging from silver earrings.",
@@ -891,6 +931,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     speech: "Abstruse, doom-laden. Woldish, Drunic",
     namesNote: "See Drune faction, Campaign Book.",
     nameTable: "drune",
+    possessions: "2d4gp + golden torc (150gp) + arcane trade goods (DCB, 2-in-6 chance)",
     traits: [
       "Emaciated and addled by mushroom brew.",
       "Necklace of owl skulls.",
@@ -927,6 +968,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Crafty, watchful, suspicious",
     speech: "Clear, melodic. Woldish, Drunic",
+    possessions: "2d4gp + kilnling (see below) + arcane or herbal trade goods (DCB, 2-in-6 chance)",
     hoard: "C3 + R3 + M3 + M6",
     namesNote: "See Drune faction, Campaign Book.",
     nameTable: "drune",
@@ -968,6 +1010,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     speech: "Aristocratic drawl. Woldish, High Elfish,",
     namesNote: "See Elf Kindred, Player's Book and Cold Prince faction, Campaign Book. See also: Fairy Nobles and Their Dominions, Campaign Book.",
     nameTable: "elf",
+    possessions: "5d20pp + R3 + M2",
     traits: [
       "Spectral butterflies flitting around hair.",
       "Leaves a trail of petals, snowflakes, or light motes.",
@@ -1000,6 +1043,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     speech: "Poetic bravado. Woldish, High Elfish",
     namesNote: "See Elf Kindred, Player's Book and Cold Prince faction, Campaign Book. See also: Fairy Nobles and Their Dominions, Campaign Book.",
     nameTable: "elf",
+    possessions: "2d4gp + 1d6pp",
     traits: [
       "Opalescent skin dusted with powdered crystal.",
       "Armour of plated ice shards.",
@@ -1032,6 +1076,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     speech: "Languid, lyrical. High Elfish, Sylvan,",
     namesNote: "See Elf Kindred, Player's Book and Cold Prince faction, Campaign Book. See also: Fairy Nobles and Their Dominions, Campaign Book.",
     nameTable: "elf",
+    possessions: "2d4gp",
     traits: [
       "Hair made of slender willow leaves.",
       "Utterly hairless, skin shimmers.",
@@ -1063,6 +1108,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Sharp-witted, curious, driven by",
     speech: "Sarcastic. Woldish, Sylvan",
     names: ["Chancey", "Farwain", "Frouhaha", "Underneigh", "Whickerlost", "Whinnylord"],
+    possessions: "None",
     traits: [
       "Surrounded by a primeval, lambent glow.",
       "Tail and mane of gold.",
@@ -1093,6 +1139,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Enigmatic, ponderous",
     speech: "Profound, grinding boom. Dwelve",
+    possessions: "None",
     hoard: "C5 + R2 + M8 + 4d4 gems",
     names: ["Aamigor", "Dweldge", "Malbolge", "Phalythryst", "Sobdor", "Zanzimorg"],
     traits: [
@@ -1131,6 +1178,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Lumbering, cunning, languid",
     speech: "Wordless gurgling",
+    possessions: "None",
     hoard: "C7 + R4 + M4",
     traits: [
       "Mouths constantly drooling black bile.",
@@ -1168,6 +1216,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 11,
     behaviour: "Cunning, single-minded",
     speech: "Gravelly snapping. Woldish, Liturgic",
+    possessions: "None",
     hoard: "C3 + R3 + M3",
     namesNote: "Typically named after a saint, see Pluritine Church faction, Campaign Book.",
     nameTable: "saint",
@@ -1201,6 +1250,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Peaceful, relentless when pursuing food",
     speech: "Wordless gibbering",
+    possessions: "Floating inside torso: 1-in-4 chance of C2 + 1 magic item",
     traits: [
       "Phosphorescent.",
       "Covered in nodules and wobbly tentacles.",
@@ -1225,6 +1275,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Ravenous, hateful, devious",
     speech: "Deranged babbling. Broken Woldish",
+    possessions: "None",
     hoard: "C4 + R4 + M1",
     names: ["Grast", "Gretch", "Grime", "Grip", "Groan", "Grunder"],
     traits: [
@@ -1263,6 +1314,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Cunning, obsessive, amoral",
     speech: "Cawing rasp. Woldish, the tongue of crows",
+    possessions: "None",
     hoard: "C5 + R2 + M8 + collection",
     names: ["Carrionette", "Hollowbone", "Lankwing", "Mister Twist", "Sawbone", "Thinwhistle"],
     traits: [
@@ -1302,6 +1354,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Sly, tricksy, craven, whimsical",
     speech: "Animated banter. Woldish, Sylvan",
     names: ["Bringle-Brangle", "Grimble-Grot", "Hither-Thither", "Idle-Down", "Moon-Mumble", "Scampalot"],
+    possessions: "Carried by group: 2d100gp + R1 + fairy trade goods (DCB)",
     traits: [
       "Grinning, feline face with wiry whiskers.",
       "Bristly, boar-like face with protruding tusks.",
@@ -1332,6 +1385,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Sharp-witted, narcissistic, mercurial",
     speech: "Impudent yowls. Woldish, Mewl",
+    possessions: "2d4gp + 1d3 Kitty-Nibbles (DCB)",
     hoard: "C5 + R2 + M8",
     namesNote: "See Grimalkin Kindred, Player's Book.",
     nameTable: "grimalkin",
@@ -1371,6 +1425,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Rapacious, sadistic, avaricious",
     speech: "Cackling, screeching. Woldish, Gaffe,",
+    possessions: "2d6gp",
     hoard: "C3 + R3 + M3",
     names: ["Cawblood", "Crookbone", "Lankfeather", "Nunclebone", "Shinnylop", "Thornclaw"],
     traits: [
@@ -1409,6 +1464,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 10,
     behaviour: "Diabolical, scheming, hateful, ravenous",
     speech: "Deranged cackling. Woldish, Gaffe",
+    possessions: "2d20gp",
     hoard: "C4 + R4 + M5",
     names: ["Agnes", "Griseld", "Hazel", "Meg", "Misery", "Nanna"],
     traits: [
@@ -1447,6 +1503,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Obsessive, cruel, vengeful",
     speech: "Grisly moaning (from decapitated head).",
+    possessions: "None",
     hoard: "C5 + R2 + M8",
     namesNote: "See Human Kindred, Player's Book.",
     nameTable: "human",
@@ -1474,6 +1531,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Alien, malevolent, Machiavellian",
     speech: "Emotionless. Telepathic projection with any",
+    possessions: "None",
     hoard: "C8 + R9 + M2",
     traits: [
       "Cap peaked like a wizard’s hat.",
@@ -1513,6 +1571,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     speech: "Eloquently romantic. Woldish, Sylvan",
     namesNote: "Usually adopt a human name. See Human Kindred, Player's Book.",
     nameTable: "human",
+    possessions: "None",
     encounters: [
       "Lying in wait beneath the steep bank of a pool or stream, making cries and wails like those of a drowning child.",
       "Charging along with a red-headed maid (its lover, everyday mortal—p110) atop its back. The pair flee a group of 6 villagers (p111)—the girl’s relatives, armed with pitchforks—who suspect the fairy nature of her new paramour.",
@@ -1535,6 +1594,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Dull-witted, sly, ravenous",
     speech: "Slurping. Sylvan, Mewl, Woldish (1-in-4",
+    possessions: "None",
     hoard: "C6 + R7 + M4",
     names: ["Fisk", "Frond", "Grulp", "Shlulp", "Whelp", "Whisk"],
     traits: [
@@ -1573,6 +1633,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 12,
     behaviour: "Awkward, unflinching",
     speech: "None. Understand basic Woldish",
+    possessions: "None",
     traits: [
       "No discernible head.",
       "Chessboard on chest, chess pieces for fingers.",
@@ -1609,6 +1670,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Vain, covetous, love riddles",
     speech: "Languid growl. Woldish, Mewl",
+    possessions: "None",
     hoard: "C6 + R7 + M4",
     names: ["Albert", "Cadorphage", "Muggle", "Nygel", "Phrindalorb", "Wizen"],
     traits: [
@@ -1647,6 +1709,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 12,
     behaviour: "Hateful, pitiful",
     speech: "Cacophonous moaning",
+    possessions: "None",
     hoard: "C5 + R2 + M8",
     traits: [
       "Tears of yellow ectoplasm drift from weeping face.",
@@ -1678,6 +1741,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Merry, boisterous, hedonistic",
     speech: "Boastful, mirthful. Woldish, Sylvan, Merfolk",
+    possessions: "1d6gp",
     hoard: "C5 + R3 + M9",
     names: ["Aurion", "Caprelle", "Cornelius", "Galethorn", "Mystanor", "Trystus"],
     traits: [
@@ -1716,6 +1780,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Ferocious, slow-witted, curious,",
     speech: "Stammering yowls. Basic Woldish, Mewl",
+    possessions: "None",
     hoard: "Wealth of dwelling’s former owner: 2d20gp (common) / C3 + R3 + M3",
     names: ["Boggle", "Brungle", "Grewl", "Mogget", "Mowl", "Preen"],
     traits: [
@@ -1754,6 +1819,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Slow but shrewd, jovial, prudent",
     speech: "Squelching, grinding. Woldish, Mulch",
+    possessions: "3d6sp + fungi (see below)",
     hoard: "C3 + R3 + M3",
     namesNote: "See Mossling Kindred, Player's Book.",
     nameTable: "mossling",
@@ -1793,6 +1859,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Sagacious, inscrutable, idiosyncratic",
     speech: "Abstracted gurgling. Woldish, Mulch,",
+    possessions: "3d6sp",
     hoard: "R1 + M5",
     namesNote: "See Mossling Kindred, Player's Book. See also Mogba religion, Player's Book and the Myconom Wood God, Campaign Book.",
     nameTable: "mossling",
@@ -1832,6 +1899,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Dull-witted, greedy, cantankerous",
     speech: "Grumbling and bellowing",
+    possessions: "None",
     hoard: "1d4 magical fruits in trees around lair (see below)",
     traits: [
       "Fringes of purple, symbiotic lichen.",
@@ -1869,6 +1937,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Capricious, covetous, flighty",
     speech: "Excited chittering. Sylvan, Mulch (1-in-3",
+    possessions: "None",
     hoard: "C3 + R3 + M3",
     names: ["Chrreep", "Eergree", "Gleereek", "Kweelee", "Leegreeleek", "Rreekreek"],
     traits: [
@@ -1907,6 +1976,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 10,
     behaviour: "Indiscriminately brutal",
     speech: "None",
+    possessions: "None",
     traits: [
       "Skull-like face.",
       "Covered in sucking, slurping orifices.",
@@ -1937,6 +2007,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 10,
     behaviour: "Depraved, brutish, slow-witted, greedy",
     speech: "Crude booming. Basic Woldish",
+    possessions: "Sack (see below)",
     hoard: "C4 + R4 + M2",
     namesNote: "Cannot recall original name; often given a crookhorn name—see Atanuwë faction, Campaign Book.",
     nameTable: "crookhorn",
@@ -1976,6 +2047,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 12,
     behaviour: "Relentless, ravenous",
     speech: "Unnerving fizzing",
+    possessions: "None",
     traits: [
       "Writhing with weird, human-like faces.",
       "Leaves a trail of caustic slime, dissolving plant life.",
@@ -2006,6 +2078,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Cunning, frenzied",
     speech: "Gurgling howls",
+    possessions: "None",
     hoard: "C6 + R7 + M4",
     traits: [
       "Antlers resemble grasping hands.",
@@ -2043,6 +2116,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 6,
     behaviour: "Sneaky, mischievous, covetous",
     speech: "High-pitched tittering. Mulch, basic Woldish",
+    possessions: "3d6sp (1-in-4 chance)",
     hoard: "C1 + R1 + herbal and mundane trade goods",
     names: ["Addercap", "Bramble", "Cobble", "Fiddle", "Pippin", "Thwist"],
     traits: [
@@ -2082,6 +2156,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Sneaky, malicious, mischievous",
     speech: "Leering and tittering. Woldish, Sylvan, basic",
     names: ["Jack o’ Boots", "Old Henry", "Nicklethumb", "Shirtshank", "Thimblefiddle", "Vex"],
+    possessions: "Carried by group: 2d100gp + R4",
     traits: [
       "Constantly giggling.",
       "Hairy, shoeless feet.",
@@ -2112,6 +2187,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 10,
     behaviour: "Cautious, inquisitive",
     speech: "Slurping and bubbling",
+    possessions: "In ooze pockets: R1",
     traits: [
       "Eye-like organs on wobbly stalks.",
       "Sporadically wracked with quivering.",
@@ -2142,6 +2218,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Cunning, bestial, ruthless lust to feed",
     speech: "None",
+    possessions: "None",
     traits: [
       "Long, grasping fingers.",
       "Eye-like whorls on body. Maybe they really are eyes?",
@@ -2173,6 +2250,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Merry / murderous / morose",
     speech: "Rustling and rumbling. Woldish, Mulch",
     names: ["Hobnobble", "Ramble-Rumble", "Stalk", "Strider", "Tumbleweed", "Worzel"],
+    possessions: "Herbal and mundane trade goods (DCB)",
     traits: [
       "Chuckles and sighs between sentences.",
       "Inadvertently mutters “juicy brains” in conversation.",
@@ -2203,6 +2281,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Prudent, excitable, curious",
     speech: "Gulping whisper. Dwelve, basic Woldish",
+    possessions: "4d6sp + fairy, herbal, and mundane trade goods (DCB, 2-in-6 chance of each)",
     hoard: "C4 + R4 + M1 + M5",
     names: ["Abgrinnid", "Chantiloppe", "Dreebe", "Quillit", "Sanctwill", "Sedgewine"],
     traits: [
@@ -2241,6 +2320,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 12,
     behaviour: "Ravenous, greedy",
     speech: "Incoherent whispering. Jumbled Woldish",
+    possessions: "None",
     hoard: "C9 + R5 + M10",
     traits: [
       "Eye-like holes appear and disappear across body.",
@@ -2278,6 +2358,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 10,
     behaviour: "Remorseless, cautious, stealthy",
     speech: "Victim’s voice. Woldish, Sylvan, High Elfish",
+    possessions: "Victim's equipment",
     hoard: "C3 + R4 + M8",
     namesNote: "Use victims’ names. See Kindreds, Player's Book.",
     nameTable: "human",
@@ -2309,6 +2390,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Merry, flippant, addled, awed",
     speech: "Rattling whisper. Woldish",
+    possessions: "2d6sp",
     namesNote: "See mortal Kindreds, Player's Book.",
     nameTable: "human",
   },
@@ -2327,6 +2409,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Ravenous, instinctual",
     speech: "Relentless slurping",
+    possessions: "None",
     traits: [
       "Pointy, striped shell.",
       "Three eye stalks.",
@@ -2358,6 +2441,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Dreamy, aloof",
     speech: "Abstruse. Telepathic projection with any",
     names: ["Bellowcaulk", "Conchwend", "Hypnos", "Lore", "Phelpwind", "Sanctalot"],
+    possessions: "None",
     traits: [
       "Shell glows incandescent green.",
       "Humanoid faces on each of its eye stalks.",
@@ -2388,6 +2472,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 11,
     behaviour: "Avaricious, arrogant, desire worship",
     speech: "Sinister whispering. Old Woldish",
+    possessions: "None",
     hoard: "C5 + R2 + M8",
     names: ["Agune", "Boroth", "Ethex", "Gruwth", "Lirathil", "Theune"],
     traits: [
@@ -2426,6 +2511,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 6,
     behaviour: "Sharp-witted, mischievous, flippant",
     speech: "High-pitched buzzing. Sylvan,",
+    possessions: "None",
     hoard: "R1 + R6",
     names: ["Grick", "Gwillick", "Jond", "Sneeple", "Squirkle", "Zeep"],
     traits: [
@@ -2463,6 +2549,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 5,
     behaviour: "Tricksy, whimsical, slippery",
     speech: "Eloquent squeaks, hoots, barks, etc. Woldish",
+    possessions: "None",
     hoard: "2d100sp + 1-in-4 chance of 1 gem",
     names: ["Bob", "Nibble", "Numble", "Pip", "Scamp", "Twitch"],
     encounters: [
@@ -2493,6 +2580,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Lawful, Neutral: Benign unless slighted,",
     speech: "Slow creaking. Mulch, Sylvan,",
+    possessions: "None",
     hoard: "C4 + R2 + M3",
     names: ["Burlgrurl", "Grumblebole", "Limbletroot", "Murmlemoot", "Rootmoot", "Trumblegrum"],
     traits: [
@@ -2531,6 +2619,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 10,
     behaviour: "Muddled, sly, hungry for moss",
     speech: "Lethargic rumbling. Woldish, Sylvan",
+    possessions: "None",
     hoard: "C5 + R2 + M8 + magical",
     names: ["Frondhelm", "Grudge", "Mawb", "Skulp", "Under", "Wheeze"],
     traits: [
@@ -2571,6 +2660,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     speech: "Proud whinnies. Liturgic, Sylvan",
     namesNote: "Typically named after a saint, see Pluritine Church faction, Campaign Book.",
     nameTable: "saint",
+    possessions: "Blessed horn (see below)",
     traits: [
       "Regal, goat-like beard.",
       "Voice tinkles like wind chimes.",
@@ -2602,6 +2692,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Sinister, fanatic, sadistic",
     speech: "Creaky whinnies. Gaffe, Sylvan",
     names: ["Craven", "Dank", "Gripe", "Hoargrime", "Moribund", "Shank"],
+    possessions: "Cursed horn (see below)",
     traits: [
       "Cyan froth around the mouth.",
       "Speaks in tongues. Sentences emerge from the babble.",
@@ -2632,6 +2723,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Predatory, menacing, sly",
     speech: "Growls and grunts. Woldish",
+    possessions: "None",
     hoard: "C3 + R3 + M3",
     namesNote: "See Human Kindred, Player's Book.",
     nameTable: "human",
@@ -2671,6 +2763,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 12,
     behaviour: "Looming, creaking, rageful",
     speech: "None. Understand Drunic",
+    possessions: "None",
     traits: [
       "Wicked, leering grin with thigh-bones for teeth.",
       "Topped with a gigantic pumpkin with carved visage.",
@@ -2707,6 +2800,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 12,
     behaviour: "Covetous, hateful of the living",
     speech: "Bestial hissing and snarling",
+    possessions: "None",
     hoard: "C4 + R4 + M1",
     namesNote: "Not used.",
     traits: [
@@ -2745,6 +2839,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Perceptive, enigmatic",
     speech: "Formidable, cryptic. Woldish, Witches’ Cant,",
+    possessions: "3d6sp + arcane and herbal trade goods (DCB, 2-in-6 chance)",
     hoard: "C2 + R1 + M5",
     namesNote: "See Human Kindred, Player's Book. See also: Witches faction, Campaign Book.",
     nameTable: "human",
@@ -2784,6 +2879,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 8,
     behaviour: "Inscrutable, sinister, merciless",
     speech: "Eerie hooting",
+    possessions: "None",
     hoard: "C4 + R3",
     traits: [
       "Single large eye in centre of forehead.",
@@ -2822,6 +2918,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     behaviour: "Wide-eyed, shy, uncultured",
     speech: "Whistling mumbles and whispers. Mulch,",
     names: ["Braghwoole", "Hwoon", "Mhewood", "Omdoobra", "Phroon", "Umhwoole"],
+    possessions: "Carried by group: roots and mushrooms (see below)",
     traits: [
       "Crawling with beetles.",
       "Shaggy, auburn hair, mane of oak leaves.",
@@ -2854,6 +2951,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     speech: "Rapid squeaking. Woldish, Sylvan",
     namesNote: "See Woodgrue Kindred, Player's Book.",
     nameTable: "woodgrue",
+    possessions: "2d4gp + wind instrument",
     traits: [
       "Twitchy, wobbly ears.",
       "Purple nose and lips.",
@@ -2886,6 +2984,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     speech: "Repeats favoured phrases. Woldish",
     namesNote: "See mortal Kindreds, Player's Book.",
     nameTable: "human",
+    possessions: "3d6sp",
     traits: [
       "Sports a dead squirrel, in memory of its former hat.",
       "Face contorts between benign smile and twisted grimace.",
@@ -2916,6 +3015,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Savage, rapacious, destructive",
     speech: "Growling, broken sentences. Basic Woldish,",
+    possessions: "None",
     hoard: "C6 + R7 + M4",
     names: ["Bharhgda", "Chollep", "Frigda", "Grandegund", "Grond", "Whelg"],
     traits: [
@@ -2954,6 +3054,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Scheming, cruel, sadistic",
     speech: "Eloquent, venomous. Woldish, Wyrm,",
+    possessions: "None",
     hoard: "C10 + R8 + M11",
     names: ["Hale", "Inctra", "Lallandra", "Shelm", "Speculord", "Zmeed"],
     traits: [
@@ -2992,6 +3093,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Languid, avaricious, deceitful",
     speech: "Dreamy hissing. Woldish, Wyrm",
+    possessions: "None",
     hoard: "C9 + R5 + M10 + (R1 × 3)",
     names: ["Aelethynde", "Lemmelde", "Mensendra", "Sowynder", "Undraleeth", "Welthrende"],
     traits: [
@@ -3030,6 +3132,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 9,
     behaviour: "Erudite, treacherous, hateful",
     speech: "Reasoned rasp. Woldish, Wyrm, Dwelve,",
+    possessions: "None",
     hoard: "C11 + R12 + M7",
     names: ["Angraweal", "Athemandel", "Brimlord", "Brithemandle", "Chaymelunder", "Mercylith"],
     traits: [
@@ -3068,6 +3171,7 @@ export const BESTIARY: Record<number, BestiaryEntry> = {
     morale: 7,
     behaviour: "Flighty, greedy, mercurial",
     speech: "Chittering whispers. Snatches of Sylvan",
+    possessions: "None",
     hoard: "C4 + R4 + M1",
     traits: [
       "Wings and body emit a smouldering smoke.",

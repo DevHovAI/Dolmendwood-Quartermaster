@@ -884,6 +884,14 @@ export interface EncounterResult {
    * turn twenty-eight shadows into a hundred and forty.
    */
   wanderingNumber?: number;
+  /**
+   * The lair check as it was rolled with the encounter, for the card to print.
+   *
+   * Kept beside `inLair` rather than folded into it because the card says both
+   * *what* and *against what*: "1d100 = 43, against 30%" is the line a Referee
+   * reads back when a player asks why there are twenty-eight of them.
+   */
+  lairRoll?: { roll: number; percent: number; source: string };
   activity?: string;
   activityRoll?: number;
   /** Each side's 1d6; 1–2 is surprised (CB p114). */
