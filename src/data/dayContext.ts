@@ -1,3 +1,4 @@
+import { briefHex } from "./hexBriefing";
 import { MODULE_ID, SETTINGS } from "../constants";
 import { SETTLEMENTS, type Settlement } from "./settlementEncounters";
 
@@ -357,9 +358,17 @@ export async function setDayContext(patch: Partial<DayContext>): Promise<void> {
     patch.region !== undefined ||
     patch.settlement !== undefined ||
     patch.hex !== undefined;
-  const next = { ...getDayContext(), ...patch };
+  const before = getDayContext();
+  const next = { ...before, ...patch };
   if (answered) delete next.moved;
   await g.settings.set(MODULE_ID, SETTINGS.DAY_CONTEXT, next);
+
+  // **A new hex briefs itself** (Leander, 2026-08-28). Here rather than at the
+  // bar's two call sites, so every way of setting a hex brings the card with
+  // it; and only on a *change*, or confirming a context would re-post it.
+  if (patch.hex !== undefined && next.hex && next.hex !== before.hex) {
+    await briefHex(next.hex);
+  }
 }
 
 /** "It is still right" — drop the warning without changing anything. */
