@@ -5,6 +5,10 @@ import { bookRef } from "./books";
 import { getDayContext, seasonInfo } from "./dayContext";
 import { getDayState, setCampResult } from "./dayDuties";
 import { consumeFood, setAte, setSleptWell } from "./characterDay";
+import { FlagManager } from "./FlagManager";
+import { getConvoyActors } from "./sharedStore";
+import { setStackUnits, stackUnits } from "./consumables";
+import type { InventoryItem } from "../types";
 import { ABILITIES, getSystemFields } from "./characterSheet";
 import {
   CAMP_ACTIVITIES,
@@ -20,7 +24,17 @@ import {
   firewoodHours,
   planSleep,
   restModifier,
+  restModifierParts,
+  fireLastsTheNight,
+  gradeFire,
+  firePenaltyFor,
+  FIRE_MINIMUM_HOURS,
+  SHORT_FIRE_PENALTY,
+  FIREWOOD_ID,
+  FIREWOOD_HOURS_PER_BUNDLE,
+  DIFFICULT_SLEEP_PENALTY,
   sleepDifficulty,
+  type RollPart,
   type Bedding,
   type CampActivity,
   type CampActivityResult,
@@ -64,10 +78,118 @@ function actorById(id: string): Actor | undefined {
   return (game as Game).actors?.get(id) ?? undefined;
 }
 
+// ─── Firewood in the packs ────────────────────────────────────────────────────
+
+/** One row of firewood somebody is carrying, for the fire to choose from. */
+export interface WoodRow {
+  holderId: string;
+  holderName: string;
+  itemId: string;
+  hours: number;
+}
+
+/**
+ * Put an evening's gathering into a character's pack.
+ *
+ * **The catalogue's own `firewood-bundle`**, which is a bundle in the module's
+ * existing sense: `maxUses: 8` means one row holds a running total of loose
+ * hours and the weight follows by itself, 200 coins the bundle and 25 the hour.
+ * Gathered wood and bought wood are therefore the same row, and stack.
+ */
+export async function addFirewood(actorId: string, hours: number): Promise<void> {
+  const actor = actorById(actorId);
+  if (!actor || hours <= 0) return;
+  await FlagManager.updateInventory(actor, (inv) => {
+    const existing = inv.items.find((i) => i.definitionId === FIREWOOD_ID);
+    if (existing) {
+      setStackUnits(
+        existing,
+        FIREWOOD_HOURS_PER_BUNDLE,
+        stackUnits(existing, FIREWOOD_HOURS_PER_BUNDLE) + hours
+      );
+      return inv;
+    }
+    const row: InventoryItem = {
+      id: foundry.utils.randomID(),
+      definitionId: FIREWOOD_ID,
+      name: "Firewood (Bundle)",
+      quantity: 1,
+      zone: "stowed",
+      isSecret: false,
+      notes: "",
+    };
+    setStackUnits(row, FIREWOOD_HOURS_PER_BUNDLE, hours);
+    inv.items.push(row);
+    return inv;
+  });
+}
+
+/** Every hour of firewood the convoy is carrying, by row. */
+export function partyFirewood(): WoodRow[] {
+  const rows: WoodRow[] = [];
+  for (const holder of getConvoyActors()) {
+    for (const item of FlagManager.getInventory(holder).items ?? []) {
+      if (item.definitionId !== FIREWOOD_ID) continue;
+      const hours = stackUnits(item, FIREWOOD_HOURS_PER_BUNDLE);
+      if (hours <= 0) continue;
+      rows.push({
+        holderId: holder.id ?? "",
+        holderName: nameOf(holder),
+        itemId: item.id,
+        hours,
+      });
+    }
+  }
+  return rows;
+}
+
+/** Take the chosen hours off the packs. Returns what was actually spent. */
+async function spendFirewood(
+  chosen: { holderId: string; itemId: string; hours: number }[]
+): Promise<{ holderName: string; itemName: string; hours: number }[]> {
+  const spent: { holderName: string; itemName: string; hours: number }[] = [];
+  for (const pick of chosen) {
+    const holder = actorById(pick.holderId);
+    if (!holder || pick.hours <= 0) continue;
+    let took = 0;
+    let itemName = "Firewood (Bundle)";
+    await FlagManager.updateInventory(holder, (inv) => {
+      const row = inv.items.find((i) => i.id === pick.itemId);
+      if (!row) return inv;
+      itemName = row.name;
+      const have = stackUnits(row, FIREWOOD_HOURS_PER_BUNDLE);
+      took = Math.min(pick.hours, have);
+      // `setStackUnits` says false when nothing is left, which is the signal to
+      // drop the row rather than leave an empty bundle in the pack.
+      if (!setStackUnits(row, FIREWOOD_HOURS_PER_BUNDLE, have - took)) {
+        inv.items = inv.items.filter((i) => i.id !== row.id);
+      }
+      return inv;
+    });
+    if (took > 0) spent.push({ holderName: nameOf(holder), itemName, hours: took });
+  }
+  return spent;
+}
+
 /** A signed number the way a card should print it: "+1", "−2", or nothing at all. */
 function signed(n: number): string {
   if (n === 0) return "";
   return n > 0 ? ` + ${n}` : ` − ${Math.abs(n)}`;
+}
+
+/**
+ * " − 2 Constitution + 1 a hot supper", or nothing at all.
+ *
+ * Beside `signed`, which prints only the total. Both are wanted: the total is
+ * what the arithmetic used, and the parts are what let somebody at the table
+ * see that it did. A part worth nothing is left out — it would print as a
+ * label with no number in front of it.
+ */
+function spellOutParts(parts: RollPart[]): string {
+  return parts
+    .filter((p) => p.amount !== 0)
+    .map((p) => `${signed(p.amount)} ${escapeHTML(p.label)}`)
+    .join("");
 }
 
 function card(icon: string, title: string, body: string): string {
@@ -121,6 +243,16 @@ export async function rollFirewood(
   const hours = results.reduce((sum, r) => sum + r.hours, 0);
   await setCampResult("firewood", { firewood: { modifier, hours, gatherers: results } });
 
+  // **Into the pack of whoever carried it back** (Leander, 2026-08-28). One row
+  // per gatherer rather than one pile for the party: they are the ones under
+  // the weight of it, and the fire will take it out of their packs by name.
+  // `results` is built in step with `gatherers`, so the index is the pairing —
+  // names are not, two characters may share one.
+  for (const [i, g] of gatherers.entries()) {
+    const got = results[i]?.hours ?? 0;
+    if (got > 0) await addFirewood(g.actorId, got);
+  }
+
   const lines = results.map(
     (r) =>
       `<strong>${escapeHTML(r.name)}</strong> — 1d6 = ${r.roll}${signed(modifier)} → ${
@@ -163,10 +295,12 @@ export async function rollFirewood(
  * their packs, and a module that refused to light a fire because nobody rolled
  * the firewood duty would be wrong more often than right.
  */
-export async function rollFire(chance: number): Promise<void> {
+export async function rollFire(
+  chance: number,
+  fuel: { holderId: string; itemId: string; hours: number }[] = []
+): Promise<void> {
   if (!isGM()) return;
 
-  const wood = getCampState().firewood;
   const dice: Roll[] = [];
   let roll: number | undefined;
   let lit = true;
@@ -178,19 +312,49 @@ export async function rollFire(chance: number): Promise<void> {
     lit = fireLit(roll, chance);
   }
 
-  await setCampResult("fire", { fire: { lit, chance, ...(roll === undefined ? {} : { roll }) } });
+  // **The wood is spent whether or not it catches** — the same rule the pot
+  // already follows: a failed attempt burned the kindling. Only a fire that was
+  // never attempted costs nothing.
+  const spent = lit ? await spendFirewood(fuel) : [];
+  const hours = spent.reduce((sum, s) => sum + s.hours, 0);
+
+  await setCampResult("fire", {
+    fire: {
+      lit,
+      chance,
+      ...(roll === undefined ? {} : { roll }),
+      hours,
+      ...(spent.length ? { fuel: spent } : {}),
+    },
+  });
 
   const how =
     roll === undefined
       ? "Normal conditions — a tinder box and a stash of wood is all it takes."
       : `1d6 = ${roll} against a ${chance}-in-6 chance.`;
 
-  const woodLine =
-    wood === undefined
-      ? ""
-      : wood.hours === 0
-        ? `<p class="dw-day-roll-consequence">Nobody brought back usable wood — whatever burns here came out of the packs.</p>`
-        : `<p class="dw-day-roll-sub">${wood.hours} hour${wood.hours === 1 ? "" : "s"} of wood gathered.</p>`;
+  const grade = gradeFire(lit, hours);
+  const enough = fireLastsTheNight(hours);
+  const woodLine = !lit
+    ? ""
+    : hours === 0
+      ? `<p class="dw-day-roll-consequence">No wood was put on it. Whatever burns here came from somewhere
+          the module cannot see — the Sleep Difficulty table is rolled from the no-fire rows.</p>`
+      : `<p class="dw-day-roll-yield"><i class="fas fa-fire"></i>
+          <strong>${hours} hour${hours === 1 ? "" : "s"}</strong> of wood on the fire &mdash; ${spent
+            .map((s) => `${s.hours}h from ${escapeHTML(s.holderName)}`)
+            .join(", ")}.</p>
+        <p class="dw-day-roll-${enough ? "sub" : "consequence"}">${
+          enough
+            ? `Enough for the whole ${NIGHT_HOURS}-hour rest.`
+            : grade.campfire
+              ? `<strong>${NIGHT_HOURS - hours} hour${NIGHT_HOURS - hours === 1 ? "" : "s"} short</strong> of the
+                 ${NIGHT_HOURS}-hour rest. It still counts as a campfire on the Sleep Difficulty table and costs
+                 <strong>${SHORT_FIRE_PENALTY}</strong> on the Constitution Check &mdash; and nothing at all to anybody
+                 the fire was never going to help.`
+              : `Under ${FIRE_MINIMUM_HOURS} hours is not a night's fire: the Sleep Difficulty table is rolled from its
+                 no-fire rows, and the wood is gone.`
+        }</p>`;
 
   await announce(
     card(
@@ -517,12 +681,21 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
   const state = getDayState();
   const camp = state.camp ?? {};
   const season = seasonInfo(getDayContext().season).host;
-  const bonus = restModifier(
+  // Itemised, not merely summed: the card prints the reasons beside the number,
+  // so a Constitution penalty cancelled by the evening's bonuses can still be
+  // seen to have been applied (Leander, 2026-08-28).
+  const restParts = restModifierParts(
     camp.cooking ? { succeeded: camp.cooking.success, doomed: camp.cooking.doom?.saved === false } : undefined,
     camp.camaraderie
       ? { succeeded: camp.camaraderie.success, doomed: camp.camaraderie.doom?.saved === false }
       : undefined
   );
+  const bonus = restParts.reduce((sum, p) => sum + p.amount, 0);
+  // Read off the fire that was actually built, not off the tick on the form.
+  // The tick says whether a fire was lit at all; the grade says what it was
+  // worth. Whether the penalty then *applies* is a question per sleeper, since
+  // it turns on their bedding — see `firePenaltyFor`.
+  const grade = gradeFire(campfire, camp.fire?.hours);
   const travelledToday = state.travelPointsUsed > 0;
 
   const dice: Roll[] = [];
@@ -531,9 +704,28 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
   for (const s of sleepers) {
     const actor = actorById(s.actorId);
     if (!actor) continue;
-    const difficulty = sleepDifficulty(campfire, s.bedding, season);
+    // The graded fire decides which half of the table is read; the penalty is
+    // dropped for anybody the fire was never going to help.
+    const difficulty = sleepDifficulty(grade.campfire, s.bedding, season);
+    const firePenalty = firePenaltyFor(grade, s.bedding, season);
     const plan = planSleep(difficulty, bonus, s.shortNight);
     const conMod = getSystemFields(actor).scores.con.bonus;
+
+    // Every reason the die is not read bare, in the order worth reading them.
+    // Their sum is the modifier, and `check-camp.js` asserts it: a breakdown
+    // that does not add up would be worse than no breakdown at all.
+    const parts: RollPart[] = [
+      ...(conMod ? [{ label: "Constitution", amount: conMod }] : []),
+      ...restParts,
+      // A fire that went out before morning: the row on the table is still the
+      // campfire row — it *was* burning for most of the night — and the hours it
+      // fell short cost a point. See `shortFirePenalty` for why that beats
+      // taking the whole campfire away at seven hours and eight.
+      ...(firePenalty ? [{ label: "the fire went out early", amount: firePenalty }] : []),
+      ...(difficulty === "difficult"
+        ? [{ label: "difficult conditions", amount: DIFFICULT_SLEEP_PENALTY }]
+        : []),
+    ];
 
     const base: SleeperResult = {
       actorId: s.actorId,
@@ -542,6 +734,7 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
       difficulty,
       shortNight: s.shortNight,
       modifier: plan.modifier + conMod,
+      parts,
       sleptWell: false,
     };
 
@@ -576,7 +769,7 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
     const how =
       r.roll === undefined
         ? escapeHTML(r.why ?? "")
-        : `1d6 = ${r.roll}${signed(r.modifier)} against 4${
+        : `1d6 = ${r.roll}${spellOutParts(r.parts ?? [])} = ${r.roll + r.modifier} against 4${
             r.natural === "fail"
               ? " — natural 1, always fails"
               : r.natural === "success"

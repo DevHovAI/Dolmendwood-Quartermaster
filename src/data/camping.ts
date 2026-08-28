@@ -53,6 +53,101 @@ export function firewoodTotal(rolls: number[], modifier: number): number {
 /** How long a night's rest is taken to be, for saying whether the fire outlasts it. */
 export const NIGHT_HOURS = 8;
 
+/**
+ * Firewood, as a thing in a pack rather than a number on a card.
+ *
+ * Leander, 2026-08-28: *"Das gesammelte Holz bei der Camp activity sollte auch
+ * im Inventar landen."* The book agrees with him — building a fire wants "a
+ * stash of wood (either gathered from the forest **or carried in packs**)"
+ * (p158) — and it is the only reading under which the firewood roll matters
+ * beyond the evening it was made in.
+ *
+ * **It is the catalogue's own item, not an invented one** (his correction, the
+ * same day): *"Firewood (Bundle)"* was already on the Adventuring Gear shelf,
+ * 1gp, weighing 200 coins, described as "a bundle of dry wood, burns for 8
+ * hours", and carrying `maxUses: 8`. So gathered wood and bought wood are the
+ * same row, they stack, and a bundle bought in Prigwort goes on the fire beside
+ * an armful fetched from the trees.
+ *
+ * **That also settles the weight, which the book never gives.** The catalogue
+ * says 200 coins for eight hours, so an hour weighs **25** — his arithmetic,
+ * and the module's bundle machinery already divides it that way for every other
+ * bundle. Nothing here is judged any more.
+ */
+export const FIREWOOD_ID = "firewood-bundle";
+export const FIREWOOD_HOURS_PER_BUNDLE = 8;
+
+/**
+ * Does the fire last the whole rest period?
+ *
+ * **The book asks a yes-or-no and never says what happens when the wood runs
+ * short.** It gives hours of burning on one page (p158) and asks "whether they
+ * have a campfire burning" on the next (p159), and joins the two nowhere.
+ */
+export function fireLastsTheNight(hours: number | undefined): boolean {
+  return (hours ?? 0) >= NIGHT_HOURS;
+}
+
+/**
+ * What a night's fire is actually worth, by how much wood went on it.
+ *
+ * Three steps, Leander's own (2026-08-29): **under five hours is no campfire at
+ * all**, five to seven is a campfire that went out before morning and costs
+ * **−1**, eight or more is a fire that lasted. The first cut had only the cliff
+ * — seven hours and eight a whole row of the Sleep Difficulty table apart — and
+ * the second had only the penalty, which was too kind to an armful of twigs.
+ */
+export const FIRE_MINIMUM_HOURS = 5;
+export const SHORT_FIRE_PENALTY = -1;
+
+export interface FireGrade {
+  /** Whether the Sleep Difficulty table reads its campfire rows at all. */
+  campfire: boolean;
+  /** What the shortfall costs on the Constitution Check, before the guard below. */
+  penalty: number;
+  label: string;
+}
+
+export function gradeFire(lit: boolean, hours: number | undefined): FireGrade {
+  const burned = hours ?? 0;
+  if (!lit || burned < FIRE_MINIMUM_HOURS) {
+    return {
+      campfire: false,
+      penalty: 0,
+      label: burned > 0 ? `only ${burned}h of wood — not a night's fire` : "no fire",
+    };
+  }
+  if (!fireLastsTheNight(burned)) {
+    return { campfire: true, penalty: SHORT_FIRE_PENALTY, label: `${burned}h — out before morning` };
+  }
+  return { campfire: true, penalty: 0, label: `${burned}h — burned all night` };
+}
+
+/**
+ * The guard Leander asked for: *"Hauptsache, es wird mit dem Malus dann nicht
+ * schlechter, als wenn man gar kein Feuer hätte."*
+ *
+ * **And it is a real case, not a theoretical one.** Read the table's own rows: a
+ * character with **no bedding** gets exactly the same difficulty with a campfire
+ * as without one, in every season — the book's line that a fire is no help to
+ * somebody lying on bare ground. For them a penalty for a fire that went out
+ * would be a pure loss against having lit nothing.
+ *
+ * So the penalty applies only where the fire actually bought something. Asked of
+ * the table rather than of a list of exceptions: if the two rows agree, the fire
+ * did nothing, and nothing is what its going out may cost.
+ */
+export function firePenaltyFor(
+  grade: FireGrade,
+  bedding: Bedding,
+  season: HostSeason
+): number {
+  if (!grade.penalty) return 0;
+  const withFire = sleepDifficulty(true, bedding, season);
+  const without = sleepDifficulty(false, bedding, season);
+  return withFire === without ? 0 : grade.penalty;
+}
+
 // ─── Building a fire (p158) ───────────────────────────────────────────────────
 
 /**
@@ -149,15 +244,45 @@ export interface EveningOutcome {
   doomed?: boolean;
 }
 
+/**
+ * One thing added to a roll, and what to call it.
+ *
+ * The card used to print the sum and nothing else, and a Constitution of −2
+ * cancelled by a hot supper and an evening of songs came out as "+0" — which
+ * reads exactly like a modifier nobody applied. Leander, 2026-08-28, on a
+ * character with a −2: *"beim Schlafen wurde nicht der Constitution Modifier
+ * berücksichtigt"*. It had been; it just could not be seen.
+ */
+export interface RollPart {
+  label: string;
+  amount: number;
+}
+
+/**
+ * What the evening did for the night's sleep, itemised.
+ *
+ * `restModifier` is the sum of exactly this list, so the number on the card and
+ * the reasons under it cannot drift apart — the same arrangement the rest of
+ * the module uses wherever a total is printed beside its parts.
+ */
+export function restModifierParts(
+  cooking: EveningOutcome | undefined,
+  camaraderie: EveningOutcome | undefined
+): RollPart[] {
+  const parts: RollPart[] = [];
+  if (cooking?.succeeded) parts.push({ label: "a hot supper", amount: CAMP_ACTIVITIES.cooking.bonus });
+  if (camaraderie?.succeeded) {
+    parts.push({ label: "songs round the fire", amount: CAMP_ACTIVITIES.camaraderie.bonus });
+  }
+  if (camaraderie?.doomed) parts.push({ label: "discord in the camp", amount: DISCORD_PENALTY });
+  return parts;
+}
+
 export function restModifier(
   cooking: EveningOutcome | undefined,
   camaraderie: EveningOutcome | undefined
 ): number {
-  let modifier = 0;
-  if (cooking?.succeeded) modifier += CAMP_ACTIVITIES.cooking.bonus;
-  if (camaraderie?.succeeded) modifier += CAMP_ACTIVITIES.camaraderie.bonus;
-  if (camaraderie?.doomed) modifier += DISCORD_PENALTY;
-  return modifier;
+  return restModifierParts(cooking, camaraderie).reduce((sum, p) => sum + p.amount, 0);
 }
 
 // ─── Watches through the night (p159, optional rule) ──────────────────────────
@@ -428,6 +553,10 @@ export interface FireResult {
   /** 6 means the Referee judged no roll was needed. */
   chance: number;
   roll?: number;
+  /** Hours of wood actually put on it, out of the party's own packs. */
+  hours?: number;
+  /** What was spent, and by whom, for the card to say so. */
+  fuel?: { holderName: string; itemName: string; hours: number }[];
 }
 
 export interface CampActivityResult {
@@ -487,6 +616,14 @@ export interface SleeperResult {
   difficulty: SleepDifficulty;
   shortNight: boolean;
   modifier: number;
+  /**
+   * Everything that went into `modifier`, in the order it is worth reading.
+   *
+   * The sum of these *is* `modifier` — the card prints both, and a total with
+   * no reasons under it is what made a Constitution penalty look as though it
+   * had been forgotten when the evening's bonuses happened to cancel it.
+   */
+  parts?: RollPart[];
   /** Absent where the night was settled without a die. */
   roll?: number;
   natural?: "fail" | "success";

@@ -9,6 +9,8 @@ import {
   rollCampActivity,
   rollFire,
   rollFirewood,
+  partyFirewood,
+  type WoodRow,
   rollSleep,
   rollWatches,
   serveMeal,
@@ -22,6 +24,13 @@ import { isEdible } from "../data/characterDay";
 import { definitionFor } from "../data/itemDefs";
 import { displayQuantity } from "../data/consumables";
 import { firewoodPenalty, hasEffect } from "../data/weather";
+import { FIRE_MINIMUM_HOURS } from "../data/camping";
+
+/** What the fire dialog answers with: how hard it is, and what goes on it. */
+export interface FireChoice {
+  chance: number;
+  fuel: { holderId: string; itemId: string; hours: number }[];
+}
 import {
   BEDDING,
   BEDROLL_ID,
@@ -268,10 +277,14 @@ export async function promptFirewood(): Promise<FirewoodChoice | null> {
  * what the book asks for ("the Referee may rule that there is only a 4-in-6 or
  * worse chance"). Wet weather pre-picks the book's own example.
  */
-export async function promptFire(): Promise<{ chance: number } | null> {
+export async function promptFire(): Promise<FireChoice | null> {
   const wet = hasEffect(getDayState().weather, "W");
-  const wood = getCampState().firewood;
   const preferred = wet ? 4 : FIRE_AUTOMATIC;
+  // **The wood comes out of the packs**, chosen the way the pot's ingredients
+  // are (Leander, 2026-08-28). The steppers start full: the ordinary evening
+  // puts the night's wood on the fire, and taking some back is one press.
+  const stack = partyFirewood();
+  const carried = stack.reduce((sum, r) => sum + r.hours, 0);
 
   const options = FIRE_CHANCES.map(
     (c) =>
@@ -280,7 +293,7 @@ export async function promptFire(): Promise<{ chance: number } | null> {
       )}</option>`
   ).join("");
 
-  return ask<{ chance: number }>(
+  return ask<FireChoice>(
     "Building a fire",
     `<form class="dw-camp-form">
       <p class="hint">Given a tinder box and a stash of wood, fire building succeeds by itself.
@@ -289,19 +302,93 @@ export async function promptFire(): Promise<{ chance: number } | null> {
         <label for="dw-fire-chance">Chance</label>
         <select id="dw-fire-chance">${options}</select>
       </div>
-      ${
-        wood
-          ? `<p class="hint">${
-              wood.hours === 0
-                ? "Nobody brought back usable wood tonight."
-                : `${wood.hours} hour${wood.hours === 1 ? "" : "s"} of wood were gathered.`
-            }</p>`
-          : ""
-      }
+      ${woodSection(stack, carried)}
       ${wet ? `<p class="hint">Today's weather was wet, so the book's 4-in-6 is pre-picked.</p>` : ""}
     </form>`,
-    (html) => ({ chance: Number(html.find("#dw-fire-chance").val()) || FIRE_AUTOMATIC })
+    (html) => ({
+      chance: Number(html.find("#dw-fire-chance").val()) || FIRE_AUTOMATIC,
+      fuel: readFuel(html, stack),
+    }),
+    {
+      render: (html) => {
+        wireSteppers(html);
+        const paint = (): void => paintFireHours(html);
+        html.on("input change click", ".dw-wood-take, .dw-stepper button", () =>
+          window.setTimeout(paint, 0)
+        );
+        paint();
+      },
+    }
   );
+}
+
+/**
+ * What goes on the fire, counted in hours of burning.
+ *
+ * The same shape as the pot's ingredients, and for the same reason: the wood is
+ * somebody's, it is spent when the match is struck, and a number typed into a
+ * box is a number nobody checks against the pack it came out of.
+ */
+function woodSection(stack: WoodRow[], carried: number): string {
+  if (!stack.length) {
+    return `<hr><p class="hint dw-meal-empty">Nobody is carrying firewood. Light it anyway if the wood
+      came from somewhere the module cannot see — nothing will leave the packs, and the Sleep
+      Difficulty table will be rolled from its no-fire rows.</p>`;
+  }
+  const rows = stack
+    .map(
+      (row) => `
+      <div class="dw-wood-row" data-item-id="${escapeHTML(row.itemId)}" data-holder-id="${escapeHTML(
+        row.holderId
+      )}">
+        <span class="dw-camp-member-name">${escapeHTML(row.holderName)}</span>
+        <span class="dw-camp-member-stat">${row.hours}h carried</span>
+        ${stepper(`class="dw-wood-take" min="0" max="${row.hours}" value="${row.hours}"`)}
+      </div>`
+    )
+    .join("");
+  return `<hr>
+    <p class="hint"><strong>Wood on the fire.</strong> ${carried} hour${carried === 1 ? "" : "s"} in
+      the packs, and a rest period is ${NIGHT_HOURS}. What is put on is burned whether the fire
+      catches or not.</p>
+    <div class="dw-meal-rows">${rows}</div>
+    <p class="dw-wood-count"></p>`;
+}
+
+/** The live "six hours — two short of the night" line. */
+function paintFireHours(html: JQuery): void {
+  const hours = html
+    .find(".dw-wood-take")
+    .toArray()
+    .reduce((sum, el) => sum + (Number((el as HTMLInputElement).value) || 0), 0);
+  const out = html.find(".dw-wood-count");
+  if (!out.length) return;
+  const short = NIGHT_HOURS - hours;
+  out.text(
+    hours === 0
+      ? "Nothing on the fire — the night is rolled cold."
+      : hours < FIRE_MINIMUM_HOURS
+        ? `${hours} hour${hours === 1 ? "" : "s"} — under ${FIRE_MINIMUM_HOURS}, so not a night's fire at all.`
+        : short > 0
+          ? `${hours} hour${hours === 1 ? "" : "s"} — ${short} short of the night, so −1 on the sleep check.`
+          : `${hours} hour${hours === 1 ? "" : "s"} — enough for the whole night.`
+  );
+  out.toggleClass("is-short", hours < NIGHT_HOURS);
+}
+
+function readFuel(html: JQuery, stack: WoodRow[]): FireChoice["fuel"] {
+  const byId = new Map(stack.map((r) => [r.itemId, r]));
+  return html
+    .find(".dw-wood-row")
+    .toArray()
+    .map((el) => {
+      const row = el as HTMLElement;
+      const take = Number((row.querySelector(".dw-wood-take") as HTMLInputElement)?.value) || 0;
+      const source = byId.get(row.dataset.itemId ?? "");
+      if (!source || take <= 0) return undefined;
+      return { holderId: source.holderId, itemId: source.itemId, hours: Math.min(take, source.hours) };
+    })
+    .filter((x): x is NonNullable<typeof x> => !!x);
 }
 
 // ─── Cooking and camaraderie ──────────────────────────────────────────────────
@@ -791,6 +878,9 @@ export async function promptSleep(): Promise<SleepChoice | null> {
   );
   // The fire duty answers this where it was rolled; where it was not, a camp
   // with a fire is the ordinary case.
+  // The tick says whether there is a campfire at all. Whether it lasted the
+  // night is a separate question, and the sleep roll asks it for itself — a
+  // short fire costs a point rather than the whole row.
   const campfire = camp.fire?.lit ?? true;
 
   // The watch roll already worked out who slept short: with three watchers over
@@ -943,7 +1033,7 @@ export async function runCampDuty(dutyId: string): Promise<void> {
   }
   if (dutyId === "fire") {
     const choice = await promptFire();
-    if (choice) await rollFire(choice.chance);
+    if (choice) await rollFire(choice.chance, choice.fuel);
     return;
   }
   if (dutyId === "cooking" || dutyId === "entertainment") {
