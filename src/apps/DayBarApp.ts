@@ -66,7 +66,7 @@ import { MORNING_ROLL_DUTIES } from "../data/morningRolls";
 import { travelPointPenalty, hasEffect, weatherSummary, weatherIcon } from "../data/weather";
 import { lostChance } from "../data/gettingLost";
 import { partyTokensOn, tokenPoint } from "../data/partyPlace";
-import { calibrate, calibrationFor, followsToken } from "../data/hexGrid";
+import { calibrate, calibrationFor, followsToken, isComplete } from "../data/hexGrid";
 
 /**
  * The day bar: the Referee's per-day checklist, docked at the top of the screen.
@@ -203,6 +203,9 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     const calibration = calibrationFor(
       (game as Game).scenes?.current?.id as string | undefined
     );
+    // Half-measured is its own state, and the button has to say so: a map with
+    // one point on it looks calibrated and answers nothing.
+    const calibrationDone = isComplete(calibration);
     const collapsed = !!(game as Game).settings.get(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED);
     const duties = dutiesForMode(state.mode);
     const isDone = (d: Duty) => state.done[d.id] === true;
@@ -347,7 +350,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
               // press away and ends the warning for good.
               title:
                 `A token has crossed a hex boundary on ${ctx.moved.sceneName} since this was last set. ` +
-                (followsToken() && !calibration
+                (followsToken() && !calibrationDone
                   ? "Reading the hex off the token is switched on, but this map has not been calibrated: stand the token in a hex you know, type it in the box and press the crosshairs. Until then, check the terrain and the way by hand."
                   : "Check the terrain and the way — the module cannot read them off the map.") +
                 " Change one of them, or click to say it is still right.",
@@ -401,15 +404,18 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         // itself off the token. Offered to the Referee only, and only where
         // there is a hex in the box to measure against.
         mayCalibrate: isGM,
-        calibrated: !!calibration,
-        calibrateLabel: calibration ? "Re-calibrate" : "Calibrate",
-        calibrateTitle: calibration
-          ? `This map is calibrated on hex ${calibration.hex}. ${
+        calibrated: calibrationDone,
+        calibrateHalf: !!calibration && !calibrationDone,
+        calibrateLabel: calibrationDone ? "Re-calibrate" : "Calibrate",
+        calibrateTitle: calibrationDone
+          ? `This map is calibrated: ${calibration?.hex} and ${calibration?.hex2}. ${
               followsToken()
                 ? "Moving a token sets the hex by itself."
                 : "Switch on “Read the hex off the party's token” in the module settings to use it."
-            } Press again with the token somewhere else, and the hex in the box, to measure it afresh.`
-          : "Calibrate this map: stand the party's token in a hex you know, select it, type that hex in the box, and press this. From then on the module can read the hex off any position on this map.",
+            } Press again to measure it afresh, starting from the first point.`
+          : calibration
+          ? `Point 1 is ${calibration.hex}. Now put the token one hex to the left or right — the next column along — type that hex in the box and press again. Two points are needed because the columns are staggered by half a hex, and which way they lean is the thing a single measurement cannot say.`
+          : "Calibrate this map. Stand the party's token in a hex you know, select it, type that hex in the box and press this; then do the same one column to the left or right. From then on the module reads the hex off any position on this map.",
       },
       isGM,
       // The bar's shortcuts are the toolbar's buttons in another place, so they
@@ -692,12 +698,20 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       ui.notifications?.warn(result.why);
       return;
     }
-    ui.notifications?.info(
-      `${scene?.name ?? "This map"} is calibrated on hex ${result.cal.hex}. ` +
-        (followsToken()
-          ? "Moving a token now sets the hex on the bar by itself."
-          : "Switch on “Read the hex off the party's token” in the module settings to use it.")
-    );
+    if (result.step === 1) {
+      ui.notifications?.info(
+        `Point 1 of 2: ${result.cal.hex} on ${scene?.name ?? "this map"}. Now move the token one hex to the left or right — into the next column — type that hex in the box, and press the crosshairs again. The second measurement is what tells the module which way the columns are staggered.`
+      );
+    } else {
+      ui.notifications?.info(
+        `${scene?.name ?? "This map"} is calibrated: ${result.cal.hex} and ${result.cal.hex2}` +
+          (result.shift ? `, with the columns half a hex apart` : "") +
+          ". " +
+          (followsToken()
+            ? "Move the token and the hex on the bar follows."
+            : "Switch on “Read the hex off the party's token” in the module settings to use it.")
+      );
+    }
     this.render();
   }
 

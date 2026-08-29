@@ -272,10 +272,10 @@
       {{!-- One measurement per map, and the hex reads itself off the token from
             then on. Beside the box because the box holds the other half of the
             measurement: the number the Referee knows the token is standing in. --}}
-      <button type="button" class="day-bar-hex-calibrate{{#if context.calibrated}} is-set{{/if}}"
+      <button type="button" class="day-bar-hex-calibrate{{#if context.calibrated}} is-set{{/if}}{{#if context.calibrateHalf}} is-half{{/if}}"
               data-action="calibrateHex" title="{{context.calibrateTitle}}"
               aria-label="{{context.calibrateLabel}}">
-        <i class="fas fa-crosshairs"></i>
+        <i class="fas fa-crosshairs"></i>{{#if context.calibrateHalf}}<span class="day-bar-hex-calibrate-step">2</span>{{/if}}
       </button>
       {{/if}}
       {{#if context.hexName}}

@@ -24,13 +24,36 @@ import { gridOffsetOf } from "./partyPlace";
  * in somebody's kitchen.
  */
 
-/** What one scene's calibration remembers: a known hex, and where it was. */
+/**
+ * What one scene's calibration remembers: **two** known hexes.
+ *
+ * **One is not enough, and the first cut of this shipped believing it was.**
+ * Leander calibrated on 1508 and every hex in a neighbouring column came out
+ * one row too far south: 1408 read as 1409, 1407 as 1408, 1607 as 1608. The
+ * column was right every time.
+ *
+ * The reason is the stagger. A hex map's columns are offset from each other by
+ * half a hex, so "the row above" means something different depending on which
+ * column you are in — and Foundry's own numbering and the Campaign Book's
+ * resolve that half-step in opposite directions on his map. Which way round it
+ * goes is one bit of information, it is a property of how the map was drawn and
+ * gridded, and **no single measurement can contain it**: one point fixes the
+ * constant, and the constant is right for every hex in its own column and every
+ * other column, and wrong by one for the columns in between.
+ *
+ * So the second point is measured too, in a **neighbouring column**, and the
+ * half-step is read off the difference rather than assumed.
+ */
 export interface HexCalibration {
   /** The grid's own row and column for the hex below. */
   i: number;
   j: number;
   /** The book's hex the token was standing in, as four digits. */
   hex: string;
+  /** The second measurement, from a column an odd number of steps away. */
+  i2?: number;
+  j2?: number;
+  hex2?: string;
   /** The scene's name when it was measured, so a stale entry can be recognised. */
   scene?: string;
 }
@@ -72,20 +95,51 @@ export function followsToken(): boolean {
   return !!(game as Game).settings?.get(MODULE_ID, SETTINGS.HEX_FROM_TOKEN);
 }
 
+const columnOf = (hex: string) => Number(hex.slice(0, 2));
+const rowOf = (hex: string) => Number(hex.slice(2));
+
+/**
+ * The half-step between neighbouring columns, measured rather than assumed.
+ *
+ * Zero when the two numberings agree about which way a column's stagger leans,
+ * ±1 when they do not — which is the case on Leander's map. Undefined until the
+ * second point has been taken, and that is deliberate: a calibration that
+ * cannot say is one that must not answer.
+ */
+export function parityShiftOf(cal: HexCalibration | undefined): number | undefined {
+  if (!cal || cal.i2 === undefined || cal.j2 === undefined || !cal.hex2) return undefined;
+  const dj = cal.j2 - cal.j;
+  // Columns do not stagger — they are the unambiguous axis — so the book and
+  // the grid must agree about how many columns apart the two points are. If
+  // they do not, one of the two was measured wrong and no shift is derivable.
+  if (columnOf(cal.hex2) - columnOf(cal.hex) !== dj) return undefined;
+  if (Math.abs(dj % 2) !== 1) return undefined;
+  const shift = rowOf(cal.hex2) - rowOf(cal.hex) - (cal.i2 - cal.i);
+  return Math.abs(shift) <= 1 ? shift : undefined;
+}
+
+/** Has this scene been measured twice, so that it can actually answer? */
+export function isComplete(cal: HexCalibration | undefined): boolean {
+  return parityShiftOf(cal) !== undefined;
+}
+
 /**
  * The book's hex for a grid offset on a calibrated scene.
  *
- * The whole arithmetic: the book numbers a hex column-then-row, Foundry numbers
- * it row-then-column, and the difference between the two is one pair of
- * constants per map.
+ * The column is a plain difference: columns do not stagger. The row is the same
+ * difference plus the half-step, applied when the target sits an **odd** number
+ * of columns away — that is exactly when the two numberings disagree about
+ * where the row boundary falls.
  */
 export function hexFromOffset(
   cal: HexCalibration | undefined,
   offset: { i: number; j: number } | undefined
 ): string | undefined {
-  if (!cal || !offset) return undefined;
-  const column = Number(cal.hex.slice(0, 2)) + (offset.j - cal.j);
-  const row = Number(cal.hex.slice(2)) + (offset.i - cal.i);
+  const shift = parityShiftOf(cal);
+  if (!cal || !offset || shift === undefined) return undefined;
+  const dj = offset.j - cal.j;
+  const column = columnOf(cal.hex) + dj;
+  const row = rowOf(cal.hex) + (offset.i - cal.i) + (Math.abs(dj % 2) === 1 ? shift : 0);
   if (!Number.isFinite(column) || !Number.isFinite(row)) return undefined;
   if (column < 1 || row < 1 || column > BOUNDS.maxColumn || row > BOUNDS.maxRow) return undefined;
   return `${String(column).padStart(2, "0")}${String(row).padStart(2, "0")}`;
@@ -99,18 +153,33 @@ export function bookHexAt(
   return hexFromOffset(calibrationFor(scene?.id), gridOffsetOf(scene, point));
 }
 
+/** Which measurement the next press of the crosshairs will take. */
+export function calibrationStep(sceneId: string | undefined): 1 | 2 {
+  const cal = calibrationFor(sceneId);
+  return cal && !isComplete(cal) ? 2 : 1;
+}
+
 /**
  * Measure this scene against a hex the Referee knows the token is standing in.
  *
- * Refuses a hex the book does not detail, because a calibration built on a
- * number nobody can check is worse than none: every later reading would be
- * wrong by the same amount and nothing would ever say so.
+ * **Two presses, in two different columns.** The first stores the anchor and
+ * clears whatever was there; the second, taken from a column an odd number of
+ * steps away, gives the half-step between the two numberings. A press on a
+ * finished calibration starts over, because "measure it again" is what someone
+ * pressing a crosshairs on a map that already works must mean.
+ *
+ * Every refusal is a sentence saying what to do instead. The one that matters
+ * is the mismatched column: if the book says three columns and the grid says
+ * two, one of the two hexes was typed wrong, and taking the measurement anyway
+ * would bake that error into every reading afterwards.
  */
 export async function calibrate(
   scene: { id?: string; name?: string; grid?: unknown } | undefined,
   point: { x?: number; y?: number } | undefined,
   hex: string
-): Promise<{ ok: true; cal: HexCalibration } | { ok: false; why: string }> {
+): Promise<
+  { ok: true; step: 1 | 2; cal: HexCalibration; shift?: number } | { ok: false; why: string }
+> {
   const g = game as Game;
   if (!g.user?.isGM) return { ok: false, why: "Only the Referee can calibrate a map." };
 
@@ -131,7 +200,55 @@ export async function calibrate(
     };
   }
 
-  const cal: HexCalibration = { ...offset, hex: here.hex, ...(scene.name ? { scene: scene.name } : {}) };
-  await g.settings.set(MODULE_ID, SETTINGS.HEX_CALIBRATION, { ...allCalibrations(), [scene.id]: cal });
-  return { ok: true, cal };
+  const existing = calibrationFor(scene.id);
+  const taking = existing && !isComplete(existing) ? 2 : 1;
+  const save = async (cal: HexCalibration) => {
+    await g.settings.set(MODULE_ID, SETTINGS.HEX_CALIBRATION, {
+      ...allCalibrations(),
+      [scene.id as string]: cal,
+    });
+  };
+
+  if (taking === 1) {
+    const cal: HexCalibration = {
+      ...offset,
+      hex: here.hex,
+      ...(scene.name ? { scene: scene.name } : {}),
+    };
+    await save(cal);
+    return { ok: true, step: 1, cal };
+  }
+
+  const first = existing as HexCalibration;
+  const dj = offset.j - first.j;
+  const dColumn = columnOf(here.hex) - columnOf(first.hex);
+  if (dj === 0 || dColumn === 0) {
+    return {
+      ok: false,
+      why: `The second hex has to be in a different column from ${first.hex} — one step left or right. That is the whole point of it: the columns are staggered, and the second measurement is what says which way.`,
+    };
+  }
+  if (dColumn !== dj) {
+    return {
+      ok: false,
+      why: `That does not add up: the book has ${here.hex} ${Math.abs(dColumn)} column(s) from ${first.hex}, and the grid has it ${Math.abs(dj)}. One of the two hexes is typed wrong. Check the number and press again.`,
+    };
+  }
+  if (Math.abs(dj % 2) !== 1) {
+    return {
+      ok: false,
+      why: `${here.hex} is an even number of columns from ${first.hex}, which measures nothing — the stagger repeats every second column. Use a hex directly to the left or right.`,
+    };
+  }
+
+  const cal: HexCalibration = { ...first, i2: offset.i, j2: offset.j, hex2: here.hex };
+  const shift = parityShiftOf(cal);
+  if (shift === undefined) {
+    return {
+      ok: false,
+      why: `Those two are more than a hex apart vertically once the columns are accounted for, so one of them is wrong. Take ${first.hex} again and use a hex right beside it.`,
+    };
+  }
+  await save(cal);
+  return { ok: true, step: 2, cal, shift };
 }

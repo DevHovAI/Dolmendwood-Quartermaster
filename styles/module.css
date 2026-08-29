@@ -4586,6 +4586,22 @@ span.day-bar-panel-tick {
   border-color: var(--dw-accent, #7a5c2e);
 }
 
+/* Half measured: one point taken, and the map cannot answer until the second.
+   It carries a little "2" because "press me again" is the whole state. */
+.day-bar-hex-calibrate.is-half {
+  color: #b06a20;
+  border-color: #b06a20;
+  border-style: dashed;
+  width: 30px;
+  gap: 2px;
+}
+
+.day-bar-hex-calibrate-step {
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* One line, one ellipsis, at the end of the whole sentence. */
 .day-bar-hex-note {
   flex: 1 1 auto;
