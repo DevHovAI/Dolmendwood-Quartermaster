@@ -1289,11 +1289,15 @@ onUntypedHook("preMoveToken", (tokenDoc: unknown, move: unknown): boolean | void
     reached.push(part.hex);
   }
 
+  // Only said where it says something. When not even the first hex is
+  // affordable there is no "this far" to name, and Leander found a sentence
+  // about it more confusing than the silence: the two numbers above have
+  // already answered the question.
   const asFar = reached.length
-    ? `As far as ${reached[reached.length - 1]} is affordable, for ${paid}.`
-    : `Not even the first hex — ${account.parts[0].hex} costs ${account.parts[0].cost}.`;
+    ? ` As far as ${reached[reached.length - 1]} is affordable, for ${paid}.`
+    : "";
   ui.notifications?.warn(
-    `That move costs ${account.total} Travel Point${account.total === 1 ? "" : "s"} and the party has ${account.left} left today. ${asFar} The book has them stop at the hex edge and pay the rest tomorrow (Player's Book p157).`
+    `That move costs ${account.total} Travel Point${account.total === 1 ? "" : "s"} and the party has ${account.left} left today.${asFar} The book has them stop at the hex edge and pay the rest tomorrow (Player's Book p157).`
   );
   return false;
 });
