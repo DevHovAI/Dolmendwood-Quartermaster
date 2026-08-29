@@ -19,6 +19,9 @@ import { moveAccount, type MovedToken } from "../data/hexTravel";
  * every token in every scene, and this is a caption on a drag.
  */
 
+/** Marks a class as already carrying this behaviour, so it is wrapped once. */
+const WRAPPED = "dwTravelRuler";
+
 type RulerWaypoint = {
   center?: { x?: number; y?: number };
   previous?: RulerWaypoint | null;
@@ -29,6 +32,11 @@ type LabelContext = {
   cssClass?: string;
 };
 
+type RulerBase = {
+  token?: { document?: MovedToken };
+  _getWaypointLabelContext(w: unknown, s: unknown): LabelContext | void;
+};
+
 /** The centres of every waypoint up to and including this one, in order. */
 function pathTo(waypoint: RulerWaypoint): { x?: number; y?: number }[] {
   const chain: RulerWaypoint[] = [];
@@ -37,28 +45,33 @@ function pathTo(waypoint: RulerWaypoint): { x?: number; y?: number }[] {
 }
 
 /**
- * Swap the ruler's cost for ours, on the class Foundry is already using.
+ * Swap the ruler's cost for ours, on the class Foundry is currently using.
  *
- * Subclassed at `ready` from whatever `CONFIG.Token.rulerClass` then holds, so
- * a system or another module that has put its own ruler there keeps every part
- * of it that is not this one label. Where the move is none of our business —
- * off a calibrated map, not the party's token, the charge switched off —
- * `moveAccount` says so and core's own label is left exactly as it was.
+ * **Called at `init` and again at every `canvasInit`, and that is not belt and
+ * braces.** A Token builds its ruler the first time it is drawn — `if
+ * (this.ruler === undefined) this.ruler = this._initializeRuler()` — so a class
+ * put into CONFIG after the tokens are on screen reaches none of them. The
+ * first cut of this installed at `ready`, by which time the initial scene is
+ * drawn, and it did nothing at all. `canvasInit` fires before the token layer
+ * draws, which is the moment that matters, and it also catches a system or
+ * module that put its own ruler in after us.
+ *
+ * Idempotent by a marker on the class, so repeated calls do not stack one
+ * subclass on another; a module that subclasses *ours* inherits the marker and
+ * is left alone, because our behaviour is still in its chain.
  */
 export function installTravelRuler(): void {
   const config = (CONFIG as unknown as { Token?: { rulerClass?: unknown } })?.Token;
-  const Base = config?.rulerClass as
-    | (new (...args: unknown[]) => {
-        token?: { document?: MovedToken };
-        _getWaypointLabelContext?: (w: unknown, s: unknown) => LabelContext | void;
-      })
-    | undefined;
+  const Base = config?.rulerClass as (new (...args: unknown[]) => RulerBase) | undefined;
   if (!Base) return;
+  if ((Base as unknown as Record<string, unknown>)[WRAPPED]) return;
+  // Another ruler entirely, with no label to rewrite: leave it be rather than
+  // subclass it into a call that throws the first time somebody drags a token.
+  if (typeof (Base.prototype as RulerBase)?._getWaypointLabelContext !== "function") return;
 
-  class TravelPointRuler extends (Base as new (...args: unknown[]) => {
-    token?: { document?: MovedToken };
-    _getWaypointLabelContext(w: unknown, s: unknown): LabelContext | void;
-  }) {
+  class TravelPointRuler extends (Base as new (...args: unknown[]) => RulerBase) {
+    static [WRAPPED] = true;
+
     override _getWaypointLabelContext(waypoint: unknown, state: unknown): LabelContext | void {
       const context = super._getWaypointLabelContext(waypoint, state);
       // Core returns nothing for a waypoint it does not label at all — the

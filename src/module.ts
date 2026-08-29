@@ -50,6 +50,12 @@ function onUntypedHook(hook: string, fn: (...args: any[]) => unknown): number {
 Hooks.once("init", () => {
   console.log(`${MODULE_ID} | Initializing`);
 
+  // The drag ruler counts in Travel Points. A Token builds its ruler the first
+  // time it is drawn, so a class put into CONFIG after that reaches none of
+  // them — this has to be in place before the canvas draws, and is renewed at
+  // every canvasInit in case something else has since replaced it.
+  installTravelRuler();
+
   // Register world-scoped settings
   game.settings!.register(MODULE_ID, SETTINGS.SHOP_STATE, {
     name: "Shop State",
@@ -501,11 +507,6 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", async () => {
   console.log(`${MODULE_ID} | Ready`);
-
-  // The drag ruler counts in Travel Points. At ready rather than init, so a
-  // system or another module that has put its own ruler in CONFIG has already
-  // done so and is subclassed rather than replaced.
-  installTravelRuler();
 
   // Load Handlebars partials
   await registerHandlebarsPartials();
@@ -1202,6 +1203,8 @@ async function chargeTravelPoints(
  * **Runs on the client doing the moving**, unlike the charge, which is the
  * primary GM's alone: a refusal has to happen where the drag is.
  */
+onUntypedHook("canvasInit", () => installTravelRuler());
+
 onUntypedHook("preMoveToken", (tokenDoc: unknown, move: unknown): boolean | void => {
   const g = game as Game;
   if (!g.settings?.get(MODULE_ID, SETTINGS.TP_REFUSE_SHORT)) return;
