@@ -330,14 +330,18 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       collapsed,
       modes: DUTY_MODES.map((m) => ({ ...m, active: m.id === state.mode })),
 
-      // The sticky context. Folded away by default: it is set once at the start
-      // of a leg, and the summary line is enough to see it has not gone stale.
+      // The sticky context. The five dropdowns are folded away by default —
+      // they are set once at the start of a leg and then left alone — but the
+      // hex is not: it changes every time the party moves.
+      //
+      // There used to be a summary beside the chevron reading "Autumn · Track ·
+      // Tangled forest · High Wold". Leander had it taken out (2026-08-29): the
+      // dropdowns underneath say exactly that, in the places you would change
+      // it, so the line was spent restating the next one. The same sentence
+      // survives as the chevron's tooltip, where it also carries each field's
+      // own hint.
       context: {
         open: this.contextOpen,
-        summary:
-          state.mode === "settlement" && ctx.settlement !== "elsewhere"
-            ? `${season.label} · ${settlement} · ${region.label}`
-            : `${season.label} · ${way.label} · ${terrain.label} · ${region.label}`,
         // Set by the token-move hook. It never guesses the new terrain — nothing
         // on a Foundry scene says whether a hex is bog or meadow — it only says
         // the answer below may have gone stale.
@@ -359,7 +363,8 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         summaryTitle:
           `What the day's tables are rolled against. ${season.label}: ${season.hint} ` +
           `${way.label}: ${way.hint} ${terrain.label} (${terrain.bandLabel.toLowerCase()} terrain): ${terrain.blurb}. ` +
-          "Click to change. It stays as it is until you do — it is not part of the day, and a new day does not clear it.",
+          `${state.mode === "settlement" && ctx.settlement !== "elsewhere" ? `In ${settlement}. ` : ""}` +
+          `${region.label}. Click for the fields themselves. They stay as they are until you change one — the context is not part of the day, and a new day does not clear it.`,
         seasons: SEASONS.map((x) => ({ ...x, selected: x.id === ctx.season })),
         // Grouped by band, so the dropdown reads like the book's own table and
         // the cost and risk of each group are visible while choosing.

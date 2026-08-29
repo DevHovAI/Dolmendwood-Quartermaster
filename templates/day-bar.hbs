@@ -233,32 +233,19 @@
   {{#unless collapsed}}
   {{#if isGM}}
   <div class="day-bar-row day-bar-context {{#if context.open}}is-open{{/if}}">
+    {{!-- The chevron alone. There used to be a summary beside it reading
+          "Autumn · Track · Tangled forest · High Wold", and once the row is
+          open the five dropdowns underneath say exactly that in the places you
+          would change it — so it was one line spent restating the next one. --}}
     <button type="button" class="day-bar-context-summary" data-action="toggleContext"
             title="{{context.summaryTitle}}">
       <i class="fas {{#if context.open}}fa-chevron-down{{else}}fa-chevron-right{{/if}}"></i>
       <i class="fas fa-location-dot"></i>
-      <span>{{context.summary}}</span>
     </button>
-    {{#if context.moved}}
-    {{!-- The party has crossed a hex boundary since this was last answered. The
-          module cannot read terrain off a Foundry scene, so it asks rather than
-          guesses. Clicking says "still right" and drops it. --}}
-    <button type="button" class="day-bar-context-moved" data-action="confirmContext"
-            title="{{context.moved.title}}">
-      <i class="fas fa-triangle-exclamation"></i>
-      <span>{{context.moved.label}}</span>
-    </button>
-    {{/if}}
-    <span class="day-bar-context-lost" title="{{context.lostTitle}}">{{context.lostLine}}</span>
-
-    {{#if context.open}}
-    {{!-- A line of their own under the summary, on a fixed five-column grid: in
-          the summary's own flex row they wrapped wherever they fitted, so a
-          longer season or town name shuffled every field after it along. --}}
-    {{!-- The hex and what the book says about it share a line: the number is
-          the question, the rest of the line is the answer, clipped to it. The
-          dropdowns get a fixed grid of their own underneath, so nothing moves
-          sideways when a name is longer than the last one. --}}
+    {{!-- The hex is out in the open, not behind the fold: it is the one field
+          that changes every time the party moves, and the book's answer to it
+          is the line the Referee actually reads. The dropdowns stay folded —
+          they are set at the start of a leg and then left alone. --}}
     {{!-- The hex, the page it is on, and then the book answering — one line,
           clipped at its true end rather than at each part. The page button sits
           beside the box it belongs to, not adrift at the far margin. --}}
@@ -289,6 +276,22 @@
       </span>
       {{/if}}
     </div>
+    {{#if context.moved}}
+    {{!-- The party has crossed a hex boundary since this was last answered. The
+          module cannot read terrain off a Foundry scene, so it asks rather than
+          guesses. Clicking says "still right" and drops it. --}}
+    <button type="button" class="day-bar-context-moved" data-action="confirmContext"
+            title="{{context.moved.title}}">
+      <i class="fas fa-triangle-exclamation"></i>
+      <span>{{context.moved.label}}</span>
+    </button>
+    {{/if}}
+    <span class="day-bar-context-lost" title="{{context.lostTitle}}">{{context.lostLine}}</span>
+
+    {{#if context.open}}
+    {{!-- A fixed five-column grid of their own: in the row's flex they wrapped
+          wherever they fitted, so a longer season or town name shuffled every
+          field after it along. --}}
     <div class="day-bar-context-fields">
     <span class="day-bar-context-field" title="{{context.seasonHint}}">
       <label for="dw-ctx-season">Season</label>

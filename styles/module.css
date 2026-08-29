@@ -4491,13 +4491,20 @@ span.day-bar-panel-tick {
    half the row still empty. The two controls are a little shallower than a
    normal field, since the line is a reading and not a form. */
 
+/* On the row's own line now, beside the chevron, rather than on a line of its
+   own under a summary that has been taken away. It takes the space the moved
+   warning and the lost chance leave, and the book's answer clips inside it —
+   which is why the flex override has to beat `.day-bar-row > *`. */
+.day-bar-row > .day-bar-context-hexrow {
+  flex: 1 1 auto;
+}
+
 .day-bar-context-hexrow {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
   min-width: 0;
-  padding: 2px 0 4px;
+  padding: 2px 0;
 }
 
 .day-bar-context-hex {
