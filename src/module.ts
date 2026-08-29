@@ -19,7 +19,9 @@ import type { BookId } from "./data/books";
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
 import { hexOf, isPartyToken, tokenPoint, refusePlaceIfAway, canReachLoot } from "./data/partyPlace";
-import { bookHexAt, followsToken, pathHexes, travelCostOf } from "./data/hexGrid";
+import { bookHexAt, followsToken } from "./data/hexGrid";
+import { moveAccount, type MovedToken } from "./data/hexTravel";
+import { installTravelRuler } from "./apps/TravelRuler";
 import { hexInfo } from "./data/hexes";
 import { whisperToGMs } from "./data/rollCard";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
@@ -499,6 +501,11 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", async () => {
   console.log(`${MODULE_ID} | Ready`);
+
+  // The drag ruler counts in Travel Points. At ready rather than init, so a
+  // system or another module that has put its own ruler in CONFIG has already
+  // done so and is subclassed rather than replaced.
+  installTravelRuler();
 
   // Load Handlebars partials
   await registerHandlebarsPartials();
@@ -1118,71 +1125,6 @@ onUntypedHook("updateSetting", (setting: { key?: string }) => {
 // hexOf now lives in data/partyPlace.ts: the movement hint and the "is the
 // party here?" test must agree on what a hex is, and two copies of that answer
 // would be one too many.
-
-/** A token document, as much of one as either movement hook needs. */
-type MovedToken = {
-  parent?: { id?: string; name?: string; grid?: unknown };
-  actorId?: string;
-  actor?: { id?: string } | null;
-  getCenterPoint?: (data?: { x?: number; y?: number }) => { x?: number; y?: number };
-  width?: number;
-  height?: number;
-};
-
-/**
- * Where a waypoint actually is.
- *
- * A movement waypoint is a token *position* — the top-left corner of the base,
- * which on a hex grid sits in a neighbouring hex — so every one of them has to
- * be recentred or the crossing is counted at the wrong moment. Shared by both
- * hooks, and with the party-presence rule, through `tokenPoint`.
- */
-function centreOf(doc: MovedToken, p: { x?: number; y?: number } | undefined) {
-  if (!p) return undefined;
-  return (
-    doc.getCenterPoint?.(p) ?? tokenPoint(doc.parent, { ...p, width: doc.width, height: doc.height })
-  );
-}
-
-/**
- * What a move would cost and what the party has to spend on it.
- *
- * The same sum for the hook that refuses a move and the one that charges for
- * it, so the two can never disagree about whether it was affordable — which
- * would be the worst of both: refused and paid for, or walked and free.
- * Undefined where none of it applies: not calibrated, not the party's token,
- * the reading switched off, or no budget known yet.
- */
-function moveAccount(
-  doc: MovedToken,
-  waypoints: ({ x?: number; y?: number } | undefined)[]
-):
-  | {
-      parts: { hex: string; cost: number; known: boolean }[];
-      total: number;
-      left: number;
-      budget: number;
-    }
-  | undefined {
-  const g = game as Game;
-  if (!g.settings?.get(MODULE_ID, SETTINGS.TP_FROM_MOVEMENT)) return undefined;
-  if (!followsToken()) return undefined;
-  if (isPartyToken(doc.parent as never, doc) === false) return undefined;
-
-  const scene = doc.parent as { id?: string; grid?: unknown } | undefined;
-  const hexes = pathHexes(
-    scene,
-    waypoints.filter((p): p is { x?: number; y?: number } => !!p).map((p) => centreOf(doc, p) ?? p)
-  );
-  if (!hexes.length) return undefined;
-
-  const budget = travelBudgetNow();
-  if (budget === undefined) return undefined;
-
-  const ctx = getDayContext();
-  const { parts, total } = travelCostOf(hexes, ctx.way, terrainInfo(ctx.terrain).cost);
-  return { parts, total, left: Math.max(0, budget - getDayState().travelPointsUsed), budget };
-}
 
 /**
  * Spend the day's Travel Points on the hexes a move actually crossed.

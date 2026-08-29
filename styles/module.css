@@ -6447,3 +6447,13 @@ span.day-bar-panel-tick {
   padding-bottom: 4px;
   border-bottom: 1px solid var(--dw-border-light);
 }
+
+/* ── The drag ruler, counting in Travel Points ─────────────────────────────────
+   Foundry's own waypoint label, with our number in it: "3 TP (2 left)". Marked
+   when the two do not fit, because that is the reading the Referee is dragging
+   the token to find out — and the move will be refused when they let go. */
+#hud #measurement .waypoint-label.dw-tp-short .total-measurement,
+#hud #measurement .waypoint-label.dw-tp-short .delta-measurement {
+  color: #ff9b6a;
+  font-weight: 700;
+}
