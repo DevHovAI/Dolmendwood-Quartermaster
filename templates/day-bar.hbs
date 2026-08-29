@@ -273,7 +273,12 @@
       </span>
     </span>
 
-    <span class="day-bar-context-field" title="{{context.terrainHint}}">
+    {{!-- Terrain and Region are the hex's answers, not the Referee's: typing
+          the number fills both out of the Campaign Book. Drawn back, so the row
+          shows at a glance which two fields nobody has to touch — still
+          editable, because a hex the book does not detail arrives with
+          neither. --}}
+    <span class="day-bar-context-field is-derived" title="{{context.terrainHint}}">
       <label for="dw-ctx-terrain">Terrain</label>
       <select id="dw-ctx-terrain" data-context-field="terrain">
         {{#each context.terrainGroups}}
@@ -286,7 +291,7 @@
       </select>
     </span>
 
-    <span class="day-bar-context-field" title="{{context.regionHint}}">
+    <span class="day-bar-context-field is-derived" title="{{context.regionHint}}">
       <label for="dw-ctx-region">Region</label>
       <select id="dw-ctx-region" data-context-field="region">
         {{#each context.regions}}

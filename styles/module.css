@@ -3361,10 +3361,8 @@ body > #dolmenwood-day-bar {
   text-overflow: ellipsis;
 }
 
-/* Unfolded, the dropdowns take a line of their own under the summary and sit on
-   a fixed five-column grid. Flowing in the summary's flex row, they wrapped
-   wherever they happened to fit, so choosing a longer season or a longer town
-   name moved every field after it — the one thing a row of settings must not
+/* Label on the left, control beside it — not stacked. Two per line rather than
+   four costs a line of the strip, and the strip is the thing the map is under. */
 .day-bar-context-field {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -3384,6 +3382,25 @@ body > #dolmenwood-day-bar {
 .day-bar-context-field label {
   color: var(--dw-tertiary);
   font-size: 0.95em;
+}
+
+/* Answers, not questions. The Campaign Book prints the terrain and the region
+   above every hex it details, so typing the number fills both — and a field
+   nobody needs to touch should not be drawn like one that wants an answer.
+   They read as plain text until the pointer or the keyboard reaches them, and
+   then look like every other control, because they ARE still editable: a hex
+   the book does not detail arrives with neither. */
+.day-bar-context-field.is-derived select {
+  background: transparent;
+  border-color: transparent;
+  color: var(--dw-tertiary);
+}
+
+.day-bar-context-field.is-derived:hover select,
+.day-bar-context-field.is-derived select:focus {
+  background: var(--dw-bg);
+  border-color: var(--dw-border-light);
+  color: var(--dw-text);
 }
 
 .day-bar-context-field select {
@@ -4473,11 +4490,12 @@ span.day-bar-panel-tick {
    half the row still empty. The two controls are a little shallower than a
    normal field, since the line is a reading and not a form. */
 
-/* On the row's own line now, beside the chevron, rather than on a line of its
-   own under a summary that has been taken away. It takes the space the moved
-   warning and the lost chance leave, and the book's answer clips inside it —
-.day-bar-context-hex {
-  flex: 0 0 auto;
+/* The hex cell is column one of the grid's first line, over Season. Its three
+   controls — the box, the crosshairs, the page button — are content-sized, so
+   the cell keeps to what it needs and the column's width is set by the pair
+   below it rather than by whether this hex has a page reference. */
+.day-bar-context-hex .day-bar-hex-controls {
+  justify-content: start;
 }
 
 /* Colours stated outright, like the selects beside it.
