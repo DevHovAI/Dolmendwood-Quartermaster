@@ -89,6 +89,7 @@ export const SETTINGS = {
   HEX_FROM_TOKEN: "hexFromToken", // read the hex off the party's token, on maps that have been calibrated
   HEX_CALIBRATION: "hexCalibration", // Record<sceneId, {i, j, hex}> — two measured hexes per map
   TP_FROM_MOVEMENT: "tpFromMovement", // charge the day's Travel Points for the hexes a move crosses
+  TP_REFUSE_SHORT: "tpRefuseShort", // …and refuse a move the party cannot pay for outright
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in

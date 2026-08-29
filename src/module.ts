@@ -383,6 +383,18 @@ Hooks.once("init", () => {
     default: true,
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
+  // The book's own answer, and cheaper than any undo: a party that cannot pay
+  // to enter the next hex does not enter it. Refusing the move keeps the token,
+  // the points and the clock all where they were, with nothing to put back.
+  game.settings!.register(MODULE_ID, SETTINGS.TP_REFUSE_SHORT, {
+    name: "Refuse a move the party cannot pay for",
+    hint: "A move costing more Travel Points than the party has left is stopped before it happens, and a message says what it would have cost and how far they can still get today. Switch this off and the move is walked instead: the points are spent down to zero and the card says how far short they were, for a table that would rather rule on it themselves.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
   game.settings!.register(MODULE_ID, SETTINGS.DAY_STATE, {
     scope: "world",
     config: false,
@@ -1107,6 +1119,71 @@ onUntypedHook("updateSetting", (setting: { key?: string }) => {
 // party here?" test must agree on what a hex is, and two copies of that answer
 // would be one too many.
 
+/** A token document, as much of one as either movement hook needs. */
+type MovedToken = {
+  parent?: { id?: string; name?: string; grid?: unknown };
+  actorId?: string;
+  actor?: { id?: string } | null;
+  getCenterPoint?: (data?: { x?: number; y?: number }) => { x?: number; y?: number };
+  width?: number;
+  height?: number;
+};
+
+/**
+ * Where a waypoint actually is.
+ *
+ * A movement waypoint is a token *position* — the top-left corner of the base,
+ * which on a hex grid sits in a neighbouring hex — so every one of them has to
+ * be recentred or the crossing is counted at the wrong moment. Shared by both
+ * hooks, and with the party-presence rule, through `tokenPoint`.
+ */
+function centreOf(doc: MovedToken, p: { x?: number; y?: number } | undefined) {
+  if (!p) return undefined;
+  return (
+    doc.getCenterPoint?.(p) ?? tokenPoint(doc.parent, { ...p, width: doc.width, height: doc.height })
+  );
+}
+
+/**
+ * What a move would cost and what the party has to spend on it.
+ *
+ * The same sum for the hook that refuses a move and the one that charges for
+ * it, so the two can never disagree about whether it was affordable — which
+ * would be the worst of both: refused and paid for, or walked and free.
+ * Undefined where none of it applies: not calibrated, not the party's token,
+ * the reading switched off, or no budget known yet.
+ */
+function moveAccount(
+  doc: MovedToken,
+  waypoints: ({ x?: number; y?: number } | undefined)[]
+):
+  | {
+      parts: { hex: string; cost: number; known: boolean }[];
+      total: number;
+      left: number;
+      budget: number;
+    }
+  | undefined {
+  const g = game as Game;
+  if (!g.settings?.get(MODULE_ID, SETTINGS.TP_FROM_MOVEMENT)) return undefined;
+  if (!followsToken()) return undefined;
+  if (isPartyToken(doc.parent as never, doc) === false) return undefined;
+
+  const scene = doc.parent as { id?: string; grid?: unknown } | undefined;
+  const hexes = pathHexes(
+    scene,
+    waypoints.filter((p): p is { x?: number; y?: number } => !!p).map((p) => centreOf(doc, p) ?? p)
+  );
+  if (!hexes.length) return undefined;
+
+  const budget = travelBudgetNow();
+  if (budget === undefined) return undefined;
+
+  const ctx = getDayContext();
+  const { parts, total } = travelCostOf(hexes, ctx.way, terrainInfo(ctx.terrain).cost);
+  return { parts, total, left: Math.max(0, budget - getDayState().travelPointsUsed), budget };
+}
+
 /**
  * Spend the day's Travel Points on the hexes a move actually crossed.
  *
@@ -1124,23 +1201,15 @@ onUntypedHook("updateSetting", (setting: { key?: string }) => {
  * the party was and what the book does about it.
  */
 async function chargeTravelPoints(
-  scene: { id?: string; grid?: unknown } | undefined,
+  doc: MovedToken,
   waypoints: ({ x?: number; y?: number } | undefined)[]
 ): Promise<void> {
-  const g = game as Game;
-  if (!g.settings?.get(MODULE_ID, SETTINGS.TP_FROM_MOVEMENT)) return;
-
-  const points = waypoints.filter((p): p is { x?: number; y?: number } => !!p);
-  const hexes = pathHexes(scene, points);
-  if (!hexes.length) return;
+  const account = moveAccount(doc, waypoints);
+  if (!account) return;
+  const { parts, total, budget } = account;
 
   const ctx = getDayContext();
-  const state = getDayState();
-  const budget = travelBudgetNow();
-  if (budget === undefined) return;
-
-  const { parts, total } = travelCostOf(hexes, ctx.way, terrainInfo(ctx.terrain).cost);
-  const before = state.travelPointsUsed;
+  const before = getDayState().travelPointsUsed;
   await spendTravelPoints(total, budget);
   const spent = getDayState().travelPointsUsed - before;
   const short = total - spent;
@@ -1156,7 +1225,7 @@ async function chargeTravelPoints(
   const way = wayInfo(ctx.way);
   await whisperToGMs(
     `<div class="dw-day-roll">
-      <h3><i class="fas fa-person-hiking"></i> ${hexes.length === 1 ? "One hex crossed" : `${hexes.length} hexes crossed`}</h3>
+      <h3><i class="fas fa-person-hiking"></i> ${parts.length === 1 ? "One hex crossed" : `${parts.length} hexes crossed`}</h3>
       <p class="dw-day-roll-headline">${total} Travel Point${total === 1 ? "" : "s"}</p>
       <p class="dw-day-roll-sub">${escapeHTML(way.label)} &mdash; ${
         ctx.way === "wild"
@@ -1172,6 +1241,62 @@ async function chargeTravelPoints(
     </div>`
   );
 }
+
+/**
+ * Refuse a move the party cannot pay for.
+ *
+ * **`preMoveToken`, not `moveToken`.** The one is asked before the token has
+ * gone anywhere and its answer decides whether it goes at all
+ * (`movementAllowed &&= Hooks.call("preMoveToken", …)` in core); the other is
+ * told afterwards. That is the whole difference between preventing a move and
+ * undoing one — and undoing one means putting back the token, the points and
+ * the clock, three things that can each be put back wrongly.
+ *
+ * The book's own rule is prevention too: a party without the points to enter a
+ * hex does not enter it, stops at the edge, and pays the rest tomorrow
+ * (Player's Book p157). So the message says how far they *can* still get, which
+ * is the question the Referee is about to ask.
+ *
+ * **Runs on the client doing the moving**, unlike the charge, which is the
+ * primary GM's alone: a refusal has to happen where the drag is.
+ */
+onUntypedHook("preMoveToken", (tokenDoc: unknown, move: unknown): boolean | void => {
+  const g = game as Game;
+  if (!g.settings?.get(MODULE_ID, SETTINGS.TP_REFUSE_SHORT)) return;
+
+  const doc = tokenDoc as MovedToken;
+  const m = move as {
+    origin?: { x?: number; y?: number };
+    passed?: { waypoints?: { x?: number; y?: number }[] };
+    pending?: { waypoints?: { x?: number; y?: number }[] };
+  };
+
+  // Both halves: `passed` is only the path as far as the first checkpoint, and
+  // a move stopped there is still a move the party has to be able to afford.
+  const account = moveAccount(doc, [
+    m?.origin,
+    ...(m?.passed?.waypoints ?? []),
+    ...(m?.pending?.waypoints ?? []),
+  ]);
+  if (!account || account.total <= account.left) return;
+
+  // How far they can actually get, which is what the Referee will drag next.
+  let paid = 0;
+  const reached: string[] = [];
+  for (const part of account.parts) {
+    if (paid + part.cost > account.left) break;
+    paid += part.cost;
+    reached.push(part.hex);
+  }
+
+  const asFar = reached.length
+    ? `As far as ${reached[reached.length - 1]} is affordable, for ${paid}.`
+    : `Not even the first hex — ${account.parts[0].hex} costs ${account.parts[0].cost}.`;
+  ui.notifications?.warn(
+    `That move costs ${account.total} Travel Point${account.total === 1 ? "" : "s"} and the party has ${account.left} left today. ${asFar} The book has them stop at the hex edge and pay the rest tomorrow (Player's Book p157).`
+  );
+  return false;
+});
 
 /**
  * The one client that may count a step, matching the world-clock sync: two
@@ -1249,11 +1374,10 @@ onUntypedHook("moveToken", (tokenDoc: unknown, movement: unknown) => {
       // hex entered, so a drag across four of them costs four — and the path
       // between the waypoints comes from core's own line-drawing rather than
       // from the module guessing which cells a straight line touches.
-      await chargeTravelPoints(scene, [
-        at(move?.origin),
+      await chargeTravelPoints(doc, [
+        move?.origin,
         ...((movement as { passed?: { waypoints?: { x?: number; y?: number }[] } })?.passed
-          ?.waypoints ?? []
-        ).map((w) => at(w)),
+          ?.waypoints ?? []),
       ]);
       refreshDayBar();
     })();
