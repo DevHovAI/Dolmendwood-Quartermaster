@@ -3321,57 +3321,50 @@ body > #dolmenwood-day-bar {
    by default; unfolding it lets the row wrap onto a second line rather than
    widening the bar, which is fixed. */
 
+/* Two fixed lines, four columns, nothing folded. The columns line up down both
+   lines on purpose — Hex over Season, Terrain over Settlement, Region over Way
+   — so a longer season or town name cannot shuffle the next field along. A grid
+   rather than the row's own flex, which wrapped wherever things fitted. */
 .day-bar-context {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px 12px;
   font-size: 0.95em;
   color: var(--dw-tertiary);
 }
 
-.day-bar-context-summary {
+/* The hex box, the crosshairs and the page button are one cell's worth of
+   controls, sitting in the field's second column like every select does. */
+.day-bar-hex-controls {
   display: flex;
   align-items: center;
-  gap: 5px;
-  height: auto;
-  min-height: 0;
-  padding: 2px 6px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  color: var(--dw-secondary);
-  font-size: 1em;
-  line-height: 1.2;
-  white-space: nowrap;
-  cursor: pointer;
+  gap: 4px;
+  min-width: 0;
 }
 
-.day-bar-context-summary:hover {
-  background: var(--dw-accent-light);
-  border-color: var(--dw-accent);
+/* Column four of the first line, when there is no warning to put in it. */
+.day-bar-context-spacer {
+  display: block;
 }
 
 /* The chance the context currently produces, beside the context that produces
    it — the Referee changes terrain and sees the number move. */
+/* Column four of the second line, beside the three fields it follows from:
+   the way, the terrain and the weather are what set it. */
 .day-bar-context-lost {
   padding: 2px 6px;
   border-left: 1px solid var(--dw-border-light);
   font-style: italic;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Unfolded, the dropdowns take a line of their own under the summary and sit on
    a fixed five-column grid. Flowing in the summary's flex row, they wrapped
    wherever they happened to fit, so choosing a longer season or a longer town
    name moved every field after it — the one thing a row of settings must not
-   do, since the Referee aims for a dropdown by where it was last time. */
-.day-bar-context-fields {
-  flex: 1 0 100%;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  align-items: center;
-  gap: 4px 8px;
-  width: 100%;
-  margin-top: 2px;
-}
-
 .day-bar-context-field {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -4435,17 +4428,6 @@ body > #dolmenwood-day-bar {
    be, a ley line crossing. Clipped to one line: it is a reminder, and the page
    link beside it is where the whole of it lives. */
 
-.day-bar-hex-extra {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  max-width: 46ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0.85;
-}
-
 /* The players' half of the bar.
    ---------------------------------------------------------------------------
    Same strip, fewer controls: the day is a label rather than a button, the mode
@@ -4494,19 +4476,6 @@ span.day-bar-panel-tick {
 /* On the row's own line now, beside the chevron, rather than on a line of its
    own under a summary that has been taken away. It takes the space the moved
    warning and the lost chance leave, and the book's answer clips inside it —
-   which is why the flex override has to beat `.day-bar-row > *`. */
-.day-bar-row > .day-bar-context-hexrow {
-  flex: 1 1 auto;
-}
-
-.day-bar-context-hexrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  padding: 2px 0;
-}
-
 .day-bar-context-hex {
   flex: 0 0 auto;
 }
@@ -4607,29 +4576,6 @@ span.day-bar-panel-tick {
   font-size: 0.85em;
   font-weight: 700;
   line-height: 1;
-}
-
-/* One line, one ellipsis, at the end of the whole sentence. */
-.day-bar-hex-note {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 0.85em;
-  opacity: 0.9;
-}
-
-.day-bar-hex-note > * {
-  display: inline;
-}
-
-.day-bar-hex-forage {
-  margin-left: 6px;
-}
-
-.day-bar-hex-extra {
-  opacity: 0.85;
 }
 
 /* Unticked reads as absent, not as missing: dimmed rather than hidden. */

@@ -89,13 +89,6 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
    */
   private panelOpen = false;
 
-  /**
-   * Is the "where are we?" row unfolded? Per-instance like the party panel: it
-   * is set once at the start of a leg and then left alone, so it should not
-   * take up a line of the strip for the rest of the session.
-   */
-  private contextOpen = false;
-
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-day-bar",
     // No window chrome and no JS positioning: this is a HUD strip, not a window.
@@ -118,7 +111,6 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       openGroup: DayBarApp._onOpenGroup,
       rollDuty: DayBarApp._onRollDuty,
       clearDuty: DayBarApp._onClearDuty,
-      toggleContext: DayBarApp._onToggleContext,
       confirmContext: DayBarApp._onConfirmContext,
       calibrateHex: DayBarApp._onCalibrateHex,
       expandToContext: DayBarApp._onExpandToContext,
@@ -330,18 +322,18 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       collapsed,
       modes: DUTY_MODES.map((m) => ({ ...m, active: m.id === state.mode })),
 
-      // The sticky context. The five dropdowns are folded away by default —
-      // they are set once at the start of a leg and then left alone — but the
-      // hex is not: it changes every time the party moves.
+      // The sticky context: two fixed lines, four columns, nothing folded.
       //
-      // There used to be a summary beside the chevron reading "Autumn · Track ·
-      // Tangled forest · High Wold". Leander had it taken out (2026-08-29): the
-      // dropdowns underneath say exactly that, in the places you would change
-      // it, so the line was spent restating the next one. The same sentence
-      // survives as the chevron's tooltip, where it also carries each field's
-      // own hint.
+      // It used to be a chevron, a summary reading "Autumn · Track · Tangled
+      // forest · High Wold", and the fields hidden behind it. Leander had all
+      // three out (2026-08-29): the summary said what the fields said, and the
+      // fold hid the hex — the one field that changes every time the party
+      // moves. The hex's name and foraging line went too; the briefing card
+      // carries them into chat the moment the hex changes.
+      //
+      // Sticky still, and that is the point of it: a party in the High Wold is
+      // still there tomorrow, and a new day does not clear any of this.
       context: {
-        open: this.contextOpen,
         // Set by the token-move hook. It never guesses the new terrain — nothing
         // on a Foundry scene says whether a hex is bog or meadow — it only says
         // the answer below may have gone stale.
@@ -360,11 +352,6 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
                 " Change one of them, or click to say it is still right.",
             }
           : undefined,
-        summaryTitle:
-          `What the day's tables are rolled against. ${season.label}: ${season.hint} ` +
-          `${way.label}: ${way.hint} ${terrain.label} (${terrain.bandLabel.toLowerCase()} terrain): ${terrain.blurb}. ` +
-          `${state.mode === "settlement" && ctx.settlement !== "elsewhere" ? `In ${settlement}. ` : ""}` +
-          `${region.label}. Click for the fields themselves. They stay as they are until you change one — the context is not part of the day, and a new day does not clear it.`,
         seasons: SEASONS.map((x) => ({ ...x, selected: x.id === ctx.season })),
         // Grouped by band, so the dropdown reads like the book's own table and
         // the cost and risk of each group are visible while choosing.
@@ -663,11 +650,6 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     }
   }
 
-  private static _onToggleContext(this: DayBarApp): void {
-    this.contextOpen = !this.contextOpen;
-    this.render();
-  }
-
   /**
    * "It is still right." Drops the moved-since warning without changing
    * anything — the party crossed a hex boundary but stayed in the same kind of
@@ -768,8 +750,9 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
    */
   private static async _expand(this: DayBarApp, open: "context" | "panel"): Promise<void> {
     const g = game as Game;
-    if (open === "context") this.contextOpen = true;
-    else this.panelOpen = true;
+    // The context row is always on the open bar now, so "expand to it" only has
+    // to unfold the bar; only the party panel still has a fold of its own.
+    if (open === "panel") this.panelOpen = true;
     await g.settings.set(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED, false);
     this.render();
   }
