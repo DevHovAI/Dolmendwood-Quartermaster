@@ -66,6 +66,7 @@ declare global {
     "dolmenwood-party-inventory.autoOpenInventory": boolean;
     "dolmenwood-party-inventory.barOnlyAccess": boolean;
     "dolmenwood-party-inventory.hexFromToken": boolean;
+    "dolmenwood-party-inventory.tpFromMovement": boolean;
     "dolmenwood-party-inventory.hexCalibration": Record<
       string,
       { i: number; j: number; hex: string; scene?: string }

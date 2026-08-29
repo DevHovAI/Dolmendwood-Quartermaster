@@ -1,4 +1,4 @@
-import { noteHexStep, setDayContext } from "./data/dayContext";
+import { getDayContext, noteHexStep, setDayContext, terrainInfo, wayInfo } from "./data/dayContext";
 import { MODULE_ID, SETTINGS, FLAGS, SOCKET_EVENTS, TRASH_LIMIT_DEFAULT } from "./constants";
 import { registerHandlebarsHelpers, registerHandlebarsPartials, escapeHTML } from "./helpers/handlebars";
 import { fitToViewport } from "./helpers/fitToViewport";
@@ -11,16 +11,17 @@ import { InnApp } from "./apps/InnApp";
 import { MarketApp } from "./apps/MarketApp";
 import { openLootBrowser, openLootFromNote, activateLootChatButtons } from "./apps/LootApp";
 import { openTrash } from "./apps/TrashApp";
-import { syncDayBar, toggleDayBar, refreshDayBar } from "./apps/DayBarApp";
-import { syncDayToWorldTime } from "./data/dayDuties";
+import { syncDayBar, toggleDayBar, refreshDayBar, travelBudgetNow } from "./apps/DayBarApp";
+import { getDayState, spendTravelPoints, syncDayToWorldTime } from "./data/dayDuties";
 import { activateEncounterChatButtons, ENCOUNTER_FOLDER } from "./data/dayRolls";
 import { BookApp } from "./apps/BookApp";
 import type { BookId } from "./data/books";
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
-import { hexOf, tokenPoint, refusePlaceIfAway, canReachLoot } from "./data/partyPlace";
-import { bookHexAt, followsToken } from "./data/hexGrid";
+import { hexOf, isPartyToken, tokenPoint, refusePlaceIfAway, canReachLoot } from "./data/partyPlace";
+import { bookHexAt, followsToken, pathHexes, travelCostOf } from "./data/hexGrid";
 import { hexInfo } from "./data/hexes";
+import { whisperToGMs } from "./data/rollCard";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
 import { INN_SECTIONS, DEFAULT_INN_NAME } from "./data/innData";
 import type { InnQuality } from "./data/innData";
@@ -368,6 +369,18 @@ Hooks.once("init", () => {
     config: false,
     type: Object,
     default: {},
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // On by default, because a table that has calibrated a map and switched the
+  // reading on has said what it wants; but its own switch, because plenty of
+  // Referees would rather move the marker freely and spend the points by hand.
+  game.settings!.register(MODULE_ID, SETTINGS.TP_FROM_MOVEMENT, {
+    name: "Charge Travel Points for the hexes a move crosses",
+    hint: "While the hex is being read off the token, moving it also spends the day's Travel Points: 2 per hex along a road or track, and the terrain's own cost per hex when travelling wild (Player's Book pp156–157). A move the party cannot afford is never blocked — it is walked, and the card says how far short they were, which is the book's own answer to that.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.DAY_STATE, {
@@ -1095,6 +1108,72 @@ onUntypedHook("updateSetting", (setting: { key?: string }) => {
 // would be one too many.
 
 /**
+ * Spend the day's Travel Points on the hexes a move actually crossed.
+ *
+ * The book's two rules, and they are not the same rule (Player's Book
+ * pp156–157): along a road or track six miles costs **2**, "unaffected by the
+ * type of terrain or the number of hexes passed through"; travelling wild, each
+ * hex costs what the terrain of the hex being **entered** costs.
+ *
+ * **A move is never refused.** The book's answer to a party that cannot afford
+ * the next hex is that they do not enter it and carry the part-payment over to
+ * tomorrow — a ruling, made at the table, about where the camp goes. Cancelling
+ * a Referee's drag mid-gesture would be the module making that ruling instead,
+ * and getting it wrong the first time somebody repositions a marker. So the
+ * points are spent, the counter stops at zero, and the card says how far short
+ * the party was and what the book does about it.
+ */
+async function chargeTravelPoints(
+  scene: { id?: string; grid?: unknown } | undefined,
+  waypoints: ({ x?: number; y?: number } | undefined)[]
+): Promise<void> {
+  const g = game as Game;
+  if (!g.settings?.get(MODULE_ID, SETTINGS.TP_FROM_MOVEMENT)) return;
+
+  const points = waypoints.filter((p): p is { x?: number; y?: number } => !!p);
+  const hexes = pathHexes(scene, points);
+  if (!hexes.length) return;
+
+  const ctx = getDayContext();
+  const state = getDayState();
+  const budget = travelBudgetNow();
+  if (budget === undefined) return;
+
+  const { parts, total } = travelCostOf(hexes, ctx.way, terrainInfo(ctx.terrain).cost);
+  const before = state.travelPointsUsed;
+  await spendTravelPoints(total, budget);
+  const spent = getDayState().travelPointsUsed - before;
+  const short = total - spent;
+
+  const rows = parts
+    .map(
+      (p) =>
+        `<li><strong>${escapeHTML(p.hex)}</strong> ${p.cost} TP${
+          p.known ? "" : " <span class=\"dw-encounter-die\">(not a hex the book details — the bar's own terrain was used)</span>"
+        }</li>`
+    )
+    .join("");
+  const way = wayInfo(ctx.way);
+  await whisperToGMs(
+    `<div class="dw-day-roll">
+      <h3><i class="fas fa-person-hiking"></i> ${hexes.length === 1 ? "One hex crossed" : `${hexes.length} hexes crossed`}</h3>
+      <p class="dw-day-roll-headline">${total} Travel Point${total === 1 ? "" : "s"}</p>
+      <p class="dw-day-roll-sub">${escapeHTML(way.label)} &mdash; ${
+        ctx.way === "wild"
+          ? "each hex costs its own terrain"
+          : "2 a hex, whatever the ground (Player's Book p156)"
+      }; ${getDayState().travelPointsUsed} of ${budget} spent today</p>
+      <ul class="dw-encounter-flavour">${rows}</ul>
+      ${
+        short > 0
+          ? `<p class="dw-day-roll-consequence"><strong>${short} Travel Point${short === 1 ? "" : "s"} short.</strong> The book has the party stop at the edge and pay the rest tomorrow (Player's Book p157) — the token has been moved anyway, so this is yours to rule on.</p>`
+          : ""
+      }
+    </div>`
+  );
+}
+
+/**
  * The one client that may count a step, matching the world-clock sync: two
  * connected GMs would otherwise both count the same move.
  */
@@ -1109,6 +1188,8 @@ onUntypedHook("moveToken", (tokenDoc: unknown, movement: unknown) => {
 
   const doc = tokenDoc as {
     parent?: { name?: string; grid?: unknown };
+    actorId?: string;
+    actor?: { id?: string } | null;
     getCenterPoint?: (data?: { x?: number; y?: number }) => { x?: number; y?: number };
     width?: number;
     height?: number;
@@ -1144,12 +1225,38 @@ onUntypedHook("moveToken", (tokenDoc: unknown, movement: unknown) => {
   // for something it is holding. Setting the hex brings the terrain and the
   // region the book gives it, clears the warning by itself, and fires the
   // briefing card — all of which the bar's own Hex box already does.
-  const book = followsToken() ? bookHexAt(doc.parent as { id?: string; grid?: unknown }, at(move?.destination)) : undefined;
+  const scene = doc.parent as { id?: string; grid?: unknown } | undefined;
+  // **Whose token was that?** Warning that the party may have moved costs
+  // nothing when it is really a bandit being repositioned, and that is why this
+  // hook has always counted any token. Setting the hex and spending the day's
+  // Travel Points are another matter: doing either off an NPC's move would be
+  // wrong, and quietly. Where the world can name its own party — a marker
+  // actor, or characters players own — this asks; where it cannot, it shrugs
+  // and behaves as it did before.
+  const mine = isPartyToken(
+    doc.parent as never,
+    doc as { actorId?: string; actor?: { id?: string } | null }
+  );
+  const book =
+    followsToken() && mine !== false ? bookHexAt(scene, at(move?.destination)) : undefined;
   if (book) {
     const here = hexInfo(book);
-    void setDayContext(
-      here ? { hex: here.hex, terrain: here.terrain, region: here.region } : { hex: book }
-    ).then(() => refreshDayBar());
+    void (async () => {
+      await setDayContext(
+        here ? { hex: here.hex, terrain: here.terrain, region: here.region } : { hex: book }
+      );
+      // **The hexes crossed, not the hex landed in.** The book charges for each
+      // hex entered, so a drag across four of them costs four — and the path
+      // between the waypoints comes from core's own line-drawing rather than
+      // from the module guessing which cells a straight line touches.
+      await chargeTravelPoints(scene, [
+        at(move?.origin),
+        ...((movement as { passed?: { waypoints?: { x?: number; y?: number }[] } })?.passed
+          ?.waypoints ?? []
+        ).map((w) => at(w)),
+      ]);
+      refreshDayBar();
+    })();
     return;
   }
 

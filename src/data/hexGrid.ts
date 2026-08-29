@@ -153,6 +153,84 @@ export function bookHexAt(
   return hexFromOffset(calibrationFor(scene?.id), gridOffsetOf(scene, point));
 }
 
+/**
+ * Every hex the party actually **entered**, in order, for one move.
+ *
+ * Not origin-and-destination: a drag across four hexes crosses four, and the
+ * book charges for each one entered. `getDirectPath` is core's own line-drawing
+ * over the grid (`HexagonalGrid#getDirectPath`, the redblobgames algorithm), so
+ * the module is not deciding for itself which cells a straight line passes
+ * through — and a dog-legged path with waypoints is walked leg by leg.
+ *
+ * The first cell is dropped: the party was already standing in it and has long
+ * since paid for it.
+ */
+export function pathHexes(
+  scene: { id?: string; grid?: unknown } | undefined,
+  waypoints: { x?: number; y?: number }[]
+): string[] {
+  const grid = scene?.grid as
+    | { getDirectPath?: (w: { x: number; y: number }[]) => { i: number; j: number }[] }
+    | undefined;
+  const points = waypoints.filter(
+    (p): p is { x: number; y: number } => typeof p?.x === "number" && typeof p?.y === "number"
+  );
+  if (!grid?.getDirectPath || points.length < 2) return [];
+
+  const cal = calibrationFor(scene?.id);
+  if (!isComplete(cal)) return [];
+
+  let path: { i: number; j: number }[];
+  try {
+    path = grid.getDirectPath(points);
+  } catch {
+    return [];
+  }
+
+  const out: string[] = [];
+  let last: string | undefined;
+  for (const [n, offset] of path.entries()) {
+    const hex = hexFromOffset(cal, offset);
+    // A path that leaves the book's map contributes nothing rather than a
+    // guess; the cells beyond it are simply not hexes anybody can be charged
+    // for. Consecutive duplicates are dropped for the same reason as the first
+    // cell: standing still costs nothing.
+    if (n === 0) {
+      last = hex;
+      continue;
+    }
+    if (hex && hex !== last) out.push(hex);
+    last = hex;
+  }
+  return out;
+}
+
+/** What entering one hex costs, by the book's two rules. */
+export function hexEntryCost(hex: string, way: string, fallback: number): number {
+  // "6 miles costs 2 Travel Points, unaffected by the type of terrain or the
+  // number of hexes passed through" — Player's Book p156, for roads and tracks.
+  // A hex is 6 miles across, so entering one along a road is 2, whatever the
+  // ground either side of it looks like.
+  if (way !== "wild") return 2;
+  // "The Terrain Types table lists the cost to enter an adjacent hex, based on
+  // its terrain type" (p157) — the hex being *entered*, not the one being left.
+  return hexInfo(hex)?.cost ?? fallback;
+}
+
+/** What a whole move costs, hex by hex, for the card to print. */
+export function travelCostOf(
+  hexes: string[],
+  way: string,
+  fallback: number
+): { parts: { hex: string; cost: number; known: boolean }[]; total: number } {
+  const parts = hexes.map((hex) => ({
+    hex,
+    cost: hexEntryCost(hex, way, fallback),
+    known: !!hexInfo(hex),
+  }));
+  return { parts, total: parts.reduce((sum, p) => sum + p.cost, 0) };
+}
+
 /** Which measurement the next press of the crosshairs will take. */
 export function calibrationStep(sceneId: string | undefined): 1 | 2 {
   const cal = calibrationFor(sceneId);

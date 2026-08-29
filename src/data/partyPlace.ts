@@ -112,6 +112,27 @@ export function tokenPoint(
 }
 
 /**
+ * Is this token one the party travels as, on a scene that knows of any?
+ *
+ * **Undefined means "nobody can tell"**, and that is a third answer rather than
+ * a no: a world that has named no party marker and whose characters' actors are
+ * owned by nobody has no way to recognise its own party, and a rule that
+ * refused everything there would simply stop working. The caller decides what
+ * to do with the doubt — the move hook charges Travel Points only on a plain
+ * yes, and settles for the older, looser behaviour on a shrug.
+ */
+export function isPartyToken(
+  scene: SceneLike | undefined,
+  token: { actorId?: string; actor?: { id?: string } | null } | undefined
+): boolean | undefined {
+  const known = partyTokensOn(scene);
+  if (!known.length) return undefined;
+  const id = token?.actorId ?? token?.actor?.id;
+  if (!id) return false;
+  return known.some((t) => (t.actorId ?? t.actor?.id) === id);
+}
+
+/**
  * The tokens that stand for the party on one scene.
  *
  * A named marker wins where the world has one — Leander's table travels as a

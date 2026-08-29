@@ -983,6 +983,25 @@ function forcedBudget(normal: number | undefined, forcedMarch: boolean): number 
   return forcedMarch ? Math.floor(normal * 1.5) : normal;
 }
 
+/**
+ * The day's allowance as it stands, for anything outside the bar that spends it.
+ *
+ * The same sum the bar's own readout counts against, in the book's own order: a
+ * forced march buys 50% more, and the weather then takes its toll on what the
+ * party can manage in the day. The **frozen** budget wins over the live convoy
+ * figure for the reason the bar states — a mule sold at noon must not change
+ * the size of a march already half walked.
+ *
+ * Exported because the move hook charges against it, and two ways of working
+ * out one number is one too many.
+ */
+export function travelBudgetNow(): number | undefined {
+  const state = getDayState();
+  const marched = forcedBudget(state.travelPointBudget ?? convoyTravelPoints(), state.forcedMarch);
+  if (marched === undefined) return undefined;
+  return Math.max(0, marched - travelPointPenalty(state.weather));
+}
+
 // ─── Opening and closing ───────────────────────────────────────────────────────
 
 function barInstance(): DayBarApp | undefined {
