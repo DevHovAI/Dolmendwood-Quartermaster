@@ -27,11 +27,14 @@ import { REGIONS, TERRAINS, TERRAIN_BANDS } from "./dayContext";
  *  - whether anything grows here the foraging tables do not know about,
  *  - and the page, one click away, for the words.
  *
- * **Triggered by the hex being set on the day bar, not by the token moving.**
- * A scene's grid offset says "column 14, row 9"; it does not say "0608", and
- * whether it could depends on how each table lined its map up. The Referee
- * types the hex — which the move hook already asks them to do — and that is the
- * moment the module knows which hex it is.
+ * **Triggered by the hex being set, however it was set.** A scene's grid offset
+ * says "column 14, row 9"; on its own it does not say "0608", because that
+ * depends on how each table lined its own map up. It did not used to be able
+ * to: the Referee typed the number and the move hook only nudged them to. Since
+ * 2026-08-29 a map can be *calibrated* — one known hex measured once, in
+ * `hexGrid.ts` — and then the move hook sets the hex itself. Either way the
+ * card comes from `setDayContext`, so both doors lead here and neither has to
+ * remember to.
  */
 
 /** Whispered once, when the hex on the day bar changes to a new one. */

@@ -14,6 +14,24 @@ import { getPartyActors } from "./sharedStore";
  * at it, and a GM who has to move a token first would just turn this off.
  */
 
+/**
+ * The scene grid's own coordinates for a point: row `i`, column `j`.
+ *
+ * Foundry's own numbering, which starts wherever the map's top-left corner
+ * happens to be and has nothing to do with the book's hex numbers. `hexOf`
+ * makes a key out of it; `hexGrid.ts` turns it into "1310" once a scene has
+ * been calibrated.
+ */
+export function gridOffsetOf(
+  scene: { grid?: unknown } | undefined,
+  point: { x?: number; y?: number } | undefined
+): { i: number; j: number } | undefined {
+  const key = hexOf(scene, point);
+  if (!key) return undefined;
+  const [i, j] = key.split(",").map(Number);
+  return Number.isFinite(i) && Number.isFinite(j) ? { i, j } : undefined;
+}
+
 /** Which hex a point falls in, by the scene's own grid. Undefined off a hex map. */
 export function hexOf(
   scene: { grid?: unknown } | undefined,

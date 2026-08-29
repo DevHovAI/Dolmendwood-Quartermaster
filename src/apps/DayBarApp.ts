@@ -65,6 +65,8 @@ import { CAMP_ROLL_DUTIES } from "../data/campRolls";
 import { MORNING_ROLL_DUTIES } from "../data/morningRolls";
 import { travelPointPenalty, hasEffect, weatherSummary, weatherIcon } from "../data/weather";
 import { lostChance } from "../data/gettingLost";
+import { partyTokensOn, tokenPoint } from "../data/partyPlace";
+import { calibrate, calibrationFor, followsToken } from "../data/hexGrid";
 
 /**
  * The day bar: the Referee's per-day checklist, docked at the top of the screen.
@@ -118,6 +120,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       clearDuty: DayBarApp._onClearDuty,
       toggleContext: DayBarApp._onToggleContext,
       confirmContext: DayBarApp._onConfirmContext,
+      calibrateHex: DayBarApp._onCalibrateHex,
       expandToContext: DayBarApp._onExpandToContext,
       expandToPanel: DayBarApp._onExpandToPanel,
       openShortcut: DayBarApp._onOpenShortcut,
@@ -195,6 +198,11 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     let state = getDayState();
     // Everything on the context row that the book already knows, given the hex.
     const here = hexInfo(getDayContext().hex);
+    // The map the Referee is looking at, not the one the token last moved on:
+    // calibration is a property of a scene, and this row is about this one.
+    const calibration = calibrationFor(
+      (game as Game).scenes?.current?.id as string | undefined
+    );
     const collapsed = !!(game as Game).settings.get(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED);
     const duties = dutiesForMode(state.mode);
     const isDone = (d: Duty) => state.done[d.id] === true;
@@ -333,7 +341,16 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         moved: ctx.moved
           ? {
               label: "Party moved",
-              title: `A token has crossed a hex boundary on ${ctx.moved.sceneName} since this was last set. Check the terrain and the way — the module cannot read them off the map. Change one of them, or click to say it is still right.`,
+              // The warning exists because the module cannot tell which hex the
+              // party walked into. Where it *could* — the reading is on, this
+              // map simply has not been measured — say so, since that is one
+              // press away and ends the warning for good.
+              title:
+                `A token has crossed a hex boundary on ${ctx.moved.sceneName} since this was last set. ` +
+                (followsToken() && !calibration
+                  ? "Reading the hex off the token is switched on, but this map has not been calibrated: stand the token in a hex you know, type it in the box and press the crosshairs. Until then, check the terrain and the way by hand."
+                  : "Check the terrain and the way — the module cannot read them off the map.") +
+                " Change one of them, or click to say it is still right.",
             }
           : undefined,
         summaryTitle:
@@ -380,6 +397,19 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         hexHint: here
           ? `${here.hex}, ${here.name}. ${terrain.label}, ${region.label}, ${here.lost} to lose the way. Described in the Campaign Book on p${here.page}.`
           : "The hex the party is standing in. Type it and the terrain, the region and the lost chance follow from the Campaign Book — including anything that grows here which the foraging tables do not know about. A hex the book does not detail is still kept; set the terrain by hand.",
+        // The crosshairs: one measurement per map, and after it the hex reads
+        // itself off the token. Offered to the Referee only, and only where
+        // there is a hex in the box to measure against.
+        mayCalibrate: isGM,
+        calibrated: !!calibration,
+        calibrateLabel: calibration ? "Re-calibrate" : "Calibrate",
+        calibrateTitle: calibration
+          ? `This map is calibrated on hex ${calibration.hex}. ${
+              followsToken()
+                ? "Moving a token sets the hex by itself."
+                : "Switch on “Read the hex off the party's token” in the module settings to use it."
+            } Press again with the token somewhere else, and the hex in the box, to measure it afresh.`
+          : "Calibrate this map: stand the party's token in a hex you know, select it, type that hex in the box, and press this. From then on the module can read the hex off any position on this map.",
       },
       isGM,
       // The bar's shortcuts are the toolbar's buttons in another place, so they
@@ -634,6 +664,40 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
    */
   private static async _onConfirmContext(this: DayBarApp): Promise<void> {
     await confirmDayContext();
+    this.render();
+  }
+
+  /**
+   * Measure this map against the hex in the box, once and for all.
+   *
+   * The token measured is the one the Referee has selected, and failing that
+   * the party's marker: a Referee about to say "the party is here" has almost
+   * always just clicked the token they mean, and asking them to select it is a
+   * clearer instruction than a setting naming an actor.
+   *
+   * The hex comes from the box rather than from a prompt, because it is already
+   * on screen and already the thing the Referee keeps up to date.
+   */
+  private static async _onCalibrateHex(this: DayBarApp): Promise<void> {
+    const g = game as Game;
+    const scene = g.scenes?.current as unknown as
+      | { id?: string; name?: string; grid?: unknown }
+      | undefined;
+    const controlled = (
+      canvas as unknown as { tokens?: { controlled?: { document?: unknown }[] } }
+    )?.tokens?.controlled;
+    const token = controlled?.[0]?.document ?? partyTokensOn(scene as never)[0];
+    const result = await calibrate(scene, tokenPoint(scene as never, token as never), getDayContext().hex ?? "");
+    if (!result.ok) {
+      ui.notifications?.warn(result.why);
+      return;
+    }
+    ui.notifications?.info(
+      `${scene?.name ?? "This map"} is calibrated on hex ${result.cal.hex}. ` +
+        (followsToken()
+          ? "Moving a token now sets the hex on the bar by itself."
+          : "Switch on “Read the hex off the party's token” in the module settings to use it.")
+    );
     this.render();
   }
 

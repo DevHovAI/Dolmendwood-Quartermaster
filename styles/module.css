@@ -4556,6 +4556,36 @@ span.day-bar-panel-tick {
   text-decoration: none;
 }
 
+/* The crosshairs, sized like the page button so the row keeps one rhythm. It
+   lights up once the map has been measured, because "is this map calibrated?"
+   is a question the Referee will ask again and should be able to see. */
+.day-bar-hex-calibrate {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.3));
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--dw-tertiary);
+  font-size: 0.8em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.day-bar-hex-calibrate:hover {
+  background: rgba(0, 0, 0, 0.14);
+  color: var(--dw-text);
+}
+
+.day-bar-hex-calibrate.is-set {
+  color: var(--dw-accent, #7a5c2e);
+  border-color: var(--dw-accent, #7a5c2e);
+}
+
 /* One line, one ellipsis, at the end of the whole sentence. */
 .day-bar-hex-note {
   flex: 1 1 auto;

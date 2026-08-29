@@ -86,6 +86,8 @@ export const SETTINGS = {
   BAR_ONLY_ACCESS: "barOnlyAccess", // reach the module's windows from the bar instead of the toolbar
   BOOKS_FOR_PLAYERS: "booksForPlayers", // which of the three books players may open: "none" | "players" | "all"
   BOOK_PAGE_OFFSET: "bookPageOffset", // PDF page = printed page + this; two pages of front matter in all three books
+  HEX_FROM_TOKEN: "hexFromToken", // read the hex off the party's token, on maps that have been calibrated
+  HEX_CALIBRATION: "hexCalibration", // Record<sceneId, {i, j, hex}> — one measured hex per map
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in

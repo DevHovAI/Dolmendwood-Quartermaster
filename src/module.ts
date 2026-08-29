@@ -1,4 +1,4 @@
-import { noteHexStep } from "./data/dayContext";
+import { noteHexStep, setDayContext } from "./data/dayContext";
 import { MODULE_ID, SETTINGS, FLAGS, SOCKET_EVENTS, TRASH_LIMIT_DEFAULT } from "./constants";
 import { registerHandlebarsHelpers, registerHandlebarsPartials, escapeHTML } from "./helpers/handlebars";
 import { fitToViewport } from "./helpers/fitToViewport";
@@ -19,6 +19,8 @@ import type { BookId } from "./data/books";
 import { CatalogManager } from "./data/CatalogManager";
 import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
 import { hexOf, tokenPoint, refusePlaceIfAway, canReachLoot } from "./data/partyPlace";
+import { bookHexAt, followsToken } from "./data/hexGrid";
+import { hexInfo } from "./data/hexes";
 import { isLootActor, removeLootNotes } from "./data/lootStore";
 import { INN_SECTIONS, DEFAULT_INN_NAME } from "./data/innData";
 import type { InnQuality } from "./data/innData";
@@ -347,6 +349,25 @@ Hooks.once("init", () => {
     type: Number,
     range: { min: -10, max: 20, step: 1 },
     default: 2,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // Off by default, and deliberately: it does nothing at all until a map has
+  // been calibrated, and a switch that silently needs a second step is worse
+  // than one the Referee turns on when they have taken the measurement.
+  game.settings!.register(MODULE_ID, SETTINGS.HEX_FROM_TOKEN, {
+    name: "Read the hex off the party's token",
+    hint: "Once a map has been calibrated — stand the token in a hex you know and press the crosshairs beside the Hex box on the day bar — moving the token sets the hex on the bar by itself, with the terrain and region the book gives it, and brings up the hex briefing. Leave this off and the module only warns that a token has crossed a hex boundary, which is what it did before.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.HEX_CALIBRATION, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.DAY_STATE, {
@@ -1117,6 +1138,23 @@ onUntypedHook("moveToken", (tokenDoc: unknown, movement: unknown) => {
   // Off a hex map, or the token merely shifted within the same hex.
   if (!from || !to || from === to) return;
 
+  // **With the map calibrated, the move answers its own question.** The warning
+  // exists because the module could not tell which hex the party had walked
+  // into; once it can, saying "you have moved, go and type it" would be asking
+  // for something it is holding. Setting the hex brings the terrain and the
+  // region the book gives it, clears the warning by itself, and fires the
+  // briefing card — all of which the bar's own Hex box already does.
+  const book = followsToken() ? bookHexAt(doc.parent as { id?: string; grid?: unknown }, at(move?.destination)) : undefined;
+  if (book) {
+    const here = hexInfo(book);
+    void setDayContext(
+      here ? { hex: here.hex, terrain: here.terrain, region: here.region } : { hex: book }
+    ).then(() => refreshDayBar());
+    return;
+  }
+
+  // Not calibrated, off the book's map, or the reading is switched off: the
+  // warning is still the honest answer.
   void noteHexStep(doc.parent?.name ?? "the map").then(() => refreshDayBar());
 });
 
