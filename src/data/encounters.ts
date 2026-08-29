@@ -864,6 +864,8 @@ export interface EncounterResult {
   table?: SubTable;
   tableLabel?: string;
   entryRoll?: number;
+  /** The type the d8 first landed on, where the hex sent it back (only 1310). */
+  rerolledType?: SubTable;
   name?: string;
   mark?: EncounterMark;
   /** The rolled size of the group; absent for a unique being. */
@@ -894,8 +896,40 @@ export interface EncounterResult {
   lairRoll?: { roll: number; percent: number; source: string };
   activity?: string;
   activityRoll?: number;
-  /** Each side's 1d6; 1–2 is surprised (CB p114). */
-  surprise?: { party: number; creature: number };
+  /**
+   * Each side's 1d6; 1–2 is surprised (CB p114).
+   *
+   * `partyChance` is there because three hexes raise the party's own chance —
+   * Red Gwen's bandits hide in the woods, and "opposing side has a 3-in-6
+   * chance of being surprised" means the side opposing *them*.
+   */
+  surprise?: { party: number; creature: number; partyChance?: number };
+  /**
+   * The hex's own encounter rule, rolled and printed whether or not it fired.
+   *
+   * A miss belongs on the card as much as a hit: the Referee reading "this hex:
+   * 2-in-6 marsh lanterns — 1d6 = 5" can see that the tables were consulted
+   * *because* the hex declined, rather than because the rule was forgotten.
+   */
+  hexOwn?: {
+    /** Absent where the book states the rule flatly rather than as a chance. */
+    chance?: number;
+    roll?: number;
+    what: string;
+    where?: string;
+    kind: "instead" | "colour";
+    fired: boolean;
+    /** Set when the Referee pressed “the ordinary tables” and read them instead. */
+    overruled?: boolean;
+  }[];
+  /**
+   * What the hex supplied, where it supplied something the bestiary has no name
+   * for — "a Wild Hunt in pursuit of 1d4 blessed unicorns", "the Moonlit Maw".
+   *
+   * `name` stays empty in that case, because everything hung off it (the stat
+   * line, the HP roll, the map button) needs a creature the Monster Book knows.
+   */
+  hexWhat?: string;
   /**
    * Which of the night's four watches it falls in (1–4), for a nighttime check.
    *

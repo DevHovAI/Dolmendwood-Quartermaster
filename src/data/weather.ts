@@ -232,3 +232,14 @@ export function weatherIcon(result: WeatherResult | undefined): string {
   ];
   return faces.find(([pattern]) => pattern.test(text))?.[1] ?? "fa-cloud-sun";
 }
+
+/**
+ * Whether the day's weather counts as sunny, for the one hex that asks.
+ *
+ * Hex 0811's farm girls are out "on sunny days", and the weather tables word
+ * that half a dozen ways — "Warm, sunny", "Balmy, clear", "Brisk, clear". The
+ * same words the icon reads, since the two questions are the same question.
+ */
+export function isSunny(result: WeatherResult | undefined): boolean {
+  return !!result && /sun|clear|bright|balmy|fine|fair/i.test(result.text);
+}

@@ -61,6 +61,111 @@ export interface HexInfo {
   places?: { name: string; hidden?: true; kind?: string }[];
   /** Named people and beings who live here, with what the book calls them. */
   folk?: { name: string; what: string }[];
+  /**
+   * The hex's **own** encounter rules, as the book's Lost/encounters line gives
+   * them — the half of `note` that is a die roll rather than a reminder.
+   *
+   * 78 hexes have one. Until 2026-08-29 they were text on a card and nothing
+   * more: the encounter roll read the terrain, the region, the season and the
+   * way, and a party standing in 0305 was as likely to meet a badger as the
+   * marsh lanterns the book puts there. Now the roll consults these.
+   *
+   * **Written by hand from the pages, not parsed out of `note`.** The book says
+   * the same thing eight ways ("Encounters are", "Daytime encounters are",
+   * "Nighttime encounters on the road are", "Off-road encounters are",
+   * "Encounters by the lakeside are"), and a regex over that is exactly the
+   * shape of gate that silently drops records.
+   */
+  hexEncounter?: HexEncounter[];
+  /**
+   * Which regional table this hex's encounters actually read, where the book
+   * sends the Referee to a different one than the hex's own region.
+   *
+   * Only 1504, the Barrow Bog: it lies in the Aldweald and rolls on the Table
+   * Downs. The region field stays what the book prints, because everything else
+   * — the day's context row, the briefing card — means the region the hex is in.
+   */
+  encounterRegion?: Region;
+  /**
+   * Type-table results this hex re-rolls once, where the book says to.
+   *
+   * Only 1310, Granny Wolfsbane's lodge: "If the d8 says the encounter is a
+   * Monster, roll it again." She has cleared this hex of them.
+   */
+  rerollTypes?: ("animal" | "monster" | "mortal" | "sentient")[];
+}
+
+/**
+ * One line of a hex's Lost/encounters rule, made rollable.
+ *
+ * Three kinds, because the book writes three different things in the same
+ * sentence shape:
+ *
+ * - **`instead`** (the default, and 70 of the 78) — a chance that what turned
+ *   up is this rather than whatever the regional tables would have said. Rolled
+ *   *after* the ordinary check succeeds: the hex changes **what** is met, not
+ *   whether anything is.
+ * - **`colour`** — the encounter still comes off the tables, but the hex has
+ *   something to add about it (1009's Grey Blight, 0901's folk who cannot leave
+ *   the ring of cairns). Rolled the same way; it adds a line rather than
+ *   replacing the creature.
+ * - **`chance`** — the hex overrides the terrain's own N-in-6 for that period.
+ *   Only 0809, where it is 3-in-6 after dark rather than the bog's 2.
+ */
+export interface HexEncounter {
+  /** How likely, in six. A `chance` entry's is the new base check. */
+  chance?: number;
+  /**
+   * The book states it flatly rather than as a chance, so there is no die.
+   *
+   * Only 0901: anyone met inside the ring of the Mysterious Cairns is trapped
+   * in it too, and that is not a 6-in-6, it is a fact about the place.
+   */
+  always?: true;
+  /** Absent means both; otherwise only by day or only at night. */
+  period?: "day" | "night";
+  /** What comes, in the book's own words, for the card to print. */
+  what: string;
+  /**
+   * The bestiary name to look the creature up under, where one entry means one
+   * kind of creature. Absent for "Red Henry or The Girl With Blue Lips" and the
+   * other either/ors, and for named individuals the Monster Book has no page
+   * for — the card prints `what` and leaves the stat block to the Referee.
+   */
+  creature?: string;
+  /** The number the book rolls, e.g. "2d4". Absent for a single named being. */
+  number?: string;
+  /**
+   * The ways this rule applies on, where the book narrows it to one.
+   *
+   * The module knows which way the party is travelling, so "on the road" and
+   * "off-road" are checked rather than merely printed.
+   */
+  way?: ("road" | "track" | "wild")[];
+  /**
+   * A condition the module cannot check — "by the lakeside", "in the swamp",
+   * "in the eastern part of the hex", "on sunny days".
+   *
+   * Leander's call (2026-08-29): these still roll, and the condition is printed
+   * on the card in bold so the Referee can wave it off. The card's "the
+   * ordinary table instead" button is the other half of that.
+   */
+  where?: string;
+  /**
+   * Only on a sunny day. One hex (0811), and the day's weather is rolled and
+   * stored already, so this is checked rather than printed.
+   */
+  sunny?: true;
+  /**
+   * The chance in six that **the party** is surprised, where the book raises it.
+   *
+   * The book writes it as "opposing side has a 3-in-6 chance of being
+   * surprised" — the side opposing the bandits, who are the ones hiding in the
+   * woods. Named for who it happens to, because "opposing" read from the wrong
+   * end gives the advantage to exactly the wrong people.
+   */
+  surpriseParty?: number;
+  kind?: "instead" | "colour" | "chance";
 }
 
 export const HEXES: HexInfo[] = [
@@ -84,6 +189,9 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "Lord Hobbled-and-Blackened", what: "frost elf courtier, thin as an icicle, imprisoned here; plays the violin manically and begs for a letter to be carried" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "a bewildered banshee on her way to a ball at the Spectral Manse", creature: "Banshee" },
     ],
   },
   {
@@ -170,6 +278,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Aegnyth Cormick", what: "the shepherds' unofficial leader; wants news from Shrivelbyne, her flock safe and the gryphus gone" },
     ],
+    hexEncounter: [
+      { chance: 3, what: "the frore gryphus that lives here, hunting over the grasslands" },
+    ],
   },
   {
     hex: "0106",
@@ -229,6 +340,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Timilda Brumble", what: "elderly shorthorn with a silver nose, keeps the inn; respected elder and the secret head of the plot against Lord Murkin" },
     ],
+    hexEncounter: [
+      { chance: 1, what: "a gang of Murkin's Soldiers" },
+    ],
   },
   {
     hex: "0109",
@@ -270,6 +384,9 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "Devil Goats' Glade", kind: "the monolith, the bone mound and its goats; the bones are worth searching" },
       { name: "Nights of the Full Moon", kind: "the stone wakes, violet-lit, and a voice on the wind rants in an old form of Caprice" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "1d3 devil goats", creature: "Devil Goat", number: "1d3" },
     ],
   },
   {
@@ -358,6 +475,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Brawg", what: "pot-bellied troll, lazy and lecherous, oddly gentle with small animals; wants Agnes back but will not apologise first" },
       { name: "Agnes", what: "thin, long-limbed troll, fastidious and sharp-tongued; swims the wetlands ambushing fodder for the farm" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "Brawg or Agnes, the moss-farming trolls", creature: "Troll" },
     ],
   },
   {
@@ -538,6 +658,10 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Smalding Borotrope", what: "the tea seller: rotund, slimy-skinned, wiry moustache, preposterous hat — the snail's dream avatar, and glad of company" },
     ],
+    hexEncounter: [
+      { chance: 1, period: "day", what: "1d3+2 bandits and 1d3+2 shorthorns of Red Gwen's gang (hex 0311)", surpriseParty: 3 },
+      { chance: 2, period: "night", what: "1d3+2 bandits and 1d3+2 shorthorns of Red Gwen's gang (hex 0311)", surpriseParty: 3 },
+    ],
   },
   {
     hex: "0301",
@@ -630,6 +754,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "The Audrune Wargfole", what: "bent old man with a bone lamp and a skull mask under his cowl; he drains souls to feed the pyre, and misses good ale" },
     ],
+    hexEncounter: [
+      { chance: 1, what: "the Audrune Wargfole, out cleaning the Pointing Statues", creature: "Drune—Audrune" },
+    ],
   },
   {
     hex: "0305",
@@ -654,6 +781,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Smauvol Oddnum", what: "the landlord — chequered doublet, brass skull necklace; will not discuss a single one of the inn's peculiarities" },
       { name: "Carrington Shydewick", what: "calls herself Mercy Alquip; a thief lying low after robbing the Hall of Sleep, and shopping for the next job" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "1d4 marsh lanterns", creature: "Marsh Lantern", number: "1d4" },
     ],
   },
   {
@@ -768,6 +898,9 @@ export const HEXES: HexInfo[] = [
       { name: "Mounds and Boulders", kind: "woods-folk chiefs the Drune soul-bound for siding with the Cold Prince; the stone came from nowhere near here" },
       { name: "The Shrine to St Elsa", kind: "the point of a tiled roof in a mound of beetle-ridden soil; dig it out — treat the beetles as an insect swarm — and praying grants Communion", hidden: true },
     ],
+    hexEncounter: [
+      { chance: 2, what: "an insect swarm — the flesh-eating beetles of this hex", creature: "Insect Swarm" },
+    ],
   },
   {
     hex: "0311",
@@ -790,6 +923,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Red Gwen", what: "half-breggle bandit leader in chainmail, tactically brilliant; sells the story that she is Murkin's exiled sister, and grew up an urchin in High-Hankle" },
     ],
+    hexEncounter: [
+      { chance: 1, period: "day", what: "1d3+2 bandits and 1d3+2 shorthorns of the gang based here", surpriseParty: 3 },
+    ],
   },
   {
     hex: "0312",
@@ -811,6 +947,10 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "Mother Goat", what: "shorthorn landlady with seven kids and a mop always to hand; collects unusual cheeses and has heard of one that walks about in Dwelmfurgh (0405)" },
+    ],
+    hexEncounter: [
+      { chance: 1, period: "day", what: "1d3+2 bandits and 1d3+2 shorthorns of Red Gwen's gang (hex 0311)", surpriseParty: 3 },
+      { chance: 3, period: "night", what: "1d4+2 wolves, who taunt the party in growled Woldish and attack if they outnumber it", creature: "Wolf", number: "1d4+2" },
     ],
   },
   {
@@ -880,6 +1020,9 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "Queen Arda", what: "purple sprite tyrant with orange insect eyes, certain her dreams foretell her ruling Dolmenwood; tells her subjects the big folk are marauding giants" },
+    ],
+    hexEncounter: [
+      { chance: 1, what: "1d4 x 10 purple sprites out of the Sprite Mound", creature: "Sprite", number: "1d4*10" },
     ],
   },
   {
@@ -972,6 +1115,10 @@ export const HEXES: HexInfo[] = [
       { name: "The Girl With Blue Lips", what: "a drowned child still looking for her father's soul and terrified of \"Red Eyes\"; her family necklace is hidden at the foot of his cliff" },
       { name: "Red Henry", what: "a sadistic mercenary the lake's dreams called in; wants blood, and wants the girl down in the water with the rest of them" },
     ],
+    hexEncounter: [
+      { chance: 2, period: "day", what: "Red Henry or The Girl With Blue Lips", where: "by the lakeside" },
+      { chance: 3, period: "night", what: "Red Henry or The Girl With Blue Lips", where: "by the lakeside" },
+    ],
   },
   {
     hex: "0408",
@@ -1021,6 +1168,9 @@ export const HEXES: HexInfo[] = [
       { name: "Captain Cabruc Lockehorn", what: "towering one-eyed longhorn in pompous dress uniform, loyal to Ramius and privately sure his plan for the Bicorne will get people killed" },
       { name: "Harryp", what: "the spirited young shorthorn who runs the Mannish Miser, and is said to drink anyone under the table" },
     ],
+    hexEncounter: [
+      { chance: 2, period: "night", what: "a hunting party of 2d4 sleepwalking shorthorns, out to carry someone to the Bicorne's pit (hex 0510)", creature: "Breggle—Shorthorn", number: "2d4" },
+    ],
   },
   {
     hex: "0410",
@@ -1064,6 +1214,10 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "Old Mannog Murderman", what: "hairy, barrel-chested, rude and shrewd, sheep-horn pipe in his teeth; wants strong cider, a bigger flock, and to marry Mother Goat (0312)" },
+    ],
+    hexEncounter: [
+      { chance: 1, period: "day", what: "1d3+2 bandits and 1d3+2 shorthorns of Red Gwen's gang (hex 0311)" },
+      { chance: 2, period: "night", what: "1d3+2 bandits and 1d3+2 shorthorns of Red Gwen's gang (hex 0311)" },
     ],
   },
   {
@@ -1155,6 +1309,9 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "The Audrune Morgodh", what: "hulking, cloaked in black and wreathed in sick purple mist; the Drune call him the Destroyer, and he welcomes trespassers for the pleasure of it" },
+    ],
+    hexEncounter: [
+      { chance: 4, what: "the Audrune Morgodh and 1d6 bramblings", creature: "Drune—Audrune" },
     ],
   },
   {
@@ -1315,6 +1472,9 @@ export const HEXES: HexInfo[] = [
       { name: "The Bicorne's lair", kind: "a fifty-foot chamber off the pit, filled with old bones; the beast lies in it half-dormant, belching contagion and nightmares" },
       { name: "Treasure hoard", kind: "buried in the bones: coins, three mouldy spell books half-readable, a dented Holy Shield that grants speech with whales, and a locket belonging to Commander Lockelope's dead sister (0412)" },
     ],
+    hexEncounter: [
+      { chance: 2, period: "night", what: "a hunting party of 2d4 sleepwalking shorthorns from Galblight (hex 0409), looking for sacrifices for the pit", creature: "Breggle—Shorthorn", number: "2d4" },
+    ],
   },
   {
     hex: "0511",
@@ -1357,6 +1517,9 @@ export const HEXES: HexInfo[] = [
       { name: "The Town of High-Hankle", kind: "capital of the High Wold and famous for its appetites; full description on p150" },
       { name: "Monk's Hill and the Ruined Tower", kind: "three escaped griffons nesting in the upper floors — Sir Waverly pays 1,500gp a head for one returned alive" },
       { name: "The Accursed Grotto", kind: "twenty feet below the tower: a purple-glowing pool with a silver St Howarth at the bottom, ox-faced stalactites dripping something like blood, and a curse in both of them" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "1d4 knights and 1d4 griffon trainers with caged wagons, nets and braces of hares, out to recapture the griffons on Monk's Hill", creature: "Knight" },
     ],
   },
   {
@@ -1445,6 +1608,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Gherigew Thorncripe", what: "a bard held months under the pool's mud in suspended animation and still alive; wants rescuing, and wants to explain his absence to his lover in Prigwort in song" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "1d3 galoshers", creature: "Galosher", number: "1d3", where: "in the vicinity of a pond" },
+    ],
   },
   {
     hex: "0607",
@@ -1483,6 +1649,9 @@ export const HEXES: HexInfo[] = [
     ],
     places: [
       { name: "The Snake Witch", kind: "who the hex is named for" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "1d8 adders, or 1d3 giant pythons" },
     ],
   },
   {
@@ -1598,6 +1767,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Laird Alhoyle Spinnewith IV", what: "pale, enormous grey sideburns, pipe always going; the last of his line, and a sage worth hiring on astronomy, astrology and ley lines" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "2d4 cannibals of Clan Shaggytree (hex 0801), out to drag travellers back to their lair", number: "2d4" },
+    ],
   },
   {
     hex: "0703",
@@ -1618,6 +1790,9 @@ export const HEXES: HexInfo[] = [
       { name: "The Chapel of St Eggort", kind: "down an arched tunnel of moss-covered candle sconces behind still-locked doors; praying at the statue grants Holy Light", hidden: true },
       { name: "The White Tower", kind: "booms aloud when anyone comes near; glyph-locked door, unbreakable glass, four storeys of spotless empty rooms and a sealed door at the top" },
       { name: "The Bedchamber", kind: "not a speck of dust, and a black-haired woman asleep in the bed with purple pustules on her skin; break the stasis and the plague wakes with her" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "2d4 cannibals of Clan Shaggytree (hex 0801), out to drag travellers back to their lair", number: "2d4" },
     ],
   },
   {
@@ -1662,6 +1837,9 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "The Scrabey's home", kind: "where she is, having forgotten her own name" },
     ],
+    hexEncounter: [
+      { chance: 2, period: "night", what: "the ghost of Dewidort of Smerne, the highwayman (see hex 0607)", way: ["road"] },
+    ],
   },
   {
     hex: "0708",
@@ -1680,6 +1858,9 @@ export const HEXES: HexInfo[] = [
     ],
     places: [
       { name: "Shagsend", kind: "hamlet — and the cell Cranthus is in" },
+    ],
+    hexEncounter: [
+      { chance: 3, period: "night", what: "a Drune cottager and 1d4 bramblings, spying on Shagsend after their lost comrade Cranthus", creature: "Drune—Cottager" },
     ],
   },
   {
@@ -1779,6 +1960,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Sandy and Agnes Shaggytree", what: "criminal runaways who found the caves and the shrine decades ago, and are the parents of all the rest" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "2d4 of the clan's own cannibals, out to drag travellers back to the caves", number: "2d4" },
+    ],
   },
   {
     hex: "0802",
@@ -1801,6 +1985,9 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "Sowynder", what: "a juvenile phlegm wyrm with five golden eyes and a forked tail, sweetly amicable and playing at loneliness; at new-moon dawns witches row out and milk poison from her flank" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "2d4 cannibals of Clan Shaggytree (hex 0801), out to drag travellers back to their lair", number: "2d4" },
     ],
   },
   {
@@ -1826,6 +2013,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "The pavilion's prisoner", what: "a witch, gagged and chained to the tentpole, being kept to be brought before Snarkscorn's master for questioning" },
     ],
+    hexEncounter: [
+      { chance: 3, what: "2d4 crookhorns under Captain Snarkscorn", creature: "Crookhorn", number: "2d4" },
+    ],
   },
   {
     hex: "0804",
@@ -1850,6 +2040,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "The Audrune Hermanach", what: "short and stocky with a long black beard-braid, mostly out as a raven; the heads on stakes are his work, and he wants the crookhorn garrison at 0803 destroyed" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "1d4 Chaotic treoweres", creature: "Treowere", number: "1d4", where: "in the eastern part of the hex, outside Dwelmfurgh" },
+    ],
   },
   {
     hex: "0805",
@@ -1867,6 +2060,9 @@ export const HEXES: HexInfo[] = [
     ],
     places: [
       { name: "Prigmarinn Hill", kind: "the hill the hex is named for" },
+    ],
+    hexEncounter: [
+      { chance: 2, period: "night", what: "the ghost of Dewidort of Smerne, the highwayman (see hex 0607)", way: ["road"] },
     ],
   },
   {
@@ -1909,6 +2105,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Merridwyn Scymes", what: "a magician's nerves, organs and brain in one shapeless mass, in constant agony — her skin murdered her husband" },
     ],
+    hexEncounter: [
+      { chance: 2, period: "day", what: "a Lankshorn town guard carrying provisions to Merridwyn Scymes's cottage" },
+    ],
   },
   {
     hex: "0809",
@@ -1927,6 +2126,10 @@ export const HEXES: HexInfo[] = [
     ],
     places: [
       { name: "The Ditchway", kind: "the road through, and the chambers off it" },
+    ],
+    hexEncounter: [
+      { chance: 3, period: "night", kind: "chance", what: "after dark this hex is 3-in-6 rather than the bog's usual 2" },
+      { chance: 4, period: "night", what: "1d8 nightworms", number: "1d8" },
     ],
   },
   {
@@ -1951,6 +2154,10 @@ export const HEXES: HexInfo[] = [
       { name: "Pollith Bonewort", what: "Drune braithmaid; sings her way through the woods by day" },
       { name: "Thrattlewhit", what: "chief barrowbogey, hopelessly in love with her" },
     ],
+    hexEncounter: [
+      { chance: 2, period: "day", what: "the Braithmaid Pollith Bonewort, walking the woods singing magical songs", creature: "Drune—Braithmaid" },
+      { chance: 2, period: "night", what: "the barrowbogey Thrattlewhit, creeping to the Drune Cottage for a glimpse of his beloved Pollith", creature: "Barrowbogey" },
+    ],
   },
   {
     hex: "0811",
@@ -1968,6 +2175,9 @@ export const HEXES: HexInfo[] = [
     ],
     places: [
       { name: "Cornew Cliffs", kind: "the hills, and the fairy burrows in the rotting trunks" },
+    ],
+    hexEncounter: [
+      { chance: 2, period: "day", what: "2d6 young women out from the farms to the north-west", number: "2d6", sunny: true },
     ],
   },
   {
@@ -2007,6 +2217,9 @@ export const HEXES: HexInfo[] = [
       { name: "The cleft", kind: "choked with broken bones, and the coins earlier prisoners threw down hoping that would be offering enough" },
       { name: "Hermit's Cave", kind: "brush-hidden at a crag inside the ring: fire pit, furs, bone tools, years of tally marks and church hymns on the walls, and the man who cut them dead in the last chamber", hidden: true },
     ],
+    hexEncounter: [
+      { always: true, kind: "colour", what: "whoever is met is trapped in the ring as well — and some, having read the Inscription, mean to buy their way out by sacrificing somebody", where: "within the ring of the Mysterious Cairns" },
+    ],
   },
   {
     hex: "0902",
@@ -2026,6 +2239,9 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "The Battle of the Trees", kind: "eight Chaotic treoweres and sixteen animated trees against six and twelve; a party that joins in can decide it" },
       { name: "Rewards", kind: "the Chaotic side invites whoever helped them to the Nag-Lord's court to be rewarded personally; the Lawful side gives an Arcane Shortbow cut from a treowere dead long ago" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "a treowere, Lawful or Chaotic, off the battle raging here", creature: "Treowere" },
     ],
   },
   {
@@ -2072,6 +2288,9 @@ export const HEXES: HexInfo[] = [
       { name: "Atanuwe's chambers", kind: "up a stair of human bone: jewels, art objects, a pool of liquid gold, and a heap of discarded magical playthings" },
       { name: "Cellars and pantries", kind: "an endless maze of frigid rooms below, holding crushed-sprite wines and the prisoners meant for the feasting tables" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "2d10 vampire bats, bred by the Nag-Lord to plague its domain", creature: "Bat, Vampire", number: "2d10" },
+    ],
   },
   {
     hex: "0905",
@@ -2092,6 +2311,9 @@ export const HEXES: HexInfo[] = [
       { name: "The Mouse Shrine", kind: "the shrine the hex is named for" },
       { name: "The Hermitage", kind: "the other half of the name" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "a patrol of 2d6 crookhorns from the garrison at Baron Fragglehorn's tower (hex 1004)", creature: "Crookhorn", number: "2d6" },
+    ],
   },
   {
     hex: "0906",
@@ -2111,6 +2333,9 @@ export const HEXES: HexInfo[] = [
       { name: "The Ruined Abbey of St Clewyd", kind: "the ruins at the end of the avenue" },
       { name: "The Chapel Crypts", kind: "tombs and catacombs under the chapel; the eastern half is torn by a Chaos rift left by the ritual that destroyed the abbey", hidden: true },
     ],
+    hexEncounter: [
+      { chance: 2, what: "the gloam that lairs in the abbey ruins", creature: "Gloam" },
+    ],
   },
   {
     hex: "0907",
@@ -2129,6 +2354,9 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "Enfeebling Emanations", kind: "what the Bafflestone puts out, and the save against it" },
       { name: "Bafflestone Thralls", kind: "what happens to those who fail" },
+    ],
+    hexEncounter: [
+      { chance: 3, what: "2d10 wandering Bafflestone Thralls", number: "2d10" },
     ],
   },
   {
@@ -2150,6 +2378,9 @@ export const HEXES: HexInfo[] = [
       { name: "The Soul Pond", kind: "candles with anguished faces twisted into the wax — each one somebody's last" },
     ],
     folk: [{ name: "The Hag", what: "2-in-6 to meet at night; described on p82" }],
+    hexEncounter: [
+      { chance: 2, period: "night", what: "the Hag herself (p82)" },
+    ],
   },
   {
     hex: "0909",
@@ -2193,6 +2424,9 @@ export const HEXES: HexInfo[] = [
         name: "Jesibelle Nag",
         what: "landlady, Level 4 fighter; sheepskin, striped trousers, purple boots, arms bare and covered in bangles",
       },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "1d3+1 bramblings on patrol", creature: "Brambling", number: "1d3+1", way: ["wild"] },
     ],
   },
   {
@@ -2262,6 +2496,9 @@ export const HEXES: HexInfo[] = [
       { name: "Bogen", what: "dull-witted giants eight to ten feet tall, hair over every part of them but their three-toed bird feet; they do not speak, only whistle and sigh" },
       { name: "The Huorglein", what: "what is being grown in the pit — twelve feet, scarlet, stag-antlered and shark-toothed, and not finished; drop a corpse in and it wakes early and furious" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "1d2 bogen", number: "1d2", where: "4-in-6 instead if the party is travelling on Quaking Creek" },
+    ],
   },
   {
     hex: "1002",
@@ -2302,6 +2539,9 @@ export const HEXES: HexInfo[] = [
       { name: "Brain-Like Fruits", kind: "Shub Eggs; harvesting one makes the tree sigh and the cord ooze, and the fruit pulses gently for an hour before going still" },
       { name: "The Shrine to St Faxis", kind: "a slime-coated holy symbol standing out of a pool in a hollow, the round stone shrine sunk under it; recovered and given a statue, praying there grants Circle of Protection", hidden: true },
     ],
+    hexEncounter: [
+      { chance: 2, what: "black tentacles", creature: "Black Tentacles" },
+    ],
   },
   {
     hex: "1004",
@@ -2322,6 +2562,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Baron Fragglehorn", what: "who the patrols drag outsiders in front of (p46)" },
     ],
+    hexEncounter: [
+      { chance: 3, what: "a patrol of 2d6 crookhorns from the garrison at the Baron's tower (hex 1004)", creature: "Crookhorn", number: "2d6" },
+    ],
   },
   {
     hex: "1005",
@@ -2341,6 +2584,9 @@ export const HEXES: HexInfo[] = [
       { name: "Stirge Isle", kind: "the island out in the Groaning Loch" },
       { name: "The Shrine in the Cliffs", kind: "an overgrown ledge with a ruined stair down to it, seen from the water past Stirge Isle", hidden: true },
     ],
+    hexEncounter: [
+      { chance: 2, what: "1d4 stirge-owls", number: "1d4" },
+    ],
   },
   {
     hex: "1006",
@@ -2358,6 +2604,9 @@ export const HEXES: HexInfo[] = [
     ],
     places: [
       { name: "Where Men Dare Not Tread", kind: "the sacred glade the witches are walking to" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "1d4 witches — eyes of Limwdd — on their way to the sacred glade", creature: "Witch", number: "1d4" },
     ],
   },
   {
@@ -2405,6 +2654,9 @@ export const HEXES: HexInfo[] = [
     ],
     places: [{ name: "Flotsam Pools", kind: "bottomless brackish pools; things wash up here" }],
     folk: [{ name: "Tekwell Onehorn", what: "pedlar of what the pools give up — a d12 table of oddities" }],
+    hexEncounter: [
+      { chance: 1, period: "day", what: "Tekwell Onehorn" },
+    ],
   },
   {
     hex: "1009",
@@ -2422,6 +2674,9 @@ export const HEXES: HexInfo[] = [
       "Nothing living makes a sound in there. Only a low pulsing hum.",
     ],
     places: [{ name: "The Anti-Prism", kind: "the colourless circle on Harrid's Path", hidden: true }],
+    hexEncounter: [
+      { chance: 3, kind: "colour", what: "whatever is met is afflicted with the Grey Blight" },
+    ],
   },
   {
     hex: "1010",
@@ -2503,6 +2758,9 @@ export const HEXES: HexInfo[] = [
       { name: "Houndmistress Mound", kind: "the entrance is so narrow you go in sideways, and any dogs or wolves with the party start whining and ignoring orders on the approach" },
       { name: "Burial Chamber", kind: "behind a stone that takes a combined Strength of 30 to shift: a mummified noblewoman with a thorned whip, dog skeletons at her feet, and twelve silver dishes and twelve gold bowls about the walls" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "1d4 labourers and a guard from the expedition in hex 1201, surveying the outside of the Houndmistress Mound" },
+    ],
   },
   {
     hex: "1102",
@@ -2525,6 +2783,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Deidre Loam", what: "hermit witch in her late fifties, grim and strictly transactional; she will trade a day's undisturbed salamander-gathering for Horridwort out of 1002" },
       { name: "Old Ned", what: "her giant salamander, the size of a small horse and radiating heat; affectionate with her, and treats everyone met out in the pots as prey" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "Old Ned, the witch's giant salamander, out foraging among the mudpots" },
     ],
   },
   {
@@ -2562,6 +2823,9 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "Cobton-on-the-Shiver", kind: "the Cobbin settlement on the river" },
       { name: "The Giant Egg", kind: "the other half of the hex's name" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "a patrol of 2d6 crookhorns from the garrison at the Baron's tower (hex 1004)", creature: "Crookhorn", number: "2d6" },
     ],
   },
   {
@@ -2606,6 +2870,9 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "Jilly Jump-at-the-Moon", what: "house bogle, a foot and a half tall, skin like knotted wood" },
+    ],
+    hexEncounter: [
+      { chance: 2, period: "night", what: "the ghost of Dewidort of Smerne, the highwayman (see hex 0607)", way: ["road"] },
     ],
   },
   {
@@ -2669,6 +2936,9 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "The Woodcutters' Encampment", kind: "settlement — full description on p182" },
       { name: "Isle of the Frogs", kind: "a toppled frog-headed statue; the 5ft head is intact and its tongue cures one ailment, at a price", hidden: true },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "Father Horsely (p185) and his dog Clewyd", where: "in the swamp" },
     ],
   },
   {
@@ -2784,6 +3054,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "The Willing Sacrifice", what: "a grave-blackened corpse in filthy ceremonial robes, a cracked wooden bear mask strapped to her face and a turquoise glow inside her swollen belly; she comes back the moment anyone reaches the bottom of the pit" },
     ],
+    hexEncounter: [
+      { chance: 1, what: "the Willing Sacrifice, abroad in the reeds" },
+    ],
   },
   {
     hex: "1203",
@@ -2842,6 +3115,9 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "Gorthstone", kind: "the standing stone the hex is named for" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "1d4 elf knights of the Earl of Yellow, all in yellow and mounted on great golden wolves", creature: "Elf—Knight", number: "1d4" },
+    ],
   },
   {
     hex: "1206",
@@ -2863,6 +3139,9 @@ export const HEXES: HexInfo[] = [
         name: "Mother",
         what: "baker, and secretly a Level 5 magician; jolly, secretive, and fanatical about her daughters. Has Bragwen Hoad's wand from 1108",
       },
+    ],
+    hexEncounter: [
+      { chance: 2, period: "night", what: "the ghost of Dewidort of Smerne, the highwayman (see hex 0607)", way: ["road"] },
     ],
   },
   {
@@ -2911,6 +3190,9 @@ export const HEXES: HexInfo[] = [
         what: "Level 2 bard, a silver-furred grimalkin; knows the secrets of this hex and the ones around it",
       },
     ],
+    hexEncounter: [
+      { chance: 2, period: "day", what: "2d6 clueless urban pilgrims bound for the crystal caves at Fog Lake (hex 1207)", creature: "Pilgrim", number: "2d6" },
+    ],
   },
   {
     hex: "1209",
@@ -2933,6 +3215,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Jollie Oistace Pollard", what: "chieftain of the Woodcutters' Encampment; welcoming, then spiteful after dark" },
       { name: "Mudmurloe", what: "his hapless head manservant" },
+    ],
+    hexEncounter: [
+      { chance: 1, period: "night", what: "the Moonlit Maw, hunting out of hex 1311" },
     ],
   },
   {
@@ -2957,6 +3242,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "Lord Mulbreck", what: "held in the lowest cellar, so overgrown with fungus he can barely move; a conduit of the Myconom" },
     ],
+    hexEncounter: [
+      { chance: 1, period: "night", what: "the Moonlit Maw, hunting out of hex 1311" },
+    ],
   },
   {
     hex: "1211",
@@ -2977,6 +3265,9 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "Old Aunt Spindel", what: "giant spider with a woman's face; a cursed puppeteer, quite mad" },
+    ],
+    hexEncounter: [
+      { chance: 4, what: "1d3 giant spinning spiders", creature: "Spinning Spider, Giant", number: "1d3" },
     ],
   },
   {
@@ -3120,6 +3411,9 @@ export const HEXES: HexInfo[] = [
       { name: "The Dung Heap", kind: "what the woodgrues are coming for" },
       { name: "The Grey Monolith", kind: "the standing stone the hex is named for" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "either 1d6 woodgrues on their way to the dung heap, or 1d4 elf knights of the Earl of Yellow — all in yellow, on great golden wolves" },
+    ],
   },
   {
     hex: "1307",
@@ -3212,6 +3506,7 @@ export const HEXES: HexInfo[] = [
       { name: "Back room", kind: "off limits — a potion brewing, 1,218gp in a locked box", hidden: true },
     ],
     folk: [{ name: "Granny Wolfsbane", what: "retired monster-hunter, and a werewolf herself" }],
+    rerollTypes: ["monster"],
   },
   {
     hex: "1311",
@@ -3234,6 +3529,9 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "The Moonlit Maw", what: "ghost of a werewolf; eats spirits, not flesh. Hunts here and in 1209 and 1210. Only magic or silver harms it" },
+    ],
+    hexEncounter: [
+      { chance: 4, period: "night", what: "the Moonlit Maw itself" },
     ],
   },
   {
@@ -3278,6 +3576,9 @@ export const HEXES: HexInfo[] = [
       { name: "Sister Wilfrinda Parr", what: "a friar held captive here and made to consecrate the bodies so they can be dug up and eaten; she warns travellers off before dark without telling them why" },
       { name: "Grinstead", what: "an undead noble who can feed only on the properly buried; he works the road at night and gives his victims' mounts to the wolves" },
     ],
+    hexEncounter: [
+      { chance: 3, period: "night", what: "Grinstead the necrophage, with 1d6 wolves" },
+    ],
   },
   {
     hex: "1402",
@@ -3301,6 +3602,10 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "Gamekeepers", what: "monstrous black oaks with slitted red eyes, dormant until a poacher interferes with their charges" },
+    ],
+    hexEncounter: [
+      { chance: 1, period: "day", what: "a Wild Hunt (hex 1502) in pursuit of 1d4 blessed unicorns" },
+      { chance: 2, period: "night", what: "a Wild Hunt (hex 1502) in pursuit of 1d4 blessed unicorns" },
     ],
   },
   {
@@ -3341,6 +3646,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "The Merrovore", what: "what the hex is named for, and 2-in-6 of every encounter here" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "the merrovore" },
+    ],
   },
   {
     hex: "1405",
@@ -3360,6 +3668,9 @@ export const HEXES: HexInfo[] = [
       { name: "Orbswallow", kind: "the place the hex is named for" },
       { name: "The Nutcap Colonies", kind: "the bark platforms in the birches" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "2d6 nutcaps, fluttering about their woven bark platforms in a grove of silver birch", creature: "Nutcap", number: "2d6" },
+    ],
   },
   {
     hex: "1406",
@@ -3377,6 +3688,9 @@ export const HEXES: HexInfo[] = [
       "Wet going, and easy to lose your way in.",
     ],
     places: [{ name: "The Golden Wood", kind: "the wood itself, and whatever the motes are" }],
+    hexEncounter: [
+      { chance: 2, what: "1d4 elf knights of the Earl of Yellow, all in yellow and mounted on great golden wolves", creature: "Elf—Knight", number: "1d4" },
+    ],
   },
   {
     hex: "1407",
@@ -3460,6 +3774,9 @@ export const HEXES: HexInfo[] = [
       { name: "The Singing Spring", kind: "what the song leads to" },
       { name: "The Cockatrice Nest", kind: "twenty cockatrices in old hazels, ringed with petrified victims; 8 eggs at up to 400gp each, plus 600gp and 2,100sp of trinkets" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "1d4 cockatrices out of the Cockatrice Nest", creature: "Cockatrice", number: "1d4" },
+    ],
   },
   {
     hex: "1501",
@@ -3503,6 +3820,10 @@ export const HEXES: HexInfo[] = [
       { name: "Duke Mai-Fleur", what: "half-elf lord crowned with holly and ivy, a burning sunset in his eyes; the finest hunter in Dolmenwood, and looking for game worth the name" },
       { name: "The Wild Hunt", what: "fairy hounds, elf wanderers afoot and mounted, woodgrue horn-blowers and centaurs; they draw no distinction between their quarry and whoever is in the way" },
     ],
+    hexEncounter: [
+      { chance: 1, period: "day", what: "a Wild Hunt mustering in the woods around the lodge" },
+      { chance: 2, period: "night", what: "a Wild Hunt mustering in the woods around the lodge" },
+    ],
   },
   {
     hex: "1503",
@@ -3523,6 +3844,10 @@ export const HEXES: HexInfo[] = [
       { name: "Trapping the Trappers", kind: "the foxes' nets and snares; navigating around them knowingly adds a Travel Point to everything done in the hex" },
       { name: "Fairy Fox Dens", kind: "burrows all through the hex, passable only by something three feet or under: sandy tunnels, cosy lounges, straw nests, larders of hanging game, and gems in every one", hidden: true },
     ],
+    hexEncounter: [
+      { chance: 1, period: "day", what: "a Wild Hunt (hex 1502) in pursuit of 2d6 fairy foxes" },
+      { chance: 2, period: "night", what: "a Wild Hunt (hex 1502) in pursuit of 2d6 fairy foxes" },
+    ],
   },
   {
     hex: "1504",
@@ -3541,6 +3866,7 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "Ancient Burial Mounds", kind: "the barrows the bog is named for" },
     ],
+    encounterRegion: "table-downs",
   },
   {
     hex: "1505",
@@ -3697,6 +4023,9 @@ export const HEXES: HexInfo[] = [
       { name: "Augury of the Dead", kind: "the dead can report on anything happening in Dolmenwood, in a whispered chorus — the price is 800gp or more in the urn, and Hasturiel itself can be addressed the same way" },
       { name: "The Rosy Gate", kind: "a cave mouth in a valley bottom tangled with wild roses, birdsong and summer air coming out of it; cross the threshold and you are on Buttercup Lane", hidden: true },
     ],
+    hexEncounter: [
+      { chance: 3, what: "1d3 witches — eyes of Hasturiel — on pilgrimage to the hill", creature: "Witch", number: "1d3" },
+    ],
   },
   {
     hex: "1603",
@@ -3738,6 +4067,9 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "Blackeswell", kind: "the settlement the hex is named for" },
       { name: "The Drowning Pool", kind: "the other half of the name" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "1d8 toad-children wandering abroad", number: "1d8" },
     ],
   },
   {
@@ -3843,6 +4175,9 @@ export const HEXES: HexInfo[] = [
       { name: "Prissy Longtail", what: "the grimalkin; her plan has the party distracting the ogres while she comes down the chimney, and she will not actually join in until four of them are down" },
       { name: "Hilda", what: "the ogres' human daughter, gentle and out of place among them; she saved one kitten and is raising it in the secret cave, and would hand over the family's treasure as wergild" },
     ],
+    hexEncounter: [
+      { chance: 2, what: "Hilda, moving furtively between the Ogre Lair and the Secret Cave" },
+    ],
   },
   {
     hex: "1702",
@@ -3862,6 +4197,9 @@ export const HEXES: HexInfo[] = [
       { name: "The Balming Grove", kind: "a doe matriarch and a choir of twenty-five keeping an unbroken prayer in the glade; visitors are confronted at once and want either apologies and a quick exit, or a tribute" },
       { name: "New Moon Nights", kind: "the prayers turn to ululation and they brew a restorative balm over iron cauldrons for hours; guests who paid tribute are invited back for a dose" },
       { name: "The Shrine to St Primula", kind: "a thirty-foot sinkhole in a dell of fallen trees, the pink-veined marble shrine tumbled at the bottom; reassembled, praying there grants Remove Curse", hidden: true },
+    ],
+    hexEncounter: [
+      { chance: 3, what: "2 deorling stags and 1d6+1 does; the stags are duelling over breeding rights while one of the does judges", creature: "Deorling—Stag" },
     ],
   },
   {
@@ -3924,6 +4262,9 @@ export const HEXES: HexInfo[] = [
       { name: "Stinkhorn Woods", kind: "the fungi themselves" },
       { name: "The relics of St Jorrael", kind: "what the map in the wyrm's hoard in 1107 points to", hidden: true },
     ],
+    hexEncounter: [
+      { chance: 3, what: "2d10 giant blood-sucking flies (as stirges), or 1d8 giant burrowing beetles" },
+    ],
   },
   {
     hex: "1706",
@@ -3942,6 +4283,9 @@ export const HEXES: HexInfo[] = [
     places: [
       { name: "The Yellow Monolith", kind: "the standing stone the hex is named for" },
       { name: "Moss ling paths", kind: "the bridges and walkways through the bog" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "squirrels and raccoons trying to pilfer small items from passers-by (25% chance each of succeeding)" },
     ],
   },
   {
@@ -3964,6 +4308,9 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "Joab Elfwit", what: "witch of the Eye of Limwdd, fifty, tall and willow-thin — the fugitive" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "2d6 giant ants from the nest at the Shrine to St Benester", creature: "Ant, Giant", number: "2d6" },
     ],
   },
   {
@@ -4032,6 +4379,9 @@ export const HEXES: HexInfo[] = [
     ],
     folk: [
       { name: "The tree itself", what: "an intelligence that cannot touch anyone who has not eaten its fruit — not malevolent, only bored and lonely; Ygraine grew it 150 years ago as an early experiment in the temporal magic that later took Meagre's Reach out of the past" },
+    ],
+    hexEncounter: [
+      { chance: 3, what: "delirious, elderly people fleeing the area", where: "only where the encounter would have been with humanoids" },
     ],
   },
   {
@@ -4113,6 +4463,9 @@ export const HEXES: HexInfo[] = [
     folk: [
       { name: "The Lost Scholar", what: "says he is the last of a party of scholars out of Wyggrabole and begs for his notes back from the nest; he is a dream projection, and is gone if you go back to look for him" },
       { name: "Alhair", what: "an ancient Drune, alive when the Ring of Chell was made, held by crystals that grant eternal life by keeping the soul; cheerful, talkative, generous with what he knows, and not remotely interested in being freed" },
+    ],
+    hexEncounter: [
+      { chance: 2, what: "a peryton", creature: "Peryton" },
     ],
   },
   {
@@ -4231,4 +4584,35 @@ export function hexInfo(input: string | undefined): HexInfo | undefined {
   const digits = input.replace(/[^0-9]/g, "");
   if (digits.length < 2 || digits.length > 4) return undefined;
   return BY_HEX.get(digits.padStart(4, "0"));
+}
+
+/**
+ * Which of a hex's own encounter rules apply to this moment.
+ *
+ * The book narrows several of them — to the night, to the road, to a sunny day —
+ * and the module knows all three, so they are checked rather than merely
+ * printed. What it cannot know ("by the lakeside", "in the eastern part of the
+ * hex") is carried on `where` and printed on the card for the Referee to
+ * overrule; that was Leander's call on 2026-08-29, against the alternative of
+ * not rolling them at all.
+ */
+export function hexRules(
+  here: HexInfo | undefined,
+  period: "day" | "night",
+  way: string,
+  sunny: boolean
+): { chance?: HexEncounter; instead: HexEncounter[]; colour: HexEncounter[] } {
+  const out: { chance?: HexEncounter; instead: HexEncounter[]; colour: HexEncounter[] } = {
+    instead: [],
+    colour: [],
+  };
+  for (const rule of here?.hexEncounter ?? []) {
+    if (rule.period && rule.period !== period) continue;
+    if (rule.way && !rule.way.includes(way as "road" | "track" | "wild")) continue;
+    if (rule.sunny && !sunny) continue;
+    if (rule.kind === "chance") out.chance ??= rule;
+    else if (rule.kind === "colour") out.colour.push(rule);
+    else out.instead.push(rule);
+  }
+  return out;
 }

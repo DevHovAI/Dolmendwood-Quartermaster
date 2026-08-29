@@ -50,6 +50,7 @@ import {
   ENCOUNTER_TYPES,
   MARK_NOTES,
   MARK_SECTIONS,
+  SUB_TABLE_LABELS,
   UNSEASON_ENCOUNTERS,
   activityNeedsOther,
   encounterChance,
@@ -58,6 +59,7 @@ import {
   reactionFor,
   subTable,
   typeColumn,
+  type CommonTable,
   type EncounterEntry,
   type EncounterMark,
   type EncounterResult,
@@ -65,7 +67,7 @@ import {
 import { creatureEntry, type BestiaryEntry } from "./bestiary";
 import { BOOKS, bookRef, mayOpenBook, type BookId } from "./books";
 import { creatureArt } from "./creatureArt";
-import { hexInfo } from "./hexes";
+import { hexInfo, hexRules } from "./hexes";
 import { BookApp } from "../apps/BookApp";
 import { givenColumns, nameTable, surnameColumn } from "./nameTables";
 import { getDayState, setDutyResult } from "./dayDuties";
@@ -96,6 +98,7 @@ import {
 import {
   WEATHER_EFFECTS,
   hasEffect,
+  isSunny,
   weatherEntry,
   weatherSummary,
   weatherTableFor,
@@ -599,7 +602,22 @@ export async function rollEncounter(period: "day" | "night"): Promise<EncounterR
   const ctx = getDayContext();
   const state = getDayState();
   const dutyId: RollableDuty = period === "day" ? "encounter-day" : "encounter-night";
-  const chance = encounterChance(state.mode, period, ctx.terrain);
+
+  // **The hex has its own say, and until 2026-08-29 nothing listened to it.**
+  // Seventy-nine of the book's hexes print a rule of their own on the
+  // Lost/encounters line — a chance that what turns up is the thing that lives
+  // *here* rather than whatever the regional tables would have said. They were
+  // text on a card, so a party standing in 0305 was as likely to meet a badger
+  // as the marsh lanterns the book puts there.
+  const here = hexInfo(ctx.hex);
+  const rules = hexRules(here, period, ctx.way, isSunny(state.weather));
+  const own = rules.chance;
+  const chance = own?.chance
+    ? {
+        inSix: own.chance,
+        reason: `${own.chance}-in-6 in hex ${here?.hex} — ${own.what} (Campaign Book p${here?.page}).`,
+      }
+    : encounterChance(state.mode, period, ctx.terrain);
 
   const checkDie = await rollDice("1d6");
   const roll = total(checkDie);
@@ -631,32 +649,191 @@ export async function rollEncounter(period: "day" | "night"): Promise<EncounterR
     return rollSettlementScene(period, result, dice);
   }
 
+  // **The hex is asked before the tables are.** Its rule is the most specific
+  // thing the book says about this place, and Chame's serpents and Vague's dead
+  // are a season laid over the *regional* tables — so the Moonlit Maw still
+  // comes for a party standing in 1311 in Chame. A rule that misses is printed
+  // too: the Referee can see that the tables were reached because the hex
+  // declined, not because nobody looked.
+  let fromHex: ReturnType<typeof hexRules>["instead"][number] | undefined;
+  for (const rule of rules.instead) {
+    const ownDie = await rollDice("1d6");
+    dice.push(ownDie);
+    const inSix = rule.chance ?? 6;
+    const fired = total(ownDie) <= inSix;
+    (result.hexOwn ??= []).push({
+      chance: inSix,
+      roll: total(ownDie),
+      what: rule.what,
+      ...(rule.where ? { where: rule.where } : {}),
+      kind: "instead",
+      fired,
+    });
+    if (fired) {
+      fromHex = rule;
+      break;
+    }
+  }
+
+  if (fromHex) {
+    // The hex has already answered every question the tables would have been
+    // asked: what it is, and how many. `name` is set only where the book names
+    // a Monster Book creature outright, because the stat line, the HP roll and
+    // the map button all hang off it and a guessed name is worse than none —
+    // "the Moonlit Maw" gets `hexWhat` and no stat block.
+    result.hexWhat = fromHex.what;
+    if (fromHex.creature) result.name = fromHex.creature;
+    if (fromHex.number) {
+      const countDie = await rollDice(fromHex.number);
+      dice.push(countDie);
+      result.numberFormula = fromHex.number;
+      result.number = total(countDie);
+    }
+  } else {
+    await rollFromTables(period, ctx, state, here, result, dice);
+  }
+
+  // A `colour` rule does not replace anything — it says something extra about
+  // whatever turned up, off the tables or out of the hex. Rolled after, so it
+  // can speak about the creature the card already names.
+  for (const rule of rules.colour) {
+    // One of them is not a chance at all — inside the ring of cairns at 0901,
+    // whoever is met is trapped there too, and the book says so flatly.
+    if (rule.always) {
+      (result.hexOwn ??= []).push({
+        what: rule.what,
+        ...(rule.where ? { where: rule.where } : {}),
+        kind: "colour",
+        fired: true,
+      });
+      continue;
+    }
+    const ownDie = await rollDice("1d6");
+    dice.push(ownDie);
+    (result.hexOwn ??= []).push({
+      chance: rule.chance,
+      roll: total(ownDie),
+      what: rule.what,
+      ...(rule.where ? { where: rule.where } : {}),
+      kind: "colour",
+      fired: total(ownDie) <= (rule.chance ?? 6),
+    });
+  }
+
+  // Activity and reaction are **not** rolled here, though the procedure lists
+  // both. The book calls the activity table optional and reaches for a reaction
+  // only "if the creatures' potential reaction to PCs is unclear" — and most of
+  // the time it is not: the Referee already knows what the thing wants. Rolling
+  // them unasked put two answers on the card that were as likely to be argued
+  // with as used, and threw four more dice across the screen for them. Both are
+  // buttons now, and cost a click when they are actually wanted.
+  const partyDie = await rollDice("1d6");
+  const creatureDie = await rollDice("1d6");
+  dice.push(partyDie, creatureDie);
+  // Three hexes hide their ambushers in the woods and raise the party's own
+  // chance of being caught out, from the usual 2-in-6 to 3.
+  const partyChance = fromHex?.surpriseParty ?? 2;
+  result.surprise = {
+    party: total(partyDie),
+    creature: total(creatureDie),
+    ...(partyChance !== 2 ? { partyChance } : {}),
+  };
+  const bothSurprised = total(partyDie) <= partyChance && total(creatureDie) <= 2;
+
+  const distanceFormula = bothSurprised ? "1d4" : "2d6";
+  const distanceDie = await rollDice(distanceFormula);
+  dice.push(distanceDie);
+  result.distance = { formula: `${distanceFormula} × 30`, feet: total(distanceDie) * 30 };
+
+  // "If a nighttime encounter is rolled, the Referee may randomly determine when
+  // during the night it occurs (e.g. during which character's watch)" — Player's
+  // Book p158. Four two-hour watches across the party's eight hours of rest is
+  // what that page describes, and what the bar's own Watches duty says.
+  if (period === "night") {
+    const watchDie = await rollDice("1d4");
+    dice.push(watchDie);
+    result.watch = total(watchDie);
+  }
+
+  // `result.name`, not the table's own: a hex rule may have supplied the
+  // creature, and one that names no Monster Book creature has nothing to find.
+  const uuid = result.name ? await findCreatureUuid(result.name) : undefined;
+  if (uuid) result.uuid = uuid;
+
+  // **The lair check comes with the encounter** (Leander, 2026-08-28). It used
+  // to wait for a button, which left the card's own number provisional until
+  // somebody pressed it — and the number is the first thing a Referee reads
+  // out. The button is still there and is a re-roll now, like Reaction's.
+  const lair = await lairRoll(result, dice);
+  if (lair) {
+    result.inLair = lair.inLair;
+    if (lair.inLair) {
+      result.wanderingNumber = lair.wandering;
+      result.number = lair.number;
+    }
+    result.lairRoll = { roll: lair.roll, percent: lair.percent, source: lair.source };
+  }
+
+  await setDutyResult(dutyId, resultPatch(period, result));
+  await whisperToGMs(encounterCard(result), dice);
+  return result;
+}
+
+
+/**
+ * The Campaign Book’s own procedure, once the hex has had its say and declined.
+ *
+ * Its own function because the encounter card offers it as a button: a Referee
+ * who does not want the hex’s marsh lanterns after all presses “the ordinary
+ * tables” and gets the type roll, the d20 and the number, with everything the
+ * check has already decided left where it was.
+ */
+async function rollFromTables(
+  period: "day" | "night",
+  ctx: ReturnType<typeof getDayContext>,
+  state: ReturnType<typeof getDayState>,
+  here: ReturnType<typeof hexInfo>,
+  result: EncounterResult,
+  dice: Roll[]
+): Promise<void> {
   let entries: EncounterEntry[];
   let entryDie: string;
 
-  // Chame and Vague overrule everything: a 2-in-6 chance that what comes is
-  // serpents or the risen dead, off a d10 of their own, with no type roll at all.
+  // Chame and Vague overrule the tables: a 2-in-6 chance that what comes is
+  // serpents or the risen dead, off a d10 of their own, with no type roll.
   const override = ctx.season === "chame" || ctx.season === "vague" ? ctx.season : undefined;
   const overrideDie = override ? await rollDice("1d6") : undefined;
   if (overrideDie) dice.push(overrideDie);
+
+  // One hex reads a table that is not its own region's: the Barrow Bog (1504)
+  // lies in the Aldweald and rolls on the Table Downs, and the book says so.
+  const region = here?.encounterRegion ?? ctx.region;
 
   if (override && overrideDie && total(overrideDie) <= 2) {
     result.unseason = override;
     entries = UNSEASON_ENCOUNTERS[override];
     entryDie = "1d10";
-  } else if (ctx.region === "aquatic") {
+  } else if (region === "aquatic") {
     // "For encounters on rivers or lakes, roll directly on the Aquatic regional
     // encounter table" (CB p114) — so there is no type roll to make.
     result.table = "regional";
-    result.tableLabel = regionInfo(ctx.region).label;
-    entries = subTable("regional", ctx.region).entries;
+    result.tableLabel = regionInfo(region).label;
+    entries = subTable("regional", region).entries;
     entryDie = "1d20";
   } else {
     const column = typeColumn(period, ctx.way, state.done["fire"] === true);
-    const typeDie = await rollDice("1d8");
+    let typeDie = await rollDice("1d8");
     dice.push(typeDie);
-    const table = ENCOUNTER_TYPES[column].rolls[total(typeDie) - 1];
-    const sub = subTable(table, ctx.region);
+    let table = ENCOUNTER_TYPES[column].rolls[total(typeDie) - 1];
+    // Granny Wolfsbane has cleared her hex of monsters, and the book says to
+    // roll the d8 again if it lands on one. Once, not until it stops.
+    if (here?.rerollTypes?.includes(table as "animal" | "monster" | "mortal" | "sentient")) {
+      result.rerolledType = table;
+      typeDie = await rollDice("1d8");
+      dice.push(typeDie);
+      table = ENCOUNTER_TYPES[column].rolls[total(typeDie) - 1];
+    }
+    const sub = subTable(table, region);
     result.column = column;
     result.typeRoll = total(typeDie);
     result.table = table;
@@ -682,55 +859,6 @@ export async function rollEncounter(period: "day" | "night"): Promise<EncounterR
     // "see p355" and its three siblings: named beings, not a group with a size.
     result.reference = count;
   }
-
-  // Activity and reaction are **not** rolled here, though the procedure lists
-  // both. The book calls the activity table optional and reaches for a reaction
-  // only "if the creatures' potential reaction to PCs is unclear" — and most of
-  // the time it is not: the Referee already knows what the thing wants. Rolling
-  // them unasked put two answers on the card that were as likely to be argued
-  // with as used, and threw four more dice across the screen for them. Both are
-  // buttons now, and cost a click when they are actually wanted.
-  const partyDie = await rollDice("1d6");
-  const creatureDie = await rollDice("1d6");
-  dice.push(partyDie, creatureDie);
-  result.surprise = { party: total(partyDie), creature: total(creatureDie) };
-  const bothSurprised = total(partyDie) <= 2 && total(creatureDie) <= 2;
-
-  const distanceFormula = bothSurprised ? "1d4" : "2d6";
-  const distanceDie = await rollDice(distanceFormula);
-  dice.push(distanceDie);
-  result.distance = { formula: `${distanceFormula} × 30`, feet: total(distanceDie) * 30 };
-
-  // "If a nighttime encounter is rolled, the Referee may randomly determine when
-  // during the night it occurs (e.g. during which character's watch)" — Player's
-  // Book p158. Four two-hour watches across the party's eight hours of rest is
-  // what that page describes, and what the bar's own Watches duty says.
-  if (period === "night") {
-    const watchDie = await rollDice("1d4");
-    dice.push(watchDie);
-    result.watch = total(watchDie);
-  }
-
-  const uuid = await findCreatureUuid(name);
-  if (uuid) result.uuid = uuid;
-
-  // **The lair check comes with the encounter** (Leander, 2026-08-28). It used
-  // to wait for a button, which left the card's own number provisional until
-  // somebody pressed it — and the number is the first thing a Referee reads
-  // out. The button is still there and is a re-roll now, like Reaction's.
-  const lair = await lairRoll(result, dice);
-  if (lair) {
-    result.inLair = lair.inLair;
-    if (lair.inLair) {
-      result.wanderingNumber = lair.wandering;
-      result.number = lair.number;
-    }
-    result.lairRoll = { roll: lair.roll, percent: lair.percent, source: lair.source };
-  }
-
-  await setDutyResult(dutyId, resultPatch(period, result));
-  await whisperToGMs(encounterCard(result), dice);
-  return result;
 }
 
 /** Which field of the day this period's result is written to. */
@@ -794,7 +922,9 @@ function looseName(name: string): string {
 /** "Marsh Lantern ×7", or the name alone where the book gives no number. */
 function encounterHeadline(r: EncounterResult): string {
   const number = r.number !== undefined ? ` &times;${r.number}` : "";
-  return `${escapeHTML(r.name ?? "")}${number}`;
+  // A hex can supply something the Monster Book has no entry for — the Moonlit
+  // Maw, a Wild Hunt, Old Ned. Then its own words are the headline.
+  return `${escapeHTML(r.name ?? r.hexWhat ?? "")}${number}`;
 }
 
 const ORDINALS = ["first", "second", "third", "fourth"];
@@ -802,7 +932,10 @@ const ORDINALS = ["first", "second", "third", "fourth"];
 function surpriseLine(r: EncounterResult): string {
   const s = r.surprise;
   if (!s) return "";
-  const party = s.party <= 2;
+  // Three hexes raise the party's own chance, because the things that live
+  // there are hiding in the woods on purpose.
+  const partyIn6 = s.partyChance ?? 2;
+  const party = s.party <= partyIn6;
   const creature = s.creature <= 2;
   const verdict = party && creature
     ? "Both surprised &mdash; a moment's confusion, and neither side gains anything."
@@ -811,7 +944,11 @@ function surpriseLine(r: EncounterResult): string {
       : creature
         ? "<strong>The creature is surprised.</strong> The party has a free Round."
         : "Neither side surprised.";
-  return `<li><strong>Surprise</strong> party ${s.party}, creature ${s.creature} &mdash; ${verdict}</li>`;
+  const raised =
+    s.partyChance !== undefined
+      ? ` <span class="dw-encounter-die">(the party at ${s.partyChance}-in-6 here, not 2 &mdash; they are hiding in the woods)</span>`
+      : "";
+  return `<li><strong>Surprise</strong> party ${s.party}, creature ${s.creature}${raised} &mdash; ${verdict}</li>`;
 }
 
 // ─── What the Monster Book knows, for any creature on any card ─────────────────
@@ -1113,7 +1250,39 @@ function encounterCard(r: EncounterResult): string {
   const reaction = r.reaction ? reactionFor(r.reaction.roll) : undefined;
   const period = r.period === "day" ? "daytime" : "night";
 
-  const where = r.unseason
+  // **What the hex itself said, hit or miss.** A miss belongs here as much as a
+  // hit: it is the line that tells a Referee the rule was consulted and came up
+  // short, rather than being forgotten. A condition the module cannot check is
+  // printed in full, because the Referee is the one who can check it.
+  const hexOwn = (r.hexOwn ?? [])
+    .map((o) => {
+      const die =
+        o.chance === undefined
+          ? `<span class="dw-encounter-die">(the book states it flatly, so there is no die)</span>`
+          : `<span class="dw-encounter-die">(1d6 = ${o.roll}, against ${o.chance}-in-6)</span>`;
+      const only = o.where
+        ? ` <strong>Only ${escapeHTML(o.where)}</strong> &mdash; the module cannot tell, so the roll stands until you say otherwise.`
+        : "";
+      if (!o.fired) {
+        return `<p class="dw-day-roll-sub">The hex's own ${o.chance}-in-6 &mdash; ${escapeHTML(o.what)} &mdash; did not come up ${die}</p>`;
+      }
+      if (o.overruled) {
+        return `<p class="dw-day-roll-sub">The hex's own ${o.chance}-in-6 came up ${die} &mdash; ${escapeHTML(o.what)} &mdash; and was set aside for the ordinary tables.</p>`;
+      }
+      return o.kind === "colour"
+        ? `<p class="dw-day-roll-consequence"><strong>And</strong> ${escapeHTML(o.what)} ${die}${only}</p>`
+        : `<p class="dw-day-roll-consequence"><strong>The hex's own encounter</strong> &mdash; ${escapeHTML(o.what)} ${die}${only}</p>`;
+    })
+    .join("");
+
+  const reroll = r.rerolledType
+    ? `<p class="dw-day-roll-sub">The d8 said ${escapeHTML(SUB_TABLE_LABELS[r.rerolledType as CommonTable] ?? r.rerolledType)} and this hex sends it back; rolled again.</p>`
+    : "";
+
+  // No table was read at all when the hex supplied the encounter itself.
+  const where = r.hexWhat && !r.tableLabel
+    ? ""
+    : r.unseason
     ? `<p class="dw-day-roll-sub">${escapeHTML(r.unseason === "chame" ? "Chame" : "Vague")} has taken over the tables (2-in-6, Campaign Book p111); 1d10 = ${r.entryRoll}</p>`
     : `<p class="dw-day-roll-sub">${escapeHTML(r.tableLabel ?? "")}${
         r.typeRoll !== undefined
@@ -1194,6 +1363,15 @@ function encounterCard(r: EncounterResult): string {
           <i class="fas fa-question"></i> The other creature
          </button>`
       : "",
+    // The other half of "the condition still rolls": if the Referee decides the
+    // party was nowhere near the lakeside, one press reads the ordinary tables
+    // instead, and the check, the surprise and the distance stand as rolled.
+    r.hexWhat
+      ? `<button type="button" class="dw-encounter-btn" data-encounter-action="tables" data-period="${r.period}"
+           title="This hex supplied the encounter. Roll the Encounter Type table and the region's own d20 instead — what the check, the surprise and the distance already said stands.">
+          <i class="fas fa-table-list"></i> The ordinary tables
+         </button>`
+      : "",
     creature.name,
     creature.hp,
     creature.map,
@@ -1212,6 +1390,8 @@ function encounterCard(r: EncounterResult): string {
   return `<div class="dw-day-roll dw-encounter">
       <h3><i class="fas ${r.period === "day" ? "fa-sun" : "fa-moon"}"></i> Encounter &mdash; ${period}</h3>
       <p class="dw-day-roll-headline">${encounterHeadline(r)}</p>
+      ${hexOwn}
+      ${reroll}
       ${where}
       ${reference}
       ${noNumber}
@@ -1458,6 +1638,9 @@ export function activateEncounterChatButtons(html: HTMLElement): void {
         case "lair":
           void rollLairCheck(period);
           break;
+        case "tables":
+          void rerollFromTables(period);
+          break;
         case "other":
           void rollOtherCreature(period);
           break;
@@ -1539,6 +1722,51 @@ async function rerollReaction(period: "day" | "night"): Promise<void> {
  * Referee sitting with one they cannot use. The new one stands as today's, and
  * its card carries the buttons the new activity earns.
  */
+/**
+ * "No, they were nowhere near the lakeside." — the hex's encounter, overruled.
+ *
+ * The hex's own rules roll even where the book's condition is one the module
+ * cannot check, because a rule that never fires is no better than the text on a
+ * card. This is the other half of that bargain: one press and the ordinary
+ * procedure runs instead, with everything the encounter check already settled —
+ * that something came, who saw whom, how far off — left exactly as it was. The
+ * hex's roll stays on the card, marked as overruled, so the card still shows
+ * its whole working.
+ */
+async function rerollFromTables(period: "day" | "night"): Promise<void> {
+  if (!isGM()) return;
+  const stored = storedEncounter(period);
+  if (!stored?.happened || !stored.hexWhat) return;
+
+  const ctx = getDayContext();
+  const state = getDayState();
+  const here = hexInfo(ctx.hex);
+  const dice: Roll[] = [];
+
+  const { hexWhat: _passedOver, name: _was, number: _many, numberFormula: _formula, ...kept } = stored;
+  const next: EncounterResult = {
+    ...kept,
+    hexOwn: (stored.hexOwn ?? []).map((o) => (o.fired && o.kind === "instead" ? { ...o, overruled: true } : o)),
+  };
+  await rollFromTables(period, ctx, state, here, next, dice);
+
+  next.uuid = next.name ? await findCreatureUuid(next.name) : undefined;
+  // A different creature keeps different hours and a different house: the lair
+  // check that came with the old one says nothing about this one.
+  const lair = await lairRoll(next, dice);
+  if (lair) {
+    next.inLair = lair.inLair;
+    if (lair.inLair) {
+      next.wanderingNumber = lair.wandering;
+      next.number = lair.number;
+    }
+    next.lairRoll = { roll: lair.roll, percent: lair.percent, source: lair.source };
+  }
+
+  await setDutyResult(period === "day" ? "encounter-day" : "encounter-night", resultPatch(period, next));
+  await whisperToGMs(encounterCard(next), dice);
+}
+
 async function rerollActivity(period: "day" | "night"): Promise<void> {
   if (!isGM()) return;
   const stored = storedEncounter(period);
