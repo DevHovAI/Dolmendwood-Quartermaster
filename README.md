@@ -197,6 +197,17 @@ styles/
 
 ## Changelog
 
+### v1.9.0
+- **An attribute sheet of the module's own** — page one of the printed sheet in a window: the six scores, the five saves, level, experience, armour and attack. **Blocks** are one model for a trait, class ability, spell or extra skill, so the module ships no class or spell list and your table writes what it plays; every block is addressable as `@b.<slug>`. Foundry's own `Roll` resolves the references, so the whole dice syntax comes free
+- **Weapons roll from the inventory** — all twenty catalogue weapons carry their numbers, so the damage die, melee or missile and the three range bands come off the equipped row. Hunger and exhaustion are kept apart, as the book keeps them: exhaustion is −1 to attack *and* damage, hunger is −1 to −5 on attack plus Speed and never touches damage
+- **The camp and the morning roll themselves** — firewood, the fire, cooking, camaraderie, the watches and sleep, asking which character where a roll needs one. Firewood comes out of the packs as a bundle, the sleep card itemises its modifiers, and a forced march is a longer day rather than a faster one
+- **Every hex on the map says what it is like** — all 195 hexes the Campaign Book details carry a description in plain English, the places it gives them and the people who live there, whispered to the Referee as a **briefing card** whenever the party's hex changes
+- **The hex gets a vote on what the party meets** — 79 hexes print an encounter rule of their own and the wandering-monster check now consults them, replacing, colouring or re-pricing the roll as the book directs, with one button to read the ordinary tables instead
+- **The map can be measured** — two calibration points and the module reads the hex off the token: the day bar fills itself, the briefing fires on the move, **Travel Points are charged for the hexes crossed**, a move that cannot be paid for is refused before it happens, and the drag ruler shows the price first
+- **A creature's hoard and possessions** roll into a staged loot box, keeping the book's distinction between what is in the lair and what is on the body
+- **An inventory row can be edited whole**, not only renamed — its name, qualities, weight and a value only the Referee sees
+- A book now falls open on the correct page of a spread, and the day bar's "where are we?" row is two fixed lines with nothing folded away
+
 ### v1.8.2
 - **A shop can be a particular shop** — **services** that are used where they are bought and never enter an inventory, with 21 Player's Book specialists as a library you can add to, reprice and prune; a shop that keeps to its **own shelf** and shows nothing from the catalogue; and stock with an **X-in-6 chance** of being there this visit
 - **Selling** — set a shop's **buy-back rate** on its map note or market stall and the party can sell to it, reckoned on an item's own value rather than that shop's asking price. A shop buys only what it deals in, and a half-empty quiver fetches what is in it: a quiver of 20 costs 5gp and one arrow 25cp, so seven arrows are seven arrows
