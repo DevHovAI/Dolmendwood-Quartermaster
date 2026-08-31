@@ -1506,7 +1506,7 @@ class StockFromLibraryDialog extends Dialog {
                                SPECIAL_SERVICES.some((s) => s.id === entry.id)
                                  ? "Give the book's own price back"
                                  : "Take this out of the library"
-                             }"><i class="fas fa-trash-can"></i></button>`
+                             }"><i class="fas fa-trash"></i></button>`
                   : ""
               }
             </label>`
@@ -1593,7 +1593,7 @@ class StockFromLibraryDialog extends Dialog {
           buttons: {
             yes: {
               label: isBuiltIn ? "Restore" : "Remove",
-              icon: `<i class="fas ${isBuiltIn ? "fa-rotate-left" : "fa-trash-can"}"></i>`,
+              icon: `<i class="fas ${isBuiltIn ? "fa-rotate-left" : "fa-trash"}"></i>`,
               callback: async () => {
                 const what = await removeFromLibrary(id);
                 if (what === "missing") {

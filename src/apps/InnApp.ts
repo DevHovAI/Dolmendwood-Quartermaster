@@ -628,7 +628,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
         buttons: {
           ok: {
             label: "Continue",
-            icon: '<i class="fas fa-user-group"></i>',
+            icon: '<i class="fas fa-people-group"></i>',
             callback: (html: JQuery) => resolve((html.find("#inn-recipient").val() as string) ?? null),
           },
           cancel: { label: "Cancel", callback: () => resolve(null) },
