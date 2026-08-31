@@ -249,8 +249,11 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       resizable: true,
     },
     position: {
-      // Capped so the window cannot open wider than the viewport on small screens
-      width: Math.min(1040, window.innerWidth - 80),
+      // A quarter narrower than it was (Leander, 2026-08-31: the window "könnte
+      // standardmäßig etwa 1/4 schmaler"). 1040 was set when the three summary
+      // blocks each took a full line of their own; folding them into one row
+      // took that width back. Still capped to the viewport on small screens.
+      width: Math.min(780, window.innerWidth - 80),
       height: 700,
     },
     classes: ["dolmenwood-party-inventory", "player-inventory"],

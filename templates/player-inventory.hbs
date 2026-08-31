@@ -34,70 +34,69 @@
     {{/if}}{{/if}}
   </div>
 
-  {{!-- Encumbrance bars. The shared store carries nothing itself — a load bar
-        against the personal 1,600 wt cap would be meaningless there. --}}
+  {{!-- The party's pace, on a line of its own with nothing else in it (Leander,
+        2026-08-31: *"ich hätte gerne, dass in der reihe mit dem convoy speed
+        nichts anderes mehr ist"*). It answers a different question from the two
+        boxes below it — what the whole party marches at, not what this one
+        character carries — and while it shared a column with the load bars it
+        read as their caption rather than as a statement of its own. --}}
   {{#unless isSharedStore}}
-  {{> encumbrance-bar encumbrance=encumbrance encMode=encMode}}
-  {{/unless}}
-
-  {{!-- Convoy speed: own marching pace, own animals, and the party-wide slowest.
-        "You" is the pace from carried load alone (footSpeed) — the animals get
-        their own badges, so using finalSpeed here would just repeat whichever
-        animal is slowest. --}}
   <div class="convoy-speed-bar">
-    <span class="convoy-label"><i class="fas fa-route"></i> Convoy Speed:</span>
-    {{#unless isSharedStore}}
-    <span class="own-speed-badge {{speedColor encumbrance.footSpeed}}" title="Your marching pace from what you carry yourself — animals are listed separately">
-      <i class="fas fa-person-walking"></i> You: {{speedLabel encumbrance.footSpeed}}
-    </span>
-    {{/unless}}
-    {{#if (eq encMode "weight")}}
-    {{#each encumbrance.animalSpeeds}}
-    <span class="animal-speed-badge {{#if this.isOverCapacity}}speed-red{{else if this.isOverloaded}}speed-orange{{else if (gte this.effectiveSpeed 40)}}speed-green{{else if (gte this.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
-          title="{{this.zoneName}}: {{this.usedWeight}} / {{this.capacity}} wt{{#if this.isOverCapacity}} — over capacity!{{else if this.isOverloaded}} — overloaded (half speed){{/if}}">
-      <i class="fas {{#if this.zoneIcon}}{{this.zoneIcon}}{{else}}fa-horse{{/if}}"></i> {{this.zoneName}}: {{#if this.isOverCapacity}}—{{else}}{{speedLabel this.effectiveSpeed}}{{/if}}
-      {{#if this.isOverloaded}}<i class="fas fa-exclamation-triangle"></i>{{/if}}
-      {{#if this.isOverCapacity}}<i class="fas fa-times-circle"></i>{{/if}}
-    </span>
-    {{/each}}
-    {{!-- Shared animals pull the party too, so they belong in this bar even
-          though they are stored on another actor --}}
-    {{#each sharedAnimalSpeeds}}
-    <span class="animal-speed-badge is-shared {{#if this.isOverCapacity}}speed-red{{else if this.isOverloaded}}speed-orange{{else if (gte this.effectiveSpeed 40)}}speed-green{{else if (gte this.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
-          title="Shared — {{this.zoneName}}: {{this.usedWeight}} / {{this.capacity}} wt{{#if this.isOverCapacity}} — over capacity!{{else if this.isOverloaded}} — overloaded (half speed){{/if}}">
-      <i class="fas fa-people-group"></i>
-      <i class="fas {{#if this.zoneIcon}}{{this.zoneIcon}}{{else}}fa-horse{{/if}}"></i> {{this.zoneName}}: {{#if this.isOverCapacity}}—{{else}}{{speedLabel this.effectiveSpeed}}{{/if}}
-      {{#if this.isOverloaded}}<i class="fas fa-exclamation-triangle"></i>{{/if}}
-      {{#if this.isOverCapacity}}<i class="fas fa-times-circle"></i>{{/if}}
-    </span>
-    {{/each}}
-    {{/if}}
+    <span class="convoy-label"><i class="fas fa-route"></i> Convoy</span>
+    {{!-- Everything tied at that pace, not one example of it. The line is held
+          to one line by the CSS, which cuts it with an ellipsis where the window
+          is too narrow — the tooltip always has the full list, with the owner of
+          each animal (Leander, 2026-08-31). --}}
     {{#if partyConvoy}}
-    <span class="convoy-final {{#if (gte partyConvoy.speed 40)}}speed-green{{else if (gte partyConvoy.speed 30)}}speed-yellow{{else if (gte partyConvoy.speed 20)}}speed-orange{{else}}speed-red{{/if}}"
-          title="Slowest in the party: {{partyConvoy.slowestName}}{{#if (eq partyConvoy.slowestKind "animal")}} ({{partyConvoy.slowestOwner}}){{/if}}">
-      <i class="fas fa-users"></i> Party: {{speedLabel partyConvoy.speed}}
-      <span class="convoy-slowest">— {{partyConvoy.slowestName}}</span>
+    <span class="convoy-final {{speedColor partyConvoy.speed}}"
+          title="The whole party moves at its slowest part{{#if (gt partyConvoy.slowest.length 1)}} — and {{partyConvoy.slowest.length}} of them are tied at this pace, so unloading any one alone changes nothing{{/if}}: {{convoySlowest partyConvoy.slowest true}}. Each animal's own pace is on its zone header below.">
+      {{speedLabel partyConvoy.speed}}
+      <span class="convoy-slowest">— {{convoySlowest partyConvoy.slowest}}</span>
+    </span>
+    {{else}}
+    <span class="convoy-final {{speedColor encumbrance.footSpeed}}"
+          title="Nobody else is travelling, so this is your own marching pace from what you carry.">
+      {{speedLabel encumbrance.footSpeed}}
     </span>
     {{/if}}
   </div>
+  {{/unless}}
 
-  {{!-- Coins — total summary only; per-zone purses appear in each zone section below --}}
-  <section class="inv-coins">
+  {{!-- Load and purse side by side, in that order of appetite: the load bars
+        need a track to draw, the coins need least of all. Two boxes of the same
+        make and the same height, so the pair reads as one band (Leander,
+        2026-08-31). They were three full-width blocks stacked up, which is most
+        of what made the window so wide. --}}
+  <div class="inv-summary">
+
+  {{!-- Encumbrance bars. The shared store carries nothing itself — a load bar
+        against the personal 1,600 wt cap would be meaningless there. --}}
+  {{#unless isSharedStore}}
+  <div class="inv-summary-cell inv-summary-load">
+    {{> encumbrance-bar encumbrance=encumbrance encMode=encMode}}
+  </div>
+  {{/unless}}
+
+  {{!-- Coins — total summary only; per-zone purses appear in each zone section
+        below. Last and narrowest of the three: a purse is four short figures. --}}
+  <section class="inv-summary-cell inv-coins">
     <div class="coins-header">
       <h3><i class="fas fa-coins"></i> Coins</h3>
       {{#if isGM}}
       <button type="button" data-action="grantCoins" class="btn-grant-coins" title="Grant coins to this character">
-        <i class="fas fa-gift"></i> Grant Coins
+        <i class="fas fa-gift"></i> Grant
       </button>
       {{/if}}
       {{#if canGive}}
       <button type="button" data-action="giveCoins" class="btn-give-coins" title="Give coins to another party member">
-        <i class="fas fa-hand-holding-heart"></i> Give Coins
+        <i class="fas fa-hand-holding-heart"></i> Give
       </button>
       {{/if}}
     </div>
     {{> coin-display inventory=inventory encumbrance=encumbrance canEdit=canEdit}}
   </section>
+
+  </div>{{!-- /.inv-summary --}}
 
   {{!-- Weight mode: Unsorted FIRST (before Equipped), then Equipped --}}
   {{#if (eq encMode "weight")}}

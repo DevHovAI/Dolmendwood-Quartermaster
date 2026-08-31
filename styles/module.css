@@ -369,12 +369,110 @@ body {
 .coin-totals-readonly {
   display: flex;
   gap: 6px;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .coin-val  { white-space: nowrap; }
-.coin-unit { font-size: 0.8em; color: var(--dw-secondary); margin-left: 1px; }
+.coin-unit { font-size: var(--dw-text-xs); color: var(--dw-secondary); margin-left: 1px; }
 
+/* ─── The summary line: load, pace, purse ─────────────────────────────────────
+   Three blocks that each used to take a full width of their own, which is most
+   of why the window needed 1040px. Side by side they need about a third of
+   that, and they read as one statement about the character rather than three.
+
+   The widths are by appetite, not by equal shares: the load bars have a track
+   to draw and take what is left over; the convoy is a figure and a name; the
+   purse is four short numbers and asks for nothing. align-items: stretch is
+   what makes them one band rather than three cards of different heights. */
+.inv-summary {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 8px;
+  /* The break between the summary and the list of zones. It hangs off the
+     summary rather than off the zones, so it falls above the first zone and
+     nowhere else — the zones stay evenly spaced among themselves (Leander,
+     2026-08-31: *"nicht zwischen den einzelnen Zones sondern nur über der
+     ersten zone"*). */
+  margin-bottom: 8px;
+}
+
+/* **One box, drawn here and only here** (Leander, 2026-08-31: *"der Weight block
+   und die Coins teilen sich dann die gleiche reihe, sollten gleich hoch sein und
+   beide von einem Kasten (gleichfarbig hinterlegt) umgeben sein"*).
+
+   The frame lives on the cell rather than on what each cell happens to hold,
+   which is what makes the two identical rather than merely similar: same
+   ground, same border, same padding, same corner. They are the same height
+   because .inv-summary stretches them, and their content is centred in that
+   height — so the purse sits level with the load bars instead of floating at
+   the top of its column. */
+.inv-summary-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 6px;
+  background: var(--dw-bg-dark);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* The only elastic one — everything else is content-sized. */
+.inv-summary-load {
+  flex: 1 1 260px;
+}
+
+.inv-summary .inv-coins {
+  flex: 0 1 auto;
+}
+
+/* Inside a cell the load bars are just content: they brought their own frame
+   when each was a band of its own, and the cell draws it now. A frame inside a
+   frame is what this pass exists to remove. */
+.inv-summary .encumbrance-bar {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+/* **The convoy has the row to itself** — nothing else stands in it (Leander,
+   2026-08-31). It answers a different question from the two boxes below: what
+   the whole party marches at, not what this character carries. That is why it
+   is no longer fenced off by a hairline inside the load cell; a row of its own
+   is the stronger separation, and it keeps the frame it always had, matching
+   the two boxes underneath so the three read as one band.
+
+   The margin goes because .player-inventory is a flex column and already
+   spaces its children. */
+.player-inventory > .convoy-speed-bar {
+  margin: 0;
+  /* One line, always: the badge gives way before the row does. Wrapping here
+     would put the names under the label and make a two-line band out of the
+     one thing this row exists to say. */
+  flex-wrap: nowrap;
+}
+
+.player-inventory > .convoy-speed-bar .convoy-final {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* The figure and the name of whoever is holding the party up read as one
+   statement beside the label, not as something filed at the far right of a
+   full-width row. The auto margin stays on .convoy-final itself because the
+   party window still wants it at the end of its toolbar. */
+.player-inventory > .convoy-speed-bar .convoy-final {
+  margin-left: 0;
+}
+
+.inv-summary .inv-coins .coins-header {
+  gap: 6px;
+}
 /* ─── Inventory Zones ───────────────────────────────────────────────────────── */
 .player-inventory {
   display: flex;
@@ -382,10 +480,15 @@ body {
   gap: 8px;
 }
 
+/* The name and its buttons are a heading, not the first line of the summary, so
+   they are given the room to read as one (Leander, 2026-08-31: *"etwas mehr
+   Abstand zwischen der Reihe mit dem Spielernamen und dem was darunter kommt"*).
+   On top of the column gap, not instead of it. */
 .inv-header {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 6px;
 }
 
 .actor-name {
@@ -393,12 +496,10 @@ body {
   margin: 0;
 }
 
+/* The purse's own frame is gone: it is a .inv-summary-cell now, and that is
+   where the box is drawn, identically for it and for the load bars beside it. */
 .inv-coins {
-  background: var(--dw-bg-dark);
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--dw-border-light);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.06);
+  min-width: 0;
 }
 
 .inv-zone-section {
