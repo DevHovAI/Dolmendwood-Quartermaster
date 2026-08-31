@@ -655,6 +655,27 @@ body {
   gap: 8px;
 }
 
+/* **Narrow the window and it scrolls sideways, as the party window does**
+   (Leander, 2026-08-31: *"das inventar verhält sich seltsam, wenn man das
+   fenster verschmälert… so wie das party inventory, da muss man dann scrollen
+   nach links und rechts"*).
+
+   A row's right-hand block is a fixed width by design — that is what makes the
+   controls line up down the list — so the only thing left to give was the name,
+   which went on wrapping to two and three lines while the buttons crept towards
+   it. Below this floor the rows keep their shape and the window scrolls instead.
+
+   The floor is what one row actually needs: 78 for the counting lane, 150 for
+   the notes, 62 for the value, about 122 for five icon buttons, four 6px gaps
+   between those blocks — and a name lane still wide enough to read a name in. */
+.player-inventory .window-content {
+  overflow-x: auto;
+}
+
+.window-content > .player-inventory {
+  min-width: 660px;
+}
+
 /* The name and its buttons are a heading, not the first line of the summary, so
    they are given the room to read as one (Leander, 2026-08-31: *"etwas mehr
    Abstand zwischen der Reihe mit dem Spielernamen und dem was darunter kommt"*).
