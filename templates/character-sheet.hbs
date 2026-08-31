@@ -329,12 +329,19 @@
           {{/if}}
           {{#if this.value}}<span class="dw-block-value" title="The number @b.{{this.slug}} lends to other rolls">{{this.value}}</span>{{/if}}
           <code class="dw-block-address" title="How another formula on this sheet reaches it">@b.{{this.slug}}</code>
+          {{!-- Every control here keeps its column whether or not this block has
+                it, so Roll is in one place down the whole list. Without the two
+                slots below, a spell's book button widened a right-aligned group
+                and shoved Roll leftwards on exactly the rows that had one
+                (Leander, 2026-08-31). --}}
           <span class="dw-block-actions">
             {{#if this.rollable}}
             <button type="button" class="dw-roll-btn" data-action="rollBlock" data-block-id="{{this.id}}"
                     title="Roll it">
               <i class="fas fa-dice-d20"></i> Roll
             </button>
+            {{else}}
+            <span class="roll-slot"></span>
             {{/if}}
             {{#if ../../canEdit}}
             {{!-- Only a spell. Ticking a Kindred trait as "prepared for today"
@@ -344,6 +351,8 @@
                     title="{{#if this.isArcane}}Memorised for today{{else}}Bestowed for today{{/if}} — {{#if this.prepared}}click to clear it{{else}}click to mark it{{/if}}">
               <i class="fas {{#if this.prepared}}fa-book-bookmark{{else}}fa-book{{/if}}"></i>
             </button>
+            {{else}}
+            <span class="icon-slot"></span>
             {{/if}}
             <button type="button" class="icon-btn" data-action="editBlock" data-block-id="{{this.id}}" title="Edit">
               <i class="fas fa-pen"></i>

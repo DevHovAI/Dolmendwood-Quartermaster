@@ -457,13 +457,23 @@ body {
 .item-row {
   display: flex;
   align-items: flex-start;
-  gap: 4px;
+  gap: var(--dw-row-gap);
   padding: 4px 5px;
   border-radius: 4px;
   border-bottom: 1px solid rgba(160, 100, 30, 0.12);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
+/* The count itself: one width, one size, one set of digit widths — so the two
+   buttons around it sit in the same column whether the row counts things or
+   counts what is left in one. */
+.item-qty,
+.item-uses {
+  min-width: var(--dw-count-lane);
+  font-size: var(--dw-text-sm);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 .item-row:nth-child(even) {
   background: rgba(200, 160, 80, 0.06);
 }
@@ -565,14 +575,12 @@ body {
 }
 
 .item-qty {
-  min-width: 20px;
-  text-align: center;
   font-weight: bold;
 }
 
 .item-qty-readonly {
   color: var(--dw-secondary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   flex-shrink: 0;
 }
 
@@ -594,14 +602,14 @@ body {
 }
 
 .item-notes-input {
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   padding: 2px 4px;
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
   width: 160px;
   min-width: 120px;
   max-width: 220px;
-  background: #fffef8;
+  background: var(--dw-field-bg);
   color: var(--dw-text);
   font-family: inherit;
   flex-shrink: 1;
@@ -2461,7 +2469,9 @@ body {
   width: 26px;
 }
 
-/* Holds a column open where this line offers no such button. */
+/* Holds a column open where this line offers no such button. Its height stays
+   1px because the inn lays its actions out on a grid, which already reserves
+   the column -- unlike the flex rows, which need a real box. See .icon-slot. */
 .inn-action-empty {
   display: block;
   height: 1px;
@@ -5691,28 +5701,92 @@ span.day-bar-panel-tick {
   color: var(--speed-orange);
 }
 
-/* ── An inventory row with lanes ─────────────────────────────────────────────
-   The row was a bare flex, so every optional part shifted the ones after it:
-   a two-digit quantity moved the notes, an item with uses moved the icons, and
-   an edible one moved them again. Each part now has a width of its own, the
-   notes absorb what is left, and the buttons sit in one right-hand block — so a
-   column of trash cans is a column. */
+/* **The counting columns are held open on every row.**
 
-.item-row > .item-qty-controls,
-.item-row > .item-qty-readonly {
-  justify-content: center;
-  width: 62px;
-  text-align: center;
+   A plain item counts quantity, a quiver counts what is left in it, and a
+   bundle folds the two into one — so a row draws one control, the other, or
+   neither. While the missing one simply vanished, the minus of one row sat
+   over the plus of the next and the list read as ragged (Leander, 2026-08-31:
+   "die - Zahl + sind nicht mehr aligned").
+
+   Two columns of exactly the control width, always, empty when the row has
+   nothing to put in them. It costs the width of two lanes on every row; that
+   is what a column that never moves costs. */
+/* The same idea for the coin column, which sits between the two counting ones
+   and so moved everything after it when it came and went. */
+.coin-slot {
+  display: block;
+  flex: 0 0 auto;
+  width: var(--dw-coin-lane);
+  min-height: var(--dw-control-h);
 }
 
-.item-row > .item-uses-controls {
-  justify-content: center;
-  width: 74px;
+.count-slot {
+  display: block;
+  flex: 0 0 auto;
+  width: var(--dw-count-controls);
+  min-height: var(--dw-control-h);
 }
 
-.item-row > .item-coin-capacity {
+/* The name is the elastic part of the row, so its box ends exactly where the
+   first control begins and the text ran right up to the minus. A lane of its
+   own to breathe in, so it wraps before it gets there rather than after
+   (Leander, 2026-08-31: "den text links bitte nicht so dicht an das - heran"). */
+/* **The row is two things: the text, and everything else.**
+
+   The name is the only elastic part and takes whatever the window leaves it, so
+   it is what scales when the window is resized. Everything else lives in
+   .item-controls, which is a fixed width built out of fixed parts — that is what
+   makes the minus, the number, the plus, the notes box and the value each stand
+   in one column all the way down the list (Leander, 2026-08-31).
+
+   The padding is the room the text needs to wrap in BEFORE it reaches the minus,
+   rather than running up against it. */
+.item-row > .item-name {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-right: 10px;
+}
+
+.item-row > .item-controls {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: var(--dw-row-gap);
+  min-height: var(--dw-control-h);
+}
+
+/* Fixed, all of them. A width that answers to its content is a column that
+   moves. */
+.item-controls > .item-qty-controls,
+.item-controls > .item-uses-controls,
+.item-controls > .item-qty-readonly,
+.item-controls > .count-slot {
+  flex: 0 0 auto;
+  width: var(--dw-count-controls);
+  justify-content: center;
+}
+
+.item-controls > .item-notes-input {
+  flex: 0 0 auto;
+  width: var(--dw-notes-lane);
+  min-width: 0;
+  max-width: none;
+}
+
+.item-controls > .item-value {
+  flex: 0 0 auto;
+  width: var(--dw-value-lane);
+  display: flex;
+  align-items: center;
   justify-content: flex-end;
-  width: 58px;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.item-controls > .item-actions {
+  flex: 0 0 auto;
 }
 
 /* The pack's whole worth, beside the character's name. */
@@ -5725,46 +5799,50 @@ span.day-bar-panel-tick {
   border-radius: 4px;
   background: rgba(200, 160, 80, 0.12);
   color: var(--dw-tertiary);
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   white-space: nowrap;
 }
 
-/* What a row is worth, for the Referee. A lane like the others, and drawn on
-   every row so the buttons after it never move. */
-.item-row > .item-value {
-  flex: 0 0 auto;
-  width: 74px;
-  text-align: right;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  color: var(--dw-tertiary);
-  opacity: 0.85;
-}
-
-/* The notes are the elastic part: they give way so everything after them stays
-   where it is, rather than the other way round. */
-.item-row > .item-notes-input {
-  flex: 1 1 140px;
-  width: auto;
-  min-width: 90px;
-  max-width: 220px;
-}
-
+/* No `margin-left: auto` here any more. It added an elastic gap in front of the
+   buttons on top of the row gap, so the space before the right-hand group was
+   wider than every other space in the row -- and it was doing nothing that was
+   not already done: .item-name carries flex:1 and absorbs the free space, which
+   is what pushes this group to the right edge in the first place. */
 .item-actions {
   display: flex;
   align-items: center;
   gap: 2px;
   flex: 0 0 auto;
-  margin-left: auto;
 }
 
-/* An absent button still owns its place in the line. */
+/* **An absent button still owns its place in the line.**
+
+   This is the whole answer to "the roll button moves when the row happens to be
+   a spell" (Leander, 2026-08-31): a control that appears on some rows and not
+   others must leave its column standing, or every row below reads as crooked.
+   The module had this idea twice under two names and two sizes -- .icon-slot at
+   a hard 22px here and .inn-action-empty at 1px in the inn. One primitive now,
+   measured from the same token as the button it stands in for. */
 .icon-slot {
   display: block;
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
+  width: var(--dw-icon-btn);
+  height: var(--dw-icon-btn);
+}
+
+/* The same idea for the wider Roll button, which carries a word as well as a die. */
+.roll-slot {
+  display: block;
+  flex: 0 0 auto;
+  width: var(--dw-roll-lane);
+  height: 26px;
+}
+
+/* A block's Roll button takes the lane whether or not it is drawn, so Roll sits
+   in one column down the whole list. */
+.dw-block-actions .dw-roll-btn {
+  width: var(--dw-roll-lane);
 }
 
 /* The Referee's own line on an item row: what the thing really is, while the

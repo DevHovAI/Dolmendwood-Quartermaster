@@ -33,11 +33,48 @@
     {{#if isGM}}{{#if item.gmNote}}
     <span class="item-gm-note" title="Only you can see this"><i class="fas fa-user-secret"></i> {{item.gmNote}}</span>
     {{/if}}{{/if}}
+    {{!-- How many coins this container holds is a fact about the thing, like its
+          weight and its size, so it belongs among the badges. It used to be a
+          fixed column of its own between the two counting ones, which meant it
+          shoved everything to its right sideways on the few rows that had a
+          purse (Leander, 2026-08-31). --}}
+    {{#if item.def.coinCapacity}}
+    <span class="item-size-badge item-coin-capacity" title="Coins stored in this container">
+      <i class="fas fa-coins"></i> {{item.coinsStored}}/{{item.def.coinCapacity}}
+    </span>
+    {{/if}}
   </span>
 
-  {{!-- A quiver, bottle or cask is one object per row, so its quantity is
-        always 1 and only the fill level below is worth showing --}}
-  {{#unless item.isSingleContainer}}
+  {{!-- **Everything that is not the name is one block.** The name is the only
+        elastic thing in the row and takes whatever is left; this block is a
+        fixed width made of fixed parts, so the minus, the number, the plus, the
+        notes and the value each stand in one column all the way down the list
+        however the window is resized (Leander, 2026-08-31: *"der text links eine
+        einheit und alles andere rechts eine einheit"*). --}}
+  <div class="item-controls">
+
+  {{!-- **One counting column, not two.** A row counts either how many of a thing
+        there are or how much is left in one — a quiver's quantity is always 1
+        and a bundle folds the two together — so there is one lane and whichever
+        control the row needs stands in it. Two lanes meant the minus of a rope
+        sat over the number of a quiver.
+
+        Fill level wins where a thing has one, which is the rule the module
+        already followed for quivers and for the inn's bottles. --}}
+  {{#if (and item.def.maxUses (not item.isBundle))}}
+  <div class="item-uses-controls">
+    {{#if isOwner}}
+    <button type="button" data-action="decrementUses" data-item-id="{{item.id}}"
+            class="qty-btn" title="Use one" {{#if (eq item.uses 0)}}disabled{{/if}}>−</button>
+    {{/if}}
+    <span class="item-uses {{#if (eq item.uses 0)}}uses-empty{{/if}}"
+          title="{{item.uses}} / {{item.def.maxUses}} remaining">{{item.uses}}/{{item.def.maxUses}}</span>
+    {{#if isOwner}}
+    <button type="button" data-action="incrementUses" data-item-id="{{item.id}}"
+            class="qty-btn" title="Restore one" {{#if (eq item.uses item.def.maxUses)}}disabled{{/if}}>+</button>
+    {{/if}}
+  </div>
+  {{else}}
   {{#if item.isBundle}}
   {{!-- Bundles count loose units, so one control replaces quantity + uses --}}
   {{#if isOwner}}
@@ -63,31 +100,7 @@
   {{else}}
   <span class="item-qty-readonly">×{{item.quantity}}</span>
   {{/if}}
-  {{/unless}}
-
-  {{#if item.def.coinCapacity}}
-  <div class="item-coin-capacity" title="Coins stored in this container">
-    <i class="fas fa-coins" style="font-size:0.8em;opacity:0.6;"></i>
-    <span class="coin-capacity-val">{{item.coinsStored}}/{{item.def.coinCapacity}}</span>
-  </div>
   {{/if}}
-
-  {{!-- Quivers and quarrel cases keep the container/uses view; bundles fold it
-        into the single unit counter above --}}
-  {{#if item.def.maxUses}}{{#unless item.isBundle}}
-  <div class="item-uses-controls">
-    {{#if isOwner}}
-    <button type="button" data-action="decrementUses" data-item-id="{{item.id}}"
-            class="qty-btn" title="Use one" {{#if (eq item.uses 0)}}disabled{{/if}}>−</button>
-    {{/if}}
-    <span class="item-uses {{#if (eq item.uses 0)}}uses-empty{{/if}}"
-          title="{{item.uses}} / {{item.def.maxUses}} remaining">{{item.uses}}/{{item.def.maxUses}}</span>
-    {{#if isOwner}}
-    <button type="button" data-action="incrementUses" data-item-id="{{item.id}}"
-            class="qty-btn" title="Restore one" {{#if (eq item.uses item.def.maxUses)}}disabled{{/if}}>+</button>
-    {{/if}}
-  </div>
-  {{/unless}}{{/if}}
 
   {{#if isOwner}}
   <textarea class="item-notes-input" data-item-id="{{item.id}}"
@@ -149,4 +162,5 @@
     </button>
     {{/if}}
   </span>
+  </div>{{!-- /.item-controls --}}
 </div>
