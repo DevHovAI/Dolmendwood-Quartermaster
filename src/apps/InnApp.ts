@@ -835,8 +835,8 @@ class BuyTakeAwayDialog extends Dialog {
             <select id="inn-takeaway-zone"></select>
           </div>
           <p id="inn-takeaway-total" style="margin:6px 0 0;font-weight:bold;"></p>
-          <p id="inn-takeaway-warning" class="notification warning" style="display:none;margin:6px 0 0;padding:4px 6px;font-size:0.9em;"></p>
-          <p class="hint" style="margin:6px 0 0;font-size:0.85em;color:#666;">
+          <p id="inn-takeaway-warning" class="notification warning" style="display:none;margin:6px 0 0;padding:4px 6px;font-size:var(--dw-text-sm);"></p>
+          <p class="hint" style="margin:6px 0 0;font-size:var(--dw-text-sm);color:#666;">
             ${escapeHTML(payer.name ?? "")} pays either way.
           </p>
         </form>`,
@@ -1055,7 +1055,7 @@ class InnEntryDialog extends Dialog {
               ? `<div class="form-group">
                    <label>Sold to take away as</label>
                    <select id="inn-entry-container">${containerOptions}</select>
-                   <p class="hint" style="margin:2px 0 0;font-size:0.85em;color:#666;">
+                   <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
                      "Automatic" follows the house's switch and the type above — cask for beer
                      and cider, bottle for wine, spirits and specialities, nothing for tea.
                      A fixed choice overrides the house switch in both directions.
@@ -1070,7 +1070,7 @@ class InnEntryDialog extends Dialog {
           <div class="form-group">
             <label>Hands over</label>
             <select id="inn-entry-grants">${catalogOptions}</select>
-            <p class="hint" style="margin:2px 0 0;font-size:0.85em;color:#666;">
+            <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
               Normally nothing — what is bought at an inn is consumed on the spot.
               Pick a catalog item and this line becomes a purchase of goods instead:
               it goes into a pack, with a target zone and an amount, and it stacks
@@ -1079,7 +1079,7 @@ class InnEntryDialog extends Dialog {
           </div>
           <div class="form-group">
             <label><input type="checkbox" id="inn-entry-fixed" ${entry?.fixed ? "checked" : ""} /> Always available</label>
-            <p class="hint" style="margin:2px 0 0;font-size:0.85em;color:#666;">
+            <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
               The house's own brew or signature dish — never part of the daily roll.
             </p>
           </div>
@@ -1175,7 +1175,7 @@ class InnSectionDialog extends Dialog {
           <div class="form-group">
             <label>Quality for this section</label>
             <select id="inn-section-quality">${qualityOptions}</select>
-            <p class="hint" style="margin:2px 0 0;font-size:0.85em;color:#666;">
+            <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
               Changing this rebuilds the section from the book — the three levels are separate tables.
             </p>
           </div>
@@ -1190,7 +1190,7 @@ class InnSectionDialog extends Dialog {
                      <input type="checkbox" id="inn-section-containers" ${sectionConfig.sellsContainers !== false ? "checked" : ""} />
                      Sells drink by the bottle and cask
                    </label>
-                   <p class="hint" style="margin:2px 0 0;font-size:0.85em;color:#666;">
+                   <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
                      The house default. A single drink can still be set to its own answer,
                      which wins either way — so a house that sells nothing to take away can
                      still let its own brew out by the cask.
@@ -1203,7 +1203,7 @@ class InnSectionDialog extends Dialog {
               ? `<fieldset style="border:1px solid #7a7971;border-radius:4px;padding:6px;">
                    <legend style="padding:0 4px;">How many are served each day</legend>
                    ${drawRows}
-                   <p class="hint" style="margin:2px 0 0;font-size:0.85em;color:#666;">
+                   <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
                      Leave a pair empty to serve every line in that group.
                    </p>
                  </fieldset>`

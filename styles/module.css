@@ -12,6 +12,119 @@
   --dw-border:        #7a5030;
   --dw-border-light:  #c0903c;
   --dw-shadow:        rgba(20, 8, 0, 0.18);
+  --dw-field-bg:      #fffef8;   /* the ground of anything writable */
+
+  /* ══ THE BASE LADDER ═══════════════════════════════════════════════════
+     Restrained on purpose: parchment and ink carry the whole module, and
+     colour is spent only where it means something. Before this there were
+     **39 distinct browns** doing this job across 53 places, which is why
+     nothing looked related to anything else.
+
+     Every ink below clears WCAG AA (4.5) on all three surfaces; the weakest
+     is ink-faint at 5.06. Checked, not eyeballed -- an earlier pass in this
+     module shipped light-on-light text, and taste is not a contrast check. */
+  --dw-ink-strong:    #1a0e06;   /* headings, numbers that matter        */
+  --dw-ink:           #3a2a1c;   /* body                                  */
+  --dw-ink-soft:      #6b4226;   /* secondary, captions                   */
+  --dw-ink-faint:     #79603f;   /* derived values, hints, placeholders   */
+
+  --dw-line-strong:   #7a5030;   /* a real edge: window and zone borders  */
+  --dw-line:          #c0903c;   /* ordinary control borders              */
+  --dw-line-hair:     rgba(122, 80, 48, 0.18);  /* separators within a group */
+
+  --dw-surface-raised:    #e8d5a0;  /* headers, chips that sit above      */
+  --dw-surface:           #f5edda;  /* panels                             */
+  --dw-surface-parchment: #f9f1e0;  /* the window ground                  */
+  --dw-surface-field:     #fffef8;  /* anything writable                  */
+
+  /* ══ MEANING ═══════════════════════════════════════════════════════════
+     Four families and one oddity, each in the three variants this module
+     already proved it needs on the speed tiers: INK to write with, FILL for
+     a solid badge, BG for a tinted row.
+
+     **A fill states which ink it carries, and amber carries dark.** White on
+     #e0a800 is 2.15 -- it fails outright, and it is the one everybody gets
+     wrong. Use --dw-on-fill with every fill except warn, which takes
+     --dw-warn-on-fill. Never guess this pair.
+
+     Before this: 17 greens for "good", 18 reds for "bad" -- including
+     two greens one digit apart, c8e6c8 and c8e6c9, both in the file. */
+  --dw-good-ink:   #2a6e32;  --dw-good-fill:  #3d7a45;  --dw-good-bg:  #e8f5e9;
+  --dw-warn-ink:   #7a5e00;  --dw-warn-fill:  #e0a800;  --dw-warn-bg:  #fdefc3;
+  --dw-bad-ink:    #a01010;  --dw-bad-fill:   #c0392b;  --dw-bad-bg:   #f6d2d8;
+  --dw-info-ink:   #1050a0;  --dw-info-fill:  #1565c0;  --dw-info-bg:  #e3f2fd;
+  /* Arcane: enchanted items, spells, anything the rules call magical. Kept
+     apart from "info" because a magic item is not a notice. */
+  --dw-magic-ink:  #5b3f8e;  --dw-magic-fill: #6b4f9e;  --dw-magic-bg: #efe4f8;
+
+  --dw-on-fill:      #ffffff;   /* ink for good / bad / info / magic fills */
+  --dw-warn-on-fill: #2a2000;   /* ink for the amber fill, and only amber  */
+
+  /* ══ TYPE ROLES ════════════════════════════════════════════════════════
+     Which face, not which size -- sizes are the --dw-text-* scale on body.
+
+     **Italic means one thing in this module: this value was not typed here.**
+     Derived readings, flavour text, an item description, the type a zone gets
+     from its row. It never means emphasis; bold does that. */
+  --dw-font-display: "Georgia", "Book Antiqua", serif;
+  --dw-font-body:    "Georgia", "Book Antiqua", serif;
+  --dw-font-num:     "Georgia", "Book Antiqua", serif;
+
+  /* ══ CONTROL METRICS ═══════════════════════════════════════════════════
+     One height per kind of control, so that things of equal meaning line up
+     down a column and across windows -- a + button in the inventory and a +
+     button on the sheet are the same button and must not be two sizes. */
+  --dw-step-btn:  20px;   /* the square + / - pair                        */
+  --dw-icon-btn:  22px;   /* a lone icon action                           */
+  --dw-control-h: 24px;   /* input, select, and anything that sits beside */
+  /* Any number with a - on its left and a + on its right gets this lane,
+     whatever it counts. A plain quantity is "3" and a fill level is "7/20",
+     and while their lanes were 20px and 28px the two buttons landed in
+     different columns on neighbouring rows -- which is exactly what reads as
+     "not aligned" when you look down a list (Leander, 2026-08-31). */
+  --dw-count-lane: 34px;
+  /* minus + number + plus, with the two 2px gaps between them. Derived rather
+     than typed, because the two lanes that hold this were 62px and 74px --
+     two numbers for one thing, which is why the buttons did not line up. */
+  --dw-count-controls: calc(var(--dw-step-btn) * 2 + var(--dw-count-lane) + 4px);
+  --dw-notes-lane: 150px;  /* the notes box: fixed, so they stack in one column */
+  --dw-value-lane:  62px;  /* five figures and a currency, in tabular digits   */
+  /* The gap between the lanes of a list row -- the text on the left, the count
+     controls and notes, and the value and buttons on the right. One number, so
+     the three read as evenly spaced (Leander, 2026-08-31). */
+  --dw-row-gap: 6px;
+  --dw-roll-lane: 68px;   /* a d20 and the word "Roll"                    */
+  --dw-radius:     3px;
+  --dw-radius-lg:  5px;
+
+  /* ══ ZONE COLOURS ══════════════════════════════════════════════════════
+     The palette a Referee picks a container from. Decorative, not semantic:
+     a crimson sack means nothing except that somebody chose crimson, so these
+     must never be reached for to say "bad".
+
+     They already followed a formula nobody had written down -- deep at
+     hsl(h, 72%, 14%), pale at hsl(h, 58%, 78%) -- and they lived in TWO
+     places, `ZONE_COLORS` in TypeScript for the picker buttons and twenty-one
+     rules here for the real headers. That is why the two greens above were both
+     in the file. CSS is the single source now, and the picker reads these
+     through var() in its inline style. */
+  --dw-zone-green-deep: #1a3d1a;  --dw-zone-green-mid: #2e6b2e;  --dw-zone-green-pale: #c8e6c9;
+  --dw-zone-brown-deep: #3d1f0a;  --dw-zone-brown-mid: #6b3515;  --dw-zone-brown-pale: #e8c898;
+  --dw-zone-navy-deep: #0a1f3d;  --dw-zone-navy-mid: #153565;  --dw-zone-navy-pale: #a8c8e8;
+  --dw-zone-purple-deep: #2a0a3d;  --dw-zone-purple-mid: #4a1565;  --dw-zone-purple-pale: #d0a8e8;
+  --dw-zone-slate-deep: #1f2a30;  --dw-zone-slate-mid: #2e4050;  --dw-zone-slate-pale: #a8c8d8;
+  --dw-zone-crimson-deep: #3d0a0a;  --dw-zone-crimson-mid: #651515;  --dw-zone-crimson-pale: #e8a8a8;
+  --dw-zone-teal-deep: #0a3d30;  --dw-zone-teal-mid: #156550;  --dw-zone-teal-pale: #a8e0d0;
+  --dw-zone-gold-deep: #3d2a0a;  --dw-zone-gold-mid: #6b4d15;  --dw-zone-gold-pale: #e8d098;
+
+  --dw-zone-green-grad: linear-gradient(135deg, var(--dw-zone-green-deep) 0%, var(--dw-zone-green-mid) 100%);
+  --dw-zone-brown-grad: linear-gradient(135deg, var(--dw-zone-brown-deep) 0%, var(--dw-zone-brown-mid) 100%);
+  --dw-zone-navy-grad: linear-gradient(135deg, var(--dw-zone-navy-deep) 0%, var(--dw-zone-navy-mid) 100%);
+  --dw-zone-purple-grad: linear-gradient(135deg, var(--dw-zone-purple-deep) 0%, var(--dw-zone-purple-mid) 100%);
+  --dw-zone-slate-grad: linear-gradient(135deg, var(--dw-zone-slate-deep) 0%, var(--dw-zone-slate-mid) 100%);
+  --dw-zone-crimson-grad: linear-gradient(135deg, var(--dw-zone-crimson-deep) 0%, var(--dw-zone-crimson-mid) 100%);
+  --dw-zone-teal-grad: linear-gradient(135deg, var(--dw-zone-teal-deep) 0%, var(--dw-zone-teal-mid) 100%);
+  --dw-zone-gold-grad: linear-gradient(135deg, var(--dw-zone-gold-deep) 0%, var(--dw-zone-gold-mid) 100%);
 
   /* ── Speed tiers, tuned for red-green colour blindness ───────────────────
      The old scale put green #2a6e32 and orange #b85500 only ΔE 2.7 apart under
@@ -48,6 +161,29 @@
   --speed-red-bg:    #f6d2d8;
 }
 
+body {
+  /* -- Type scale ---------------------------------------------------------
+     Every size in this file used to be an em, and ems MULTIPLY: .shop-item is
+     0.85em and .shop-out-badge inside it was 0.68em, so the badge rendered at
+     0.58em -- barely 8px. Fifty-three separate things were landing under 11px
+     that way, which is what "the fonts are too small in places" was.
+
+     So the scale is ABSOLUTE, and nesting cannot shrink it any further. It
+     hangs off Foundry's own font-size variables rather than hard px, so the
+     module keeps step with core's UI instead of drifting from it. That is why
+     this block sits on BODY and not on :root -- core declares --font-size-*
+     on body, and a custom property on :root cannot see it, so the same five
+     lines one level up would silently fall back to the px every time.
+
+     Five steps, and no sixth: the point of a scale is that things line up, and
+     an 11/12/13/14 ladder is not a scale, it is the pile this replaces. */
+  --dw-text-xs:   var(--font-size-11, 11px);   /* badges, units, pills      */
+  --dw-text-sm:   var(--font-size-12, 12px);   /* meta, hints, secondary    */
+  --dw-text-base: var(--font-size-14, 14px);   /* body - Foundry own base   */
+  --dw-text-lg:   var(--font-size-16, 16px);   /* row and section titles    */
+  --dw-text-xl:   var(--font-size-20, 20px);   /* window titles             */
+}
+
 /* ─── Base Window ───────────────────────────────────────────────────────────── */
 .dolmenwood-party-inventory .window-content {
   background: var(--dw-bg-parchment);
@@ -70,14 +206,14 @@
   border-bottom: 2px solid var(--dw-accent);
   margin-bottom: 8px;
   padding-bottom: 4px;
-  font-size: 1.1em;
+  font-size: var(--dw-text-lg);
   letter-spacing: 0.02em;
   text-shadow: 0 1px 0 rgba(255,255,255,0.6);
 }
 
 .dolmenwood-party-inventory h3 {
   color: var(--dw-secondary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   margin: 4px 0 3px;
   letter-spacing: 0.03em;
 }
@@ -91,7 +227,7 @@
 /* ─── Encumbrance Bar ───────────────────────────────────────────────────────── */
 .encumbrance-bar {
   margin: 6px 0;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border-light);
   border-radius: 6px;
@@ -109,7 +245,7 @@
   min-width: 54px;
   font-weight: bold;
   color: var(--dw-secondary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .enc-track {
@@ -194,7 +330,7 @@
 }
 
 .coin-label {
-  font-size: 0.72em;
+  font-size: var(--dw-text-xs);
   font-weight: bold;
   min-width: 20px;
   text-align: center;
@@ -206,24 +342,24 @@
 
 .coin-label.cp { background: linear-gradient(to bottom, #c98040, #9a5820); color: white; }
 .coin-label.sp { background: linear-gradient(to bottom, #c0c0c0, #909090); color: white; }
-.coin-label.gp { background: linear-gradient(to bottom, #d4b050, #a87c20); color: #1e0f06; }
-.coin-label.pp { background: linear-gradient(to bottom, #b0cce0, #7090b0); color: #1e0f06; }
+.coin-label.gp { background: linear-gradient(to bottom, #d4b050, #a87c20); color: var(--dw-primary); }
+.coin-label.pp { background: linear-gradient(to bottom, var(--dw-zone-slate-pale), #7090b0); color: var(--dw-primary); }
 
 .coin-input {
   width: 58px;
   text-align: right;
-  font-size: 0.88em;
+  font-size: var(--dw-text-sm);
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
   padding: 2px 4px;
-  background: #fffef8;
+  background: var(--dw-field-bg);
   color: #111;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
   font-family: inherit;
 }
 
 .coin-slots {
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   color: var(--speed-orange);
   width: 100%;
   text-align: right;
@@ -276,6 +412,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* The h3 carries flex:1, so everything after it is pushed hard right and,
+     with no gap, the double-team button sat against the capacity it changes
+     (Leander, 2026-08-30). One gap here spaces the whole row -- handle, title,
+     shared badge, team toggle, capacity -- instead of one margin per case. */
+  gap: 8px;
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
   padding: 5px 10px;
@@ -284,13 +425,13 @@
 .zone-header h3 {
   color: var(--dw-accent-light);
   margin: 0;
-  font-size: 0.88em;
+  font-size: var(--dw-text-sm);
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
   letter-spacing: 0.05em;
 }
 
 .zone-count {
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   opacity: 0.85;
   font-style: italic;
 }
@@ -300,7 +441,7 @@
 .overflow-badge {
   background: var(--speed-red);
   color: white;
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   padding: 1px 4px;
   border-radius: 3px;
   margin-left: 4px;
@@ -343,7 +484,7 @@
 
 .item-cat-icon {
   color: var(--dw-tertiary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   margin-right: 3px;
   opacity: 0.7;
   flex-shrink: 0;
@@ -357,14 +498,14 @@
 
 .item-qualities {
   display: block;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   color: #665533;
   white-space: normal;
 }
 
 .item-description {
   display: block;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   color: var(--dw-tertiary);
   font-style: italic;
   margin-top: 1px;
@@ -374,7 +515,7 @@
 
 .item-size-badge {
   display: inline-block;
-  font-size: 0.70em;
+  font-size: var(--dw-text-xs);
   padding: 0 4px;
   border-radius: 3px;
   margin-left: 4px;
@@ -382,13 +523,13 @@
   font-style: normal;
 }
 
-.size-tiny   { background: #e8f5e9; color: #2a6e32; border: 1px solid #2a6e32; }
-.size-normal { background: #e3f2fd; color: #1050a0; border: 1px solid #1050a0; }
-.size-large  { background: #fce4ec; color: #a01010; border: 1px solid #a01010; }
+.size-tiny   { background: var(--dw-good-bg); color: var(--dw-good-ink); border: 1px solid var(--dw-good-ink); }
+.size-normal { background: var(--dw-info-bg); color: var(--dw-info-ink); border: 1px solid var(--dw-info-ink); }
+.size-large  { background: #fce4ec; color: var(--dw-bad-ink); border: 1px solid var(--dw-bad-ink); }
 
 .badge {
   display: inline-block;
-  font-size: 0.7em;
+  font-size: var(--dw-text-xs);
   padding: 0 4px;
   border-radius: 3px;
   margin-left: 3px;
@@ -405,11 +546,11 @@
 }
 
 .qty-btn {
-  width: 20px;
-  height: 20px;
+  width: var(--dw-step-btn);
+  height: var(--dw-step-btn);
   padding: 0;
   line-height: 1;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
@@ -443,9 +584,6 @@
 }
 
 .item-uses {
-  min-width: 28px;
-  text-align: center;
-  font-size: 0.8em;
   font-weight: bold;
   color: var(--dw-secondary);
   white-space: nowrap;
@@ -484,8 +622,8 @@
 }
 
 .icon-btn {
-  width: 22px;
-  height: 22px;
+  width: var(--dw-icon-btn);
+  height: var(--dw-icon-btn);
   padding: 0;
   cursor: pointer;
   border: 1px solid transparent;
@@ -496,7 +634,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .icon-btn:hover { border-color: var(--dw-border-light); background: var(--dw-bg-dark); }
@@ -509,7 +647,7 @@
   width: 100%;
   margin-top: 4px;
   padding: 4px;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   border: 1px dashed var(--dw-border-light);
   border-radius: 4px;
   background: transparent;
@@ -539,7 +677,7 @@
 .btn-grant-coins,
 .btn-give-coins {
   padding: 3px 8px;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   border-radius: 4px;
   cursor: pointer;
   border: 1px solid;
@@ -549,15 +687,15 @@
 }
 
 .btn-grant-coins {
-  background: #e8f5e9;
+  background: var(--dw-good-bg);
   border-color: var(--speed-green);
   color: var(--speed-green);
 }
 
-.btn-grant-coins:hover { background: #c8e6c9; }
+.btn-grant-coins:hover { background: var(--dw-zone-green-pale); }
 
 .btn-give-coins {
-  background: #e8f0fe;
+  background: var(--dw-info-bg);
   border-color: #3050c0;
   color: #3050c0;
 }
@@ -567,7 +705,7 @@
 /* ─── Coin Slot Note ────────────────────────────────────────────────────────── */
 .coin-slot-note {
   color: var(--speed-orange);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-style: italic;
 }
 
@@ -584,20 +722,26 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  /* The convoy badge grew with the type scale and this row had nowhere to put
+     the extra width: space-between with no wrap pushes the buttons off the
+     right edge rather than moving them down (Leander, 2026-08-30). Wrapping
+     costs nothing while there is room and is the only thing that can happen
+     when there is not. */
+  flex-wrap: wrap;
   padding-bottom: 4px;
   border-bottom: 1px solid var(--dw-border-light);
 }
 
-.party-toolbar h2 { margin: 0; flex: 1; }
+.party-toolbar h2 { margin: 0; flex: 1; min-width: 0; }
 
 .toolbar-buttons { display: flex; gap: 6px; }
 
 .btn-toolbar {
   padding: 5px 12px;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   border: 1px solid var(--dw-border);
   border-radius: 4px;
-  background: linear-gradient(to bottom, var(--dw-bg-dark), #d8c088);
+  background: linear-gradient(to bottom, var(--dw-bg-dark), var(--dw-zone-gold-pale));
   color: var(--dw-primary);
   cursor: pointer;
   font-family: inherit;
@@ -698,13 +842,13 @@
   line-height: 1.25;
   height: 2.5em;
   font-weight: bold;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
   letter-spacing: 0.03em;
 }
 
 .player-speed {
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   font-weight: bold;
   padding: 1px 5px;
   border-radius: 3px;
@@ -722,7 +866,6 @@
 .player-col-header .player-speed.speed-orange { background: var(--speed-orange-fill); }
 .player-col-header .player-speed.speed-red    { background: var(--speed-red-fill); }
 
-
 .player-bars {
   padding: 6px 8px;
   background: var(--dw-bg-dark);
@@ -733,7 +876,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   margin-bottom: 3px;
 }
 
@@ -741,7 +884,7 @@
   min-width: 16px;
   color: var(--dw-secondary);
   font-weight: bold;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .bar-track {
@@ -780,7 +923,7 @@
 .bar-val {
   min-width: 18px;
   text-align: right;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-secondary);
   font-weight: bold;
 }
@@ -790,7 +933,7 @@
   background: var(--dw-bg-parchment);
   border-top: 1px solid rgba(160,100,30,0.1);
   border-bottom: 1px solid rgba(160,100,30,0.1);
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
 }
 
 .player-items-compact {
@@ -802,7 +945,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   padding: 2px 0;
   border-bottom: 1px solid rgba(160,100,30,0.08);
 }
@@ -816,11 +959,11 @@
 
 .item-compact.secret-item   { color: var(--dw-tertiary); font-style: italic; }
 
-.item-compact-qty { font-size: 0.85em; color: var(--dw-secondary); margin-left: 4px; }
+.item-compact-qty { font-size: var(--dw-text-xs); color: var(--dw-secondary); margin-left: 4px; }
 
 .zone-section-compact { margin-bottom: 4px; }
 .zone-section-compact-header {
-  font-size: 0.7em;
+  font-size: var(--dw-text-xs);
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -847,7 +990,7 @@
   padding: 5px 10px;
   background: var(--dw-bg-dark);
   cursor: pointer;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-weight: bold;
   color: var(--dw-secondary);
   user-select: none;
@@ -867,7 +1010,7 @@
   cursor: pointer;
   font-weight: bold;
   color: var(--dw-accent-light);
-  font-size: 0.88em;
+  font-size: var(--dw-text-sm);
   user-select: none;
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   border-radius: 6px;
@@ -898,7 +1041,7 @@
 }
 
 .summary-coin {
-  font-size: 0.83em;
+  font-size: var(--dw-text-sm);
   background: var(--dw-bg-parchment);
   padding: 2px 7px;
   border-radius: 10px;
@@ -907,13 +1050,13 @@
 }
 
 .summary-coin-empty {
-  font-size: 0.82em;
+  font-size: var(--dw-text-xs);
   color: var(--dw-secondary);
   font-style: italic;
 }
 
 .summary-total {
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-secondary);
   white-space: nowrap;
   font-style: italic;
@@ -932,7 +1075,7 @@
 }
 
 .summary-cat-header {
-  font-size: 0.76em;
+  font-size: var(--dw-text-xs);
   font-weight: bold;
   color: var(--dw-accent-light);
   text-transform: uppercase;
@@ -946,9 +1089,9 @@
 .summary-item {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: var(--dw-row-gap);
   padding: 2px 6px;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   border-radius: 3px;
 }
 
@@ -965,13 +1108,13 @@
 
 .summary-item-qty {
   color: var(--dw-secondary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-xs);
   margin-left: 2px;
 }
 
 .summary-item-owner {
   color: var(--dw-border);
-  font-size: 0.85em;
+  font-size: var(--dw-text-xs);
   white-space: nowrap;
   font-style: italic;
 }
@@ -980,7 +1123,7 @@
   padding: 10px 10px;
   color: var(--dw-secondary);
   font-style: italic;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 /* ─── Shop Panel ────────────────────────────────────────────────────────────── */
@@ -1003,7 +1146,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .shop-target select {
@@ -1012,12 +1155,12 @@
   border-radius: 4px;
   padding: 3px 6px;
   font-family: inherit;
-  background: #fffef8;
+  background: var(--dw-field-bg);
   color: var(--dw-text);
 }
 
 .shop-target-summary {
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   background: var(--dw-bg-dark);
   padding: 4px 8px;
   border-radius: 4px;
@@ -1029,13 +1172,13 @@
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .tag-filter-label {
   color: var(--dw-secondary);
   font-weight: bold;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .tag-chip {
@@ -1045,7 +1188,7 @@
   background: var(--dw-bg-dark);
   color: var(--dw-primary);
   cursor: pointer;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   font-family: inherit;
   transition: background 0.1s;
 }
@@ -1069,16 +1212,16 @@
   padding: 5px 9px;
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   font-family: inherit;
-  background: #fffef8;
+  background: var(--dw-field-bg);
   color: var(--dw-text);
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.08);
 }
 
 .btn-custom-item {
   padding: 4px 10px;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   border: 1px solid var(--dw-border);
   border-radius: 4px;
   background: var(--dw-bg-dark);
@@ -1094,7 +1237,7 @@
   border: 1px solid var(--dw-border);
   border-radius: 4px;
   padding: 4px 9px;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   cursor: pointer;
   color: var(--dw-text);
   white-space: nowrap;
@@ -1129,7 +1272,7 @@
   color: var(--dw-accent-light);
   padding: 6px 10px;
   cursor: pointer;
-  font-size: 0.88em;
+  font-size: var(--dw-text-sm);
   font-weight: bold;
   letter-spacing: 0.05em;
   user-select: none;
@@ -1144,11 +1287,11 @@
 .shop-item {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 2px 8px;
+  gap: 2px var(--dw-row-gap);
   padding: 5px 7px;
   border-radius: 4px;
   border-bottom: 1px solid rgba(160,100,30,0.1);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   align-items: center;
   transition: background 0.1s;
 }
@@ -1173,25 +1316,25 @@
 
 .shop-item-icon {
   color: var(--dw-tertiary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-xs);
   opacity: 0.75;
   margin-right: 2px;
 }
 
 .shop-item-name { font-weight: bold; color: var(--dw-primary); white-space: nowrap; }
-.shop-item-subcategory { color: var(--dw-tertiary); font-size: 0.85em; white-space: nowrap; }
+.shop-item-subcategory { color: var(--dw-tertiary); font-size: var(--dw-text-xs); white-space: nowrap; }
 .shop-item-desc-inline {
   color: var(--dw-tertiary);
-  font-size: 0.82em;
+  font-size: var(--dw-text-xs);
   font-style: italic;
   white-space: normal;
   word-break: break-word;
   width: 100%;
 }
-.shop-item-qualities { color: #665533; font-size: 0.8em; width: 100%; }
+.shop-item-qualities { color: #665533; font-size: var(--dw-text-xs); width: 100%; }
 
 .shop-item-size {
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   padding: 1px 5px;
   border-radius: 3px;
   display: inline-block;
@@ -1201,12 +1344,12 @@
   font-weight: bold;
   color: var(--dw-accent);
   display: block;
-  font-size: 0.95em;
+  font-size: var(--dw-text-xs);
 }
 
 .btn-purchase, .btn-grant {
   padding: 3px 8px;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   border-radius: 4px;
   cursor: pointer;
   border: 1px solid;
@@ -1227,16 +1370,16 @@
 }
 
 .btn-grant {
-  background: linear-gradient(to bottom, #e8f5e9, #c8e6c9);
+  background: linear-gradient(to bottom, var(--dw-good-bg), var(--dw-zone-green-pale));
   border-color: var(--speed-green);
   color: var(--speed-green);
 }
 
-.btn-grant:hover { background: linear-gradient(to bottom, #c8e6c9, #a8d6a8); }
+.btn-grant:hover { background: linear-gradient(to bottom, var(--dw-zone-green-pale), #a8d6a8); }
 
 .btn-hide-item {
   padding: 2px 6px;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   background: transparent;
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
@@ -1267,7 +1410,7 @@
 
 .shop-hidden-badge {
   color: #b85500;
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   margin-left: 4px;
   opacity: 0.75;
 }
@@ -1275,7 +1418,7 @@
 /* Shop subcategory header */
 .shop-subcategory-header {
   padding: 3px 8px;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   font-weight: bold;
   color: var(--dw-tertiary);
   letter-spacing: 0.04em;
@@ -1291,7 +1434,7 @@
 }
 .shop-custom-badge {
   color: var(--dw-accent);
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   margin-left: 4px;
   opacity: 0.85;
 }
@@ -1299,7 +1442,7 @@
 /* "Add to Shop" button */
 .btn-add-to-shop {
   padding: 4px 10px;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   background: var(--dw-accent);
   color: var(--dw-primary);
   border: 1px solid var(--dw-border-light);
@@ -1311,7 +1454,7 @@
 .btn-add-to-shop:hover { filter: brightness(1.1); }
 
 /* "Remove from Shop" button */
-.btn-remove-from-shop { color: #c0392b; }
+.btn-remove-from-shop { color: var(--dw-bad-fill); }
 .btn-remove-from-shop:hover { color: #e74c3c; }
 
 /* ─── Convoy / Animal Speed ─────────────────────────────────────────────────── */
@@ -1338,7 +1481,7 @@
   gap: 4px;
   padding: 2px 8px;
   border-radius: 10px;
-  font-size: 0.88em;
+  font-size: var(--dw-text-sm);
   font-weight: bold;
   color: #fff;
   background: rgba(100,80,40,0.4);
@@ -1354,7 +1497,7 @@
   gap: 4px;
   padding: 2px 8px;
   border-radius: 10px;
-  font-size: 0.88em;
+  font-size: var(--dw-text-sm);
   font-weight: bold;
   color: #fff;
   background: rgba(60,70,110,0.45);
@@ -1402,7 +1545,7 @@
   padding: 3px 10px 4px;
   background: rgba(160,100,30,0.06);
   border-bottom: 1px solid var(--dw-border-light);
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
 }
 .animal-type-badge {
   font-style: italic;
@@ -1433,21 +1576,34 @@
 .animal-info-row .animal-speed-badge.speed-yellow {
   color: var(--speed-yellow-ink);
 }
-.animal-qualities {
-  color: #665533;
-  font-size: 0.92em;
+/* Qualities and description read like the ones on an item row, because they are
+   the same two things: what it is like, and what it is. The item row gets that
+   for free from display:block; this row is a wrapping flex line, so a full basis
+   is what "own line" means here.
+
+   The description had grown to 14px in the type pass -- the effective-size sweep
+   measured .animal-description on its own and never saw that it sits inside
+   .animal-info-row, whose 0.82em used to shrink it to about 11px. Names that do
+   not share a prefix are exactly where that sweep is blind. */
+.animal-qualities,
+.animal-description {
+  flex: 0 0 100%;
+  font-size: var(--dw-text-xs);
+  white-space: normal;
 }
+
+.animal-qualities { color: #665533; }
+
 .animal-description {
   color: var(--dw-tertiary);
   font-style: italic;
-  font-size: 0.95em;
-  flex: 1;
+  margin-top: 1px;
+  line-height: 1.3;
 }
-
 
 .price-factor-badge {
   display: inline-block;
-  font-size: 0.7em;
+  font-size: var(--dw-text-xs);
   font-weight: bold;
   padding: 1px 6px;
   border-radius: 10px;
@@ -1471,7 +1627,7 @@
   color: var(--dw-secondary);
   padding: 5px 10px;
   margin: 0;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
@@ -1485,7 +1641,7 @@
 .transaction-entry {
   display: flex;
   gap: 6px;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   padding: 2px 4px;
   border-radius: 3px;
   border-bottom: 1px solid rgba(0,0,0,0.05);
@@ -1494,7 +1650,7 @@
 .tx-purchase  { border-left: 3px solid var(--dw-accent); }
 .tx-gm_grant  { border-left: 3px solid var(--speed-green); }
 .tx-gm_remove { border-left: 3px solid var(--speed-red); }
-.tx-trade     { border-left: 3px solid #1565c0; }
+.tx-trade     { border-left: 3px solid var(--dw-info-fill); }
 
 .tx-type {
   font-weight: bold;
@@ -1503,7 +1659,7 @@
   color: var(--dw-secondary);
 }
 
-.tx-empty { color: var(--dw-secondary); font-size: 0.85em; padding: 4px 8px; font-style: italic; }
+.tx-empty { color: var(--dw-secondary); font-size: var(--dw-text-sm); padding: 4px 8px; font-style: italic; }
 
 /* ─── Warning Colors ────────────────────────────────────────────────────────── */
 .warning { color: var(--speed-orange); font-weight: bold; }
@@ -1522,12 +1678,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--dw-bg-parchment, #f5f0e8);
+  background: var(--dw-bg-parchment, var(--dw-bg-parchment));
   border: 1px solid var(--dw-border, #9a7b4b);
   border-radius: 4px;
   cursor: pointer;
-  color: var(--dw-text, #2d1b00);
-  font-size: 0.9rem;
+  color: var(--dw-text, var(--dw-warn-on-fill));
+  font-size: var(--dw-text-base);
   transition: background 0.12s, border-color 0.12s, color 0.12s;
   padding: 0;
 }
@@ -1535,11 +1691,11 @@
 .icon-picker-btn:hover {
   background: var(--dw-secondary, #c4922a);
   color: #fff;
-  border-color: var(--dw-primary, #6b3f1e);
+  border-color: var(--dw-primary, var(--dw-tertiary));
 }
 
 .icon-picker-btn.selected {
-  background: var(--dw-primary, #6b3f1e);
+  background: var(--dw-primary, var(--dw-tertiary));
   color: var(--dw-accent, #d4af37);
   border-color: var(--dw-accent, #d4af37);
 }
@@ -1553,15 +1709,15 @@
 /* ─── Extra Storage Zones ────────────────────────────────────────────────────── */
 .inv-zone-extra .zone-header,
 .zone-header-extra {
-  background: linear-gradient(135deg, #1a3d1a 0%, #2e6b2e 100%);
-  color: #c8e6c8;
+  background: var(--dw-zone-green-grad);
+  color: var(--dw-zone-green-pale);
   border-radius: 4px 4px 0 0;
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 
 .inv-zone-extra .zone-header h3,
 .zone-header-extra h3 {
-  color: #c8e6c8;
+  color: var(--dw-zone-green-pale);
   border-bottom: none;
   margin: 0;
   flex: 1;
@@ -1582,7 +1738,7 @@
   border-radius: 9px;
   background: rgba(0, 0, 0, 0.25);
   color: inherit;
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   font-weight: bold;
   line-height: 1.5;
   width: auto;
@@ -1598,7 +1754,7 @@
 }
 
 .zone-self-weight {
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   opacity: 0.7;
   font-weight: normal;
   margin-left: 4px;
@@ -1606,40 +1762,40 @@
 
 /* ─── Zone color variants (set via data-zone-color on .inv-zone-extra) ─────── */
 .inv-zone-extra[data-zone-color="brown"] .zone-header-extra {
-  background: linear-gradient(135deg, #3d1f0a 0%, #6b3515 100%); color: #e8c898;
+  background: var(--dw-zone-brown-grad); color: var(--dw-zone-brown-pale);
 }
 .inv-zone-extra[data-zone-color="brown"] .zone-header-extra h3,
-.inv-zone-extra[data-zone-color="brown"] .zone-header-extra .zone-count { color: #e8c898; }
+.inv-zone-extra[data-zone-color="brown"] .zone-header-extra .zone-count { color: var(--dw-zone-brown-pale); }
 
 .inv-zone-extra[data-zone-color="navy"] .zone-header-extra {
-  background: linear-gradient(135deg, #0a1f3d 0%, #153565 100%); color: #a8c8e8;
+  background: var(--dw-zone-navy-grad); color: var(--dw-zone-navy-pale);
 }
 .inv-zone-extra[data-zone-color="navy"] .zone-header-extra h3,
-.inv-zone-extra[data-zone-color="navy"] .zone-header-extra .zone-count { color: #a8c8e8; }
+.inv-zone-extra[data-zone-color="navy"] .zone-header-extra .zone-count { color: var(--dw-zone-navy-pale); }
 
 .inv-zone-extra[data-zone-color="purple"] .zone-header-extra {
-  background: linear-gradient(135deg, #2a0a3d 0%, #4a1565 100%); color: #d0a8e8;
+  background: var(--dw-zone-purple-grad); color: var(--dw-zone-purple-pale);
 }
 .inv-zone-extra[data-zone-color="purple"] .zone-header-extra h3,
-.inv-zone-extra[data-zone-color="purple"] .zone-header-extra .zone-count { color: #d0a8e8; }
+.inv-zone-extra[data-zone-color="purple"] .zone-header-extra .zone-count { color: var(--dw-zone-purple-pale); }
 
 .inv-zone-extra[data-zone-color="slate"] .zone-header-extra {
-  background: linear-gradient(135deg, #1f2a30 0%, #2e4050 100%); color: #a8c8d8;
+  background: var(--dw-zone-slate-grad); color: var(--dw-zone-slate-pale);
 }
 .inv-zone-extra[data-zone-color="slate"] .zone-header-extra h3,
-.inv-zone-extra[data-zone-color="slate"] .zone-header-extra .zone-count { color: #a8c8d8; }
+.inv-zone-extra[data-zone-color="slate"] .zone-header-extra .zone-count { color: var(--dw-zone-slate-pale); }
 
 .inv-zone-extra[data-zone-color="crimson"] .zone-header-extra {
-  background: linear-gradient(135deg, #3d0a0a 0%, #651515 100%); color: #e8a8a8;
+  background: var(--dw-zone-crimson-grad); color: var(--dw-zone-crimson-pale);
 }
 .inv-zone-extra[data-zone-color="crimson"] .zone-header-extra h3,
-.inv-zone-extra[data-zone-color="crimson"] .zone-header-extra .zone-count { color: #e8a8a8; }
+.inv-zone-extra[data-zone-color="crimson"] .zone-header-extra .zone-count { color: var(--dw-zone-crimson-pale); }
 
 .inv-zone-extra[data-zone-color="teal"] .zone-header-extra {
-  background: linear-gradient(135deg, #0a3d30 0%, #156550 100%); color: #a8e0d0;
+  background: var(--dw-zone-teal-grad); color: var(--dw-zone-teal-pale);
 }
 .inv-zone-extra[data-zone-color="teal"] .zone-header-extra h3,
-.inv-zone-extra[data-zone-color="teal"] .zone-header-extra .zone-count { color: #a8e0d0; }
+.inv-zone-extra[data-zone-color="teal"] .zone-header-extra .zone-count { color: var(--dw-zone-teal-pale); }
 
 /* ─── Multi-select ───────────────────────────────────────────────────────────
    Click rows to select, right-click for the action menu. */
@@ -1671,7 +1827,7 @@
      light chrome text, which is invisible on parchment. State the ink here. */
   color: var(--dw-text);
   box-shadow: 0 3px 12px rgba(20, 8, 0, 0.4);
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
 }
 
 .qm-sel-count { white-space: nowrap; }
@@ -1679,7 +1835,7 @@
 .qm-selection-bar button {
   width: auto;
   padding: 2px 8px;
-  font-size: 0.95em;
+  font-size: var(--dw-text-xs);
   line-height: 1.5;
   cursor: pointer;
   border: 1px solid var(--dw-border-light);
@@ -1700,23 +1856,23 @@
   max-height: 70vh;
   overflow-y: auto;
   padding: 4px;
-  border: 1px solid #6b5535;
+  border: 1px solid var(--dw-ink-faint);
   border-radius: 5px;
-  background: #1c1710;
+  background: var(--dw-text);
   color: #e8dcc0;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .qm-menu-header {
   padding: 4px 8px 2px;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   opacity: 0.55;
 }
 
-.qm-menu-header:empty { padding: 0; border-top: 1px solid #3a3126; margin: 4px 0; }
+.qm-menu-header:empty { padding: 0; border-top: 1px solid var(--dw-ink); margin: 4px 0; }
 
 .qm-context-menu .qm-menu-item {
   display: block;
@@ -1728,11 +1884,11 @@
   border-radius: 3px;
   background: transparent;
   color: inherit;
-  font-size: 1em;
+  font-size: var(--dw-text-base);
   line-height: 1.6;
 }
 
-.qm-context-menu .qm-menu-item:hover { background: #33291a; }
+.qm-context-menu .qm-menu-item:hover { background: var(--dw-ink); }
 .qm-context-menu .qm-menu-item i { width: 1.1em; margin-right: 5px; opacity: 0.75; }
 .qm-context-menu .qm-menu-danger { color: #e88; }
 .qm-context-menu .qm-menu-danger:hover { background: #4a1c1c; }
@@ -1754,11 +1910,11 @@
 .shared-store-header h3 {
   margin: 0;
   border-bottom: none;
-  font-size: 0.95em;
+  font-size: var(--dw-text-base);
 }
 
 .shared-store-hint {
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   font-style: italic;
   opacity: 0.7;
 }
@@ -1772,18 +1928,18 @@
    data-zone-color variants so a chosen zone colour still wins. */
 .inv-zone-shared:not([data-zone-color]) .zone-header-extra,
 .inv-zone-shared[data-zone-color=""] .zone-header-extra {
-  background: linear-gradient(135deg, #3d2a0a 0%, #6b4d15 100%);
-  color: #e8d098;
+  background: var(--dw-zone-gold-grad);
+  color: var(--dw-zone-gold-pale);
 }
 .inv-zone-shared:not([data-zone-color]) .zone-header-extra h3,
 .inv-zone-shared:not([data-zone-color]) .zone-header-extra .zone-count,
 .inv-zone-shared[data-zone-color=""] .zone-header-extra h3,
 .inv-zone-shared[data-zone-color=""] .zone-header-extra .zone-count {
-  color: #e8d098;
+  color: var(--dw-zone-gold-pale);
 }
 
 .zone-shared-badge {
-  font-size: 0.72em;
+  font-size: var(--dw-text-xs);
   padding: 1px 6px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.28);
@@ -1803,14 +1959,14 @@
 }
 
 .shared-column .player-col-header {
-  background: linear-gradient(135deg, #3d2a0a 0%, #6b4d15 100%);
+  background: var(--dw-zone-gold-grad);
 }
 
 /* ─── Zone drag handle ───────────────────────────────────────────────────────── */
 .zone-drag-handle {
   cursor: grab;
   opacity: 0.5;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   padding: 0 4px;
   flex-shrink: 0;
   user-select: none;
@@ -1830,14 +1986,26 @@
   filter: grayscale(0.6);
   position: relative;
 }
-.zone-dropped::after {
+/* **"Left behind" is a flex item, not a floating label.**
+
+   It used to be absolutely positioned at top 8px / right 12px, which is exactly
+   where the header keeps the capacity figure — so the two sat on top of each
+   other (Leander, 2026-08-31). Nothing had to change for that to happen; they
+   were aimed at the same spot from the start, and a fixed offset cannot get out
+   of the way of a number that grows.
+
+   As the last child of the header it simply queues up after the capacity, with
+   the header gap between them, and can never overlap anything again.
+
+   currentColor, because a dropped zone still wears whichever of the eight zone
+   colours it was given, and a fixed grey looked wrong on most of them. */
+.zone-dropped .zone-header::after {
   content: "Left behind";
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  font-size: 0.75em;
+  flex: 0 0 auto;
+  font-size: var(--dw-text-xs);
   font-style: italic;
-  color: #999;
+  color: currentColor;
+  opacity: 0.75;
   pointer-events: none;
 }
 
@@ -1893,7 +2061,7 @@
 
 .zone-purse-icon {
   color: #c8a832;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   flex-shrink: 0;
 }
 
@@ -1913,7 +2081,7 @@
   flex: 0 0 48px;
   width: 48px;
   padding: 2px 4px;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: 3px;
   background: rgba(0,0,0,0.3);
@@ -1922,7 +2090,7 @@
 }
 
 .zone-coin-label {
-  font-size: 0.72em;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   margin-right: 4px;
@@ -1932,17 +2100,17 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .zone-purse-empty {
   opacity: 0.4;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .zone-move-coins-btn {
   margin-left: auto;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   padding: 2px 6px;
   opacity: 0.7;
   flex-shrink: 0;
@@ -1958,11 +2126,11 @@
   gap: 5px;
   margin: 6px 0 2px;
   padding: 5px 12px;
-  background: linear-gradient(to bottom, #d4edd4, #a8d5a8);
+  background: linear-gradient(to bottom, var(--dw-zone-green-pale), #a8d5a8);
   border: 1px solid #4a8a4a;
   border-radius: 4px;
   color: #1a4a1a;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
   font-family: inherit;
   box-shadow: 0 1px 2px rgba(0,0,0,0.12);
@@ -1975,7 +2143,7 @@
 /* Icon-only, sized and aligned by .icon-btn like its neighbours in the zone
    footer — only the red hover tint sets it apart. */
 .delete-zone-btn {
-  color: #b01a1a;
+  color: var(--dw-bad-ink);
 }
 
 .delete-zone-btn:hover {
@@ -2007,7 +2175,7 @@
 .inn-title-row .inn-name-static { flex: 1; }
 
 .inn-quality-label {
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   font-weight: bold;
   color: var(--dw-accent);
   text-transform: capitalize;
@@ -2024,7 +2192,7 @@
 
 .inn-name-edit {
   font-family: "Georgia", "Book Antiqua", serif;
-  font-size: 1.25em;
+  font-size: var(--dw-text-lg);
   font-weight: bold;
   color: var(--dw-primary);
   background: transparent;
@@ -2049,7 +2217,7 @@
 .quality-btn {
   flex: 1;
   padding: 4px 8px;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
   background: var(--dw-bg-dark);
@@ -2073,7 +2241,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .inn-actor-select {
@@ -2082,7 +2250,7 @@
   border-radius: 4px;
   padding: 3px 6px;
   font-family: inherit;
-  background: #fffef8;
+  background: var(--dw-field-bg);
   color: var(--dw-text);
 }
 
@@ -2093,7 +2261,7 @@
 }
 
 .inn-wallet {
-  font-size: 0.88em;
+  font-size: var(--dw-text-sm);
   background: var(--dw-bg-dark);
   padding: 3px 8px;
   border-radius: 4px;
@@ -2121,7 +2289,7 @@
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
   padding: 6px 10px;
-  font-size: 0.88em;
+  font-size: var(--dw-text-sm);
   font-weight: bold;
   letter-spacing: 0.05em;
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
@@ -2134,7 +2302,7 @@
 
 .inn-section-header::before {
   content: "▾ ";
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   opacity: 0.7;
 }
 
@@ -2148,7 +2316,7 @@
   border-radius: 8px;
   background: rgba(0,0,0,0.25);
   color: var(--dw-accent-light);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -2167,7 +2335,7 @@
   background: var(--dw-bg-parchment);
   color: var(--dw-tertiary);
   font-style: italic;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   line-height: 1.4;
   border-bottom: 1px solid rgba(160,100,30,0.12);
 }
@@ -2176,7 +2344,7 @@
   padding: 4px 10px 2px;
   background: var(--dw-bg-parchment);
   color: var(--dw-secondary);
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   font-weight: bold;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2188,7 +2356,7 @@
   background: var(--dw-bg-parchment);
   color: var(--dw-tertiary);
   font-style: italic;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
 }
 
 .inn-item-list { background: var(--dw-bg-parchment); }
@@ -2196,12 +2364,12 @@
 .inn-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-row-gap);
   padding: 5px 8px;
   border-bottom: 1px solid rgba(160,100,30,0.1);
   background: var(--dw-bg-parchment);
   transition: background 0.1s;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .inn-item:last-child { border-bottom: none; }
@@ -2230,7 +2398,7 @@
 .inn-item-desc {
   font-style: italic;
   color: var(--dw-tertiary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-xs);
   line-height: 1.35;
 }
 
@@ -2240,7 +2408,7 @@
   border-radius: 8px;
   background: rgba(160,100,30,0.14);
   color: var(--dw-tertiary);
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   font-weight: normal;
   white-space: nowrap;
 }
@@ -2248,7 +2416,7 @@
 /* House speciality — always on the menu, never part of the daily draw. */
 .inn-fixed-marker {
   color: var(--dw-accent);
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
 }
 
 /* A fixed, left-aligned price column.
@@ -2303,7 +2471,7 @@
 .btn-inn-purchase {
   padding: 0;
   height: 24px;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   background: linear-gradient(to bottom, var(--dw-accent-light), var(--dw-accent));
   border: 1px solid var(--dw-border);
   border-radius: 4px;
@@ -2360,7 +2528,7 @@
   padding: 4px 8px;
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   font-weight: bold;
   letter-spacing: 0.04em;
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
@@ -2392,7 +2560,7 @@
   height: auto;
   min-height: 0;
   padding: 2px 8px;
-  font-size: 0.95em;
+  font-size: var(--dw-text-base);
   font-family: inherit;
   font-weight: bold;
   line-height: 1.4;
@@ -2421,7 +2589,7 @@
   margin: 0;
   border-collapse: collapse;
   background: transparent;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
 }
 
 .inn-daybox-table thead {
@@ -2437,7 +2605,7 @@
   padding: 3px 8px;
   text-align: left;
   color: var(--dw-secondary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1px solid rgba(160,100,30,0.25);
@@ -2467,12 +2635,12 @@
 }
 
 .coin-slot-zone-select {
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   padding: 2px 3px;
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
   max-width: 72px;
-  background: #fffef8;
+  background: var(--dw-field-bg);
   color: var(--dw-text);
   font-family: inherit;
   flex-shrink: 0;
@@ -2494,7 +2662,7 @@
   align-items: center;
   gap: 3px;
   flex-shrink: 0;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   color: var(--speed-yellow);
   white-space: nowrap;
 }
@@ -2537,7 +2705,7 @@
   margin: 0;
   padding: 0;
   border: none;
-  font-size: 1.1em;
+  font-size: var(--dw-text-lg);
 }
 
 .market-entries {
@@ -2559,7 +2727,7 @@
 .market-entry {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-row-gap);
   padding: 6px 8px;
   background: rgba(200, 160, 80, 0.08);
   border: 1px solid var(--dw-border-light);
@@ -2567,7 +2735,7 @@
 }
 
 .market-entry-icon {
-  font-size: 1.2em;
+  font-size: var(--dw-text-lg);
   color: var(--dw-tertiary);
   width: 20px;
   text-align: center;
@@ -2584,12 +2752,12 @@
 
 .market-entry-name {
   font-weight: bold;
-  font-size: 0.95em;
+  font-size: var(--dw-text-base);
   color: var(--dw-primary);
 }
 
 .market-entry-desc {
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -2597,7 +2765,7 @@
 }
 
 .market-entry-quality {
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   color: var(--dw-tertiary);
   text-transform: capitalize;
   font-style: italic;
@@ -2611,7 +2779,7 @@
 }
 
 .btn-market-open {
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   padding: 3px 8px;
   background: var(--dw-tertiary);
   color: var(--dw-accent-light);
@@ -2636,7 +2804,7 @@
 .btn-market-add {
   flex: 1;
   padding: 5px 8px;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border);
   border-radius: 3px;
@@ -2668,7 +2836,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
@@ -2690,7 +2858,7 @@
   flex: 0 0 auto;
   width: auto;
   padding: 3px 10px;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   white-space: nowrap;
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border);
@@ -2716,7 +2884,7 @@
 .loot-toolbar button {
   width: auto;
   padding: 3px 8px;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   white-space: nowrap;
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border);
@@ -2735,7 +2903,7 @@
 }
 
 .loot-pinned-note {
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   color: var(--dw-tertiary);
   white-space: nowrap;
   overflow: hidden;
@@ -2762,10 +2930,10 @@
 .loot-row {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--dw-row-gap);
   padding: 5px 6px;
   border-bottom: 1px solid rgba(160, 100, 30, 0.12);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .loot-row:nth-child(even) {
@@ -2794,7 +2962,7 @@
   flex: 0 0 auto;
   width: auto;
   padding: 2px 8px;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   white-space: nowrap;
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border);
@@ -2826,7 +2994,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   font-weight: bold;
 }
 
@@ -2883,7 +3051,7 @@
   border-radius: 3px;
   background: var(--dw-bg-dark);
   color: var(--dw-secondary);
-  font-size: 1.1em;
+  font-size: var(--dw-text-lg);
 }
 
 .loot-browser-row:hover .loot-browser-icon {
@@ -2905,14 +3073,14 @@
 }
 
 .loot-browser-meta {
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   line-height: 1.3;
   color: var(--dw-tertiary);
 }
 
 .loot-browser-badge {
   flex: 0 0 auto;
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   padding: 2px 6px;
   border-radius: 3px;
   background: rgba(122, 80, 48, 0.18);
@@ -2937,14 +3105,14 @@
 
 .loot-split-share {
   flex: 1;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   text-align: right;
 }
 
 .loot-split-remainder,
 .loot-load-hint {
   margin: 8px 0 0;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-secondary);
 }
 
@@ -2994,7 +3162,7 @@
 }
 
 .trash-count {
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-tertiary);
 }
 
@@ -3008,9 +3176,12 @@
   color: var(--dw-tertiary);
 }
 
+/* The one thing on this page that is deliberately off the type scale: this is
+   a decorative empty-state glyph, not text, and the scale tops out at the size
+   of a window title. Shrinking it to 20px would read as a bug, not a system. */
 .trash-empty i {
   display: block;
-  font-size: 1.8em;
+  font-size: 26px;
   margin-bottom: 8px;
   opacity: 0.5;
 }
@@ -3019,7 +3190,7 @@
    would expect are not there. */
 .trash-hint,
 .qm-hint {
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-tertiary);
   font-style: italic;
 }
@@ -3053,16 +3224,16 @@
 
 .trash-group-name {
   font-weight: 600;
-  font-size: 0.92em;
+  font-size: var(--dw-text-sm);
 }
 
 .trash-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-row-gap);
   padding: 5px 6px;
   border-bottom: 1px solid rgba(160, 100, 30, 0.12);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .trash-row:last-child {
@@ -3096,7 +3267,7 @@
 /* Where it came from, when, and who did it — the three things needed to decide
    whether a deletion was the mistake someone is looking for. */
 .trash-row-meta {
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   color: var(--dw-tertiary);
   white-space: nowrap;
   overflow: hidden;
@@ -3130,8 +3301,14 @@
      Raised from 800px when the Inn joined the shortcuts: the Referee’s top row
      is the longest one there is — day button, four mode tabs, the Travel Point
      group with its march toggle and refresh, four shortcut icons, reset and
-     fold — and at 800px it wrapped. */
-  --day-bar-width: 860px;
+     fold — and at 800px it wrapped.
+
+     Raised again to 900px on 2026-08-30, for the same reason a third time: the
+     type scale put the top row's chips up from about 11.5px to 12px, and a row
+     that had been tuned to just fit no longer did -- the icons at the right ran
+     out of the strip. The chips came back a step at the same time; this is the
+     other half of that. */
+  --day-bar-width: 900px;
   /* One height for everything sitting on the top line — the day button, the mode
      tabs, the Travel Point group, and every chip on the folded handle. They were
      each sized by their own padding and content before, so a row of them stepped
@@ -3139,10 +3316,36 @@
   --day-bar-chip-h: 33px;
   /* Controls nested *inside* a chip, which must not push it taller. */
   --day-bar-chip-inner-h: 24px;
+
+  /* One width for every context label, so that every control in the row starts
+     at the same offset inside its cell. Each field used to be its own grid with
+     an `auto` label column, which means each label column was as wide as its own
+     word -- "Hex" short, "Settlement" long -- so the boxes stepped in and out
+     down the two lines and the gap before each one looked different even though
+     it was always 4px (Leander, 2026-08-31).
+
+     Sized for the longest of the six, which is Settlement. The label is clipped
+     rather than allowed to overflow, so a longer one added later degrades into
+     an ellipsis instead of sliding under its own control. */
+  --day-bar-label-w: 66px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
+
+  /* Sized here, once, for both children -- and by the content rather than by a
+     number somebody guessed. 860 was tuned by hand, then 900 when the type
+     scale grew the chips, and it was still short: every guess is only right
+     until the next string changes.
+
+     max-content asks the longest row how wide it needs to be, so nothing can
+     run off the right edge again. min-width keeps the old fixed width as a
+     FLOOR, which is what stops the bar jumping about under the cursor when a
+     mode with less in it is selected -- the thing the fixed width was for. Only
+     a mode that genuinely needs more than the floor changes the width now. */
+  width: max-content;
+  min-width: var(--day-bar-width);
+  max-width: calc(100vw - 16px);
 }
 
 /* Fallback for the case where #ui-top is missing and the bar lands on the body:
@@ -3158,17 +3361,17 @@ body > #dolmenwood-day-bar {
 .day-bar-strip,
 .day-bar-panel {
   box-sizing: border-box;
-  width: var(--day-bar-width);
-  /* The one concession to a narrow screen or a large interface scale: shrink
-     rather than run off the edge. Both still match each other. */
-  max-width: calc(100vw - 16px);
+  /* Both fill the wrapper, so they cannot disagree about how wide they are.
+     The wrapper is the only thing that decides, and it asks the content. */
+  width: 100%;
+  max-width: 100%;
   pointer-events: all;
   background: var(--dw-bg-parchment);
   border: 1px solid var(--dw-border);
   border-radius: 5px;
   box-shadow: 0 2px 6px var(--dw-shadow);
   color: var(--dw-text);
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   line-height: 1.2;
 }
 
@@ -3258,7 +3461,7 @@ body > #dolmenwood-day-bar {
 }
 
 .day-bar-duties .day-bar-duty-result {
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   line-height: 1.15;
 }
 
@@ -3299,8 +3502,8 @@ body > #dolmenwood-day-bar {
 }
 
 .day-bar-icon-btn {
-  width: 20px;
-  height: 20px;
+  width: var(--dw-icon-btn);
+  height: var(--dw-icon-btn);
   padding: 0;
   line-height: 1;
   background: none;
@@ -3412,7 +3615,7 @@ body > #dolmenwood-day-bar {
   border-radius: 3px;
   color: var(--dw-text);
   font-family: inherit;
-  font-size: 1em;
+  font-size: var(--dw-text-sm);
   line-height: 1.3;
 }
 
@@ -3430,7 +3633,7 @@ body > #dolmenwood-day-bar {
   border: 1px solid var(--speed-orange);
   border-radius: 3px;
   color: var(--speed-orange);
-  font-size: 0.95em;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
@@ -3480,12 +3683,12 @@ body > #dolmenwood-day-bar {
 
 .dw-food-method-yield {
   color: var(--dw-secondary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-food-method-needs {
   opacity: 0.7;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-style: italic;
 }
 
@@ -3527,7 +3730,7 @@ body > #dolmenwood-day-bar {
   background: none;
   border: none;
   color: inherit;
-  font-size: 1em;
+  font-size: var(--dw-text-sm);
   line-height: 1;
   cursor: pointer;
 }
@@ -3556,7 +3759,7 @@ body > #dolmenwood-day-bar {
   max-width: 200px;
   overflow: hidden;
   color: var(--dw-secondary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-style: italic;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3569,7 +3772,7 @@ body > #dolmenwood-day-bar {
   align-items: center;
   gap: 2px;
   color: var(--speed-orange);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   white-space: nowrap;
 }
 
@@ -3587,7 +3790,7 @@ body > #dolmenwood-day-bar {
   /* Quieter than the counter beside it: this is a rate, not a running total,
      and it only changes when the march does. */
   opacity: 0.75;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   white-space: nowrap;
 }
 
@@ -3602,7 +3805,7 @@ body > #dolmenwood-day-bar {
 
 .dw-day-roll-headline {
   margin: 2px 0;
-  font-size: 1.15em;
+  font-size: var(--dw-text-lg);
   font-weight: 600;
 }
 
@@ -3613,7 +3816,7 @@ body > #dolmenwood-day-bar {
 .dw-day-roll-sub {
   margin: 0 0 4px;
   opacity: 0.75;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-day-roll-consequence {
@@ -3627,14 +3830,14 @@ body > #dolmenwood-day-bar {
 .dw-day-roll-none {
   margin: 4px 0 0;
   opacity: 0.75;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   font-style: italic;
 }
 
 .dw-day-roll-effects {
   margin: 4px 0 0;
   padding-left: 18px;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-day-roll-effects li {
@@ -3648,7 +3851,7 @@ body > #dolmenwood-day-bar {
 .dw-encounter-facts {
   margin: 6px 0 0;
   padding-left: 18px;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-encounter-facts li {
@@ -3672,7 +3875,7 @@ body > #dolmenwood-day-bar {
   padding: 3px 6px;
   background: rgba(0, 0, 0, 0.05);
   border-radius: 3px;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-encounter-book i {
@@ -3685,7 +3888,7 @@ body > #dolmenwood-day-bar {
 
 .dw-encounter-scene {
   margin: 4px 0;
-  font-size: 1.05em;
+  font-size: var(--dw-text-base);
   line-height: 1.35;
 }
 
@@ -3693,7 +3896,7 @@ body > #dolmenwood-day-bar {
 
 .dw-encounter-stats {
   margin: 3px 0 0;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   opacity: 0.85;
 }
 
@@ -3708,7 +3911,7 @@ body > #dolmenwood-day-bar {
   flex: 0 1 auto;
   width: auto;
   padding: 2px 8px;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   line-height: 1.6;
   white-space: nowrap;
 }
@@ -3734,7 +3937,7 @@ body > #dolmenwood-day-bar {
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
   color: var(--dw-text);
-  font-size: 1em;
+  font-size: var(--dw-text-sm);
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
@@ -3780,7 +3983,7 @@ body > #dolmenwood-day-bar {
 }
 
 .day-bar-tick {
-  font-size: 0.95em;
+  font-size: var(--dw-text-sm);
 }
 
 .day-bar-duty-icon {
@@ -3801,7 +4004,7 @@ body > #dolmenwood-day-bar {
 .day-bar-group-count {
   margin-left: 1px;
   color: var(--dw-tertiary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -3837,7 +4040,7 @@ body > #dolmenwood-day-bar {
   border: 1px solid var(--dw-border-light);
   border-radius: 2px;
   color: var(--dw-text);
-  font-size: 0.95em;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 
@@ -3902,7 +4105,7 @@ body > #dolmenwood-day-bar {
   margin-left: 4px;
   margin-right: 1px;
   color: var(--speed-orange);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 /* ── Party chips ── */
@@ -3986,7 +4189,7 @@ body > #dolmenwood-day-bar {
 .day-bar-panel-head > * {
   padding-bottom: 2px;
   border-bottom: 1px solid var(--dw-border-light);
-  font-size: 0.85em;
+  font-size: var(--dw-text-xs);
   font-variant: small-caps;
 }
 
@@ -4005,7 +4208,7 @@ body > #dolmenwood-day-bar {
 
 .day-bar-nofood {
   color: var(--speed-orange);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .day-bar-panel-col {
@@ -4042,7 +4245,7 @@ body > #dolmenwood-day-bar {
   border: 1px solid transparent;
   border-radius: 3px;
   color: var(--dw-tertiary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-xs);
   cursor: pointer;
 }
 
@@ -4067,7 +4270,7 @@ body > #dolmenwood-day-bar {
   padding-left: 4px;
   border-left: 1px solid var(--dw-border-light);
   color: var(--dw-tertiary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-xs);
   /* Wraps rather than widens: the column has a fixed share of a fixed width,
      and the worst case (starving, exhausted, losing Constitution) is a long
      line that must not push the panel out of step with the strip. */
@@ -4102,7 +4305,7 @@ body > #dolmenwood-day-bar {
 .duty-group-step {
   display: flex;
   align-items: flex-start;
-  gap: 7px;
+  gap: var(--dw-row-gap);
   width: 100%;
   height: auto;
   padding: 6px 9px;
@@ -4159,7 +4362,7 @@ body > #dolmenwood-day-bar {
 
 .duty-group-hint {
   color: var(--dw-tertiary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   line-height: 1.25;
   white-space: normal;
 }
@@ -4175,7 +4378,7 @@ body > #dolmenwood-day-bar {
 .duty-group-count {
   flex: 1;
   color: var(--dw-tertiary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-variant: small-caps;
 }
 
@@ -4191,7 +4394,7 @@ body > #dolmenwood-day-bar {
   border: 1px solid var(--dw-border);
   border-radius: 3px;
   color: var(--dw-tertiary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
 }
 
@@ -4249,7 +4452,7 @@ body > #dolmenwood-day-bar {
   border: 1px solid transparent;
   border-radius: 2px;
   color: var(--dw-tertiary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   opacity: 0.45;
   cursor: pointer;
 }
@@ -4307,7 +4510,7 @@ body > #dolmenwood-day-bar {
   margin: 4px 0 0;
   padding: 0 0 0 14px;
   list-style: disc;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   opacity: 0.85;
 }
 
@@ -4346,7 +4549,7 @@ body > #dolmenwood-day-bar {
 
 .dw-stock-chosen {
   flex: 0 0 auto;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   opacity: 0.75;
   min-width: 9ch;
   text-align: right;
@@ -4375,7 +4578,6 @@ body > #dolmenwood-day-bar {
   display: none;
 }
 
-
 .dw-stock-group > summary:hover {
   background: rgba(0, 0, 0, 0.06);
 }
@@ -4385,7 +4587,7 @@ body > #dolmenwood-day-bar {
 }
 
 .dw-stock-group-count {
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   opacity: 0.6;
 }
 
@@ -4408,7 +4610,7 @@ body > #dolmenwood-day-bar {
 
 .dw-stock-sub,
 .dw-stock-cost {
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   opacity: 0.7;
   white-space: nowrap;
 }
@@ -4438,7 +4640,7 @@ body > #dolmenwood-day-bar {
 
 .dw-stock-prune:hover {
   opacity: 1;
-  color: var(--dw-danger, #8c2f2f);
+  color: var(--dw-bad-ink);
 }
 
 /* The hex's own exception to the check — what an encounter here is likely to
@@ -4471,7 +4673,7 @@ body > #dolmenwood-day-bar {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   opacity: 0.9;
 }
 
@@ -4539,7 +4741,7 @@ span.day-bar-panel-tick {
   border: 1px solid var(--color-border-light-tertiary, rgba(0, 0, 0, 0.3));
   border-radius: 3px;
   background: rgba(0, 0, 0, 0.06);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -4565,7 +4767,7 @@ span.day-bar-panel-tick {
   border-radius: 3px;
   background: rgba(0, 0, 0, 0.06);
   color: var(--dw-tertiary);
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   line-height: 1;
   cursor: pointer;
 }
@@ -4635,7 +4837,7 @@ span.day-bar-panel-tick {
   margin-left: 10px;
   border-radius: 3px;
   background: rgba(0, 0, 0, 0.06);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .day-bar-weather.is-empty {
@@ -4673,7 +4875,7 @@ span.day-bar-panel-tick {
 }
 
 .day-bar-own-char i.is-off {
-  color: var(--dw-bad, #a33);
+  color: var(--dw-bad-ink);
   opacity: 0.9;
 }
 
@@ -4683,13 +4885,13 @@ span.day-bar-panel-tick {
 .day-bar-own-penalty {
   min-width: 7ch;
   text-align: right;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   opacity: 0.45;
   white-space: nowrap;
 }
 
 .day-bar-own-penalty.is-bad {
-  color: var(--dw-bad, #a33);
+  color: var(--dw-bad-ink);
   font-weight: 600;
   opacity: 1;
 }
@@ -4703,7 +4905,7 @@ span.day-bar-panel-tick {
 
 .buy-back-badge {
   display: inline-block;
-  font-size: 0.7em;
+  font-size: var(--dw-text-xs);
   font-weight: bold;
   padding: 1px 6px;
   border-radius: 10px;
@@ -4722,7 +4924,7 @@ span.day-bar-panel-tick {
 
 .shop-service-badge {
   color: var(--dw-tertiary);
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   margin-left: 4px;
   opacity: 0.9;
 }
@@ -4733,7 +4935,7 @@ span.day-bar-panel-tick {
 
 .shop-out-badge {
   display: inline-block;
-  font-size: 0.68em;
+  font-size: var(--dw-text-xs);
   font-weight: bold;
   padding: 1px 5px;
   border-radius: 8px;
@@ -4748,14 +4950,14 @@ span.day-bar-panel-tick {
   background: transparent;
   border: 1px dashed var(--dw-border-light);
   color: var(--dw-tertiary);
-  font-size: 0.72em;
+  font-size: var(--dw-text-xs);
 }
 
 /* "per person", "per day" — printed under the price it qualifies. */
 .shop-item-unit {
   display: block;
   font-weight: normal;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   font-style: italic;
   color: var(--dw-tertiary);
 }
@@ -4765,7 +4967,7 @@ span.day-bar-panel-tick {
 
 .btn-sell-toggle {
   padding: 4px 10px;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   border-radius: 4px;
   border: 1px solid var(--dw-border);
   background: var(--dw-bg-parchment);
@@ -4792,7 +4994,7 @@ span.day-bar-panel-tick {
   border-radius: 4px;
   background: var(--dw-bg-dark);
   color: var(--dw-text);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   white-space: nowrap;
 }
 
@@ -4804,7 +5006,7 @@ span.day-bar-panel-tick {
 .shop-sell-note {
   margin: 0 0 8px;
   padding: 6px 8px;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text);
   background: var(--dw-bg-parchment);
   border: 1px solid var(--dw-border-light);
@@ -4819,14 +5021,14 @@ span.day-bar-panel-tick {
 }
 
 .shop-sell-count {
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-tertiary);
   margin-left: 4px;
 }
 
 .shop-sell-total {
   display: block;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   color: var(--dw-tertiary);
 }
 
@@ -4844,7 +5046,7 @@ span.day-bar-panel-tick {
 
 .dw-service-card h3 {
   margin: 0 0 4px;
-  font-size: 1.05em;
+  font-size: var(--dw-text-base);
   border: none;
   color: var(--dw-primary);
 }
@@ -4852,12 +5054,12 @@ span.day-bar-panel-tick {
 .dw-service-card p { margin: 2px 0; }
 
 .dw-service-where {
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-style: italic;
   color: var(--dw-tertiary);
 }
 
-.dw-service-for { font-size: 0.9em; }
+.dw-service-for { font-size: var(--dw-text-sm); }
 
 .dw-service-price {
   font-weight: bold;
@@ -4867,12 +5069,12 @@ span.day-bar-panel-tick {
 .dw-service-unit {
   font-weight: normal;
   font-style: italic;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-tertiary);
 }
 
 .dw-service-note {
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   font-style: italic;
   color: var(--dw-tertiary);
   border-top: 1px solid var(--dw-border-light);
@@ -4926,7 +5128,7 @@ span.day-bar-panel-tick {
   align-items: center;
   gap: 0.25rem;
   flex: none !important;
-  font-size: var(--font-size-13, 0.85em);
+  font-size: var(--dw-text-base);
   font-weight: normal;
   white-space: nowrap;
   cursor: pointer;
@@ -4939,7 +5141,7 @@ span.day-bar-panel-tick {
 
 .qm-note-warning {
   margin: 0.25rem 0 0;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 /* ── The stock pickers' headings ────────────────────────────────────────────
@@ -4953,7 +5155,7 @@ span.day-bar-panel-tick {
 .dw-stock-caret {
   flex: none;
   width: 10px;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   opacity: 0.65;
   transition: transform 120ms ease;
 }
@@ -5011,7 +5213,7 @@ span.day-bar-panel-tick {
 .qm-form .form-group > label {
   grid-column: 1;
   font-weight: bold;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   line-height: 1.3;
 }
 
@@ -5043,7 +5245,7 @@ span.day-bar-panel-tick {
 .qm-form .form-group > .qm-hint {
   grid-column: 2;
   margin: 0;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   line-height: 1.35;
   opacity: 0.75;
 }
@@ -5073,7 +5275,7 @@ span.day-bar-panel-tick {
 
 /* The trailing unit beside a number box — "coin wt", never a control. */
 .qm-unit {
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   opacity: 0.7;
   white-space: nowrap;
 }
@@ -5119,7 +5321,7 @@ span.day-bar-panel-tick {
    characters rather than letting the module pick one. */
 .dw-camp-member-stat {
   color: var(--dw-secondary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 /* ── The sleep form ───────────────────────────────────────────────────────── */
@@ -5154,7 +5356,7 @@ span.day-bar-panel-tick {
   width: auto;
   min-width: 118px;
   height: 22px;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-sleep-short {
@@ -5162,7 +5364,7 @@ span.day-bar-panel-tick {
   align-items: center;
   gap: 4px;
   color: var(--dw-tertiary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -5174,7 +5376,7 @@ span.day-bar-panel-tick {
 /* Recomputed live as the fire and the bedding change — the Sleep Difficulty
    table is the part of camping a table looks up wrongly. */
 .dw-sleep-difficulty {
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -5240,7 +5442,7 @@ span.day-bar-panel-tick {
   background: none;
   border: none;
   color: inherit;
-  font-size: 1em;
+  font-size: var(--dw-text-base);
   line-height: 1.2;
   cursor: pointer;
 }
@@ -5262,7 +5464,7 @@ span.day-bar-panel-tick {
 /* What the dice said, where the hint was before it. */
 .duty-group-result {
   color: var(--dw-secondary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   line-height: 1.25;
   white-space: normal;
 }
@@ -5319,7 +5521,7 @@ span.day-bar-panel-tick {
 .dw-watch-count {
   margin: 4px 0 0;
   color: var(--dw-secondary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-meal-count.is-short,
@@ -5360,7 +5562,7 @@ span.day-bar-panel-tick {
 .dw-spoils-count {
   margin: 4px 0 0;
   color: var(--dw-secondary);
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 
 .dw-spoils-count.is-short {
@@ -5455,7 +5657,7 @@ span.day-bar-panel-tick {
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
   color: var(--dw-secondary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   line-height: 1;
   cursor: pointer;
 }
@@ -5572,8 +5774,8 @@ span.day-bar-panel-tick {
   margin-top: 1px;
   /* A colour of its own, deliberately outside the speed palette: this line
      belongs to the Referee, not to the rules. */
-  color: #6b4f9e;
-  font-size: 0.78em;
+  color: var(--dw-magic-fill);
+  font-size: var(--dw-text-xs);
   font-style: italic;
   line-height: 1.25;
 }
@@ -5615,7 +5817,7 @@ span.day-bar-panel-tick {
   border-radius: 4px;
   background: rgba(147, 48, 10, 0.08);
   color: var(--speed-orange);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
 }
 
 /* ── The shared field ── */
@@ -5642,7 +5844,7 @@ span.day-bar-panel-tick {
 }
 
 .dw-field > span {
-  font-size: 0.7em;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -5667,13 +5869,13 @@ span.day-bar-panel-tick {
    room, and cutting one in half is worse than no box at all. */
 .dw-sheet-body input.is-number {
   text-align: center;
-  font-size: 1.15em;
+  font-size: var(--dw-text-lg);
   font-variant-numeric: tabular-nums;
 }
 
 .dw-sheet-body input.is-wide {
   text-align: right;
-  font-size: 1.2em;
+  font-size: var(--dw-text-lg);
   font-variant-numeric: tabular-nums;
 }
 
@@ -5687,7 +5889,7 @@ span.day-bar-panel-tick {
   width: 100%;
   min-height: 52px;
   padding: 4px 8px;
-  font-size: 0.95em;
+  font-size: var(--dw-text-base);
   line-height: 1.35;
   resize: vertical;
 }
@@ -5700,7 +5902,7 @@ span.day-bar-panel-tick {
   gap: 4px;
   padding: 1px 6px;
   border-radius: 3px;
-  font-size: 0.72em;
+  font-size: var(--dw-text-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -5708,7 +5910,7 @@ span.day-bar-panel-tick {
 
 .dw-block-spell.is-arcane {
   background: rgba(107, 79, 158, 0.16);
-  color: #5b3f8e;
+  color: var(--dw-magic-ink);
 }
 
 .dw-block-spell.is-holy {
@@ -5767,7 +5969,7 @@ span.day-bar-panel-tick {
   border-radius: 4px;
   background: var(--dw-bg-parchment);
   color: var(--dw-secondary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   cursor: pointer;
   opacity: 0.4;
   transition: opacity 120ms ease;
@@ -5805,7 +6007,7 @@ span.day-bar-panel-tick {
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
-  font-size: 1.5em;
+  font-size: var(--dw-text-xl);
   font-weight: 700;
   line-height: 1.1;
 }
@@ -5834,7 +6036,7 @@ span.day-bar-panel-tick {
   padding: 0 8px;
   border: 1px dashed var(--dw-border-light);
   border-radius: 4px;
-  font-size: 0.72em;
+  font-size: var(--dw-text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   opacity: 0.85;
@@ -5846,7 +6048,7 @@ span.day-bar-panel-tick {
   height: 24px;
   padding: 0 2px;
   text-align: center;
-  font-size: 1em;
+  font-size: var(--dw-text-xs);
 }
 
 /* ── Sections ── */
@@ -5869,7 +6071,7 @@ span.day-bar-panel-tick {
   padding-bottom: 4px;
   border-bottom: 1px solid var(--dw-border-light);
   color: var(--dw-primary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -5885,7 +6087,7 @@ span.day-bar-panel-tick {
   width: auto;
   height: 26px;
   padding: 0 8px;
-  font-size: 0.95em;
+  font-size: var(--dw-text-base);
 }
 
 /* The spell count lives with the spells, in the heading that owns them. */
@@ -5894,7 +6096,7 @@ span.day-bar-panel-tick {
   align-items: center;
   gap: 6px;
   margin-left: auto;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   text-transform: none;
   letter-spacing: normal;
   font-weight: 600;
@@ -5913,7 +6115,7 @@ span.day-bar-panel-tick {
 
 .dw-sheet-hint {
   margin: 0 0 6px;
-  font-size: 0.78em;
+  font-size: var(--dw-text-xs);
   font-style: italic;
   opacity: 0.75;
 }
@@ -5976,7 +6178,7 @@ span.day-bar-panel-tick {
 }
 
 .dw-ability-label {
-  font-size: 0.72em;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -5991,7 +6193,7 @@ span.day-bar-panel-tick {
 .dw-sheet-body .dw-ability-score input {
   width: 62px;
   height: 42px;
-  font-size: 1.5em;
+  font-size: var(--dw-text-xl);
   font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -6000,7 +6202,7 @@ span.day-bar-panel-tick {
 .dw-sheet-body .dw-ability-mod input {
   width: 52px;
   height: 42px;
-  font-size: 1.2em;
+  font-size: var(--dw-text-lg);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -6014,7 +6216,7 @@ span.day-bar-panel-tick {
 }
 
 .dw-ability-governs {
-  font-size: 0.68em;
+  font-size: var(--dw-text-xs);
   line-height: 1.2;
   opacity: 0.7;
 }
@@ -6046,7 +6248,7 @@ span.day-bar-panel-tick {
 }
 
 .dw-save-label {
-  font-size: 0.72em;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -6055,7 +6257,7 @@ span.day-bar-panel-tick {
 .dw-sheet-body .dw-save input[type="number"] {
   width: 62px;
   height: 42px;
-  font-size: 1.5em;
+  font-size: var(--dw-text-xl);
   font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -6080,7 +6282,7 @@ span.day-bar-panel-tick {
 
 .dw-row-label {
   min-width: 0;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -6126,7 +6328,7 @@ span.day-bar-panel-tick {
   border-radius: 4px;
   background: transparent;
   color: var(--dw-secondary);
-  font-size: 0.75em;
+  font-size: var(--dw-text-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   opacity: 0.55;
@@ -6156,7 +6358,7 @@ span.day-bar-panel-tick {
   align-items: center;
   gap: 6px;
   margin: 0 0 0 auto;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   font-weight: 600;
   text-transform: none;
   letter-spacing: normal;
@@ -6182,7 +6384,7 @@ span.day-bar-panel-tick {
   border-radius: 3px;
   background: var(--dw-bg-dark);
   color: var(--dw-primary);
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
@@ -6237,7 +6439,7 @@ span.day-bar-panel-tick {
   padding: 1px 6px;
   border-radius: 3px;
   background: var(--dw-bg-dark);
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
 }
 
@@ -6246,7 +6448,7 @@ span.day-bar-panel-tick {
   width: auto;
   max-width: 180px;
   height: 26px;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
 }
 
 .dw-weapon-buttons {
@@ -6259,7 +6461,7 @@ span.day-bar-panel-tick {
    Reach, Splash. Each is a ruling, so they are shown and left alone. */
 .dw-weapon-notes {
   flex: 1 1 100%;
-  font-size: 0.76em;
+  font-size: var(--dw-text-xs);
   font-style: italic;
   opacity: 0.7;
 }
@@ -6271,7 +6473,7 @@ span.day-bar-panel-tick {
   border-radius: 3px;
   background: rgba(147, 48, 10, 0.09);
   color: var(--speed-orange);
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
 }
 
 .dw-sheet-penalty > i {
@@ -6287,7 +6489,7 @@ span.day-bar-panel-tick {
 .dw-block-group > h4 {
   margin: 0 0 4px;
   color: var(--dw-secondary);
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -6308,7 +6510,7 @@ span.day-bar-panel-tick {
 .dw-block-head {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--dw-row-gap);
   flex-wrap: wrap;
 }
 
@@ -6320,14 +6522,14 @@ span.day-bar-panel-tick {
   padding: 1px 6px;
   border-radius: 3px;
   background: var(--dw-bg-dark);
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
 }
 
 /* The address is the point of a block, so it is shown rather than hidden — but
    quietly, because it is read once and then remembered. */
 .dw-block-address {
-  font-size: 0.74em;
+  font-size: var(--dw-text-xs);
   opacity: 0.55;
 }
 
@@ -6335,18 +6537,18 @@ span.day-bar-panel-tick {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
   font-variant-numeric: tabular-nums;
 }
 
 .dw-uses-btn {
-  width: 20px;
-  height: 20px;
+  width: var(--dw-step-btn);
+  height: var(--dw-step-btn);
   padding: 0;
   border: 1px solid var(--dw-border);
   border-radius: 3px;
   background: var(--dw-bg-dark);
-  font-size: 0.78em;
+  font-size: var(--dw-text-sm);
   line-height: 1;
   cursor: pointer;
 }
@@ -6360,7 +6562,7 @@ span.day-bar-panel-tick {
 
 .dw-block-text {
   margin: 3px 0 0;
-  font-size: 0.87em;
+  font-size: var(--dw-text-sm);
   line-height: 1.35;
   opacity: 0.9;
 }
@@ -6395,7 +6597,7 @@ span.day-bar-panel-tick {
 
 .dw-sheet-roll .dw-sheet-total {
   margin-right: 6px;
-  font-size: 1.5em;
+  font-size: var(--dw-text-xl);
   font-variant-numeric: tabular-nums;
 }
 
@@ -6403,7 +6605,7 @@ span.day-bar-panel-tick {
    see it than take the module's word for the sum. */
 .dw-sheet-maths {
   font-family: monospace;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   opacity: 0.7;
 }
 
@@ -6413,7 +6615,7 @@ span.day-bar-panel-tick {
 .dw-sheet-persona > summary {
   cursor: pointer;
   color: var(--dw-primary);
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -6433,7 +6635,7 @@ span.day-bar-panel-tick {
   flex: none;
   width: 10px;
   margin-right: 5px;
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   opacity: 0.6;
   transition: transform 120ms ease;
 }
