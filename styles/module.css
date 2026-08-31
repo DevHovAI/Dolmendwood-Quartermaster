@@ -3749,17 +3749,47 @@ body > #dolmenwood-day-bar {
    by default; unfolding it lets the row wrap onto a second line rather than
    widening the bar, which is fixed. */
 
-/* Two fixed lines, four columns, nothing folded. The columns line up down both
-   lines on purpose — Hex over Season, Terrain over Settlement, Region over Way
-   — so a longer season or town name cannot shuffle the next field along. A grid
-   rather than the row's own flex, which wrapped wherever things fitted. */
+/* **Three kinds of thing, not seven fields.** The hex is a standing block at
+   the left, two lines tall and fenced off by a rule; the line beside it is what
+   the Campaign Book answers for that hex; the line under that is what the
+   Referee sets, ordered by how often a hand goes to it. Laid out as one uniform
+   grid of seven, the field nobody ever touches looked exactly like the one that
+   is changed on every move (Leander, 2026-08-31).
+
+   Still a grid, and still for the old reason: a long town name must not be able
+   to shuffle the field beside it sideways. Column one is the hex block; columns
+   two to four are the three dials, and what sits over them on the first line
+   shares their left edges; column five closes both lines with what the context
+   produced — the warning that the party has moved, and the chance of losing the
+   way. */
 .day-bar-context {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: auto repeat(3, minmax(0, 1fr)) auto;
   align-items: center;
   gap: 4px 12px;
-  font-size: 0.95em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-tertiary);
+}
+
+/* Line one, beside the hex: what the book says about it. Terrain takes the
+   width of the Way beneath it; Region runs on across the two after it, because
+   "Hag's Addle" and "The Tangled Wold" are longer words than any dial's. */
+.day-bar-ctx-terrain    { grid-area: 1 / 2 / 2 / 3; }
+.day-bar-ctx-region     { grid-area: 1 / 3 / 2 / 5; }
+
+/* Line two: the dials, most-touched first. */
+.day-bar-ctx-way        { grid-area: 2 / 2 / 3 / 3; }
+.day-bar-ctx-settlement { grid-area: 2 / 3 / 3 / 4; }
+.day-bar-ctx-season     { grid-area: 2 / 4 / 3 / 5; }
+
+.day-bar-context > .day-bar-context-moved { grid-area: 1 / 5 / 2 / 6; }
+.day-bar-context > .day-bar-context-lost  { grid-area: 2 / 5 / 3 / 6; }
+
+/* Answers, not settings: the two the Referee should be able to ignore have
+   their labels drawn back as well as their controls, so the pair reads as one
+   quiet line rather than as two fields waiting for an answer. */
+.day-bar-context-field.is-derived > label {
+  opacity: 0.7;
 }
 
 /* The hex box, the crosshairs and the page button are one cell's worth of
@@ -3769,11 +3799,6 @@ body > #dolmenwood-day-bar {
   align-items: center;
   gap: 4px;
   min-width: 0;
-}
-
-/* Column four of the first line, when there is no warning to put in it. */
-.day-bar-context-spacer {
-  display: block;
 }
 
 /* The chance the context currently produces, beside the context that produces
@@ -3793,7 +3818,7 @@ body > #dolmenwood-day-bar {
    four costs a line of the strip, and the strip is the thing the map is under. */
 .day-bar-context-field {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: var(--day-bar-label-w) minmax(0, 1fr);
   align-items: center;
   gap: 4px;
   min-width: 0;
@@ -3807,9 +3832,41 @@ body > #dolmenwood-day-bar {
   min-width: 0;
 }
 
+/* **Right-aligned against the box** (Leander, 2026-08-31). A fixed label column
+   makes every control start at the same place, which is what was wanted — but
+   left-aligned it also left a pool of empty space after the short words, so
+   "Hex" floated a long way from its own box while "Settlement" sat right
+   against one. Ranging the labels right puts the same 4px between every word
+   and its control, and the controls still line up because the column is still
+   one width. The words are ragged on the left instead, which is what a form
+   column normally looks like and reads as deliberate rather than as a gap.
+
+   Clipped, not wrapped: the row is one line per field, and a label that grew
+   would otherwise push its own control out of the cell. */
+.day-bar-context-field > label {
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The hex box is the one control in the row that is not a select. It stays as
+   narrow as the four digits it holds -- what has to line up with the Season
+   select beneath it is where the control STARTS, and the shared label column
+   above already settles that. Stretching it to fill the cell would only put a
+   wide empty box around "0101". */
+.day-bar-hex-controls > input[type="text"] {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.day-bar-hex-controls > .day-bar-hex-calibrate,
+.day-bar-hex-controls > .day-bar-hex-page {
+  flex: 0 0 auto;
+}
+
 .day-bar-context-field label {
   color: var(--dw-tertiary);
-  font-size: 0.95em;
+  font-size: var(--dw-text-sm);
 }
 
 /* Answers, not questions. The Campaign Book prints the terrain and the region
@@ -4906,10 +4963,37 @@ span.day-bar-panel-tick {
    half the row still empty. The two controls are a little shallower than a
    normal field, since the line is a reading and not a form. */
 
-/* The hex cell is column one of the grid's first line, over Season. Its three
-   controls — the box, the crosshairs, the page button — are content-sized, so
-   the cell keeps to what it needs and the column's width is set by the pair
-   below it rather than by whether this hex has a page reference. */
+/* **The hex is not one of the fields; it is what they are all about.** A block
+   of its own at the left of the row, as tall as both lines, fenced off from
+   them by a rule — the number, the crosshairs that teach the map to read it off
+   the token, and the page it is written up on, which are three parts of one
+   answer rather than three settings (Leander, 2026-08-31: *"die Nummer, der
+   Knopf zum kalibrieren und die seitenzahl sind ja irgendwie für sich
+   stehend"*).
+
+   The caption sits over the controls rather than beside them, which is what the
+   double height is for: it costs no width, and the block needs none of the
+   row's shared label column. */
+.day-bar-context-hex {
+  grid-row: 1 / span 2;
+  grid-column: 1;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2px;
+  padding-right: 12px;
+  border-right: 1px solid var(--dw-border-light);
+  min-width: 0;
+}
+
+.day-bar-context-hex > label {
+  color: var(--dw-tertiary);
+  font-size: var(--dw-text-xs);
+  line-height: 1;
+}
+
 .day-bar-context-hex .day-bar-hex-controls {
   justify-content: start;
 }
@@ -4932,6 +5016,10 @@ span.day-bar-panel-tick {
   border-radius: 3px;
   color: var(--dw-text);
   font-family: inherit;
+  /* Set as the anchor it is: the one figure in the bar that everything else is
+     an answer to, and the only one worth reading from across the table. */
+  font-size: var(--dw-text-base);
+  font-weight: 700;
 }
 
 .day-bar-context-hex input::placeholder {
@@ -5007,7 +5095,7 @@ span.day-bar-panel-tick {
 }
 
 .day-bar-hex-calibrate-step {
-  font-size: 0.85em;
+  font-size: var(--dw-text-xs);
   font-weight: 700;
   line-height: 1;
 }

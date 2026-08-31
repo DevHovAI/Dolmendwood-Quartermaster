@@ -187,7 +187,7 @@
       {{#if mayOpenTrash}}
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="trash"
               title="Trash">
-        <i class="fas fa-trash-can"></i>
+        <i class="fas fa-trash"></i>
       </button>
       {{/if}}
       {{#if mayOpenShop}}
@@ -228,20 +228,34 @@
 
   {{!-- Where the party is. Every table below is rolled against it, and none of
         it can be derived — Foundry knows nothing of Dolmenwood's hexes or its
-        calendar. Folded to a summary by default: it is set once at the start of
-        a leg, and should not cost a line of the strip for the rest of the day. --}}
+        calendar. The Referee's alone: a player's bar skips the whole band. --}}
   {{#unless collapsed}}
   {{#if isGM}}
-  {{!-- Where the party is: two fixed lines, four columns, nothing folded.
-        The first line is what the hex answers — type the number and the
-        terrain and region follow it out of the Campaign Book. The second is
-        what the Referee sets for the leg and then leaves alone, with the
-        chance of losing the way beside it, because that is what those three
-        add up to.
+  {{!-- Where the party is, in three kinds of thing rather than seven fields
+        (Leander, 2026-08-31). They were one uniform grid, which made the field
+        nobody ever touches look exactly like the one that is changed on every
+        single move.
 
-        The columns line up down the two lines on purpose: Hex over Season,
-        Terrain over Settlement, Region over Way. Nothing here moves sideways when a
-        name is longer than the last one.
+        **The hex stands on its own**, a block to the left of a dividing rule
+        and two lines tall: the number, the crosshairs that teach the map to
+        read it off the token, and the page it is written up on. It is not a
+        setting among settings — it is the thing the two lines beside it are
+        about (*"die Nummer, der Knopf zum kalibrieren und die seitenzahl sind
+        ja irgendwie für sich stehend"*).
+
+        **The first line to its right is what the book answers**, not the
+        Referee: type the hex and Terrain and Region follow it out of the
+        Campaign Book. Drawn back, because if all goes well nobody touches
+        either of them all campaign — still editable on click, because a hex
+        the book does not detail arrives with neither.
+
+        **The second line is what the Referee sets, in the order it gets
+        touched**: Way most often of anything here, Settlement a good deal
+        less, Season a handful of times a year. The chance of losing the way
+        closes that line, because it is what those settings add up to.
+
+        The three dials keep a grid of equal columns, so a long town name
+        cannot shuffle the field beside it sideways.
 
         What used to be here: a chevron, a summary reading "Autumn · Track ·
         Tangled forest · High Wold", and the five fields folded away behind it.
@@ -251,15 +265,16 @@
         briefing card carries that into chat the moment the hex changes, and
         twice is once too often. --}}
   <div class="day-bar-row day-bar-context">
-    <span class="day-bar-context-field day-bar-context-hex" title="{{context.hexHint}}">
+
+    <span class="day-bar-context-hex" title="{{context.hexHint}}">
       <label for="dw-ctx-hex">Hex</label>
       <span class="day-bar-hex-controls">
         <input type="text" id="dw-ctx-hex" data-context-field="hex" maxlength="5"
                inputmode="numeric" placeholder="0101" value="{{context.hex}}" />
-        {{#if context.mayCalibrate}}
         {{!-- Two measurements per map, and the hex reads itself off the token
               from then on. Beside the box because the box holds the other half
               of each one: the number the token is standing in. --}}
+        {{#if context.mayCalibrate}}
         <button type="button" class="day-bar-hex-calibrate{{#if context.calibrated}} is-set{{/if}}{{#if context.calibrateHalf}} is-half{{/if}}"
                 data-action="calibrateHex" title="{{context.calibrateTitle}}"
                 aria-label="{{context.calibrateLabel}}">
@@ -273,12 +288,7 @@
       </span>
     </span>
 
-    {{!-- Terrain and Region are the hex's answers, not the Referee's: typing
-          the number fills both out of the Campaign Book. Drawn back, so the row
-          shows at a glance which two fields nobody has to touch — still
-          editable, because a hex the book does not detail arrives with
-          neither. --}}
-    <span class="day-bar-context-field is-derived" title="{{context.terrainHint}}">
+    <span class="day-bar-context-field is-derived day-bar-ctx-terrain" title="{{context.terrainHint}}">
       <label for="dw-ctx-terrain">Terrain</label>
       <select id="dw-ctx-terrain" data-context-field="terrain">
         {{#each context.terrainGroups}}
@@ -291,7 +301,7 @@
       </select>
     </span>
 
-    <span class="day-bar-context-field is-derived" title="{{context.regionHint}}">
+    <span class="day-bar-context-field is-derived day-bar-ctx-region" title="{{context.regionHint}}">
       <label for="dw-ctx-region">Region</label>
       <select id="dw-ctx-region" data-context-field="region">
         {{#each context.regions}}
@@ -300,23 +310,24 @@
       </select>
     </span>
 
-    {{#if context.moved}}
     {{!-- The party crossed a hex boundary and the module could not tell which
           hex they came out in — not calibrated, off the book's map, or the
-          reading switched off. Clicking says "still right" and drops it. --}}
+          reading switched off. Clicking says "still right" and drops it. It
+          closes the line the hex answers, over the chance it did not. --}}
+    {{#if context.moved}}
     <button type="button" class="day-bar-context-moved" data-action="confirmContext"
             title="{{context.moved.title}}">
       <i class="fas fa-triangle-exclamation"></i>
       <span>{{context.moved.label}}</span>
     </button>
-    {{else}}
-    <span class="day-bar-context-spacer"></span>
     {{/if}}
 
-    <span class="day-bar-context-field" title="{{context.seasonHint}}">
-      <label for="dw-ctx-season">Season</label>
-      <select id="dw-ctx-season" data-context-field="season">
-        {{#each context.seasons}}
+    {{!-- Every move, near enough: the ground underfoot is the one thing here
+          that changes with the leg rather than with the hex. --}}
+    <span class="day-bar-context-field day-bar-ctx-way" title="{{context.wayHint}}">
+      <label for="dw-ctx-way">Way</label>
+      <select id="dw-ctx-way" data-context-field="way">
+        {{#each context.ways}}
         <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
         {{/each}}
       </select>
@@ -324,7 +335,7 @@
 
     {{!-- Kept apart from the region, because a party can be in a town and in a
           region and true at the same time. Only the Settlement tab rolls on it. --}}
-    <span class="day-bar-context-field" title="{{context.settlementHint}}">
+    <span class="day-bar-context-field day-bar-ctx-settlement" title="{{context.settlementHint}}">
       <label for="dw-ctx-settlement">Settlement</label>
       <select id="dw-ctx-settlement" data-context-field="settlement">
         {{#each context.settlements}}
@@ -333,10 +344,10 @@
       </select>
     </span>
 
-    <span class="day-bar-context-field" title="{{context.wayHint}}">
-      <label for="dw-ctx-way">Way</label>
-      <select id="dw-ctx-way" data-context-field="way">
-        {{#each context.ways}}
+    <span class="day-bar-context-field day-bar-ctx-season" title="{{context.seasonHint}}">
+      <label for="dw-ctx-season">Season</label>
+      <select id="dw-ctx-season" data-context-field="season">
+        {{#each context.seasons}}
         <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
         {{/each}}
       </select>
