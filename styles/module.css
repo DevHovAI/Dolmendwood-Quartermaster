@@ -112,10 +112,50 @@
   --dw-count-controls: calc(var(--dw-step-btn) * 2 + var(--dw-count-lane) + 4px);
   --dw-notes-lane: 150px;  /* the notes box: fixed, so they stack in one column */
   --dw-value-lane:  62px;  /* five figures and a currency, in tabular digits   */
+  /* ══ SPACING ═══════════════════════════════════════════════════════════
+     **One ladder, eight rungs, and every gap and padding names one.**
+
+       1   1px   a chip's own line: text sitting tight inside a pill
+       2   2px   inside one control — an icon and the number beside it
+       3   4px   between the parts of one thing
+       4   6px   between controls standing in a row
+       5   8px   between blocks stacked in a column
+       6  12px   between sections that are about different subjects
+       7  16px   a window's own breathing room
+       8  24px   a page-level separation, and an empty window's air
+
+     Before this there were sixteen values — 1,2,3,4,5,6,7,8,9,10,12,14,16,18,
+     24,40 — and padding alone had sixty-nine distinct combinations. Nobody
+     chose 7px over 8px; it is what a rule ended up with, and the difference is
+     not one anybody can see, only one they can feel as untidiness. Two empty
+     states said it best: `.party-empty` padded itself by 40px and
+     `.trash-empty` by 24px, for the same job on the same evening.
+
+     **Rounding rule: nearest rung, and a tie goes UP.** Not for looks — for
+     alignment. A button that takes its height from its padding stands beside a
+     field that takes its height from `--dw-control-h`, and rounding those
+     paddings down would have dropped every such button two pixels below the
+     box next to it. That is the exact fault this pass exists to remove, so the
+     rule is written to make it impossible. It also lands the ties on 4, 6 and
+     8 — which are already the three commonest values in the file, so most of
+     the module does not move at all.
+
+     Sizes are the --dw-text-* scale and control heights are their own metrics;
+     this ladder is only for the space between things. */
+  --dw-space-1:  1px;
+  --dw-space-2:  2px;
+  --dw-space-3:  4px;
+  --dw-space-4:  6px;
+  --dw-space-5:  8px;
+  --dw-space-6: 12px;
+  --dw-space-7: 16px;
+  --dw-space-8: 24px;
+
   /* The gap between the lanes of a list row -- the text on the left, the count
      controls and notes, and the value and buttons on the right. One number, so
-     the three read as evenly spaced (Leander, 2026-08-31). */
-  --dw-row-gap: 6px;
+     the three read as evenly spaced (Leander, 2026-08-31). Named through the
+     ladder, because a row's lanes are controls standing in a row. */
+  --dw-row-gap: var(--dw-space-4);
   --dw-roll-lane: 68px;   /* a d20 and the word "Roll"                    */
   --dw-radius:     3px;
   --dw-radius-lg:  5px;
@@ -223,7 +263,7 @@ body {
      two places that named the face outright, which is how a type role becomes
      a type role in only most of the module. */
   font-family: var(--dw-font-body);
-  padding: 8px;
+  padding: var(--dw-space-5);
   overflow-y: auto;
 }
 
@@ -266,8 +306,8 @@ body {
 .dw-window-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 5px;
+  gap: var(--dw-space-5);
+  padding-bottom: var(--dw-space-4);
   border-bottom: 2px solid var(--dw-accent);
 }
 
@@ -291,13 +331,13 @@ body {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .dolmenwood-party-inventory h3 {
   color: var(--dw-secondary);
   font-size: var(--dw-text-sm);
-  margin: 4px 0 3px;
+  margin: var(--dw-space-3) 0 var(--dw-space-3);
   letter-spacing: 0.03em;
 }
 
@@ -309,19 +349,19 @@ body {
 
 /* ─── Encumbrance Bar ───────────────────────────────────────────────────────── */
 .encumbrance-bar {
-  margin: 6px 0;
+  margin: var(--dw-space-4) 0;
   font-size: var(--dw-text-sm);
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border-light);
   border-radius: 6px;
-  padding: 5px 8px;
+  padding: var(--dw-space-4) var(--dw-space-5);
 }
 
 .enc-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: var(--dw-space-4);
+  margin-bottom: var(--dw-space-3);
 }
 
 .enc-label {
@@ -403,8 +443,8 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--dw-row-gap);
-  margin-top: 5px;
-  padding-top: 5px;
+  margin-top: var(--dw-space-4);
+  padding-top: var(--dw-space-4);
   border-top: 1px solid var(--dw-line-hair);
 }
 
@@ -414,7 +454,7 @@ body {
    showing both. Only the fill says which one is real. */
 .speed-base,
 .speed-result {
-  padding: 1px 8px;
+  padding: var(--dw-space-1) var(--dw-space-5);
   border-radius: 10px;
   font-size: var(--dw-text-base);
   font-weight: bold;
@@ -450,8 +490,8 @@ body {
 .speed-malus {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 1px 7px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-1) var(--dw-space-5);
   border-radius: 10px;
   background: var(--speed-orange-bg);
   border: 1px solid rgba(147, 48, 10, 0.25);
@@ -494,14 +534,14 @@ body {
 .coin-display {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--dw-space-3);
   align-items: center;
 }
 
 .coin-row {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--dw-space-3);
 }
 
 .coin-label {
@@ -509,7 +549,7 @@ body {
   font-weight: bold;
   min-width: 20px;
   text-align: center;
-  padding: 1px 4px;
+  padding: var(--dw-space-1) var(--dw-space-3);
   border-radius: 3px;
   letter-spacing: 0.05em;
   text-shadow: 0 1px 1px rgba(0,0,0,0.2);
@@ -526,7 +566,7 @@ body {
   font-size: var(--dw-text-sm);
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
-  padding: 2px 4px;
+  padding: var(--dw-space-2) var(--dw-space-3);
   background: var(--dw-field-bg);
   color: #111;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
@@ -543,7 +583,7 @@ body {
 
 .coin-totals-readonly {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-space-4);
   font-size: var(--dw-text-sm);
 }
 
@@ -563,13 +603,13 @@ body {
   display: flex;
   align-items: stretch;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--dw-space-5);
   /* The break between the summary and the list of zones. It hangs off the
      summary rather than off the zones, so it falls above the first zone and
      nowhere else — the zones stay evenly spaced among themselves (Leander,
      2026-08-31: *"nicht zwischen den einzelnen Zones sondern nur über der
      ersten zone"*). */
-  margin-bottom: 8px;
+  margin-bottom: var(--dw-space-5);
 }
 
 /* **One box, drawn here and only here** (Leander, 2026-08-31: *"der Weight block
@@ -586,10 +626,10 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 3px;
+  gap: var(--dw-space-3);
   min-width: 0;
   margin: 0;
-  padding: 6px 8px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
   border-radius: 6px;
   background: var(--dw-bg-dark);
@@ -646,13 +686,13 @@ body {
 }
 
 .inv-summary .inv-coins .coins-header {
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 /* ─── Inventory Zones ───────────────────────────────────────────────────────── */
 .player-inventory {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-space-5);
 }
 
 /* **Narrow the window and it scrolls sideways, as the party window does**
@@ -683,8 +723,8 @@ body {
 .inv-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
+  gap: var(--dw-space-6);
+  margin-bottom: var(--dw-space-4);
 }
 
 .actor-name {
@@ -713,10 +753,10 @@ body {
      with no gap, the double-team button sat against the capacity it changes
      (Leander, 2026-08-30). One gap here spaces the whole row -- handle, title,
      shared badge, team toggle, capacity -- instead of one margin per case. */
-  gap: 8px;
+  gap: var(--dw-space-5);
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
-  padding: 5px 10px;
+  padding: var(--dw-space-4) var(--dw-space-6);
 }
 
 .zone-header h3 {
@@ -739,13 +779,13 @@ body {
   background: var(--speed-red);
   color: white;
   font-size: var(--dw-text-xs);
-  padding: 1px 4px;
+  padding: var(--dw-space-1) var(--dw-space-3);
   border-radius: 3px;
-  margin-left: 4px;
+  margin-left: var(--dw-space-3);
 }
 
 .inventory-zone {
-  padding: 4px;
+  padding: var(--dw-space-3);
   min-height: 32px;
   background: var(--dw-bg-parchment);
 }
@@ -755,7 +795,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: var(--dw-row-gap);
-  padding: 4px 5px;
+  padding: var(--dw-space-3) var(--dw-space-4);
   border-radius: 4px;
   border-bottom: 1px solid rgba(160, 100, 30, 0.12);
   font-size: var(--dw-text-sm);
@@ -786,13 +826,13 @@ body {
 
 .secret-icon {
   color: #b01a00;
-  margin-right: 3px;
+  margin-right: var(--dw-space-3);
 }
 
 .item-cat-icon {
   color: var(--dw-tertiary);
   font-size: var(--dw-text-sm);
-  margin-right: 3px;
+  margin-right: var(--dw-space-3);
   opacity: 0.7;
   flex-shrink: 0;
 }
@@ -815,7 +855,7 @@ body {
   font-size: var(--dw-text-xs);
   color: var(--dw-tertiary);
   font-style: italic;
-  margin-top: 1px;
+  margin-top: var(--dw-space-1);
   line-height: 1.3;
   white-space: normal;
 }
@@ -823,9 +863,9 @@ body {
 .item-size-badge {
   display: inline-block;
   font-size: var(--dw-text-xs);
-  padding: 0 4px;
+  padding: 0 var(--dw-space-3);
   border-radius: 3px;
-  margin-left: 4px;
+  margin-left: var(--dw-space-3);
   vertical-align: middle;
   font-style: normal;
 }
@@ -837,9 +877,9 @@ body {
 .badge {
   display: inline-block;
   font-size: var(--dw-text-xs);
-  padding: 0 4px;
+  padding: 0 var(--dw-space-3);
   border-radius: 3px;
-  margin-left: 3px;
+  margin-left: var(--dw-space-3);
   vertical-align: middle;
 }
 
@@ -848,7 +888,7 @@ body {
 .item-qty-controls {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--dw-space-2);
   flex-shrink: 0;
 }
 
@@ -884,7 +924,7 @@ body {
 .item-uses-controls {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--dw-space-2);
   flex-shrink: 0;
 }
 
@@ -900,7 +940,7 @@ body {
 
 .item-notes-input {
   font-size: var(--dw-text-xs);
-  padding: 2px 4px;
+  padding: var(--dw-space-2) var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
   width: 160px;
@@ -950,8 +990,8 @@ body {
 .add-item-zone-btn {
   display: block;
   width: 100%;
-  margin-top: 4px;
-  padding: 4px;
+  margin-top: var(--dw-space-3);
+  padding: var(--dw-space-3);
   font-size: var(--dw-text-xs);
   border: 1px dashed var(--dw-border-light);
   border-radius: 4px;
@@ -973,15 +1013,15 @@ body {
 .coins-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: var(--dw-space-4);
+  margin-bottom: var(--dw-space-3);
 }
 
 .coins-header h3 { margin: 0; flex: 1; }
 
 .btn-grant-coins,
 .btn-give-coins {
-  padding: 3px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   font-size: var(--dw-text-xs);
   border-radius: 4px;
   cursor: pointer;
@@ -1018,7 +1058,7 @@ body {
 .party-overview {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-space-5);
   height: 100%;
 }
 
@@ -1042,7 +1082,7 @@ body {
 .toolbar-buttons { display: flex; gap: 6px; }
 
 .btn-toolbar {
-  padding: 5px 12px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   font-size: var(--dw-text-sm);
   border: 1px solid var(--dw-border);
   border-radius: 4px;
@@ -1081,7 +1121,7 @@ body {
 
 .party-grid {
   display: grid;
-  gap: 8px;
+  gap: var(--dw-space-5);
   flex: 1;
   overflow-x: auto;
   overflow-y: auto;
@@ -1119,12 +1159,12 @@ body {
 .player-col-header {
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
-  padding: 5px 8px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   display: flex;
   /* Top-aligned, so the speed badge sits beside the name's first line whether
      the name runs to one line or two. */
   align-items: flex-start;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 /* Names get two lines rather than being cut off at one.
@@ -1155,7 +1195,7 @@ body {
 .player-speed {
   font-size: var(--dw-text-sm);
   font-weight: bold;
-  padding: 1px 5px;
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 3px;
   background: rgba(0,0,0,0.25);
 }
@@ -1172,7 +1212,7 @@ body {
 .player-col-header .player-speed.speed-red    { background: var(--speed-red-fill); }
 
 .player-bars {
-  padding: 6px 8px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   background: var(--dw-bg-dark);
   border-bottom: 1px solid rgba(160,100,30,0.15);
 }
@@ -1180,9 +1220,9 @@ body {
 .bar-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
   font-size: var(--dw-text-xs);
-  margin-bottom: 3px;
+  margin-bottom: var(--dw-space-3);
 }
 
 .bar-label {
@@ -1234,7 +1274,7 @@ body {
 }
 
 .player-coins {
-  padding: 4px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: var(--dw-bg-parchment);
   border-top: 1px solid rgba(160,100,30,0.1);
   border-bottom: 1px solid rgba(160,100,30,0.1);
@@ -1242,7 +1282,7 @@ body {
 }
 
 .player-items-compact {
-  padding: 4px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: var(--dw-bg-parchment);
 }
 
@@ -1251,7 +1291,7 @@ body {
   justify-content: space-between;
   align-items: center;
   font-size: var(--dw-text-xs);
-  padding: 2px 0;
+  padding: var(--dw-space-2) 0;
   border-bottom: 1px solid rgba(160,100,30,0.08);
 }
 
@@ -1274,13 +1314,13 @@ body {
   letter-spacing: 0.04em;
   color: var(--dw-secondary);
   border-bottom: 1px solid var(--dw-border);
-  margin-bottom: 2px;
-  padding-bottom: 1px;
+  margin-bottom: var(--dw-space-2);
+  padding-bottom: var(--dw-space-1);
 }
 
 .party-empty {
   text-align: center;
-  padding: 40px;
+  padding: var(--dw-space-8);
   color: var(--dw-secondary);
   font-style: italic;
 }
@@ -1292,7 +1332,7 @@ body {
 }
 
 .party-transactions summary {
-  padding: 5px 10px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   background: var(--dw-bg-dark);
   cursor: pointer;
   font-size: var(--dw-text-sm);
@@ -1303,7 +1343,7 @@ body {
 
 /* ─── Party Summary ─────────────────────────────────────────────────────────── */
 .party-summary {
-  margin-top: 4px;
+  margin-top: var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
   border-radius: 6px;
   background: var(--dw-bg-parchment);
@@ -1311,7 +1351,7 @@ body {
 }
 
 .party-summary > summary {
-  padding: 6px 10px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   cursor: pointer;
   font-weight: bold;
   color: var(--dw-accent-light);
@@ -1330,8 +1370,8 @@ body {
 .summary-wealth {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 10px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-5) var(--dw-space-6);
   border-bottom: 1px solid rgba(160,100,30,0.15);
   flex-wrap: wrap;
   background: var(--dw-bg-dark);
@@ -1339,7 +1379,7 @@ body {
 
 .summary-coin-row {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-space-4);
   flex-wrap: wrap;
   flex: 1;
   align-items: center;
@@ -1348,7 +1388,7 @@ body {
 .summary-coin {
   font-size: var(--dw-text-sm);
   background: var(--dw-bg-parchment);
-  padding: 2px 7px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   border-radius: 10px;
   border: 1px solid var(--dw-border-light);
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
@@ -1366,17 +1406,17 @@ body {
   white-space: nowrap;
   font-style: italic;
   border-left: 1px solid var(--dw-border-light);
-  padding-left: 10px;
+  padding-left: var(--dw-space-6);
 }
 
 .summary-item-list {
-  padding: 4px 6px;
+  padding: var(--dw-space-3) var(--dw-space-4);
   max-height: 260px;
   overflow-y: auto;
 }
 
 .summary-category {
-  margin-bottom: 5px;
+  margin-bottom: var(--dw-space-4);
 }
 
 .summary-cat-header {
@@ -1385,17 +1425,17 @@ body {
   color: var(--dw-accent-light);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 3px 6px 2px;
+  padding: var(--dw-space-3) var(--dw-space-4) var(--dw-space-2);
   background: var(--dw-secondary);
   border-radius: 3px;
-  margin-bottom: 2px;
+  margin-bottom: var(--dw-space-2);
 }
 
 .summary-item {
   display: flex;
   align-items: baseline;
   gap: var(--dw-row-gap);
-  padding: 2px 6px;
+  padding: var(--dw-space-2) var(--dw-space-4);
   font-size: var(--dw-text-sm);
   border-radius: 3px;
 }
@@ -1414,7 +1454,7 @@ body {
 .summary-item-qty {
   color: var(--dw-secondary);
   font-size: var(--dw-text-xs);
-  margin-left: 2px;
+  margin-left: var(--dw-space-2);
 }
 
 .summary-item-owner {
@@ -1425,7 +1465,7 @@ body {
 }
 
 .summary-empty {
-  padding: 10px 10px;
+  padding: var(--dw-space-6) var(--dw-space-6);
   color: var(--dw-secondary);
   font-style: italic;
   font-size: var(--dw-text-sm);
@@ -1435,14 +1475,14 @@ body {
 .shop-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-space-5);
   height: 100%;
 }
 
 .shop-header {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .shop-header h2 { margin: 0; }
@@ -1450,7 +1490,7 @@ body {
 .shop-target {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-space-5);
   font-size: var(--dw-text-sm);
 }
 
@@ -1458,7 +1498,7 @@ body {
   flex: 1;
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
-  padding: 3px 6px;
+  padding: var(--dw-space-3) var(--dw-space-4);
   font-family: inherit;
   background: var(--dw-field-bg);
   color: var(--dw-text);
@@ -1467,7 +1507,7 @@ body {
 .shop-target-summary {
   font-size: var(--dw-text-xs);
   background: var(--dw-bg-dark);
-  padding: 4px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-radius: 4px;
   border: 1px solid var(--dw-border-light);
 }
@@ -1475,7 +1515,7 @@ body {
 .shop-tag-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--dw-space-3);
   align-items: center;
   font-size: var(--dw-text-sm);
 }
@@ -1487,7 +1527,7 @@ body {
 }
 
 .tag-chip {
-  padding: 2px 9px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   border-radius: 12px;
   border: 1px solid var(--dw-border-light);
   background: var(--dw-bg-dark);
@@ -1508,13 +1548,13 @@ body {
 
 .shop-search {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-space-4);
   align-items: center;
 }
 
 #shop-search {
   flex: 1;
-  padding: 5px 9px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
   font-size: var(--dw-text-sm);
@@ -1525,7 +1565,7 @@ body {
 }
 
 .btn-custom-item {
-  padding: 4px 10px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   font-size: var(--dw-text-xs);
   border: 1px solid var(--dw-border);
   border-radius: 4px;
@@ -1541,7 +1581,7 @@ body {
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border);
   border-radius: 4px;
-  padding: 4px 9px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   font-size: var(--dw-text-xs);
   cursor: pointer;
   color: var(--dw-text);
@@ -1567,7 +1607,7 @@ body {
 .shop-category {
   border: 1px solid var(--dw-border-light);
   border-radius: 6px;
-  margin-bottom: 6px;
+  margin-bottom: var(--dw-space-4);
   overflow: hidden;
   box-shadow: 0 1px 3px var(--dw-shadow);
 }
@@ -1575,7 +1615,7 @@ body {
 .shop-category summary.shop-category-name {
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
-  padding: 6px 10px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   cursor: pointer;
   font-size: var(--dw-text-sm);
   font-weight: bold;
@@ -1585,15 +1625,15 @@ body {
 }
 
 .shop-item-list {
-  padding: 4px;
+  padding: var(--dw-space-3);
   background: var(--dw-bg-parchment);
 }
 
 .shop-item {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 2px var(--dw-row-gap);
-  padding: 5px 7px;
+  gap: var(--dw-space-2) var(--dw-row-gap);
+  padding: var(--dw-space-4) var(--dw-space-5);
   border-radius: 4px;
   border-bottom: 1px solid rgba(160,100,30,0.1);
   font-size: var(--dw-text-sm);
@@ -1609,21 +1649,21 @@ body {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 0 6px;
+  gap: 0 var(--dw-space-4);
   min-width: 0;
 }
 .shop-item-meta { grid-column: 2; text-align: right; white-space: nowrap; }
 .shop-item-actions {
   grid-column: 3;
   display: flex;
-  gap: 3px;
+  gap: var(--dw-space-3);
 }
 
 .shop-item-icon {
   color: var(--dw-tertiary);
   font-size: var(--dw-text-xs);
   opacity: 0.75;
-  margin-right: 2px;
+  margin-right: var(--dw-space-2);
 }
 
 .shop-item-name { font-weight: bold; color: var(--dw-primary); white-space: nowrap; }
@@ -1640,7 +1680,7 @@ body {
 
 .shop-item-size {
   font-size: var(--dw-text-xs);
-  padding: 1px 5px;
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 3px;
   display: inline-block;
 }
@@ -1653,7 +1693,7 @@ body {
 }
 
 .btn-purchase, .btn-grant {
-  padding: 3px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   font-size: var(--dw-text-xs);
   border-radius: 4px;
   cursor: pointer;
@@ -1683,7 +1723,7 @@ body {
 .btn-grant:hover { background: linear-gradient(to bottom, var(--dw-zone-green-pale), #a8d6a8); }
 
 .btn-hide-item {
-  padding: 2px 6px;
+  padding: var(--dw-space-2) var(--dw-space-4);
   font-size: var(--dw-text-xs);
   background: transparent;
   border: 1px solid var(--dw-border-light);
@@ -1716,20 +1756,20 @@ body {
 .shop-hidden-badge {
   color: #b85500;
   font-size: var(--dw-text-xs);
-  margin-left: 4px;
+  margin-left: var(--dw-space-3);
   opacity: 0.75;
 }
 
 /* Shop subcategory header */
 .shop-subcategory-header {
-  padding: 3px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   font-size: var(--dw-text-xs);
   font-weight: bold;
   color: var(--dw-tertiary);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   border-top: 1px solid rgba(160,100,30,0.15);
-  margin-top: 2px;
+  margin-top: var(--dw-space-2);
   background: rgba(160,100,30,0.04);
 }
 
@@ -1740,13 +1780,13 @@ body {
 .shop-custom-badge {
   color: var(--dw-accent);
   font-size: var(--dw-text-xs);
-  margin-left: 4px;
+  margin-left: var(--dw-space-3);
   opacity: 0.85;
 }
 
 /* "Add to Shop" button */
 .btn-add-to-shop {
-  padding: 4px 10px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   font-size: var(--dw-text-sm);
   background: var(--dw-accent);
   color: var(--dw-primary);
@@ -1767,12 +1807,12 @@ body {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 4px 8px;
+  gap: var(--dw-space-4);
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border-light);
   border-radius: 5px;
-  margin-bottom: 6px;
+  margin-bottom: var(--dw-space-4);
   font-size: var(--dw-text-sm);
 }
 .convoy-label {
@@ -1784,8 +1824,8 @@ body {
 .convoy-speed-bar .animal-speed-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-2) var(--dw-space-5);
   border-radius: 10px;
   font-size: var(--dw-text-sm);
   font-weight: bold;
@@ -1800,8 +1840,8 @@ body {
 .convoy-speed-bar .own-speed-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-2) var(--dw-space-5);
   border-radius: 10px;
   font-size: var(--dw-text-sm);
   font-weight: bold;
@@ -1820,11 +1860,11 @@ body {
 .convoy-final {
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
+  gap: var(--dw-space-3);
   min-width: 0;
   font-weight: bold;
   font-size: var(--dw-text-base);
-  padding: 2px 8px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   border-radius: 10px;
   background: rgba(0,0,0,0.2);
   border: 1px solid rgba(255,255,255,0.2);
@@ -1868,8 +1908,8 @@ body {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 3px 10px 4px;
+  gap: var(--dw-space-4);
+  padding: var(--dw-space-3) var(--dw-space-6) var(--dw-space-3);
   background: rgba(160,100,30,0.06);
   border-bottom: 1px solid var(--dw-border-light);
   font-size: var(--dw-text-sm);
@@ -1882,8 +1922,8 @@ body {
 .animal-info-row .animal-speed-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 1px 7px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-1) var(--dw-space-5);
   border-radius: 10px;
   font-weight: bold;
   color: #fff;
@@ -1924,7 +1964,7 @@ body {
 .animal-description {
   color: var(--dw-tertiary);
   font-style: italic;
-  margin-top: 1px;
+  margin-top: var(--dw-space-1);
   line-height: 1.3;
 }
 
@@ -1932,18 +1972,18 @@ body {
   display: inline-block;
   font-size: var(--dw-text-xs);
   font-weight: bold;
-  padding: 1px 6px;
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 10px;
   background: var(--dw-accent);
   color: var(--dw-primary);
-  margin-left: 6px;
+  margin-left: var(--dw-space-4);
   vertical-align: middle;
   letter-spacing: 0.02em;
 }
 
 /* ─── Transaction Log ───────────────────────────────────────────────────────── */
 .transaction-log {
-  margin-top: 6px;
+  margin-top: var(--dw-space-4);
   border: 1px solid var(--dw-border-light);
   border-radius: 6px;
   overflow: hidden;
@@ -1952,7 +1992,7 @@ body {
 .transaction-log h4 {
   background: var(--dw-bg-dark);
   color: var(--dw-secondary);
-  padding: 5px 10px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   margin: 0;
   font-size: var(--dw-text-sm);
   border-bottom: 1px solid var(--dw-border-light);
@@ -1961,15 +2001,15 @@ body {
 .transaction-entries {
   max-height: 120px;
   overflow-y: auto;
-  padding: 4px;
+  padding: var(--dw-space-3);
   background: var(--dw-bg-parchment);
 }
 
 .transaction-entry {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-space-4);
   font-size: var(--dw-text-xs);
-  padding: 2px 4px;
+  padding: var(--dw-space-2) var(--dw-space-3);
   border-radius: 3px;
   border-bottom: 1px solid rgba(0,0,0,0.05);
 }
@@ -1995,8 +2035,8 @@ body {
 .icon-picker {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 6px 0;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-4) 0;
 }
 
 .icon-picker-btn {
@@ -2059,8 +2099,8 @@ body {
 .zone-team-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-1) var(--dw-space-4);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 9px;
   background: rgba(0, 0, 0, 0.25);
@@ -2084,7 +2124,7 @@ body {
   font-size: var(--dw-text-xs);
   opacity: 0.7;
   font-weight: normal;
-  margin-left: 4px;
+  margin-left: var(--dw-space-3);
 }
 
 /* ─── Zone color variants (set via data-zone-color on .inv-zone-extra) ─────── */
@@ -2145,8 +2185,8 @@ body {
   z-index: 30;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-4) var(--dw-space-5);
   border: 1px solid #5a8fd8;
   border-radius: 5px;
   background: var(--dw-bg-parchment);
@@ -2161,7 +2201,7 @@ body {
 
 .qm-selection-bar button {
   width: auto;
-  padding: 2px 8px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   font-size: var(--dw-text-xs);
   line-height: 1.5;
   cursor: pointer;
@@ -2182,7 +2222,7 @@ body {
   min-width: 190px;
   max-height: 70vh;
   overflow-y: auto;
-  padding: 4px;
+  padding: var(--dw-space-3);
   border: 1px solid var(--dw-ink-faint);
   border-radius: 5px;
   background: var(--dw-text);
@@ -2192,7 +2232,7 @@ body {
 }
 
 .qm-menu-header {
-  padding: 4px 8px 2px;
+  padding: var(--dw-space-3) var(--dw-space-5) var(--dw-space-2);
   font-size: var(--dw-text-sm);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -2204,7 +2244,7 @@ body {
 .qm-context-menu .qm-menu-item {
   display: block;
   width: 100%;
-  padding: 4px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   text-align: left;
   cursor: pointer;
   border: none;
@@ -2228,9 +2268,9 @@ body {
 .shared-store-header {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  margin: 14px 0 4px;
-  padding-top: 8px;
+  gap: var(--dw-space-5);
+  margin: var(--dw-space-7) 0 var(--dw-space-3);
+  padding-top: var(--dw-space-5);
   border-top: 2px dashed var(--dw-border-light);
 }
 
@@ -2267,7 +2307,7 @@ body {
 
 .zone-shared-badge {
   font-size: var(--dw-text-xs);
-  padding: 1px 6px;
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.28);
   white-space: nowrap;
@@ -2294,7 +2334,7 @@ body {
   cursor: grab;
   opacity: 0.5;
   font-size: var(--dw-text-sm);
-  padding: 0 4px;
+  padding: 0 var(--dw-space-3);
   flex-shrink: 0;
   user-select: none;
 }
@@ -2355,9 +2395,9 @@ body {
 /* ─── Color picker (Rename Zone dialog) ─────────────────────────────────────── */
 .color-picker {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-space-4);
   flex-wrap: wrap;
-  margin-top: 2px;
+  margin-top: var(--dw-space-2);
 }
 .color-picker-btn {
   width: 28px;
@@ -2379,8 +2419,8 @@ body {
 .zone-coin-purse {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: rgba(0,0,0,0.12);
   border-top: 1px solid rgba(255,255,255,0.06);
   flex-wrap: wrap;
@@ -2395,7 +2435,7 @@ body {
 .zone-purse-inputs {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--dw-space-3);
   flex-wrap: wrap;
 }
 
@@ -2407,7 +2447,7 @@ body {
 .zone-coin-input {
   flex: 0 0 48px;
   width: 48px;
-  padding: 2px 4px;
+  padding: var(--dw-space-2) var(--dw-space-3);
   font-size: var(--dw-text-xs);
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: 3px;
@@ -2420,12 +2460,12 @@ body {
   font-size: var(--dw-text-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
-  margin-right: 4px;
+  margin-right: var(--dw-space-3);
 }
 
 .zone-purse-readonly {
   display: flex;
-  gap: 6px;
+  gap: var(--dw-space-4);
   flex-wrap: wrap;
   font-size: var(--dw-text-sm);
 }
@@ -2438,7 +2478,7 @@ body {
 .zone-move-coins-btn {
   margin-left: auto;
   font-size: var(--dw-text-xs);
-  padding: 2px 6px;
+  padding: var(--dw-space-2) var(--dw-space-4);
   opacity: 0.7;
   flex-shrink: 0;
 }
@@ -2450,9 +2490,9 @@ body {
 .btn-add-extra-zone {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin: 6px 0 2px;
-  padding: 5px 12px;
+  gap: var(--dw-space-4);
+  margin: var(--dw-space-4) 0 var(--dw-space-2);
+  padding: var(--dw-space-4) var(--dw-space-6);
   background: linear-gradient(to bottom, var(--dw-zone-green-pale), #a8d5a8);
   border: 1px solid #4a8a4a;
   border-radius: 4px;
@@ -2482,20 +2522,20 @@ body {
 .inn-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--dw-space-5);
   /* Do not set height: 100% — let window-content scroll naturally */
 }
 
 .inn-header {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .inn-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-space-5);
 }
 
 .inn-title-row .inn-name-edit,
@@ -2508,7 +2548,7 @@ body {
   text-transform: capitalize;
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
-  padding: 3px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: var(--dw-bg-dark);
   white-space: nowrap;
 }
@@ -2531,7 +2571,7 @@ body {
   background: transparent;
   border: none;
   border-bottom: 2px dashed var(--dw-accent);
-  padding: 2px 4px;
+  padding: var(--dw-space-2) var(--dw-space-3);
   width: 100%;
   box-sizing: border-box;
 }
@@ -2544,12 +2584,12 @@ body {
 
 .quality-buttons {
   display: flex;
-  gap: 4px;
+  gap: var(--dw-space-3);
 }
 
 .quality-btn {
   flex: 1;
-  padding: 4px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   font-size: var(--dw-text-sm);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
@@ -2573,7 +2613,7 @@ body {
 .inn-actor-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--dw-space-5);
   font-size: var(--dw-text-sm);
 }
 
@@ -2581,7 +2621,7 @@ body {
   flex: 1;
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
-  padding: 3px 6px;
+  padding: var(--dw-space-3) var(--dw-space-4);
   font-family: inherit;
   background: var(--dw-field-bg);
   color: var(--dw-text);
@@ -2596,7 +2636,7 @@ body {
 .inn-wallet {
   font-size: var(--dw-text-sm);
   background: var(--dw-bg-dark);
-  padding: 3px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-radius: 4px;
   border: 1px solid var(--dw-border-light);
   color: var(--dw-secondary);
@@ -2608,7 +2648,7 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .inn-section {
@@ -2621,7 +2661,7 @@ body {
 .inn-section-header {
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
-  padding: 6px 10px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   font-size: var(--dw-text-sm);
   font-weight: bold;
   letter-spacing: 0.05em;
@@ -2644,8 +2684,8 @@ body {
 /* A section whose quality differs from the house's — Chateau Shantywood keeps
    fancy rooms above a common kitchen, and that has to be visible at a glance. */
 .inn-section-quality {
-  margin-left: 6px;
-  padding: 0 6px;
+  margin-left: var(--dw-space-4);
+  padding: 0 var(--dw-space-4);
   border-radius: 8px;
   background: rgba(0,0,0,0.25);
   color: var(--dw-accent-light);
@@ -2656,15 +2696,15 @@ body {
 
 .inn-section-tools {
   display: flex;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: rgba(160,100,30,0.08);
   border-bottom: 1px solid rgba(160,100,30,0.15);
 }
 
 .inn-section-text {
   margin: 0;
-  padding: 6px 10px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   background: var(--dw-bg-parchment);
   color: var(--dw-tertiary);
   font-style: italic;
@@ -2674,7 +2714,7 @@ body {
 }
 
 .inn-group-label {
-  padding: 4px 10px 2px;
+  padding: var(--dw-space-3) var(--dw-space-6) var(--dw-space-2);
   background: var(--dw-bg-parchment);
   color: var(--dw-secondary);
   font-size: var(--dw-text-xs);
@@ -2685,7 +2725,7 @@ body {
 
 .inn-empty {
   margin: 0;
-  padding: 8px 10px;
+  padding: var(--dw-space-5) var(--dw-space-6);
   background: var(--dw-bg-parchment);
   color: var(--dw-tertiary);
   font-style: italic;
@@ -2698,7 +2738,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--dw-row-gap);
-  padding: 5px 8px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   border-bottom: 1px solid rgba(160,100,30,0.1);
   background: var(--dw-bg-parchment);
   transition: background 0.1s;
@@ -2736,8 +2776,8 @@ body {
 }
 
 .inn-item-tag {
-  margin-left: 6px;
-  padding: 0 5px;
+  margin-left: var(--dw-space-4);
+  padding: 0 var(--dw-space-4);
   border-radius: 8px;
   background: rgba(160,100,30,0.14);
   color: var(--dw-tertiary);
@@ -2785,7 +2825,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
+  gap: var(--dw-space-3);
   flex: 0 0 auto;
 }
 
@@ -2850,7 +2890,7 @@ body {
   border: 1px solid var(--dw-border-light);
   border-radius: 6px;
   background: var(--dw-bg-parchment);
-  margin-bottom: 8px;
+  margin-bottom: var(--dw-space-5);
   overflow: hidden;
   flex: 0 0 auto;
 }
@@ -2859,8 +2899,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 4px 8px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
   color: var(--dw-accent-light);
   font-size: var(--dw-text-sm);
@@ -2872,7 +2912,7 @@ body {
 .inn-daybox-tools {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
 }
 
 /* .icon-btn is parchment ink (dark brown) — on this header's dark gradient it
@@ -2894,7 +2934,7 @@ body {
 .btn-new-day {
   height: auto;
   min-height: 0;
-  padding: 2px 8px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   font-size: var(--dw-text-base);
   font-family: inherit;
   font-weight: bold;
@@ -2937,7 +2977,7 @@ body {
 .inn-daybox-table tbody tr:nth-child(even) { background-color: rgba(200,160,80,0.07); }
 
 .inn-daybox-table th {
-  padding: 3px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   text-align: left;
   color: var(--dw-secondary);
   font-size: var(--dw-text-xs);
@@ -2947,7 +2987,7 @@ body {
 }
 
 .inn-daybox-table td {
-  padding: 3px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-bottom: 1px solid rgba(160,100,30,0.1);
   color: var(--dw-text);
 }
@@ -2971,7 +3011,7 @@ body {
 
 .coin-slot-zone-select {
   font-size: var(--dw-text-xs);
-  padding: 2px 3px;
+  padding: var(--dw-space-2) var(--dw-space-3);
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
   max-width: 72px;
@@ -2995,7 +3035,7 @@ body {
 .item-coin-capacity {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--dw-space-3);
   flex-shrink: 0;
   font-size: var(--dw-text-xs);
   color: var(--speed-yellow);
@@ -3010,8 +3050,8 @@ body {
 .zone-footer-btns {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 6px 2px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-3) var(--dw-space-4) var(--dw-space-2);
   background: rgba(200,160,80,0.04);
 }
 
@@ -3034,30 +3074,30 @@ body {
 /* Side padding only: the rule under it and the size of its title are the head's
    business now, and this rule was quietly drawing both a second time. */
 .market-header {
-  padding: 8px 12px 5px;
+  padding: var(--dw-space-5) var(--dw-space-6) var(--dw-space-4);
 }
 
 .market-entries {
   flex: 1;
   overflow-y: auto;
-  padding: 6px 8px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--dw-space-3);
 }
 
 .market-empty {
   color: var(--dw-secondary);
   font-style: italic;
   text-align: center;
-  margin-top: 16px;
+  margin-top: var(--dw-space-7);
 }
 
 .market-entry {
   display: flex;
   align-items: center;
   gap: var(--dw-row-gap);
-  padding: 6px 8px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   background: rgba(200, 160, 80, 0.08);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
@@ -3075,7 +3115,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--dw-space-1);
   min-width: 0;
 }
 
@@ -3103,13 +3143,13 @@ body {
 .market-entry-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
   flex-shrink: 0;
 }
 
 .btn-market-open {
   font-size: var(--dw-text-sm);
-  padding: 3px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: var(--dw-tertiary);
   color: var(--dw-accent-light);
   border: 1px solid var(--dw-border);
@@ -3124,15 +3164,15 @@ body {
 
 .market-add-btns {
   display: flex;
-  gap: 8px;
-  padding: 8px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-5);
   border-top: 1px solid var(--dw-border-light);
   background: rgba(200, 160, 80, 0.05);
 }
 
 .btn-market-add {
   flex: 1;
-  padding: 5px 8px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   font-size: var(--dw-text-sm);
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border);
@@ -3174,8 +3214,8 @@ body {
 .trash-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-4) var(--dw-space-5);
   font-size: var(--dw-text-sm);
   border-bottom: 1px solid var(--dw-border-light);
   flex: 0 0 auto;
@@ -3217,10 +3257,10 @@ body {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--dw-space-4);
   width: auto;
   height: auto;
-  padding: 3px 10px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
   background: transparent;
@@ -3251,10 +3291,10 @@ body {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--dw-space-4);
   width: auto;
   height: auto;
-  padding: 3px 10px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   border: 1px solid var(--dw-border);
   border-radius: 3px;
   background: var(--dw-bg-dark);
@@ -3286,7 +3326,7 @@ body {
 .loot-release-btn {
   flex: 0 0 auto;
   width: auto;
-  padding: 3px 10px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   font-size: var(--dw-text-sm);
   white-space: nowrap;
   background: var(--dw-bg-dark);
@@ -3304,15 +3344,15 @@ body {
 .loot-toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: var(--dw-space-4);
+  padding: var(--dw-space-4) var(--dw-space-5);
   border-bottom: 1px solid var(--dw-border-light);
   background: rgba(200, 160, 80, 0.06);
 }
 
 .loot-toolbar button {
   width: auto;
-  padding: 3px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   font-size: var(--dw-text-sm);
   white-space: nowrap;
   background: var(--dw-bg-dark);
@@ -3347,11 +3387,11 @@ body {
 .loot-body {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 6px;
+  padding: var(--dw-space-3) var(--dw-space-4);
 }
 
 .loot-empty {
-  padding: 16px;
+  padding: var(--dw-space-7);
   text-align: center;
   color: var(--dw-tertiary);
 }
@@ -3360,7 +3400,7 @@ body {
   display: flex;
   align-items: flex-start;
   gap: var(--dw-row-gap);
-  padding: 5px 6px;
+  padding: var(--dw-space-4) var(--dw-space-4);
   border-bottom: 1px solid rgba(160, 100, 30, 0.12);
   font-size: var(--dw-text-sm);
 }
@@ -3370,7 +3410,7 @@ body {
 }
 
 .loot-row-icon {
-  margin-top: 2px;
+  margin-top: var(--dw-space-2);
   color: var(--dw-tertiary);
 }
 
@@ -3379,7 +3419,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
 }
 
 .loot-row-count {
@@ -3390,7 +3430,7 @@ body {
 .loot-take-btn {
   flex: 0 0 auto;
   width: auto;
-  padding: 2px 8px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   font-size: var(--dw-text-sm);
   white-space: nowrap;
   background: var(--dw-bg-dark);
@@ -3408,8 +3448,8 @@ body {
 .loot-purse {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 8px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-5) var(--dw-space-5);
   border-top: 1px solid var(--dw-border-light);
   background: rgba(200, 160, 80, 0.1);
 }
@@ -3422,7 +3462,7 @@ body {
   flex: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--dw-space-5);
   font-size: var(--dw-text-sm);
   font-weight: bold;
 }
@@ -3432,7 +3472,7 @@ body {
 .loot-browser-list {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 6px;
+  padding: var(--dw-space-3) var(--dw-space-4);
 }
 
 /* Foundry core styles every <button> with `height: var(--button-size)`,
@@ -3442,12 +3482,12 @@ body {
 .loot-browser-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--dw-space-6);
   width: 100%;
   height: auto;
   min-height: 0;
-  padding: 8px 10px;
-  margin-bottom: 6px;
+  padding: var(--dw-space-5) var(--dw-space-6);
+  margin-bottom: var(--dw-space-4);
   text-align: left;
   background: var(--dw-bg);
   border: 1px solid var(--dw-border-light);
@@ -3492,7 +3532,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--dw-space-3);
   min-width: 0;
 }
 
@@ -3510,7 +3550,7 @@ body {
 .loot-browser-badge {
   flex: 0 0 auto;
   font-size: var(--dw-text-xs);
-  padding: 2px 6px;
+  padding: var(--dw-space-2) var(--dw-space-4);
   border-radius: 3px;
   background: rgba(122, 80, 48, 0.18);
   color: var(--dw-secondary);
@@ -3522,8 +3562,8 @@ body {
 .loot-split-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 2px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-3) var(--dw-space-2);
   border-bottom: 1px solid rgba(160, 100, 30, 0.12);
 }
 
@@ -3540,7 +3580,7 @@ body {
 
 .loot-split-remainder,
 .loot-load-hint {
-  margin: 8px 0 0;
+  margin: var(--dw-space-5) 0 0;
   font-size: var(--dw-text-sm);
   color: var(--dw-secondary);
 }
@@ -3557,12 +3597,12 @@ body {
 }
 
 .dw-loot-message h3 {
-  margin: 0 0 4px;
+  margin: 0 0 var(--dw-space-3);
 }
 
 .dw-loot-message ul {
-  margin: 0 0 6px;
-  padding-left: 18px;
+  margin: 0 0 var(--dw-space-4);
+  padding-left: var(--dw-space-7);
 }
 
 /* ── Trash ────────────────────────────────────────────────────────────────────
@@ -3593,7 +3633,7 @@ body {
 }
 
 .trash-empty {
-  padding: 24px 16px;
+  padding: var(--dw-space-8) var(--dw-space-7);
   text-align: center;
   color: var(--dw-tertiary);
 }
@@ -3604,7 +3644,7 @@ body {
 .trash-empty i {
   display: block;
   font-size: 26px;
-  margin-bottom: 8px;
+  margin-bottom: var(--dw-space-5);
   opacity: 0.5;
 }
 
@@ -3619,26 +3659,26 @@ body {
 
 .trash-hint {
   margin: 0;
-  padding: 6px 10px;
+  padding: var(--dw-space-4) var(--dw-space-6);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
 .trash-groups {
   flex: 1;
   overflow-y: auto;
-  padding: 6px;
+  padding: var(--dw-space-4);
 }
 
 .trash-group {
-  margin-bottom: 10px;
+  margin-bottom: var(--dw-space-6);
 }
 
 .trash-group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 4px 6px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-3) var(--dw-space-4);
   background: var(--dw-bg-dark);
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
@@ -3653,7 +3693,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--dw-row-gap);
-  padding: 5px 6px;
+  padding: var(--dw-space-4) var(--dw-space-4);
   border-bottom: 1px solid rgba(160, 100, 30, 0.12);
   font-size: var(--dw-text-sm);
 }
@@ -3707,7 +3747,7 @@ body {
 
 #dolmenwood-day-bar {
   pointer-events: none;
-  margin-top: 4px;
+  margin-top: var(--dw-space-3);
 }
 
 /* One wrapper, because a Handlebars part is rendered as a single node — the
@@ -3773,7 +3813,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: var(--dw-space-3);
 
   /* Sized here, once, for both children -- and by the content rather than by a
      number somebody guessed. 860 was tuned by hand, then 900 when the type
@@ -3820,15 +3860,15 @@ body > #dolmenwood-day-bar {
 .day-bar-strip {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px 8px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-3) var(--dw-space-5);
 }
 
 .day-bar-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .day-bar-row > * {
@@ -3857,9 +3897,9 @@ body > #dolmenwood-day-bar {
    say it was. */
 .day-bar-shortcuts {
   display: flex;
-  gap: 2px;
+  gap: var(--dw-space-2);
   margin-left: auto;
-  padding-left: 6px;
+  padding-left: var(--dw-space-4);
   border-left: 1px solid var(--dw-border-light);
 }
 
@@ -3943,7 +3983,7 @@ body > #dolmenwood-day-bar {
 /* Hairlines between the rows, so three stacked lines still read as one object
    rather than three separate bars. */
 .day-bar-row + .day-bar-row {
-  padding-top: 4px;
+  padding-top: var(--dw-space-3);
   border-top: 1px solid var(--dw-border-light);
 }
 
@@ -3952,8 +3992,8 @@ body > #dolmenwood-day-bar {
 .day-bar-day {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding-right: 6px;
+  gap: var(--dw-space-3);
+  padding-right: var(--dw-space-4);
   border-right: 1px solid var(--dw-border-light);
 }
 
@@ -3997,7 +4037,7 @@ body > #dolmenwood-day-bar {
   display: grid;
   grid-template-columns: auto repeat(3, minmax(0, 1fr)) auto;
   align-items: center;
-  gap: 4px 12px;
+  gap: var(--dw-space-3) var(--dw-space-6);
   font-size: var(--dw-text-sm);
   color: var(--dw-tertiary);
 }
@@ -4028,7 +4068,7 @@ body > #dolmenwood-day-bar {
 .day-bar-hex-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
   min-width: 0;
 }
 
@@ -4037,7 +4077,7 @@ body > #dolmenwood-day-bar {
 /* Column four of the second line, beside the three fields it follows from:
    the way, the terrain and the weather are what set it. */
 .day-bar-context-lost {
-  padding: 2px 6px;
+  padding: var(--dw-space-2) var(--dw-space-4);
   border-left: 1px solid var(--dw-border-light);
   font-style: italic;
   white-space: nowrap;
@@ -4051,7 +4091,7 @@ body > #dolmenwood-day-bar {
   display: grid;
   grid-template-columns: var(--day-bar-label-w) minmax(0, 1fr);
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
   min-width: 0;
   white-space: nowrap;
 }
@@ -4122,7 +4162,7 @@ body > #dolmenwood-day-bar {
 .day-bar-context-field select {
   height: auto;
   min-height: 0;
-  padding: 1px 4px;
+  padding: var(--dw-space-1) var(--dw-space-3);
   background: var(--dw-bg);
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
@@ -4138,10 +4178,10 @@ body > #dolmenwood-day-bar {
 .day-bar-context-moved {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
   height: auto;
   min-height: 0;
-  padding: 2px 6px;
+  padding: var(--dw-space-2) var(--dw-space-4);
   background: var(--speed-orange-bg);
   border: 1px solid var(--speed-orange);
   border-radius: 3px;
@@ -4163,15 +4203,15 @@ body > #dolmenwood-day-bar {
 .dw-food-methods {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: var(--dw-space-3);
+  margin-bottom: var(--dw-space-5);
 }
 
 .dw-food-method {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 6px 8px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-4) var(--dw-space-5);
   background: var(--dw-bg);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
@@ -4184,7 +4224,7 @@ body > #dolmenwood-day-bar {
 }
 
 .dw-food-method > i {
-  margin-top: 2px;
+  margin-top: var(--dw-space-2);
   color: var(--dw-tertiary);
 }
 
@@ -4208,19 +4248,19 @@ body > #dolmenwood-day-bar {
 .dw-food-fullday {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 4px 0;
+  gap: var(--dw-space-4);
+  margin: var(--dw-space-3) 0;
   cursor: pointer;
 }
 
 .dw-food-hint {
-  margin-top: 6px;
+  margin-top: var(--dw-space-4);
 }
 
 /* What a procedure actually put in the party's packs. */
 .dw-day-roll-yield {
-  margin: 4px 0 0;
-  padding-top: 4px;
+  margin: var(--dw-space-3) 0 0;
+  padding-top: var(--dw-space-3);
   border-top: 1px solid var(--dw-border-light);
 }
 
@@ -4239,7 +4279,7 @@ body > #dolmenwood-day-bar {
   width: auto;
   height: auto;
   min-height: 0;
-  padding: 0 2px;
+  padding: 0 var(--dw-space-2);
   background: none;
   border: none;
   color: inherit;
@@ -4251,8 +4291,8 @@ body > #dolmenwood-day-bar {
 .day-bar-duty-roll {
   color: var(--dw-tertiary);
   border-left: 1px solid var(--dw-border-light);
-  padding-left: 5px;
-  margin-left: 2px;
+  padding-left: var(--dw-space-4);
+  margin-left: var(--dw-space-2);
 }
 
 .day-bar-duty-roll:hover {
@@ -4283,7 +4323,7 @@ body > #dolmenwood-day-bar {
 .day-bar-tp-weather {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--dw-space-2);
   color: var(--speed-orange);
   font-size: var(--dw-text-sm);
   white-space: nowrap;
@@ -4299,7 +4339,7 @@ body > #dolmenwood-day-bar {
 .day-bar-tp-clock {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--dw-space-3);
   /* Quieter than the counter beside it: this is a rate, not a running total,
      and it only changes when the march does. */
   opacity: 0.75;
@@ -4312,12 +4352,12 @@ body > #dolmenwood-day-bar {
 .dw-day-roll h3 {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 4px;
+  gap: var(--dw-space-4);
+  margin: 0 0 var(--dw-space-3);
 }
 
 .dw-day-roll-headline {
-  margin: 2px 0;
+  margin: var(--dw-space-2) 0;
   font-size: var(--dw-text-lg);
   font-weight: 600;
 }
@@ -4327,34 +4367,34 @@ body > #dolmenwood-day-bar {
 }
 
 .dw-day-roll-sub {
-  margin: 0 0 4px;
+  margin: 0 0 var(--dw-space-3);
   opacity: 0.75;
   font-size: var(--dw-text-sm);
 }
 
 .dw-day-roll-consequence {
-  margin: 4px 0;
-  padding: 4px 6px;
+  margin: var(--dw-space-3) 0;
+  padding: var(--dw-space-3) var(--dw-space-4);
   background: rgba(0, 0, 0, 0.05);
   border-left: 3px solid var(--dw-accent);
 }
 
 .dw-day-roll-note,
 .dw-day-roll-none {
-  margin: 4px 0 0;
+  margin: var(--dw-space-3) 0 0;
   opacity: 0.75;
   font-size: var(--dw-text-sm);
   font-style: italic;
 }
 
 .dw-day-roll-effects {
-  margin: 4px 0 0;
-  padding-left: 18px;
+  margin: var(--dw-space-3) 0 0;
+  padding-left: var(--dw-space-7);
   font-size: var(--dw-text-sm);
 }
 
 .dw-day-roll-effects li {
-  margin-bottom: 2px;
+  margin-bottom: var(--dw-space-2);
 }
 
 /* The encounter card answers eight questions at once, so its middle is a list
@@ -4362,13 +4402,13 @@ body > #dolmenwood-day-bar {
    buttons under it. */
 
 .dw-encounter-facts {
-  margin: 6px 0 0;
-  padding-left: 18px;
+  margin: var(--dw-space-4) 0 0;
+  padding-left: var(--dw-space-7);
   font-size: var(--dw-text-sm);
 }
 
 .dw-encounter-facts li {
-  margin-bottom: 3px;
+  margin-bottom: var(--dw-space-3);
 }
 
 .dw-encounter-facts strong {
@@ -4384,15 +4424,15 @@ body > #dolmenwood-day-bar {
    rolls above them. */
 
 .dw-encounter-book {
-  margin: 6px 0 0;
-  padding: 3px 6px;
+  margin: var(--dw-space-4) 0 0;
+  padding: var(--dw-space-3) var(--dw-space-4);
   background: rgba(0, 0, 0, 0.05);
   border-radius: 3px;
   font-size: var(--dw-text-sm);
 }
 
 .dw-encounter-book i {
-  margin-right: 4px;
+  margin-right: var(--dw-space-3);
   opacity: 0.7;
 }
 
@@ -4400,7 +4440,7 @@ body > #dolmenwood-day-bar {
    so it is set as prose rather than as a headline. */
 
 .dw-encounter-scene {
-  margin: 4px 0;
+  margin: var(--dw-space-3) 0;
   font-size: var(--dw-text-base);
   line-height: 1.35;
 }
@@ -4408,7 +4448,7 @@ body > #dolmenwood-day-bar {
 /* Morale, hoard and temperament, read off the stat block rather than looked up. */
 
 .dw-encounter-stats {
-  margin: 3px 0 0;
+  margin: var(--dw-space-3) 0 0;
   font-size: var(--dw-text-sm);
   opacity: 0.85;
 }
@@ -4416,14 +4456,14 @@ body > #dolmenwood-day-bar {
 .dw-encounter-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
+  gap: var(--dw-space-3);
+  margin-top: var(--dw-space-5);
 }
 
 .dw-encounter-btn {
   flex: 0 1 auto;
   width: auto;
-  padding: 2px 8px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   font-size: var(--dw-text-sm);
   line-height: 1.6;
   white-space: nowrap;
@@ -4434,7 +4474,7 @@ body > #dolmenwood-day-bar {
 .day-bar-modes {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: var(--dw-space-2);
 }
 
 .day-bar-mode,
@@ -4442,10 +4482,10 @@ body > #dolmenwood-day-bar {
 .day-bar-chip {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
   height: auto;
   min-height: 0;
-  padding: 3px 7px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: var(--dw-bg);
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
@@ -4479,7 +4519,7 @@ body > #dolmenwood-day-bar {
 /* ── Duties ── */
 
 .day-bar-duties {
-  gap: 3px;
+  gap: var(--dw-space-3);
 }
 
 /* Done recedes rather than shouting: the eye should land on what is still
@@ -4515,7 +4555,7 @@ body > #dolmenwood-day-bar {
 }
 
 .day-bar-group-count {
-  margin-left: 1px;
+  margin-left: var(--dw-space-1);
   color: var(--dw-tertiary);
   font-size: var(--dw-text-sm);
   font-variant-numeric: tabular-nums;
@@ -4532,8 +4572,8 @@ body > #dolmenwood-day-bar {
 .day-bar-tp {
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 2px 5px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-2) var(--dw-space-4);
   background: var(--dw-bg);
   border: 1px solid var(--dw-border-light);
   border-radius: 3px;
@@ -4615,8 +4655,8 @@ body > #dolmenwood-day-bar {
 
 /* In the panel's rest column, beside the n/7 it makes urgent. */
 .day-bar-forced-flag {
-  margin-left: 4px;
-  margin-right: 1px;
+  margin-left: var(--dw-space-3);
+  margin-right: var(--dw-space-1);
   color: var(--speed-orange);
   font-size: var(--dw-text-sm);
 }
@@ -4626,7 +4666,7 @@ body > #dolmenwood-day-bar {
 .day-bar-party {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: var(--dw-space-3);
   /* Pushed right on the now fixed-width strip, so the fold arrow lines up under
      the controls in the top row instead of floating in the middle. */
   margin-left: auto;
@@ -4652,8 +4692,8 @@ body > #dolmenwood-day-bar {
 .day-bar-right {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding-left: 6px;
+  gap: var(--dw-space-3);
+  padding-left: var(--dw-space-4);
   border-left: 1px solid var(--dw-border-light);
 }
 
@@ -4664,8 +4704,8 @@ body > #dolmenwood-day-bar {
 .day-bar-folded {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding-left: 2px;
+  gap: var(--dw-space-4);
+  padding-left: var(--dw-space-2);
 }
 
 .day-bar-folded .day-bar-tp-value {
@@ -4689,9 +4729,9 @@ body > #dolmenwood-day-bar {
      and the penalty share what is left. */
   grid-template-columns:
     minmax(0, 1.1fr) 34px 62px 52px 60px 62px minmax(0, 1.5fr);
-  gap: 1px 10px;
+  gap: var(--dw-space-1) var(--dw-space-6);
   align-items: center;
-  padding: 5px 8px;
+  padding: var(--dw-space-4) var(--dw-space-5);
 }
 
 .day-bar-panel-head {
@@ -4700,7 +4740,7 @@ body > #dolmenwood-day-bar {
 }
 
 .day-bar-panel-head > * {
-  padding-bottom: 2px;
+  padding-bottom: var(--dw-space-2);
   border-bottom: 1px solid var(--dw-border-light);
   font-size: var(--dw-text-xs);
   font-variant: small-caps;
@@ -4713,7 +4753,7 @@ body > #dolmenwood-day-bar {
 .day-bar-panel-name {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--dw-space-4);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4753,7 +4793,7 @@ body > #dolmenwood-day-bar {
 .day-bar-panel-rest {
   height: auto;
   min-height: 0;
-  padding: 1px 5px;
+  padding: var(--dw-space-1) var(--dw-space-4);
   background: none;
   border: 1px solid transparent;
   border-radius: 3px;
@@ -4780,7 +4820,7 @@ body > #dolmenwood-day-bar {
    breakdown and the citations, which is where the detail belongs on a HUD. */
 .day-bar-panel-penalty {
   min-width: 0;
-  padding-left: 4px;
+  padding-left: var(--dw-space-3);
   border-left: 1px solid var(--dw-border-light);
   color: var(--dw-tertiary);
   font-size: var(--dw-text-xs);
@@ -4821,7 +4861,7 @@ body > #dolmenwood-day-bar {
   gap: var(--dw-row-gap);
   width: 100%;
   height: auto;
-  padding: 6px 9px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   background: none;
   border: none;
   border-bottom: 1px solid var(--dw-border-light);
@@ -4840,7 +4880,7 @@ body > #dolmenwood-day-bar {
 }
 
 .duty-group-tick {
-  margin-top: 2px;
+  margin-top: var(--dw-space-2);
   color: var(--dw-tertiary);
 }
 
@@ -4849,7 +4889,7 @@ body > #dolmenwood-day-bar {
 }
 
 .duty-group-icon {
-  margin-top: 2px;
+  margin-top: var(--dw-space-2);
   width: 14px;
   color: var(--dw-tertiary);
   text-align: center;
@@ -4858,7 +4898,7 @@ body > #dolmenwood-day-bar {
 .duty-group-text {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--dw-space-1);
   min-width: 0;
 }
 
@@ -4883,8 +4923,8 @@ body > #dolmenwood-day-bar {
 .duty-group-foot {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 9px;
+  gap: var(--dw-space-4);
+  padding: var(--dw-space-4) var(--dw-space-5);
   border-top: 1px solid var(--dw-border);
 }
 
@@ -4902,7 +4942,7 @@ body > #dolmenwood-day-bar {
 .duty-group-btn {
   width: auto;
   height: auto;
-  padding: 2px 8px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   background: none;
   border: 1px solid var(--dw-border);
   border-radius: 3px;
@@ -4919,7 +4959,7 @@ body > #dolmenwood-day-bar {
 
 /* The header sits over left-aligned text rather than centred figures. */
 .day-bar-panel-penalty-head {
-  padding-left: 4px;
+  padding-left: var(--dw-space-3);
   text-align: left;
 }
 
@@ -5009,15 +5049,15 @@ body > #dolmenwood-day-bar {
    Referee reads to themselves before speaking, not the part they read out. */
 
 .dw-encounter-flavour {
-  margin: 4px 0 0;
-  padding: 0 0 0 14px;
+  margin: var(--dw-space-3) 0 0;
+  padding: 0 0 0 var(--dw-space-7);
   list-style: disc;
   font-size: var(--dw-text-sm);
   opacity: 0.85;
 }
 
 .dw-encounter-flavour li {
-  margin: 1px 0;
+  margin: var(--dw-space-1) 0;
 }
 
 /* Stocking a shop out of the catalogue.
@@ -5030,13 +5070,13 @@ body > #dolmenwood-day-bar {
 .dw-stock-picker {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .dw-stock-toolbar {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .dw-stock-search {
@@ -5062,14 +5102,14 @@ body > #dolmenwood-day-bar {
   overflow-y: auto;
   border: 1px solid rgba(0, 0, 0, 0.15);
   border-radius: 3px;
-  padding: 2px;
+  padding: var(--dw-space-2);
 }
 
 .dw-stock-group > summary {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 6px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-3) var(--dw-space-4);
   cursor: pointer;
   border-radius: 3px;
   list-style: none;
@@ -5094,15 +5134,15 @@ body > #dolmenwood-day-bar {
 }
 
 .dw-stock-rows {
-  padding: 2px 6px 6px 24px;
+  padding: var(--dw-space-2) var(--dw-space-4) var(--dw-space-4) var(--dw-space-8);
 }
 
 .dw-stock-row {
   display: grid;
   grid-template-columns: 18px 1fr auto auto;
-  gap: 8px;
+  gap: var(--dw-space-5);
   align-items: center;
-  padding: 1px 2px;
+  padding: var(--dw-space-1) var(--dw-space-2);
   cursor: pointer;
 }
 
@@ -5124,8 +5164,8 @@ body > #dolmenwood-day-bar {
   flex: 0 0 auto;
   width: auto;
   min-width: 0;
-  padding: 0 4px;
-  margin: 0 0 0 4px;
+  padding: 0 var(--dw-space-3);
+  margin: 0 0 0 var(--dw-space-3);
   line-height: 1;
   border: none;
   background: none;
@@ -5160,7 +5200,7 @@ body > #dolmenwood-day-bar {
   align-items: center;
   justify-content: center;
   min-width: 2.2ch;
-  padding: 0 4px;
+  padding: 0 var(--dw-space-3);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -5168,9 +5208,9 @@ body > #dolmenwood-day-bar {
 .day-bar-weather {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  margin-left: 8px;
-  padding: 0 6px;
+  gap: var(--dw-space-4);
+  margin-left: var(--dw-space-5);
+  padding: 0 var(--dw-space-4);
   max-width: 34ch;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5213,8 +5253,8 @@ span.day-bar-panel-tick {
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  gap: 2px;
-  padding-right: 12px;
+  gap: var(--dw-space-2);
+  padding-right: var(--dw-space-6);
   border-right: 1px solid var(--dw-border-light);
   min-width: 0;
 }
@@ -5239,7 +5279,7 @@ span.day-bar-panel-tick {
   width: 7ch;
   height: 22px;
   line-height: 22px;
-  padding: 0 4px;
+  padding: 0 var(--dw-space-3);
   text-align: center;
   font-variant-numeric: tabular-nums;
   background: var(--dw-bg);
@@ -5322,7 +5362,7 @@ span.day-bar-panel-tick {
   border-color: #b06a20;
   border-style: dashed;
   width: 30px;
-  gap: 2px;
+  gap: var(--dw-space-2);
 }
 
 .day-bar-hex-calibrate-step {
@@ -5362,12 +5402,12 @@ span.day-bar-panel-tick {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 5px;
+  gap: var(--dw-space-4);
   height: var(--day-bar-chip-h);
   min-width: 15ch;
   max-width: 15ch;
-  padding: 0 8px;
-  margin-left: 10px;
+  padding: 0 var(--dw-space-5);
+  margin-left: var(--dw-space-6);
   border-radius: 3px;
   background: rgba(0, 0, 0, 0.06);
   font-size: var(--dw-text-sm);
@@ -5386,17 +5426,17 @@ span.day-bar-panel-tick {
 .day-bar-own {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
   height: var(--day-bar-chip-h);
-  margin-left: 10px;
+  margin-left: var(--dw-space-6);
 }
 
 .day-bar-own-char {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
   height: var(--day-bar-chip-h);
-  padding: 0 8px;
+  padding: 0 var(--dw-space-5);
   border-radius: 3px;
   background: rgba(0, 0, 0, 0.06);
 }
@@ -5440,11 +5480,11 @@ span.day-bar-panel-tick {
   display: inline-block;
   font-size: var(--dw-text-xs);
   font-weight: bold;
-  padding: 1px 6px;
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 10px;
   background: var(--dw-tertiary);
   color: var(--dw-accent-light);
-  margin-left: 6px;
+  margin-left: var(--dw-space-4);
   vertical-align: middle;
 }
 
@@ -5458,7 +5498,7 @@ span.day-bar-panel-tick {
 .shop-service-badge {
   color: var(--dw-tertiary);
   font-size: var(--dw-text-xs);
-  margin-left: 4px;
+  margin-left: var(--dw-space-3);
   opacity: 0.9;
 }
 
@@ -5470,11 +5510,11 @@ span.day-bar-panel-tick {
   display: inline-block;
   font-size: var(--dw-text-xs);
   font-weight: bold;
-  padding: 1px 5px;
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 8px;
   background: var(--dw-secondary);
   color: var(--dw-accent-light);
-  margin-left: 6px;
+  margin-left: var(--dw-space-4);
   vertical-align: middle;
   letter-spacing: 0.02em;
 }
@@ -5499,7 +5539,7 @@ span.day-bar-panel-tick {
 .btn-save-library:hover { color: var(--dw-accent); }
 
 .btn-sell-toggle {
-  padding: 4px 10px;
+  padding: var(--dw-space-3) var(--dw-space-6);
   font-size: var(--dw-text-sm);
   border-radius: 4px;
   border: 1px solid var(--dw-border);
@@ -5521,8 +5561,8 @@ span.day-bar-panel-tick {
 .shop-coins {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
+  gap: var(--dw-space-4);
+  padding: var(--dw-space-3) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
   background: var(--dw-bg-dark);
@@ -5537,8 +5577,8 @@ span.day-bar-panel-tick {
 }
 
 .shop-sell-note {
-  margin: 0 0 8px;
-  padding: 6px 8px;
+  margin: 0 0 var(--dw-space-5);
+  padding: var(--dw-space-4) var(--dw-space-5);
   font-size: var(--dw-text-sm);
   color: var(--dw-text);
   background: var(--dw-bg-parchment);
@@ -5547,7 +5587,7 @@ span.day-bar-panel-tick {
 }
 
 .shop-sell-empty {
-  padding: 12px;
+  padding: var(--dw-space-6);
   text-align: center;
   font-style: italic;
   color: var(--dw-tertiary);
@@ -5556,7 +5596,7 @@ span.day-bar-panel-tick {
 .shop-sell-count {
   font-size: var(--dw-text-sm);
   color: var(--dw-tertiary);
-  margin-left: 4px;
+  margin-left: var(--dw-space-3);
 }
 
 .shop-sell-total {
@@ -5572,13 +5612,13 @@ span.day-bar-panel-tick {
 .dw-service-card {
   border: 1px solid var(--dw-border);
   border-radius: 4px;
-  padding: 8px 10px;
+  padding: var(--dw-space-5) var(--dw-space-6);
   background: var(--dw-bg-parchment);
   color: var(--dw-text);
 }
 
 .dw-service-card h3 {
-  margin: 0 0 4px;
+  margin: 0 0 var(--dw-space-3);
   font-size: var(--dw-text-base);
   border: none;
   color: var(--dw-primary);
@@ -5611,8 +5651,8 @@ span.day-bar-panel-tick {
   font-style: italic;
   color: var(--dw-tertiary);
   border-top: 1px solid var(--dw-border-light);
-  margin-top: 6px;
-  padding-top: 4px;
+  margin-top: var(--dw-space-4);
+  padding-top: var(--dw-space-3);
 }
 
 .btn-edit-shop-entry { color: var(--dw-tertiary); }
@@ -5701,7 +5741,7 @@ span.day-bar-panel-tick {
    contents rather than as more of the same list. */
 .dw-stock-group > summary {
   background: rgba(122, 80, 48, 0.08);
-  margin-bottom: 1px;
+  margin-bottom: var(--dw-space-1);
 }
 
 .dw-stock-group[open] > summary {
@@ -5821,15 +5861,15 @@ span.day-bar-panel-tick {
 .dw-camp-form .dw-camp-members {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin: 8px 0;
+  gap: var(--dw-space-3);
+  margin: var(--dw-space-5) 0;
 }
 
 .dw-camp-member {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 4px 7px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-3) var(--dw-space-5);
   background: var(--dw-bg);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
@@ -5867,8 +5907,8 @@ span.day-bar-panel-tick {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
   align-items: center;
-  gap: 4px 8px;
-  margin: 8px 0;
+  gap: var(--dw-space-3) var(--dw-space-5);
+  margin: var(--dw-space-5) 0;
 }
 
 .dw-sleep-row {
@@ -5877,7 +5917,7 @@ span.day-bar-panel-tick {
 
 /* The banding a row can no longer draw for itself. */
 .dw-sleep-row > * {
-  padding: 4px 0;
+  padding: var(--dw-space-3) 0;
   border-top: 1px solid var(--dw-border-light);
 }
 
@@ -5895,7 +5935,7 @@ span.day-bar-panel-tick {
 .dw-sleep-short {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
   color: var(--dw-tertiary);
   font-size: var(--dw-text-sm);
   white-space: nowrap;
@@ -5933,7 +5973,7 @@ span.day-bar-panel-tick {
 .dw-sleep-fire {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
   font-weight: 600;
   cursor: pointer;
 }
@@ -5945,13 +5985,13 @@ span.day-bar-panel-tick {
 /* ── What a camp card prints ─────────────────────────────────────────────── */
 
 .dw-camp-rows {
-  margin: 4px 0 0;
-  padding-left: 16px;
+  margin: var(--dw-space-3) 0 0;
+  padding-left: var(--dw-space-7);
   list-style: disc;
 }
 
 .dw-camp-rows li {
-  margin: 1px 0;
+  margin: var(--dw-space-1) 0;
   line-height: 1.3;
 }
 
@@ -5971,7 +6011,7 @@ span.day-bar-panel-tick {
   width: auto;
   height: auto;
   min-height: 0;
-  padding: 0 2px;
+  padding: 0 var(--dw-space-2);
   background: none;
   border: none;
   color: inherit;
@@ -6026,8 +6066,8 @@ span.day-bar-panel-tick {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 4px 8px;
-  margin: 8px 0;
+  gap: var(--dw-space-3) var(--dw-space-5);
+  margin: var(--dw-space-5) 0;
 }
 
 .dw-meal-row {
@@ -6035,7 +6075,7 @@ span.day-bar-panel-tick {
 }
 
 .dw-meal-row > * {
-  padding: 3px 0;
+  padding: var(--dw-space-3) 0;
   border-top: 1px solid var(--dw-border-light);
 }
 
@@ -6052,7 +6092,7 @@ span.day-bar-panel-tick {
 /* The live readouts: how many the pot feeds, how long each watcher sleeps. */
 .dw-meal-count,
 .dw-watch-count {
-  margin: 4px 0 0;
+  margin: var(--dw-space-3) 0 0;
   color: var(--dw-secondary);
   font-size: var(--dw-text-sm);
 }
@@ -6073,8 +6113,8 @@ span.day-bar-panel-tick {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 4px 8px;
-  margin: 8px 0;
+  gap: var(--dw-space-3) var(--dw-space-5);
+  margin: var(--dw-space-5) 0;
 }
 
 .dw-spell-row {
@@ -6082,7 +6122,7 @@ span.day-bar-panel-tick {
 }
 
 .dw-spell-row > * {
-  padding: 3px 0;
+  padding: var(--dw-space-3) 0;
   border-top: 1px solid var(--dw-border-light);
 }
 
@@ -6093,7 +6133,7 @@ span.day-bar-panel-tick {
 /* The running total on the butchering dialog: forty rations is forty slots,
    and a Referee should see that before pressing the button. */
 .dw-spoils-count {
-  margin: 4px 0 0;
+  margin: var(--dw-space-3) 0 0;
   color: var(--dw-secondary);
   font-size: var(--dw-text-sm);
 }
@@ -6111,15 +6151,15 @@ span.day-bar-panel-tick {
 .dw-watch-rows {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin: 8px 0;
+  gap: var(--dw-space-3);
+  margin: var(--dw-space-5) 0;
 }
 
 .dw-watch-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: var(--dw-space-5);
+  padding: var(--dw-space-4) var(--dw-space-5);
   background: var(--dw-bg);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
@@ -6167,7 +6207,7 @@ span.day-bar-panel-tick {
 .dw-stepper {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--dw-space-2);
 }
 
 /* Whatever class the reader wants on it, a stepper's box is the same size. */
@@ -6209,9 +6249,9 @@ span.day-bar-panel-tick {
 .party-unsorted {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  margin: 0 0 8px;
-  padding: 7px 10px;
+  gap: var(--dw-space-5);
+  margin: 0 0 var(--dw-space-5);
+  padding: var(--dw-space-5) var(--dw-space-6);
   background: var(--speed-orange-bg, var(--dw-accent-light));
   border: 1px solid var(--speed-orange);
   border-radius: 4px;
@@ -6220,7 +6260,7 @@ span.day-bar-panel-tick {
 }
 
 .party-unsorted > i {
-  margin-top: 2px;
+  margin-top: var(--dw-space-2);
   color: var(--speed-orange);
 }
 
@@ -6268,7 +6308,7 @@ span.day-bar-panel-tick {
 .item-row > .item-name {
   flex: 1 1 0;
   min-width: 0;
-  padding-right: 10px;
+  padding-right: var(--dw-space-6);
 }
 
 .item-row > .item-controls {
@@ -6316,8 +6356,8 @@ span.day-bar-panel-tick {
 .inv-total-value {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 8px;
+  gap: var(--dw-space-4);
+  padding: var(--dw-space-2) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
   background: rgba(200, 160, 80, 0.12);
@@ -6335,7 +6375,7 @@ span.day-bar-panel-tick {
 .item-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--dw-space-2);
   flex: 0 0 auto;
 }
 
@@ -6372,7 +6412,7 @@ span.day-bar-panel-tick {
    row itself says only what the party can tell by looking. */
 .item-gm-note {
   display: block;
-  margin-top: 1px;
+  margin-top: var(--dw-space-1);
   /* A colour of its own, deliberately outside the speed palette: this line
      belongs to the Referee, not to the rules. */
   color: var(--dw-magic-fill);
@@ -6382,7 +6422,7 @@ span.day-bar-panel-tick {
 }
 
 .item-gm-note > i {
-  margin-right: 3px;
+  margin-right: var(--dw-space-3);
   opacity: 0.8;
 }
 
@@ -6400,7 +6440,9 @@ span.day-bar-panel-tick {
   /* One height for every box on the sheet. Changing it here changes all of
      them, which is the point of there being one. */
   --dw-sheet-input-h: 32px;
-  --dw-sheet-gap: 8px;
+  /* The sheet's own rhythm: one block of fields to the next. A rung of the
+     ladder, not a number of its own. */
+  --dw-sheet-gap: var(--dw-space-5);
 }
 
 /* **The sheet reflows to its own width, not to the browser's.**
@@ -6421,8 +6463,8 @@ span.day-bar-panel-tick {
   container-name: dw-sheet;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px 12px 16px;
+  gap: var(--dw-space-6);
+  padding: var(--dw-space-6) var(--dw-space-6) var(--dw-space-7);
   color: var(--dw-text);
 }
 
@@ -6436,7 +6478,7 @@ span.day-bar-panel-tick {
 
 .dw-sheet-warning {
   margin: 0;
-  padding: 6px 9px;
+  padding: var(--dw-space-4) var(--dw-space-5);
   border: 1px solid var(--speed-orange);
   border-radius: 4px;
   background: rgba(147, 48, 10, 0.08);
@@ -6463,7 +6505,7 @@ span.day-bar-panel-tick {
 .dw-field {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--dw-space-2);
   min-width: 0;
 }
 
@@ -6521,7 +6563,7 @@ span.day-bar-panel-tick {
 .dw-sheet-body input[type="number"] {
   width: 100%;
   height: var(--dw-sheet-input-h);
-  padding: 2px 8px;
+  padding: var(--dw-space-2) var(--dw-space-5);
   font-size: var(--dw-text-base);
   line-height: 1.2;
 }
@@ -6550,7 +6592,7 @@ span.day-bar-panel-tick {
 .dw-sheet-body .dw-field textarea {
   width: 100%;
   min-height: 52px;
-  padding: 4px 8px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   font-size: var(--dw-text-base);
   line-height: 1.35;
   resize: vertical;
@@ -6561,8 +6603,8 @@ span.day-bar-panel-tick {
 .dw-block-spell {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 1px 6px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 3px;
   font-size: var(--dw-text-xs);
   font-weight: 600;
@@ -6591,7 +6633,7 @@ span.day-bar-panel-tick {
 .dw-sheet-head {
   display: flex;
   align-items: stretch;
-  gap: 12px;
+  gap: var(--dw-space-6);
 }
 
 /* A portrait, not a token: the one thing on the page that says who this is
@@ -6677,8 +6719,8 @@ span.day-bar-panel-tick {
 .dw-sheet-titlebar {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: var(--dw-space-6);
+  margin-bottom: var(--dw-space-5);
 }
 
 .dw-sheet-name {
@@ -6694,13 +6736,13 @@ span.day-bar-panel-tick {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .dw-sheet-btn {
   width: auto;
   height: var(--dw-sheet-input-h);
-  padding: 0 10px;
+  padding: 0 var(--dw-space-6);
   white-space: nowrap;
 }
 
@@ -6709,9 +6751,9 @@ span.day-bar-panel-tick {
 .dw-sheet-situational {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
   height: var(--dw-sheet-input-h);
-  padding: 0 8px;
+  padding: 0 var(--dw-space-5);
   border: 1px dashed var(--dw-border-light);
   border-radius: 4px;
   font-size: var(--dw-text-xs);
@@ -6724,7 +6766,7 @@ span.day-bar-panel-tick {
 .dw-sheet-body .dw-sheet-situational input[type="number"] {
   width: 52px;
   height: 24px;
-  padding: 0 2px;
+  padding: 0 var(--dw-space-2);
   text-align: center;
   font-size: var(--dw-text-xs);
 }
@@ -6734,7 +6776,7 @@ span.day-bar-panel-tick {
 .dw-sheet-section {
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
-  padding: 8px 10px 10px;
+  padding: var(--dw-space-5) var(--dw-space-6) var(--dw-space-6);
   background: var(--dw-bg-parchment);
 }
 
@@ -6744,9 +6786,9 @@ span.day-bar-panel-tick {
 .dw-sheet-section > h3 {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0 0 8px;
-  padding-bottom: 4px;
+  gap: var(--dw-space-6);
+  margin: 0 0 var(--dw-space-5);
+  padding-bottom: var(--dw-space-3);
   border-bottom: 1px solid var(--dw-border-light);
   color: var(--dw-primary);
   font-size: var(--dw-text-sm);
@@ -6764,7 +6806,7 @@ span.day-bar-panel-tick {
   margin-left: auto;
   width: auto;
   height: 26px;
-  padding: 0 8px;
+  padding: 0 var(--dw-space-5);
   font-size: var(--dw-text-base);
 }
 
@@ -6772,7 +6814,7 @@ span.day-bar-panel-tick {
 .dw-sheet-prepares {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
   margin-left: auto;
   font-size: var(--dw-text-sm);
   text-transform: none;
@@ -6792,7 +6834,7 @@ span.day-bar-panel-tick {
 }
 
 .dw-sheet-hint {
-  margin: 0 0 6px;
+  margin: 0 0 var(--dw-space-4);
   font-size: var(--dw-text-xs);
   font-style: italic;
   opacity: 0.75;
@@ -6837,7 +6879,7 @@ span.day-bar-panel-tick {
 .dw-sheet-abilities {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 7px;
+  gap: var(--dw-space-5);
 }
 
 @container dw-sheet (max-width: 760px) {
@@ -6848,8 +6890,8 @@ span.day-bar-panel-tick {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 7px 5px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-5) var(--dw-space-4);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
   text-align: center;
@@ -6864,7 +6906,7 @@ span.day-bar-panel-tick {
 
 .dw-ability-numbers {
   display: flex;
-  gap: 5px;
+  gap: var(--dw-space-4);
 }
 
 /* The score is the big one; the modifier is the one that gets rolled. */
@@ -6907,7 +6949,7 @@ span.day-bar-panel-tick {
 .dw-sheet-saves {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 7px;
+  gap: var(--dw-space-5);
 }
 
 @container dw-sheet (max-width: 760px) {
@@ -6918,8 +6960,8 @@ span.day-bar-panel-tick {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 7px 5px;
+  gap: var(--dw-space-3);
+  padding: var(--dw-space-5) var(--dw-space-4);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
   text-align: center;
@@ -6946,7 +6988,7 @@ span.day-bar-panel-tick {
 .dw-rows {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--dw-space-4);
 }
 
 /* Four fixed lanes, so five saves and four skills line up with each other and
@@ -6955,7 +6997,7 @@ span.day-bar-panel-tick {
   display: grid;
   grid-template-columns: 1fr 62px 40px 26px;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .dw-row-label {
@@ -6981,14 +7023,14 @@ span.day-bar-panel-tick {
 .dw-skill-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px 14px;
+  gap: var(--dw-space-4) var(--dw-space-7);
 }
 
 /* Narrower lanes than the sheet's other rows: two of them share the width one
    used to have, and a target between 1 and 6 does not need a wide box. */
 .dw-skill-grid .dw-row {
   grid-template-columns: 1fr 52px 34px 24px;
-  gap: 5px;
+  gap: var(--dw-space-4);
 }
 
 /* **An empty lane is the door.** No Add button in the heading: the place the
@@ -6998,7 +7040,7 @@ span.day-bar-panel-tick {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
   width: 100%;
   height: var(--dw-sheet-input-h);
   padding: 0;
@@ -7034,7 +7076,7 @@ span.day-bar-panel-tick {
 .dw-sheet-magic {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--dw-space-4);
   margin: 0 0 0 auto;
   font-size: var(--dw-text-sm);
   font-weight: 600;
@@ -7054,10 +7096,10 @@ span.day-bar-panel-tick {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: var(--dw-space-4);
   width: auto;
   height: 26px;
-  padding: 0 8px;
+  padding: 0 var(--dw-space-5);
   border: 1px solid var(--dw-border);
   border-radius: 3px;
   background: var(--dw-bg-dark);
@@ -7089,15 +7131,15 @@ span.day-bar-panel-tick {
 .dw-weapon-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--dw-space-4);
 }
 
 .dw-weapon-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 8px;
-  padding: 6px 8px;
+  gap: var(--dw-space-4) var(--dw-space-5);
+  padding: var(--dw-space-4) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;
 }
@@ -7113,8 +7155,8 @@ span.day-bar-panel-tick {
 }
 
 .dw-weapon-damage {
-  margin-left: 6px;
-  padding: 1px 6px;
+  margin-left: var(--dw-space-4);
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 3px;
   background: var(--dw-bg-dark);
   font-size: var(--dw-text-sm);
@@ -7131,7 +7173,7 @@ span.day-bar-panel-tick {
 
 .dw-weapon-buttons {
   display: inline-flex;
-  gap: 5px;
+  gap: var(--dw-space-4);
   flex-wrap: wrap;
 }
 
@@ -7146,8 +7188,8 @@ span.day-bar-panel-tick {
 
 /* What the day already costs, said once and never ticked. */
 .dw-sheet-penalty {
-  margin: 0 0 7px;
-  padding: 4px 8px;
+  margin: 0 0 var(--dw-space-5);
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-radius: 3px;
   background: rgba(147, 48, 10, 0.09);
   color: var(--speed-orange);
@@ -7155,17 +7197,17 @@ span.day-bar-panel-tick {
 }
 
 .dw-sheet-penalty > i {
-  margin-right: 5px;
+  margin-right: var(--dw-space-4);
 }
 
 /* ── Blocks ── */
 
 .dw-block-group + .dw-block-group {
-  margin-top: 9px;
+  margin-top: var(--dw-space-5);
 }
 
 .dw-block-group > h4 {
-  margin: 0 0 4px;
+  margin: 0 0 var(--dw-space-3);
   color: var(--dw-secondary);
   font-size: var(--dw-text-xs);
   font-weight: 700;
@@ -7175,9 +7217,9 @@ span.day-bar-panel-tick {
 }
 
 .dw-block {
-  padding: 4px 7px;
+  padding: var(--dw-space-3) var(--dw-space-5);
   border-left: 2px solid var(--dw-border-light);
-  margin-bottom: 4px;
+  margin-bottom: var(--dw-space-3);
 }
 
 .dw-block.is-prepared {
@@ -7197,7 +7239,7 @@ span.day-bar-panel-tick {
 }
 
 .dw-block-value {
-  padding: 1px 6px;
+  padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 3px;
   background: var(--dw-bg-dark);
   font-size: var(--dw-text-sm);
@@ -7214,7 +7256,7 @@ span.day-bar-panel-tick {
 .dw-block-uses {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
   font-size: var(--dw-text-sm);
   font-variant-numeric: tabular-nums;
 }
@@ -7234,12 +7276,12 @@ span.day-bar-panel-tick {
 .dw-block-actions {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--dw-space-3);
   margin-left: auto;
 }
 
 .dw-block-text {
-  margin: 3px 0 0;
+  margin: var(--dw-space-3) 0 0;
   font-size: var(--dw-text-sm);
   line-height: 1.35;
   opacity: 0.9;
@@ -7251,7 +7293,7 @@ span.day-bar-panel-tick {
 }
 
 .dw-block-form hr {
-  margin: 9px 0;
+  margin: var(--dw-space-5) 0;
   border: none;
   border-top: 1px solid var(--dw-border-light);
 }
@@ -7259,7 +7301,7 @@ span.day-bar-panel-tick {
 /* A door to the sheet from the party window's column header. */
 .player-sheet-btn {
   width: auto;
-  padding: 0 4px;
+  padding: 0 var(--dw-space-3);
   border: none;
   background: none;
   color: inherit;
@@ -7274,7 +7316,7 @@ span.day-bar-panel-tick {
 /* ── The card a sheet roll posts ── */
 
 .dw-sheet-roll .dw-sheet-total {
-  margin-right: 6px;
+  margin-right: var(--dw-space-4);
   font-size: var(--dw-text-xl);
   font-variant-numeric: tabular-nums;
 }
@@ -7312,7 +7354,7 @@ span.day-bar-panel-tick {
 .dw-sheet-persona-caret {
   flex: none;
   width: 10px;
-  margin-right: 5px;
+  margin-right: var(--dw-space-4);
   font-size: var(--dw-text-xs);
   opacity: 0.6;
   transition: transform 120ms ease;
@@ -7323,8 +7365,8 @@ span.day-bar-panel-tick {
 }
 
 .dw-sheet-persona[open] > summary {
-  margin-bottom: 8px;
-  padding-bottom: 4px;
+  margin-bottom: var(--dw-space-5);
+  padding-bottom: var(--dw-space-3);
   border-bottom: 1px solid var(--dw-border-light);
 }
 
