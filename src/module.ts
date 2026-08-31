@@ -1390,7 +1390,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-trash"] = {
       name: "dolmenwood-trash",
       title: "Trash",
-      icon: "fas fa-trash-can",
+      icon: "fas fa-trash",
       order: existingToolCount + 2,
       button: true,
       onChange: () => openTrash(),
