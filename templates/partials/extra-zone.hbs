@@ -8,8 +8,13 @@
             data-zone-id="{{zone.id}}" title="{{#if zone.isDropped}}Pick up zone{{else}}Drop zone (leave behind){{/if}}">
       <i class="fas {{#if zone.isDropped}}fa-hand-holding{{else}}fa-arrow-down{{/if}}"></i>
     </button>
+    {{!-- One button, two dialogs: which one opens is decided by what the zone is
+          AND by who is asking. Capacity and speed are the Referee's to set, so a
+          player gets the rename they always had. The tooltip has to say which
+          one it will be, or the pencil promises something it will not do. --}}
     <button type="button" class="rename-zone-btn icon-btn" data-action="renameExtraZone"
-            data-zone-id="{{zone.id}}" title="Rename zone">
+            data-zone-id="{{zone.id}}"
+            title="{{#if isGM}}{{#if zone.animalItemId}}Edit this animal or vehicle — name, type, icon, colour, capacity, speed, qualities, description{{else}}Rename zone — name, icon and colour{{/if}}{{else}}Rename zone — name, icon and colour{{/if}}">
       <i class="fas fa-pencil"></i>
     </button>
     {{/if}}

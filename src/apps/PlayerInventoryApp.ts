@@ -167,6 +167,10 @@ function buildZoneViews(
       let animalSubcategory: string | undefined;
       let animalItemName: string | undefined;
       let animalQualities: string[] = [];
+      // Which row granted this zone — the editor needs it, and its presence is
+      // also what says "this zone is an animal or vehicle" rather than a plain
+      // storage container, which is the only kind the full editor applies to.
+      let animalItemId: string | undefined;
       for (const item of inventory.items) {
         const effectiveDef = definitionFor(item);
         if (!effectiveDef?.grantsZone) continue;
@@ -176,6 +180,7 @@ function buildZoneViews(
           animalSubcategory = effectiveDef.subcategory;
           animalItemName = effectiveDef.name ?? item.name;
           animalQualities = effectiveDef.qualities ?? [];
+          animalItemId = item.id;
           break;
         }
       }
@@ -204,6 +209,7 @@ function buildZoneViews(
         animalSubcategory,
         animalItemName,
         animalQualities,
+        animalItemId,
         speedInfo,
       };
     });
@@ -1305,6 +1311,19 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     });
     this.render();
   }
+  /**
+   * The one door onto a zone's own settings.
+   *
+   * **Which dialog opens is decided by what the zone actually is**, not by which
+   * button was pressed — an animal or vehicle has a backing row carrying its
+   * type, qualities and description, and a plain storage container does not.
+   * There used to be two buttons, and the rename one wrote only the zone half,
+   * so a renamed animal kept its old name on the row it came from (Leander,
+   * 2026-08-30: *"gerne umleiten bzw. zusammenlegen"*).
+   *
+   * The two dialogs share the icon and colour pickers and the same `ZONE_ICONS`,
+   * so nothing is lost by arriving at either one.
+   */
   private static async _onRenameExtraZone(
     this: PlayerInventoryApp,
     _event: Event,
@@ -1315,6 +1334,21 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const inventory = FlagManager.getInventory(owner);
     const zone = (inventory.extraZones ?? []).find((ez) => ez.id === zoneId);
     if (!zone) return;
+
+    // **The merge must not widen who may do what.** This button hangs off
+    // isOwner, while creating an animal is GM-only — so a player arriving here
+    // gets the rename they have always had, and only a Referee gets the editor
+    // that can rewrite capacity and speed. Letting the pencil grant that to a
+    // player would hand them their own carrying capacity.
+    const animalItem =
+      (game as Game).user?.isGM && zone.itemId
+        ? inventory.items.find((i) => i.id === zone.itemId && definitionFor(i)?.grantsZone)
+        : undefined;
+    if (animalItem) {
+      PlayerInventoryApp._openAnimalEditor.call(this, owner, zone, animalItem);
+      return;
+    }
+
     new RenameZoneDialog(owner, zoneId, zone.name, zone.icon, zone.color, () => this.render()).render(true);
   }
 
@@ -1384,7 +1418,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       title: "Share with the Party",
       content:
         `<p>Move <strong>${escapeHTML(zone.name)}</strong> and everything in it into the party's shared store?</p>` +
-        `<p style="font-size:0.9em;color:#888;">Every player can then take things out and put things in. Secret items stop being secret.</p>`,
+        `<p style="font-size:var(--dw-text-sm);color:#888;">Every player can then take things out and put things in. Secret items stop being secret.</p>`,
     });
     if (!confirmed) return;
 
@@ -1451,7 +1485,46 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
   private static _onAddCustomAnimal(this: PlayerInventoryApp): void {
     if (!(game as Game).user?.isGM) return;
     const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
-    new AddCustomAnimalDialog(this.actor, encMode, () => this.render()).render(true);
+    new CustomAnimalDialog(this.actor, encMode, () => this.render()).render(true);
+  }
+
+  /**
+   * Open the editor on an animal or vehicle, reading it back out of the two
+   * places it lives.
+   *
+   * The zone is the authority on name, icon, colour, capacities and speed
+   * because that is what the rest of the window computes from; the item's
+   * definition is the authority on type, qualities and description because
+   * nothing else stores them. Where both could answer — the name — the zone
+   * wins, since that is the one the header has been showing all along.
+   */
+  private static _openAnimalEditor(
+    this: PlayerInventoryApp,
+    owner: Actor,
+    zone: ExtraZone,
+    item: InventoryItem
+  ): void {
+    const def = definitionFor(item);
+    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
+    new CustomAnimalDialog(
+      owner,
+      encMode,
+      () => this.render(),
+      {
+        target: { zoneId: zone.id, itemId: zone.itemId },
+        draft: {
+          name: zone.name,
+          subcategory: def?.subcategory ?? "",
+          icon: zone.icon || def?.icon || "fa-horse",
+          color: zone.color || "green",
+          speed: zone.speed ?? 0,
+          weightCapacity: zone.weightCapacity ?? 0,
+          maxSlots: zone.maxSlots ?? 0,
+          qualities: def?.qualities ?? [],
+          description: def?.description ?? "",
+        },
+      }
+    ).render(true);
   }
 
   private static async _onEditItem(
@@ -2242,7 +2315,7 @@ class PickGiveZoneDialog extends Dialog {
             <label>Into</label>
             <select id="pick-give-zone">${optionsHTML}</select>
           </div>
-          <p style="font-size:0.85em;color:#888;margin-top:4px;">
+          <p style="font-size:var(--dw-text-sm);color:#888;margin-top:4px;">
             Containers without room are hidden. Animals and vehicles stay
             selectable — overloading them is allowed, and marked with ⚠.
           </p>
@@ -2333,7 +2406,7 @@ class GiveZoneDialog extends Dialog {
             <label>Give to</label>
             <select id="give-zone-target">${memberOptions}</select>
           </div>
-          <p style="font-size:0.9em;color:#888;margin-top:4px;">
+          <p style="font-size:var(--dw-text-sm);color:#888;margin-top:4px;">
             This will transfer the zone with all its contents (${itemCount} item${itemCount !== 1 ? "s" : ""}) and coins.
           </p>
         </form>
@@ -2496,7 +2569,7 @@ class RenameZoneDialog extends Dialog {
         <form>
           <div class="form-group">
             <label>Zone Name</label>
-            <input type="text" id="rename-zone-name" value="${currentName}" />
+            <input type="text" id="rename-zone-name" value="${escapeHTML(currentName)}" />
           </div>
           <div class="form-group">
             <label>Icon</label>
@@ -2725,71 +2798,105 @@ class MoveCoinsBetweenZonesDialog extends Dialog {
   }
 }
 
-// ─── Add Custom Animal Dialog (GM only) ─────────────────────────────────────
+// ─── Add / Edit Custom Animal Dialog (GM only) ──────────────────────────────
 
-class AddCustomAnimalDialog extends Dialog {
-  constructor(actor: Actor, encMode: "slots" | "weight", onComplete: () => void) {
-    const iconOptions = [
-      { value: "fa-horse", label: "Horse" },
-      { value: "fa-dog", label: "Dog / Wolf" },
-      { value: "fa-cat", label: "Cat" },
-      { value: "fa-crow", label: "Bird" },
-      { value: "fa-dragon", label: "Dragon" },
-      { value: "fa-spider", label: "Spider" },
-      { value: "fa-paw", label: "Paw (generic)" },
-      { value: "fa-caravan", label: "Cart / Vehicle" },
-      { value: "fa-ship", label: "Boat" },
-    ];
-    const iconOptionsHtml = iconOptions.map(
-      (o) => `<option value="${o.value}">${o.label}</option>`
-    ).join("");
+/** Everything the form asks about, in the shape both doors pass around. */
+interface AnimalDraft {
+  name: string;
+  subcategory: string;
+  icon: string;
+  color: string;
+  speed: number;
+  weightCapacity: number;
+  maxSlots: number;
+  qualities: string[];
+  description: string;
+}
+
+/**
+ * The animal a zone was created from, so the editor can write both halves back.
+ *
+ * **A custom animal is stored in two places and they have to agree.** The zone
+ * in `extraZones` carries the name, icon, capacities and speed — that is what
+ * the header draws and what the encumbrance pass joins on by name. The item in
+ * `items` carries the type, qualities and description on its `customDefinition`,
+ * which is what the info row reads. Renaming used to touch only the zone, so
+ * the two drifted apart the moment anyone used it.
+ */
+interface AnimalTarget {
+  zoneId: string;
+  itemId?: string;
+}
+
+/**
+ * One form, two doors: adding an animal and editing one ask exactly the same
+ * eight questions, and the day they stop asking the same ones is the day a
+ * field can be set but never corrected. Leander, 2026-08-30: *"die animals und
+ * vehicles sollten sich auch komplett editieren lassen."*
+ */
+class CustomAnimalDialog extends Dialog {
+  constructor(
+    actor: Actor,
+    encMode: "slots" | "weight",
+    onComplete: () => void,
+    existing?: { target: AnimalTarget; draft: AnimalDraft }
+  ) {
+    // Everything below is written straight into markup, so every value the user
+    // has ever typed goes through escapeHTML first — a wolf called Alden "The
+    // Grey" must not be able to close the attribute it sits in.
+    const d = existing?.draft;
 
     super({
-      title: "Add Custom Animal / Vehicle",
+      title: existing ? "Edit Animal / Vehicle" : "Add Custom Animal / Vehicle",
       content: `
         <form>
           <div class="form-group">
             <label>Name</label>
-            <input type="text" id="animal-name" placeholder="e.g. Alden the Wolf" />
+            <input type="text" id="animal-name" placeholder="e.g. Alden the Wolf" value="${escapeHTML(d?.name ?? "")}" />
           </div>
           <div class="form-group">
             <label>Type / Subcategory</label>
-            <input type="text" id="animal-subcategory" placeholder="e.g. Wolves, Horses, Land Vehicles" />
+            <input type="text" id="animal-subcategory" placeholder="e.g. Wolves, Horses, Land Vehicles" value="${escapeHTML(d?.subcategory ?? "")}" />
           </div>
           <div class="form-group">
             <label>Icon</label>
-            <select id="animal-icon">${iconOptionsHtml}</select>
+            ${buildIconPickerHTML(d?.icon || "fa-horse", ZONE_ICONS)}
+          </div>
+          <div class="form-group">
+            <label>Color</label>
+            ${buildColorPickerHTML(d?.color || "green")}
           </div>
           <div class="form-group">
             <label>Speed (ft)</label>
-            <input type="number" id="animal-speed" value="40" min="0" />
+            <input type="number" id="animal-speed" value="${d?.speed ?? 40}" min="0" />
           </div>
           <div class="form-group">
             <label>Weight Capacity (coin wt)</label>
-            <input type="number" id="animal-weight-cap" value="0" min="0" />
+            <input type="number" id="animal-weight-cap" value="${d?.weightCapacity ?? 0}" min="0" />
           </div>
           <div class="form-group">
             <label>Slot Capacity</label>
-            <input type="number" id="animal-slot-cap" value="0" min="0" />
+            <input type="number" id="animal-slot-cap" value="${d?.maxSlots ?? 0}" min="0" />
           </div>
           <div class="form-group">
             <label>Qualities (comma-separated)</label>
-            <input type="text" id="animal-qualities" placeholder="e.g. Loyal, Fast, Night Vision" />
+            <input type="text" id="animal-qualities" placeholder="e.g. Loyal, Fast, Night Vision" value="${escapeHTML((d?.qualities ?? []).join(", "))}" />
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea id="animal-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+            <textarea id="animal-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;">${escapeHTML(d?.description ?? "")}</textarea>
           </div>
         </form>
       `,
       buttons: {
         add: {
-          label: "Add Animal",
+          label: existing ? "Save Changes" : "Add Animal",
           callback: async (html: JQuery) => {
             const name = (html.find("#animal-name").val() as string).trim();
             if (!name) { ui.notifications?.warn("Name is required."); return; }
             const subcategory = (html.find("#animal-subcategory").val() as string).trim();
-            const icon = html.find("#animal-icon").val() as string;
+            const icon = (html.find("#custom-icon-value").val() as string) || "fa-horse";
+            const color = (html.find("#zone-color-value").val() as string) || "green";
             const speed = Math.max(0, parseInt(html.find("#animal-speed").val() as string, 10) || 0);
             const weightCapacity = Math.max(0, parseInt(html.find("#animal-weight-cap").val() as string, 10) || 0);
             const maxSlots = Math.max(0, parseInt(html.find("#animal-slot-cap").val() as string, 10) || 0);
@@ -2799,11 +2906,70 @@ class AddCustomAnimalDialog extends Dialog {
 
             const isVehicleSub = ["land vehicles", "water vehicles"].includes(subcategory.toLowerCase());
 
+            if (existing) {
+              await FlagManager.updateInventory(actor, (inv) => {
+                // Both halves, in one write. The zone is what the header and the
+                // encumbrance pass read; the item's definition is what the info
+                // row reads. Updating one and not the other is how a renamed
+                // animal ends up captioned with its old type.
+                const zone = (inv.extraZones ?? []).find((z) => z.id === existing.target.zoneId);
+                if (zone) {
+                  zone.name = name;
+                  zone.icon = icon;
+                  zone.color = color;
+                  zone.maxSlots = maxSlots;
+                  zone.weightCapacity = weightCapacity;
+                  if (speed > 0) zone.speed = speed;
+                  else delete zone.speed;
+                  // Vehicle-ness is derived from the type on the way in, exactly
+                  // as it is when the animal is first added — so correcting the
+                  // type to "Land Vehicles" gives it the double-team toggle, and
+                  // correcting it away takes it back.
+                  if (isVehicleSub) zone.isVehicle = true;
+                  else delete zone.isVehicle;
+                }
+
+                const item = existing.target.itemId
+                  ? inv.items.find((i) => i.id === existing.target.itemId)
+                  : undefined;
+                if (item) {
+                  item.name = name;
+                  const cd: Partial<import("../types").ItemDefinition> = {
+                    ...(item.customDefinition ?? {}),
+                    name,
+                    icon,
+                    subcategory,
+                    qualities,
+                    grantsZone: { name, maxSlots, weightCapacity, speed },
+                  };
+                  // An emptied description must actually clear: leaving the old
+                  // one in place would make the field look broken.
+                  if (description) cd.description = description;
+                  else delete cd.description;
+                  item.customDefinition = cd;
+                }
+
+                return inv;
+              });
+              onComplete();
+              return;
+            }
+
             await FlagManager.updateInventory(actor, (inv) => {
               const itemId = foundry.utils.randomID();
+              // name, cost, unit and tags are written out rather than left to
+              // definitionFor's backfill: they are facts about this animal, and a
+              // row that states them is a row the next reader cannot trip over.
+              // cost 0 is the module's "by arrangement" price -- a shop does not
+              // buy your donkey at a catalogue rate. cannotBeStowed is deliberately
+              // NOT set, so existing animals and new ones behave alike.
               const customDef: Partial<import("../types").ItemDefinition> = {
                 isCustom: true,
                 icon,
+                name,
+                cost: { amount: 0, currency: "gp" },
+                unit: "piece",
+                tags: [],
                 category: "Animals & Vehicles",
                 subcategory,
                 size: "normal",
@@ -2832,6 +2998,7 @@ class AddCustomAnimalDialog extends Dialog {
                 weightCapacity,
                 itemId,
                 icon,
+                color,
                 ...(speed > 0 ? { speed } : {}),
                 ...(isVehicleSub ? { isVehicle: true } : {}),
               });
@@ -2845,6 +3012,12 @@ class AddCustomAnimalDialog extends Dialog {
       },
       default: "add",
     });
+  }
+
+  override activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    activateIconPicker(html);
+    activateColorPicker(html);
   }
 }
 
