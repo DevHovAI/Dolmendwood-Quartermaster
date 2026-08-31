@@ -66,9 +66,22 @@
      **Italic means one thing in this module: this value was not typed here.**
      Derived readings, flavour text, an item description, the type a zone gets
      from its row. It never means emphasis; bold does that. */
-  --dw-font-display: "Georgia", "Book Antiqua", serif;
-  --dw-font-body:    "Georgia", "Book Antiqua", serif;
-  --dw-font-num:     "Georgia", "Book Antiqua", serif;
+  /* **Signika, because it is already on every machine that runs Foundry.**
+     Leander asked for a face without serifs (2026-08-31). The choice was not
+     which sans is prettiest but which one is certainly there: a webfont means a
+     fetch the table waits on and a blocked CDN nobody can debug mid-session,
+     and a bare `sans-serif` means the module looks different on every player's
+     machine. Signika ships with Foundry core, which also declares it as
+     `--font-primary` — so the module now reads as part of the application
+     instead of as a book pasted into it.
+
+     Named outright rather than taken from `var(--font-primary)`: a game system
+     may set that to anything, and this module's spacing was measured against
+     one face. The stack behind it is what a machine without Signika falls back
+     through, in descending order of "looks like the platform". */
+  --dw-font-display: "Signika", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --dw-font-body:    "Signika", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --dw-font-num:     "Signika", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 
   /* ══ CONTROL METRICS ═══════════════════════════════════════════════════
      One height per kind of control, so that things of equal meaning line up
@@ -196,7 +209,10 @@ body {
       rgba(160, 100, 30, 0.04) 29px
     );
   color: var(--dw-text);
-  font-family: "Georgia", "Book Antiqua", serif;
+  /* The token, not the stack again: this rule and the inn's name field were the
+     two places that named the face outright, which is how a type role becomes
+     a type role in only most of the module. */
+  font-family: var(--dw-font-body);
   padding: 8px;
   overflow-y: auto;
 }
@@ -2414,7 +2430,7 @@ body {
 }
 
 .inn-name-edit {
-  font-family: "Georgia", "Book Antiqua", serif;
+  font-family: var(--dw-font-display);
   font-size: var(--dw-text-lg);
   font-weight: bold;
   color: var(--dw-primary);
@@ -3515,6 +3531,26 @@ body {
 
 /* One wrapper, because a Handlebars part is rendered as a single node — the
    strip and the unfolded panel as two roots lost the bar entirely. */
+/* **Every window of this module names its own face.** Only the inventory did,
+   which is why the module used to be half book and half application: that one
+   window was set in Georgia and the day bar, the sheet, the shop and the inn
+   simply inherited whatever Foundry was using. They agree now — and they agree
+   because each says so, not because the host happens to be running the same
+   font this week (Leander, 2026-08-31: a face without serifs). */
+.day-bar-root,
+.party-overview,
+.player-inventory,
+.dw-sheet,
+.dw-sheet-body,
+.shop-panel,
+.inn-panel,
+.market-panel,
+.loot-window,
+.loot-browser-window,
+.trash-window-inner {
+  font-family: var(--dw-font-body);
+}
+
 .day-bar-root {
   /* One width for the strip and the panel, fixed rather than shrink-to-fit.
      Both used to size themselves to their contents, so switching Travel to
