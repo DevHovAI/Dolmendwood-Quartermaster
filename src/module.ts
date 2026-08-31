@@ -1002,7 +1002,20 @@ Hooks.once("ready", async () => {
     const lootData = getFlag("loot") as true | { name?: string } | undefined;
     if (lootData) {
       const lootName = typeof lootData === "object" ? lootData.name : undefined;
-      if (refusePlaceIfAway(placeDoc, lootName ?? "That hoard")) return false;
+      // **`canReachLoot`, not `refusePlaceIfAway`** — the other door has always
+      // asked the loot question here and this one asked the shop question, so
+      // the rule was two rules depending on which hook Foundry happened to
+      // fire. A body is reached by standing *next* to it, so a player with a
+      // token beside one was refused here for not having the party marker in
+      // that hex; and on a square battle map the shop rule finds no hex at all
+      // and falls open, which is the very hole `canReachLoot` was written to
+      // close. `openLootBox` asks again behind this, so nothing was ever
+      // wrongly opened — but a wrong refusal is still wrong.
+      const reach = canReachLoot(placeDoc);
+      if (!reach.ok) {
+        ui.notifications?.warn(`${lootName ?? "That hoard"} is out of reach. ${reach.reason}`);
+        return false;
+      }
       const doc = (asDoc.document ?? asDoc) as Parameters<typeof openLootFromNote>[0];
       void openLootFromNote(doc);
       return false;
