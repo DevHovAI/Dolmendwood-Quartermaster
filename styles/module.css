@@ -285,33 +285,125 @@ body {
 .enc-slots {
   min-width: 26px;
   text-align: right;
-  font-size: 0.85em;
+  font-size: var(--dw-text-sm);
   color: var(--dw-text);
   font-weight: bold;
 }
 
+/* What ONE track alone allows, at the end of that track — slot mode only, where
+   Equipped and Stowed each set a speed and the slower of the two wins. The
+   answer they add up to is not here: it is in .speed-readout below, which shows
+   the whole sum. */
 .enc-speed {
-  min-width: 46px;
-  font-weight: bold;
-  font-size: 0.85em;
+  min-width: 52px;
+  font-weight: 700;
+  font-size: var(--dw-text-base);
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
-.enc-final {
+/* ─── The speed readout ─────────────────────────────────────────────────────
+   Under the load bars, because it is what the load bars come to: the pace this
+   character marches at, and the arithmetic that produced it (Leander,
+   2026-08-31: *"es muss halt übersichtlich und verständlich sein, die
+   Ausgangsweight vor mali muss gut erkennbar sein und dann natürlich das
+   endresultat"*).
+
+   It reads left to right as the sum it is:
+
+       Speed   [40 ft]  −  🍗 10 hungry  =  (30 ft)        +88 wt to 20 ft
+
+   A hairline above it, because it is a conclusion drawn from the tracks rather
+   than another track. */
+.speed-readout {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.9em;
-  padding: 3px 6px;
-  border-radius: 4px;
-  background: var(--dw-primary);
-  color: var(--dw-accent-light);
-  margin-top: 4px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+  flex-wrap: wrap;
+  gap: var(--dw-row-gap);
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--dw-line-hair);
+}
+
+/* **Outline is what the load allows; filled is what you get.** Same size, same
+   shape, same tier colour, so the starting figure is as easy to read as the
+   answer and the eye can compare them at a glance — which is the whole point of
+   showing both. Only the fill says which one is real. */
+.speed-base,
+.speed-result {
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: var(--dw-text-base);
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.speed-base {
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+.speed-result {
+  border: 1px solid rgba(0, 0, 0, 0.25);
+}
+/* The ink is named per fill rather than once on .speed-result: white on the
+   amber fill is 2.15:1, so that tier — and only that tier — inks dark. */
+.speed-result.speed-green  { background: var(--speed-green-fill);  color: var(--dw-on-fill); }
+.speed-result.speed-yellow { background: var(--speed-yellow-fill); color: var(--speed-yellow-ink); }
+.speed-result.speed-orange { background: var(--speed-orange-fill); color: var(--dw-on-fill); }
+.speed-result.speed-red    { background: var(--speed-red-fill);    color: var(--dw-on-fill); }
+
+/* The minus and the equals. Faint on purpose: they are punctuation between the
+   figures, not figures themselves. */
+.speed-op {
+  color: var(--dw-ink-faint);
+  font-weight: bold;
+}
+
+/* Every term that is taken off the load's speed. Amber, the module's colour for
+   a penalty, and a chip rather than plain text so that two of them would still
+   read as two terms. */
+.speed-malus {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--speed-orange-bg);
+  border: 1px solid rgba(147, 48, 10, 0.25);
+  color: var(--speed-orange);
+  font-size: var(--dw-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* How much more fits before the pace drops a step. Filed to the right and drawn
+   quietly: it is advice about what to do next, not part of the sum. */
+/* The same chip, saying that hunger cost nothing this time. Quieter, because it
+   is a note rather than a term of the sum. */
+.speed-malus-spent {
+  background: transparent;
+  border-color: transparent;
+  color: var(--dw-ink-faint);
+  font-weight: normal;
+  font-size: var(--dw-text-xs);
+}
+
+.speed-headroom {
+  margin-left: auto;
+  font-size: var(--dw-text-xs);
+  color: var(--dw-ink-faint);
+  white-space: nowrap;
+}
+
+.speed-headroom-over {
+  color: var(--speed-red);
+  font-weight: bold;
 }
 
 .enc-bottleneck {
-  font-size: 0.8em;
+  font-size: var(--dw-text-xs);
   opacity: 0.85;
 }
 
@@ -4538,17 +4630,6 @@ body > #dolmenwood-day-bar {
    silently clamped: the party did walk them. */
 .day-bar-tp-value .is-over {
   color: var(--speed-orange);
-}
-
-/* The hunger share of a character's speed, beside the total in the encumbrance
-   bar. The load bars above it can only show what is carried, so without this
-   the number at the bottom would not add up from anything on screen. */
-.enc-hunger {
-  margin-left: 6px;
-  color: var(--speed-orange);
-  font-size: 0.85em;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 /* Re-read the day's Travel Point allowance from the party as they stand now.

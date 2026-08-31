@@ -41,6 +41,25 @@ function getSpeedForWeight(weight: number): 40 | 30 | 20 | 10 | 0 {
 }
 
 /**
+ * How much more this character may pick up before the pace drops a step, and
+ * the step it would drop to. The tick marks on the track answer this only if
+ * you hover them one by one; the speed readout says it outright.
+ *
+ * Past the last tier there is no slower step — there is a standstill, which is
+ * what nextSpeed 0 means. Beyond 1,600 the whole question is moot: null.
+ */
+function weightHeadroom(weight: number): { room: number; nextSpeed: number } | null {
+  for (let i = 0; i < WEIGHT_SPEED_TIERS.length; i++) {
+    const [max] = WEIGHT_SPEED_TIERS[i];
+    if (weight <= max) {
+      const next = WEIGHT_SPEED_TIERS[i + 1];
+      return { room: Math.max(0, Math.floor(max - weight)), nextSpeed: next ? next[1] : 0 };
+    }
+  }
+  return null;
+}
+
+/**
  * Calculate encumbrance from a CharacterInventory.
  * The catalog map is passed in to avoid a circular dependency with CatalogManager.
  * mode: "slots" (default) uses gear-slot tracking; "weight" uses coin-weight tracking.
@@ -157,6 +176,11 @@ function calculateSlotEncumbrance(
     footSpeed: finalSpeed,
     loadSpeed,
     hungerSpeedPenalty: hungerSpeedPenalty(inventory.day),
+    hungerSpeedLoss: Math.max(0, loadSpeed - finalSpeed),
+    hungerFloored: hungerSpeedPenalty(inventory.day) > Math.max(0, loadSpeed - finalSpeed) && loadSpeed > 0,
+    // Two tracks, so there is no single "how much more fits" to give.
+    weightToNextTier: null,
+    nextTierSpeed: null,
     animalSpeeds: [],
     convoySpeed: null,
   };
@@ -239,6 +263,7 @@ function calculateWeightEncumbrance(
 
   const totalWeight = equippedWeight + stowedWeight + tinyWeight;
   const loadSpeed = getSpeedForWeight(totalWeight);
+  const headroom = weightHeadroom(totalWeight);
   // The character's own pace: the load, then hunger, never below 10 unless the
   // load itself already stops them.
   const footSpeed = speedAfterHunger(loadSpeed, inventory.day);
@@ -304,6 +329,10 @@ function calculateWeightEncumbrance(
     footSpeed,
     loadSpeed,
     hungerSpeedPenalty: hungerSpeedPenalty(inventory.day),
+    hungerSpeedLoss: Math.max(0, loadSpeed - footSpeed),
+    hungerFloored: hungerSpeedPenalty(inventory.day) > Math.max(0, loadSpeed - footSpeed) && loadSpeed > 0,
+    weightToNextTier: headroom ? headroom.room : null,
+    nextTierSpeed: headroom ? headroom.nextSpeed : null,
     animalSpeeds,
     convoySpeed,
   };

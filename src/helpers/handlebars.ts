@@ -391,6 +391,7 @@ export async function registerHandlebarsPartials(): Promise<void> {
     "item-row": TEMPLATES.PARTIALS.ITEM_ROW,
     "coin-display": TEMPLATES.PARTIALS.COIN_DISPLAY,
     "encumbrance-bar": TEMPLATES.PARTIALS.ENCUMBRANCE_BAR,
+    "speed-readout": TEMPLATES.PARTIALS.SPEED_READOUT,
     "party-summary": TEMPLATES.PARTIALS.PARTY_SUMMARY,
     "extra-zone": TEMPLATES.PARTIALS.EXTRA_ZONE,
     "zone-coin-purse": TEMPLATES.PARTIALS.ZONE_COIN_PURSE,

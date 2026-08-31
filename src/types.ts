@@ -244,6 +244,21 @@ export interface EncumbranceResult {
   loadSpeed: number;
   /** Feet of Speed hunger is taking off right now; 0 when fed (PB p153). */
   hungerSpeedPenalty: number;
+  /**
+   * Feet of Speed hunger actually takes off, which is not always what it costs:
+   * Speed is never reduced below 10, so a 20 ft penalty on a 20 ft load takes
+   * ten of them. The readout shows what was taken, not what was owed.
+   */
+  hungerSpeedLoss: number;
+  /** True when that floor swallowed part of the penalty. */
+  hungerFloored: boolean;
+  /**
+   * Weight mode: how much more may be picked up before the pace drops a step,
+   * and the step it drops to. null = already over max load, where there is no
+   * next step. Slot mode leaves both null — it has two tracks, not one.
+   */
+  weightToNextTier: number | null;
+  nextTierSpeed: number | null;
   animalSpeeds: AnimalSpeedInfo[];
   convoySpeed: number | null;          // null = no animals with speed; otherwise min effective speed
 }

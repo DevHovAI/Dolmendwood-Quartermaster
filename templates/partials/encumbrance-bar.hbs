@@ -4,7 +4,7 @@
   <div class="enc-row enc-total-weight">
     <span class="enc-label">Weight</span>
     <div class="enc-track" title="{{encumbrance.totalWeight}} / 1,600 coins">
-      <div class="enc-fill {{speedColor encumbrance.finalSpeed}}"
+      <div class="enc-fill {{speedColor encumbrance.loadSpeed}}"
            style="width: {{weightBarWidth encumbrance.totalWeight}}"></div>
       <div class="enc-threshold" style="left: 25%"   title="Speed 40 threshold (400 coins)"></div>
       <div class="enc-threshold" style="left: 37.5%" title="Speed 30 threshold (600 coins)"></div>
@@ -12,7 +12,6 @@
       <div class="enc-threshold" style="left: 100%"  title="Max load (1,600 coins)"></div>
     </div>
     <span class="enc-slots">{{encumbrance.totalWeight}}</span>
-    <span class="enc-speed {{speedColor encumbrance.finalSpeed}}">→ {{speedLabel encumbrance.finalSpeed}}</span>
   </div>
   <div class="enc-weight-breakdown">
     <span class="enc-breakdown-item" title="Equipped items weight">Eq: {{encumbrance.equippedWeight}}</span>
@@ -21,20 +20,10 @@
     <span class="enc-breakdown-sep">·</span>
     <span class="enc-breakdown-item {{#if (gt encumbrance.tinyWeight 50)}}enc-over{{/if}}" title="Belt pouch weight (max 50)">Pouch: {{encumbrance.tinyWeight}}/50</span>
   </div>
-  <div class="enc-final {{speedColor encumbrance.finalSpeed}}">
-    <strong>Speed: {{speedLabel encumbrance.finalSpeed}}</strong>
-    {{!-- Hunger is already inside finalSpeed; this says how much of it is hunger
-          rather than load, since the load bars above cannot show it. --}}
-    {{#if encumbrance.hungerSpeedPenalty}}
-    <span class="enc-hunger" title="Going hungry costs {{encumbrance.hungerSpeedPenalty}} ft of Speed (Effects of Hunger, Player&#39;s Book p153). The load alone would allow {{encumbrance.loadSpeed}} ft, and Speed is never reduced below 10.">
-      <i class="fas fa-drumstick-bite"></i> &minus;{{encumbrance.hungerSpeedPenalty}} hunger
-    </span>
-    {{/if}}
-    {{!-- The speed already says "cannot move"; this names the reason --}}
-    {{#if (gt encumbrance.totalWeight 1600)}}
-    <span class="enc-bottleneck">⚠ Over max load (1,600)</span>
-    {{/if}}
-  </div>
+  {{!-- The track says what is carried; this says what that lets you do about it.
+        It reads as the arithmetic it is — load, less hunger, equals pace — which
+        an arrow tucked against the right end of the track never could. --}}
+  {{> speed-readout encumbrance=encumbrance}}
 </div>
 {{else}}
 {{!-- ── Slot Encumbrance (default) ── --}}
@@ -63,18 +52,10 @@
     <span class="enc-slots">{{encumbrance.stowedSlots}}</span>
     <span class="enc-speed {{speedColor encumbrance.stowedSpeed}}">→ {{encumbrance.stowedSpeed}}ft</span>
   </div>
-  <div class="enc-final {{speedColor encumbrance.finalSpeed}}">
-    <strong>Speed: {{speedLabel encumbrance.finalSpeed}}</strong>
-    {{!-- Hunger is already inside finalSpeed; this says how much of it is hunger
-          rather than load, since the load bars above cannot show it. --}}
-    {{#if encumbrance.hungerSpeedPenalty}}
-    <span class="enc-hunger" title="Going hungry costs {{encumbrance.hungerSpeedPenalty}} ft of Speed (Effects of Hunger, Player&#39;s Book p153). The load alone would allow {{encumbrance.loadSpeed}} ft, and Speed is never reduced below 10.">
-      <i class="fas fa-drumstick-bite"></i> &minus;{{encumbrance.hungerSpeedPenalty}} hunger
-    </span>
-    {{/if}}
-    {{#if (neq encumbrance.bottleneck "none")}}
-    <span class="enc-bottleneck">⚠ {{bottleneckLabel encumbrance.bottleneck}}</span>
-    {{/if}}
-  </div>
+  {{!-- The same statement as in weight mode, and for the same reason: the two
+        tracks above say what is carried, and this says the pace that comes out
+        of it. Here the slower of the two tracks is the starting value, and the
+        bottleneck chip names which one it was. --}}
+  {{> speed-readout encumbrance=encumbrance}}
 </div>
 {{/if}}

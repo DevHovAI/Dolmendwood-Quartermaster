@@ -26,6 +26,7 @@ export const TEMPLATES = {
     ITEM_ROW: `modules/${MODULE_ID}/templates/partials/item-row.hbs`,
     COIN_DISPLAY: `modules/${MODULE_ID}/templates/partials/coin-display.hbs`,
     ENCUMBRANCE_BAR: `modules/${MODULE_ID}/templates/partials/encumbrance-bar.hbs`,
+    SPEED_READOUT: `modules/${MODULE_ID}/templates/partials/speed-readout.hbs`,
     TRANSACTION_LOG: `modules/${MODULE_ID}/templates/partials/transaction-log.hbs`,
     PARTY_SUMMARY: `modules/${MODULE_ID}/templates/partials/party-summary.hbs`,
     EXTRA_ZONE: `modules/${MODULE_ID}/templates/partials/extra-zone.hbs`,
