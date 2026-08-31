@@ -6471,10 +6471,16 @@ span.day-bar-panel-tick {
    not got — 200px here is 400 real pixels on most screens — so it offers the
    two things that can help instead: the picture at its own size, and a button
    to choose a bigger file. */
-/* The width is still a number, so the picture grows downward into a portrait
-   rather than sideways into the page. The floor keeps it at the size it has
-   always had, for the day somebody puts a sheet in front of it with less on
-   the right than there is now. */
+/* Square, at whatever size the identity block beside it turns out to be
+   (Leander, 2026-08-31: *"bitte mache es wieder quadratisch, aber die höhe
+   passt so"*).
+
+   **The width is set from JavaScript, and it has to be.** A flex row cannot
+   carry a stretched height back into a width: the main size is resolved from
+   the flex basis first, so `aspect-ratio` here would leave the box exactly as
+   wide as it started and only make it look square by cropping. `#squarePortrait`
+   measures the block and writes the side; the floor below is what the box is
+   before it does, and what it falls back to if the block is ever shorter. */
 .dw-sheet-portrait-box {
   position: relative;
   flex: 0 0 auto;

@@ -256,6 +256,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
 
   override async _onRender(): Promise<void> {
     const el = this.element;
+    this.#squarePortrait();
     this.#measurePortrait();
     if (!this.actor.isOwner) return;
 
@@ -319,15 +320,44 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
    *
    * *"Die Portraits in den Attributes sind noch relativ niedrigauflösend"*
    * (Leander, 2026-08-28) has two possible causes, and the window is the only
-   * thing here that can tell them apart. The box is {@link PORTRAIT_BOX} CSS
-   * pixels, which is twice that in real ones on most screens; a 128-pixel token
-   * picture is therefore being stretched more than three times over. **No
+   * thing here that can tell them apart. The box is at least {@link
+   * PORTRAIT_BOX} CSS pixels and usually more — `#squarePortrait` sizes it from
+   * the identity block — which is twice that in real ones on most screens; a
+   * 128-pixel token picture is therefore stretched more than three times. **No
    * stylesheet can fix that — only a bigger file can.** So the sheet measures
    * what loaded, puts the numbers in the tooltip, and tints the picker button
    * when the file is the reason.
    *
    * An SVG is skipped: it has no resolution to be short of.
    */
+  /**
+   * The portrait is square, and its side is the height of the identity block
+   * beside it — so the picture ends exactly where the moon sign does.
+   *
+   * **Measured rather than typed**, because that height is the sum of however
+   * many fields the block happens to hold, and a typed number would want
+   * re-typing every time one joins. **Measured rather than left to CSS**,
+   * because a flex row cannot carry a stretched height back into a width: the
+   * main size is resolved from the flex basis before the cross size is
+   * stretched, so `aspect-ratio` would leave the box as wide as it began.
+   *
+   * Widening the portrait narrows the identity block, which can make it taller,
+   * which would widen the portrait again — so the loop is closed by hand rather
+   * than left to run: three passes at most, and it stops the moment two agree
+   * within a pixel, which for a block of short fields is the first one.
+   */
+  #squarePortrait(): void {
+    const box = this.element.querySelector<HTMLElement>(".dw-sheet-portrait-box");
+    const identity = this.element.querySelector<HTMLElement>(".dw-sheet-identity");
+    if (!box || !identity) return;
+
+    for (let pass = 0; pass < 3; pass++) {
+      const side = Math.max(PORTRAIT_BOX, Math.round(identity.getBoundingClientRect().height));
+      if (Math.abs(side - box.getBoundingClientRect().width) <= 1) return;
+      box.style.width = `${side}px`;
+    }
+  }
+
   #measurePortrait(): void {
     const box = this.element.querySelector<HTMLElement>(".dw-sheet-portrait-box");
     const img = box?.querySelector<HTMLImageElement>(".dw-sheet-portrait");
@@ -339,7 +369,11 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       const h = img.naturalHeight;
       if (!w || !h) return;
       // What the screen will ask of the file, not what CSS calls it.
-      const wanted = Math.round(PORTRAIT_BOX * (window.devicePixelRatio || 1));
+      // What the screen asks of the file depends on how big the box ended up,
+      // which is no longer a constant — #squarePortrait sizes it from the block
+      // beside it. PORTRAIT_BOX is only the floor now.
+      const drawnAt = Math.round(box.getBoundingClientRect().width) || PORTRAIT_BOX;
+      const wanted = Math.round(drawnAt * (window.devicePixelRatio || 1));
       const short = Math.min(w, h) < wanted;
       box.classList.toggle("is-upscaled", short);
       img.title = short
