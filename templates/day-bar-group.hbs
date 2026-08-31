@@ -47,6 +47,10 @@
         <span class="duty-group-label">{{this.label}}</span>
         <span class="duty-group-hint">{{this.hint}}</span>
       </span>
+      {{!-- A step with nothing to roll still gets the die's lane, empty, so
+            that what a step says ends in the same column on every row rather
+            than running two icons further right on the plain ones. --}}
+      <span class="duty-group-roll-slot" aria-hidden="true"></span>
     </button>
     {{/if}}
     {{/each}}

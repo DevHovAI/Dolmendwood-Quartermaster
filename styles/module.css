@@ -99,6 +99,12 @@
      button on the sheet are the same button and must not be two sizes. */
   --dw-step-btn:  20px;   /* the square + / - pair                        */
   --dw-icon-btn:  22px;   /* a lone icon action                           */
+  /* A mark at the head of a row: a tick, a category icon, a die. Fixed,
+     because Font Awesome glyphs are not one width and a row whose mark is
+     content-sized moves everything after it the moment the mark changes —
+     which is what ticking a step does (Leander, 2026-09-01: the camp steps
+     *"shiften die icons und texte etwas hin und her"*). */
+  --dw-mark-lane: 14px;
   --dw-control-h: 24px;   /* input, select, and anything that sits beside */
   /* Any number with a - on its left and a + on its right gets this lane,
      whatever it counts. A plain quantity is "3" and a fill level is "7/20",
@@ -4276,7 +4282,9 @@ body > #dolmenwood-day-bar {
 .day-bar-duty-roll {
   display: flex;
   align-items: center;
-  width: auto;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--dw-icon-btn);
   height: auto;
   min-height: 0;
   padding: 0 var(--dw-space-2);
@@ -4535,11 +4543,21 @@ body > #dolmenwood-day-bar {
   opacity: 0.75;
 }
 
+/* The same two swaps happen here — tick to ticked, die to undo — and a chip in
+   a wrapping strip that changes width nudges every chip after it along. */
 .day-bar-tick {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--dw-mark-lane);
+  text-align: center;
   font-size: var(--dw-text-sm);
 }
 
 .day-bar-duty-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--dw-mark-lane);
+  text-align: center;
   opacity: 0.7;
 }
 
@@ -4879,8 +4897,29 @@ body > #dolmenwood-day-bar {
   border-bottom: none;
 }
 
+/* **Every lane fixed but the text.** A step is a mark, an icon, what it says,
+   and the die — and only the third of those may decide its own width. Ticking
+   one swaps fa-square for fa-square-check and rolling one swaps the die for the
+   arrow that takes it back; neither glyph is the width of the one it replaces,
+   so without these the whole row shuffled sideways at every click. */
+.duty-group-tick-btn {
+  flex: 0 0 auto;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+}
+
 .duty-group-tick {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: var(--dw-mark-lane);
   margin-top: var(--dw-space-2);
+  text-align: center;
   color: var(--dw-tertiary);
 }
 
@@ -4889,17 +4928,28 @@ body > #dolmenwood-day-bar {
 }
 
 .duty-group-icon {
+  flex: 0 0 auto;
+  width: var(--dw-mark-lane);
   margin-top: var(--dw-space-2);
-  width: 14px;
   color: var(--dw-tertiary);
   text-align: center;
 }
 
+/* The only elastic part of a step, and therefore the only one that moves. */
 .duty-group-text {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--dw-space-1);
   min-width: 0;
+}
+
+/* Drawn on every step whether or not it rolls, so that what a step says ends
+   in the same column all the way down the list — the same rule the inventory
+   rows follow. An empty lane costs one span; a missing one costs alignment. */
+.duty-group-roll-slot {
+  flex: 0 0 auto;
+  width: var(--dw-icon-btn);
 }
 
 .duty-group-label {
@@ -6008,7 +6058,9 @@ span.day-bar-panel-tick {
 .duty-group-roll {
   display: flex;
   align-items: flex-start;
-  width: auto;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--dw-icon-btn);
   height: auto;
   min-height: 0;
   padding: 0 var(--dw-space-2);
