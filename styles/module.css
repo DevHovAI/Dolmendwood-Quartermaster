@@ -6136,13 +6136,51 @@ span.day-bar-panel-tick {
   text-overflow: ellipsis;
 }
 
+/* Foundry paints a bare input/select/textarea from --input-background-color, and
+   that variable is THEMED: body.theme-dark, .themed.theme-dark and the fantasy
+   theme each redefine it. Our windows are parchment whatever the rest of Foundry
+   is set to, so a field that never claims its own colours wears somebody else's
+   theme -- and can land light-on-light, which is what the v13 table saw while the
+   v14 machine looked fine. It was never really the version: it is that the sheet
+   never said. So it says it here, for every field on the page.
+
+   Scoped to .dw-sheet on purpose. A module-wide input rule would also outrank
+   .day-bar-context-field.is-derived, whose whole point is a transparent field. */
+.dw-sheet .dw-sheet-body input[type="text"],
+.dw-sheet .dw-sheet-body input[type="number"],
+.dw-sheet .dw-sheet-body textarea,
+.dw-sheet .dw-sheet-body select {
+  background: var(--dw-field-bg);
+  color: var(--dw-text);
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+.dw-sheet .dw-sheet-body input:focus,
+.dw-sheet .dw-sheet-body textarea:focus,
+.dw-sheet .dw-sheet-body select:focus {
+  outline: 1px solid var(--dw-accent);
+  border-color: var(--dw-accent);
+}
+
+/* A player looking at a sheet they may not edit still has to READ it, so a
+   disabled field is muted, never greyed into the background. */
+.dw-sheet .dw-sheet-body input:disabled,
+.dw-sheet .dw-sheet-body textarea:disabled,
+.dw-sheet .dw-sheet-body select:disabled {
+  background: rgba(255, 254, 248, 0.55);
+  color: var(--dw-text);
+  opacity: 1;
+  border-style: dashed;
+}
 .dw-field > input,
 .dw-sheet-body input[type="text"],
 .dw-sheet-body input[type="number"] {
   width: 100%;
   height: var(--dw-sheet-input-h);
   padding: 2px 8px;
-  font-size: 1.05em;
+  font-size: var(--dw-text-base);
   line-height: 1.2;
 }
 
