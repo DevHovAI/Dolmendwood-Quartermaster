@@ -49,6 +49,16 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   private showAffordableOnly = false;
   /** Local shop name — set when opened from a Note marker (null = generic shop) */
   private localName: string | null = null;
+  /**
+   * The toolbar shop's own name, which is **not** `localName`.
+   *
+   * `localName` is what keys the shelf, so putting the typed name there would
+   * move a shop's stock every time it was renamed. The toolbar shop keeps its
+   * reserved key whatever it is called; this is the name on the door.
+   */
+  private toolbarName = "";
+  /** Toolbar shop only: whether the party may walk in. */
+  private released = false;
   /** Categories this shop sells — empty means all categories */
   private localCategories: string[] = [];
   /** Price multiplier in percent (100 = normal, 200 = double price) */
@@ -80,6 +90,28 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
    */
   private get shopKey(): string {
     return this.localName ?? GENERIC_SHOP_KEY;
+  }
+
+  /** The place-less shop, opened from the toolbar rather than from a note. */
+  private get isToolbar(): boolean {
+    return this.localName === null;
+  }
+
+  /** What to call this shop on its own door. */
+  private get displayName(): string {
+    return this.localName ?? (this.toolbarName || "Shop");
+  }
+
+  /**
+   * Whether the toolbar shop is open to the party.
+   *
+   * Read from the setting rather than an instance, because the doors — the
+   * scene toolbar, the day bar, the button in a character's inventory — all
+   * have to ask before there is a window to ask.
+   */
+  static isReleased(): boolean {
+    const st = (game as Game).settings?.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState | undefined;
+    return st?.toolbarReleased === true;
   }
 
   /** The GM-defined items and services stocked in this shop. */
@@ -114,7 +146,69 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   }
 
   override get title(): string {
-    return this.localName ?? "Shop";
+    return this.displayName;
+  }
+
+  /**
+   * Remember the toolbar shop's own settings — and only the toolbar shop's.
+   *
+   * A note shop carries its name, categories and rates on the note and
+   * re-applies them on every open, so writing them here would do nothing for
+   * that shop and would quietly overwrite what the toolbar one comes back as.
+   */
+  private async _saveToolbarState(): Promise<void> {
+    if (!this.isToolbar) return;
+    const g = game as Game;
+    const st = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
+    await g.settings.set(MODULE_ID, SETTINGS.SHOP_STATE, {
+      ...st,
+      toolbarName: this.toolbarName,
+      toolbarReleased: this.released,
+      toolbarOwnStock: this.ownStockOnly,
+    });
+  }
+
+  /**
+   * Open the toolbar shop to the party, or shut it.
+   *
+   * The same door the inn has, for the same reason: the Referee names it and
+   * stocks it first, and until then it is not a place anybody can walk into
+   * (Leander, 2026-09-01). Shutting it takes the window off anyone holding it
+   * open — see `_onRender`.
+   */
+  private static async _onToggleRelease(this: ShopApp): Promise<void> {
+    if (!((game as Game).user?.isGM ?? false) || !this.isToolbar) return;
+    this.released = !this.released;
+    await this._saveToolbarState();
+    if (this.released) await this._announceRelease();
+    SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+    this.render(false);
+  }
+
+  /**
+   * The shelf, or the whole catalogue.
+   *
+   * The toolbar shop starts on its own shelf — that is what "empty at first"
+   * means — but the catalogue standing open was what it did for a year, and a
+   * change of mind should not need a reinstall. One button, and it says which
+   * of the two it is showing.
+   */
+  private static async _onToggleOwnStock(this: ShopApp): Promise<void> {
+    if (!((game as Game).user?.isGM ?? false) || !this.isToolbar) return;
+    this.ownStockOnly = !this.ownStockOnly;
+    await this._saveToolbarState();
+    this.render(false);
+  }
+
+  /** How the party finds out there is a shop to walk into. */
+  private async _announceRelease(): Promise<void> {
+    await ChatMessage.create({
+      content: `
+        <div class="dw-shop-message">
+          <h3><i class="fas fa-store"></i> ${escapeHTML(this.displayName)}</h3>
+          <p><em>Open for business.</em></p>
+        </div>`,
+    } as Parameters<typeof ChatMessage.create>[0]);
   }
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
@@ -130,6 +224,8 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     classes: ["dolmenwood-party-inventory", "shop"],
     actions: {
       toggleTag: ShopApp._onToggleTag,
+      toggleRelease: ShopApp._onToggleRelease,
+      toggleOwnStock: ShopApp._onToggleOwnStock,
       toggleAffordable: ShopApp._onToggleAffordable,
       purchaseItem: ShopApp._onPurchaseItem,
       grantItem: ShopApp._onGrantItem,
@@ -159,6 +255,16 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
     const shopState = g.settings.get(MODULE_ID, SETTINGS.SHOP_STATE) as ShopState;
+    // Re-read every render rather than trusted from a constructor: the Referee
+    // may have named, stocked, opened or shut this shop since the window was
+    // built, and on a player's client a refresh is the only warning it gets.
+    // A note shop carries its own settings and has none of this.
+    if (this.isToolbar) {
+      this.toolbarName = shopState.toolbarName ?? "";
+      this.released = shopState.toolbarReleased === true;
+      // Absent means the shelf, not the catalogue — see ShopState.
+      this.ownStockOnly = shopState.toolbarOwnStock !== false;
+    }
     // The shared store is deliberately not a purchase target: the shop always
     // deducts coins from the selected character.
     const partyMembers = getPartyActors();
@@ -329,9 +435,15 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       encMode,
       showAffordableOnly: this.showAffordableOnly,
       availableCp,
-      shopName: this.localName ?? "Shop",
+      shopName: this.displayName,
       isLocalShop: this.localName !== null,
       localName: this.localName,
+      // The head's own controls, and only where there is no note behind the
+      // window to carry these decisions instead.
+      isToolbarShop: this.isToolbar,
+      canRelease: isGM && this.isToolbar,
+      released: this.released,
+      toolbarName: this.toolbarName,
       priceFactor: this.priceFactor,
       ownStockOnly: this.ownStockOnly,
       buyBackRate: this.buyBackRate,
@@ -409,7 +521,26 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     _context: DeepPartial<ApplicationV2RenderContext>,
     _options: DeepPartial<ApplicationV2RenderOptions>
   ): Promise<void> {
+    // **A player must not be left holding a shop the Referee has shut.** The
+    // doors go grey the moment it closes, but a window already open is not a
+    // door and would go on selling until somebody closed it by hand.
+    if (!((game as Game).user?.isGM ?? false) && this.isToolbar && !ShopApp.isReleased()) {
+      void this.close();
+      return;
+    }
+
     const el = this.element;
+
+    el.querySelector<HTMLInputElement>("#shop-name-input")?.addEventListener("change", async (e) => {
+      // Clearing it is allowed: an unnamed shop is simply "Shop". The name is
+      // the sign over the door and nothing else — the shelf is keyed by the
+      // reserved toolbar key, so renaming never moves the stock.
+      const next = (e.target as HTMLInputElement).value.trim();
+      if (next === this.toolbarName) return;
+      this.toolbarName = next;
+      await this._saveToolbarState();
+      this.render(false);
+    });
 
     // Restore scroll position on the next frame. Setting it synchronously here
     // lands while the replaced catalog is still collapsing/laying out, so the

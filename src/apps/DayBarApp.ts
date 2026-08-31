@@ -415,11 +415,18 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       // the toolbar may not open it from here either.
       mayOpenLoot: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT),
       mayOpenTrash: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH),
-      // Two gates: the setting says whether players may reach the toolbar inn
-      // at all, the release says whether the Referee has finished making it.
-      mayOpenInn:
-        isGM ||
-        (!!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN) && InnApp.isReleased()),
+      // **A shut door is drawn, not hidden** (Leander, 2026-09-01: *"dass wenn
+      // closed ist, die spieler trotzdem das icon in ihrer bar haben,
+      // allerdings ausgegraut"*). Removing the icon says the place does not
+      // exist; greying it says it is not open yet, which is the truth and is
+      // also the thing a player wants to know.
+      //
+      // `may…` is still the world setting alone — a table that has switched the
+      // place-less inn or shop off for players should not be shown a grey
+      // reminder of it forever. `…Shut` is this one's own state.
+      mayOpenInn: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN),
+      innShut: !isGM && !InnApp.isReleased(),
+      shopShut: !isGM && !ShopApp.isReleased(),
       mayOpenShop: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP),
       day: state.day,
       // Told to the players only once it has been rolled: they are standing in
@@ -606,6 +613,13 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         break;
       }
       case "inn": {
+        // The button is drawn disabled, but an action stays registered whatever
+        // the template does with it. Hiding a door is presentation; this is the
+        // rule.
+        if (!(game as Game).user?.isGM && !InnApp.isReleased()) {
+          ui.notifications?.warn("The inn is not open yet.");
+          break;
+        }
         const inn = foundry.applications?.instances?.get("dolmenwood-inn") as
           | { render: (options?: unknown) => void }
           | undefined;
@@ -614,6 +628,10 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         break;
       }
       case "shop": {
+        if (!(game as Game).user?.isGM && !ShopApp.isReleased()) {
+          ui.notifications?.warn("The shop is not open yet.");
+          break;
+        }
         // The place-less shop. Reaching it from the bar keeps it available when
         // BAR_ONLY_ACCESS has taken the toolbar buttons away.
         const shop = foundry.applications?.instances?.get("dolmenwood-shop") as

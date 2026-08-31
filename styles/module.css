@@ -2521,7 +2521,8 @@ body {
    title's face and size, so the head reads as a heading until it is clicked and
    only then admits to being a field — the alternative was what it used to be, a
    form control sitting where every other window has a heading. */
-.inn-name-edit {
+.inn-name-edit,
+.dw-title-input {
   font-family: var(--dw-font-title);
   font-size: var(--dw-text-xl);
   font-weight: 700;
@@ -3209,6 +3210,33 @@ body {
   flex: 1;
 }
 
+/* What the shop is showing: its own shelf, or the whole catalogue. Drawn back
+   beside the door button, because it is a decision made once while building the
+   shop and the door is the one made every session. */
+.dw-shelf-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: auto;
+  height: auto;
+  padding: 3px 10px;
+  border: 1px solid var(--dw-border-light);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--dw-tertiary);
+  font-family: inherit;
+  font-size: var(--dw-text-sm);
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dw-shelf-btn:hover {
+  background: var(--dw-bg-dark);
+  color: var(--dw-text);
+}
+
 /* ─── Open to the party, or not yet ──────────────────────────────────────────
    **The state is the label, not a light beside it.** A button that says "Open
    to the party" while the inn is shut would need a second thing next to it
@@ -3839,7 +3867,21 @@ body > #dolmenwood-day-bar {
   color: var(--dw-tertiary);
 }
 
-.day-bar-shortcuts .day-bar-icon-btn:hover {
+.day-bar-shortcuts /* **A place that is shut is still a place.** Faded rather than gone, so a
+   player can see there is an inn or a shop and that it is not open yet — taking
+   the icon away says it does not exist (Leander, 2026-09-01). Disabled as well
+   as faded, because a door that looks shut and opens anyway is worse than
+   either, and `not-allowed` says so on the way past. */
+.day-bar-icon-btn.is-shut,
+.day-bar-icon-btn.is-shut:hover {
+  opacity: 0.35;
+  filter: grayscale(1);
+  background: none;
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
+.day-bar-icon-btn:hover {
   color: var(--dw-primary);
 }
 

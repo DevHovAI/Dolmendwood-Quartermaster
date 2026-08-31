@@ -1412,7 +1412,9 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
 
   // The place-less shop, under the same setting as the one in an inventory —
   // it is the same shop and the same way round the map-note rule.
-  if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP))) {
+  // Two gates again: the setting says whether players may reach the place-less
+  // shop at all, the release says whether the Referee has finished building it.
+  if (!barOnly && (isGM || (g.settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP) && ShopApp.isReleased()))) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-shop"] = {
       name: "dolmenwood-shop",
       title: "Shop",

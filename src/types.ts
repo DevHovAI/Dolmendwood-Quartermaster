@@ -160,6 +160,19 @@ export interface ShopState {
   activeTags: string[];
   availableItems: string[];            // if non-empty, only these item IDs are shown
   hiddenItems?: string[];              // item IDs hidden from players (GM-visible but dimmed)
+  /**
+   * The place-less shop, the one opened from the toolbar rather than from a
+   * note on the map. It has no note to carry its settings, so they live here.
+   *
+   * `toolbarOwnStock` is what makes it **start empty**: a shop the Referee
+   * stocks, named and opened when it is ready, rather than the whole catalogue
+   * standing permanently open (Leander, 2026-09-01). Absent counts as true, so
+   * a world that has never touched it gets the shelf and not the catalogue —
+   * and the button in its head puts the catalogue back.
+   */
+  toolbarName?: string;
+  toolbarReleased?: boolean;
+  toolbarOwnStock?: boolean;
 }
 
 /**

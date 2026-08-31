@@ -190,15 +190,21 @@
         <i class="fas fa-trash"></i>
       </button>
       {{/if}}
+      {{!-- **A shut place is drawn, not hidden**, so that a player can see there
+            is one and that it is not open yet (Leander, 2026-09-01). Disabled
+            as well as faded: a door that looks shut and opens anyway is worse
+            than either. --}}
       {{#if mayOpenShop}}
-      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="shop"
-              title="Shop">
+      <button type="button" class="day-bar-icon-btn {{#if shopShut}}is-shut{{/if}}"
+              data-action="openShortcut" data-shortcut="shop" {{#if shopShut}}disabled{{/if}}
+              title="{{#if shopShut}}The shop is closed{{else}}Shop{{/if}}">
         <i class="fas fa-store"></i>
       </button>
       {{/if}}
       {{#if mayOpenInn}}
-      <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="inn"
-              title="Inn">
+      <button type="button" class="day-bar-icon-btn {{#if innShut}}is-shut{{/if}}"
+              data-action="openShortcut" data-shortcut="inn" {{#if innShut}}disabled{{/if}}
+              title="{{#if innShut}}The inn is closed{{else}}Inn{{/if}}">
         <i class="fas fa-beer-mug-empty"></i>
       </button>
       {{/if}}

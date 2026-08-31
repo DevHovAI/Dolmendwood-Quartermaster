@@ -424,7 +424,9 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       // the one thing the toolbar and day-bar buttons cannot do. Players see it
       // under the same setting as every other place-less door.
       mayOpenGenericShop:
-        isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP),
+        isGM ||
+        (!!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP) &&
+          ShopApp.isReleased()),
       canEdit: isGM,
       // Inventing an item is a real power — it is how a player writes a line
       // into their own sheet without asking. On by default, because that is how
@@ -1235,6 +1237,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     const g = game as Game;
     if (!g.user?.isGM && !g.settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP)) {
       ui.notifications?.warn("Shops are reached from the map — travel to one and open its note.");
+      return;
+    }
+    if (!g.user?.isGM && !ShopApp.isReleased()) {
+      ui.notifications?.warn("That shop is not open yet.");
       return;
     }
     const actorId = this.actor.id ?? null;
