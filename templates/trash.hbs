@@ -2,6 +2,7 @@
 
   {{#if isGM}}
   <div class="trash-toolbar">
+    <i class="fas fa-trash"></i>
     <span class="trash-count">{{total}} deleted item{{#unless (eq total 1)}}s{{/unless}}</span>
     {{#unless isEmpty}}
     <button type="button" class="trash-danger" data-action="emptyAll">

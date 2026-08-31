@@ -1,7 +1,8 @@
 <div class="player-inventory">
   {{!-- Header with actor name. Speed is shown by the encumbrance bar and the
         convoy bar below — a third copy here was the same finalSpeed value. --}}
-  <div class="inv-header">
+  <div class="inv-header dw-window-head">
+    <i class="fas fa-person-rays"></i>
     <h2 class="actor-name">{{actor.name}}</h2>
     {{!-- Only worth showing once something has actually been left behind --}}
     {{#if droppedCount}}

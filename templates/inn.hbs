@@ -2,27 +2,35 @@
 
   {{!-- Header --}}
   <div class="inn-header">
-    <div class="inn-title-row">
+    {{!-- The same head as every other window of this module (Leander,
+          2026-08-31: the inn "sieht komplett anders aus oben"). The Referee's
+          name field is the title rather than a form control that happens to
+          sit where a title goes — it looks like the heading it stands in for
+          until it is clicked. --}}
+    <div class="inn-title-row dw-window-head">
+      <i class="fas fa-beer-mug-empty"></i>
       {{#if isGM}}
       <input type="text" id="inn-name-input" class="inn-name-edit" value="{{innName}}"
              placeholder="Unnamed inn" title="Name this inn — leave empty for none" />
       {{else}}
       <h2 class="inn-name-static">{{displayName}}</h2>
       {{/if}}
-      {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
-
-      {{!-- Quality: switchable only for the toolbar inn. A placed inn's quality
-            was decided when it was put on the map and does not change. --}}
-      {{#if canSetQuality}}
-      <div class="quality-buttons">
-        {{#each qualities}}
-        <button type="button" class="quality-btn {{#if this.active}}active{{/if}}"
-                data-action="setQuality" data-quality="{{this.key}}">{{this.label}}</button>
-        {{/each}}
-      </div>
-      {{else}}
-      <span class="inn-quality-label" title="Set when this inn was placed">{{qualityLabel}}</span>
-      {{/if}}
+      <span class="dw-window-head-extra">
+        {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
+        {{!-- Quality: switchable only for the toolbar inn. A placed inn's
+              quality was decided when it was put on the map and does not
+              change. --}}
+        {{#if canSetQuality}}
+        <div class="quality-buttons">
+          {{#each qualities}}
+          <button type="button" class="quality-btn {{#if this.active}}active{{/if}}"
+                  data-action="setQuality" data-quality="{{this.key}}">{{this.label}}</button>
+          {{/each}}
+        </div>
+        {{else}}
+        <span class="inn-quality-label" title="Set when this inn was placed">{{qualityLabel}}</span>
+        {{/if}}
+      </span>
     </div>
 
     {{!-- Paying character + wallet --}}

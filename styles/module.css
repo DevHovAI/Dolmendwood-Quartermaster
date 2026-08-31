@@ -79,6 +79,16 @@
      may set that to anything, and this module's spacing was measured against
      one face. The stack behind it is what a machine without Signika falls back
      through, in descending order of "looks like the platform". */
+  /* **The face for window titles, and only for those.** Modesto Condensed also
+     ships with Foundry core — it is what core itself reaches for as `--font-h1`
+     — so a title costs no fetch either. A condensed display face against a
+     grotesque text face is the ordinary pairing, and it gives back the bit of
+     character the module lost with Georgia without falling out of the
+     application again (Leander, 2026-08-31).
+
+     Titles only. It is narrow and its capitals are tall, which reads well large
+     and poorly small, so section headings stay in the text face. */
+  --dw-font-title:   "Modesto Condensed", "Modesto", "Signika", "Segoe UI", system-ui, sans-serif;
   --dw-font-display: "Signika", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --dw-font-body:    "Signika", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   --dw-font-num:     "Signika", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
@@ -217,14 +227,71 @@ body {
   overflow-y: auto;
 }
 
+/* **A window title says which window it is; the head it sits in draws the
+   line.** The two used to be one rule, so the rule ran under the title alone
+   and stopped wherever the words did — which is why the inventory's line ended
+   halfway across and the shop's did not.
+
+   The face is named here for the first time. It was never chosen: with no
+   `font-family` of its own an h2 falls through to core's own `h2` rule, which
+   is Amiri in one theme, Bruno Ace in another and the grotesque in a third — so
+   the module's headings changed face with the Foundry theme and nobody had
+   decided anything (Leander, 2026-08-31: *"die Überschrift der einzelnen
+   fenster ist eine andere schriftart?"*). */
 .dolmenwood-party-inventory h2 {
+  margin: 0;
+  padding: 0;
+  border: none;
   color: var(--dw-primary);
-  border-bottom: 2px solid var(--dw-accent);
-  margin-bottom: 8px;
-  padding-bottom: 4px;
-  font-size: var(--dw-text-lg);
+  font-family: var(--dw-font-title);
+  font-size: var(--dw-text-xl);
+  font-weight: 700;
+  line-height: 1.15;
   letter-spacing: 0.02em;
   text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* ─── The head of a window ───────────────────────────────────────────────────
+   **Every panel in this module starts the same way**: an icon, a title, then
+   whatever that window needs to hand you first, and one accent rule under the
+   lot. They were four different arrangements before — the shop had an icon and
+   a title, the inventory had a bare name, the market drew its own second line
+   under the first, and the inn had no title at all for the Referee but an
+   input, a percentage and four quality buttons on one row (Leander,
+   2026-08-31: *"bei der Überschrift bzw. dem ganzen oberen bereich fängt es
+   an"*).
+
+   The rule belongs to the head rather than to the title, so it runs the full
+   width of the window whatever the title happens to say. */
+.dw-window-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--dw-accent);
+}
+
+/* The icon is the window's mark: the same size and the same accent in every
+   one of them, so the eye finds the top of a panel without reading it. */
+.dw-window-head > i,
+.dw-window-head h2 > i {
+  flex: 0 0 auto;
+  color: var(--dw-accent);
+  font-size: var(--dw-text-lg);
+}
+
+.dw-window-head h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* What the window hands you first — a price factor, a quality, a shop button —
+   rides at the right of the head rather than under it. */
+.dw-window-head-extra {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .dolmenwood-party-inventory h3 {
@@ -934,19 +1001,19 @@ body {
   height: 100%;
 }
 
+/* A window head that may wrap, and nothing else: the layout, the rule under it
+   and the spacing are .dw-window-head's now. What was here was a thin light
+   line where every other window had the accent one — one of the four different
+   tops this pass exists to end.
+
+   `space-between` went with them. The title takes the free space, so it did
+   nothing on one line and spread the buttons apart on a wrapped second one. */
 .party-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   /* The convoy badge grew with the type scale and this row had nowhere to put
-     the extra width: space-between with no wrap pushes the buttons off the
-     right edge rather than moving them down (Leander, 2026-08-30). Wrapping
-     costs nothing while there is room and is the only thing that can happen
-     when there is not. */
+     the extra width: with no wrap, the buttons go off the right edge rather
+     than moving down (Leander, 2026-08-30). Wrapping costs nothing while there
+     is room and is the only thing that can happen when there is not. */
   flex-wrap: wrap;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--dw-border-light);
 }
 
 .party-toolbar h2 { margin: 0; flex: 1; min-width: 0; }
@@ -2429,10 +2496,15 @@ body {
   margin: 0;
 }
 
+/* **The Referee types the inn's name into the title itself.** It carries the
+   title's face and size, so the head reads as a heading until it is clicked and
+   only then admits to being a field — the alternative was what it used to be, a
+   form control sitting where every other window has a heading. */
 .inn-name-edit {
-  font-family: var(--dw-font-display);
-  font-size: var(--dw-text-lg);
-  font-weight: bold;
+  font-family: var(--dw-font-title);
+  font-size: var(--dw-text-xl);
+  font-weight: 700;
+  letter-spacing: 0.02em;
   color: var(--dw-primary);
   background: transparent;
   border: none;
@@ -2937,16 +3009,10 @@ body {
   height: 100%;
 }
 
+/* Side padding only: the rule under it and the size of its title are the head's
+   business now, and this rule was quietly drawing both a second time. */
 .market-header {
-  padding: 8px 12px 4px;
-  border-bottom: 2px solid var(--dw-accent);
-}
-
-.market-header h2 {
-  margin: 0;
-  padding: 0;
-  border: none;
-  font-size: var(--dw-text-lg);
+  padding: 8px 12px 5px;
 }
 
 .market-entries {
@@ -3072,13 +3138,40 @@ body {
 
 /* The staging banner is the one place the two phases are visible at all, so it
    carries the state rather than a subtle icon somewhere in the header. */
-.loot-status {
+/* ─── The strip of a standing window ─────────────────────────────────────────
+   **Loot and the trash have no title and should not have one** — they are not
+   places, they are states of one, and a heading would only repeat the window's
+   own name back at you. What they do have is a strip that says which state:
+   one icon, one sentence, and the button that changes it at the right.
+
+   They were two different strips doing that job. They are one now, and only the
+   tint differs — loot's says whether the party can see it yet, so it means
+   something there and stays (Leander, 2026-08-31: *"sie sollten untereinander
+   vielleicht ähnlicher aussehen"*). */
+.loot-status,
+.trash-toolbar {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
   font-size: var(--dw-text-sm);
   border-bottom: 1px solid var(--dw-border-light);
+  flex: 0 0 auto;
+}
+
+/* The sentence takes the room, so the button lands at the right in both — no
+   `space-between`, which put the gap in a different place the moment either
+   strip held three things instead of two. */
+.loot-status > span,
+.trash-count {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.loot-status > i,
+.trash-toolbar > i {
+  flex: 0 0 auto;
+  color: var(--dw-secondary);
 }
 
 .loot-status.is-staged {
@@ -3392,14 +3485,7 @@ body {
 }
 
 .trash-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--dw-border-light);
   background: var(--dw-bg-dark);
-  flex: 0 0 auto;
 }
 
 .trash-count {

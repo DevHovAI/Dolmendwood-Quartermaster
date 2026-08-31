@@ -1,11 +1,14 @@
 <div class="shop-panel">
   {{!-- Shop Header --}}
   <div class="shop-header">
-    <h2>
-      <i class="fas fa-store"></i> {{shopName}}
-      {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
-      {{#if buysAnything}}<span class="buy-back-badge" title="This shop buys what you bring in at {{buyBackRate}}% of its own value">buys at {{buyBackRate}}%</span>{{/if}}
-    </h2>
+    <div class="dw-window-head">
+      <i class="fas fa-store"></i>
+      <h2>{{shopName}}</h2>
+      <span class="dw-window-head-extra">
+        {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
+        {{#if buysAnything}}<span class="buy-back-badge" title="This shop buys what you bring in at {{buyBackRate}}% of its own value">buys at {{buyBackRate}}%</span>{{/if}}
+      </span>
+    </div>
 
     {{!-- Target actor selector (GM can pick any party member; players buy for themselves) --}}
     {{#if isGM}}
