@@ -1,6 +1,7 @@
 import { TEMPLATES } from "../constants";
 import { speedColorClass } from "../data/EncumbranceCalculator";
 import { QUALITIES_HINT, describeQualities, parseQualities } from "../data/weapons";
+import type { PartyConvoyMember } from "../types";
 
 /** Map Animals & Vehicles subcategory to a Font Awesome icon class. */
 export function subcategoryToIcon(subcategory?: string): string {
@@ -312,6 +313,55 @@ export function registerHandlebarsHelpers(): void {
 
   // Speed value → CSS class for color coding
   Handlebars.registerHelper("speedColor", (speed: number) => speedColorClass(speed));
+
+  /**
+   * Everything tied at the party's marching pace, as one line.
+   *
+   * `{{convoySlowest members}}` is the badge's line and **names as many as fit
+   * a fixed budget of characters, then counts the rest**: `Alaric, Mule +2`.
+   * Listing all of them was the honest thing and the unreadable thing at once
+   * (Leander, 2026-08-31: *"wenn wirklich alle drin stehen ist das schon
+   * doof"*), and a flat cap of two names is no better — three short names fit
+   * where one long one does not.
+   *
+   * A budget in characters rather than in names is also what keeps the line
+   * still: it does not depend on how wide the window happens to be, so the
+   * text does not reflow as the window is dragged. The CSS ellipsis stays
+   * behind it for the one case this cannot help, a single name longer than the
+   * whole badge.
+   *
+   * The first name is always printed, even over budget: "+4 more" on its own
+   * would name nobody at all. Order is the order they were found — the party in
+   * the order the window lists it, each character before the animals they lead.
+   *
+   * `{{convoySlowest members true}}` is the tooltip's line: every one of them,
+   * no budget, with the character leading each animal.
+   */
+  Handlebars.registerHelper("convoySlowest", (members: unknown, withOwners?: unknown) => {
+    if (!Array.isArray(members)) return "";
+    const all = members as PartyConvoyMember[];
+
+    if (withOwners === true) {
+      return all
+        .map((m) => (m.kind === "animal" && m.owner !== m.name ? `${m.name} (${m.owner})` : m.name))
+        .join(", ");
+    }
+
+    // Roughly the room the badge has beside the figure before it starts pushing
+    // on the row it sits in.
+    const BUDGET = 30;
+    const named: string[] = [];
+    let used = 0;
+    for (const m of all) {
+      const cost = named.length === 0 ? m.name.length : used + 2 + m.name.length;
+      if (named.length > 0 && cost > BUDGET) break;
+      named.push(m.name);
+      used = cost;
+    }
+
+    const rest = all.length - named.length;
+    return rest > 0 ? `${named.join(", ")} +${rest} more` : named.join(", ");
+  });
 
   // Speed value → label. The gap is a non-breaking space: without it "0ft"
   // reads as the word "oft", and a plain space would let the unit wrap onto

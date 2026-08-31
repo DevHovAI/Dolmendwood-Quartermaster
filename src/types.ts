@@ -263,10 +263,25 @@ export interface EncumbranceResult {
   convoySpeed: number | null;          // null = no animals with speed; otherwise min effective speed
 }
 
+/** One thing marching at the party's pace: a character, or an animal/vehicle. */
+export interface PartyConvoyMember {
+  name: string;
+  kind: "character" | "animal";
+  owner: string;                       // character leading the animal (= name for characters)
+}
+
 // Slowest marching speed across the whole party — computed per render, never stored
 export interface PartyConvoy {
   speed: number;
-  slowestName: string;                 // character or animal/vehicle that sets the pace
+  /**
+   * **Everything tied at that speed, not just the first one found.** A party
+   * marching at 30 ft usually has several members sitting exactly on 30, and
+   * naming one of them made the other equally-guilty ones invisible — the
+   * player unloads the mule that was blamed and the pace does not budge
+   * (Leander, 2026-08-31). Never empty when the convoy exists.
+   */
+  slowest: PartyConvoyMember[];
+  slowestName: string;                 // the first of them, for anything wanting one name
   slowestKind: "character" | "animal";
   slowestOwner: string;                // character carrying the slow animal (= slowestName for characters)
 }

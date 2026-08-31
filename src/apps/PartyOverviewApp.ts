@@ -8,7 +8,7 @@ import { PlayerInventoryApp } from "./PlayerInventoryApp";
 import { CharacterSheetApp } from "./CharacterSheetApp";
 import { getPartyActors, getSharedActor, isSharedActor } from "../data/sharedStore";
 import { displayQuantity } from "../data/consumables";
-import type { PartyConvoy } from "../types";
+import type { PartyConvoy, PartyConvoyMember } from "../types";
 
 export interface PartySummaryCoin {
   pp: number; gp: number; sp: number; cp: number;
@@ -34,16 +34,18 @@ export interface PartySummary {
  * Slowest marching speed across the party: every member's own speed (which already
  * accounts for their own animals) plus every animal/vehicle they lead. The party can
  * only move as fast as its slowest part. Returns null if there is nobody to compare.
+ *
+ * **A tie names everybody in it.** Speeds come from a table of four tiers, so
+ * ties are the normal case rather than a curiosity: three characters on 30 ft
+ * and a mule on 30 ft are all setting the pace, and unloading any one of them
+ * changes nothing. Reporting only the first one found made the rest invisible
+ * and the fix look broken (Leander, 2026-08-31).
  */
 export function buildPartyConvoy(
   partyActors: Actor[],
   encMode: "slots" | "weight" = "slots"
 ): PartyConvoy | null {
-  let best: PartyConvoy | null = null;
-
-  const consider = (candidate: PartyConvoy) => {
-    if (!best || candidate.speed < best.speed) best = candidate;
-  };
+  const candidates: { speed: number; member: PartyConvoyMember }[] = [];
 
   for (const actor of partyActors) {
     const inv = FlagManager.getInventory(actor);
@@ -53,11 +55,9 @@ export function buildPartyConvoy(
     // The shared store is a container, not a marcher — only the animals and
     // vehicles parked in it affect the pace, never its own carried weight.
     if (!isSharedActor(actor)) {
-      consider({
+      candidates.push({
         speed: enc.footSpeed,
-        slowestName: name,
-        slowestKind: "character",
-        slowestOwner: name,
+        member: { name, kind: "character", owner: name },
       });
     }
 
@@ -65,16 +65,28 @@ export function buildPartyConvoy(
       // A stuck animal or vehicle holds the whole party up. Leaving it behind
       // is the deliberate act of marking the zone dropped, which keeps it out
       // of animalSpeeds entirely — so anything reaching here still travels.
-      consider({
+      candidates.push({
         speed: animal.effectiveSpeed,
-        slowestName: animal.zoneName,
-        slowestKind: "animal",
-        slowestOwner: name,
+        member: { name: animal.zoneName, kind: "animal", owner: name },
       });
     }
   }
 
-  return best;
+  if (candidates.length === 0) return null;
+
+  const speed = Math.min(...candidates.map((c) => c.speed));
+  // In the order they were found: characters before the animals they lead, and
+  // the party in the order the caller passed it. A sort would only shuffle
+  // equals around from render to render.
+  const slowest = candidates.filter((c) => c.speed === speed).map((c) => c.member);
+
+  return {
+    speed,
+    slowest,
+    slowestName: slowest[0].name,
+    slowestKind: slowest[0].kind,
+    slowestOwner: slowest[0].owner,
+  };
 }
 
 export function buildPartySummary(

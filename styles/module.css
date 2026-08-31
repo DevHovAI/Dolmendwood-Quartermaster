@@ -1669,9 +1669,10 @@ body {
   border: 1px solid var(--dw-border-light);
   border-radius: 5px;
   margin-bottom: 6px;
-  font-size: 0.82em;
+  font-size: var(--dw-text-sm);
 }
 .convoy-label {
+  flex: 0 0 auto;
   font-weight: bold;
   color: var(--dw-secondary);
   white-space: nowrap;
@@ -1708,9 +1709,17 @@ body {
 .convoy-speed-bar .own-speed-badge.speed-yellow { background: var(--speed-yellow-fill); }
 .convoy-speed-bar .own-speed-badge.speed-orange { background: var(--speed-orange-fill); }
 .convoy-speed-bar .own-speed-badge.speed-red { background: var(--speed-red-fill); }
+/* inline-flex, and min-width: 0, so that the list of names inside it may be cut
+   short rather than pushing the badge wider than the row it sits in. Baseline
+   alignment keeps the figure sitting on the same line as the text beside it,
+   which is what it did as plain inline content. */
 .convoy-final {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
   font-weight: bold;
-  font-size: 1em;
+  font-size: var(--dw-text-base);
   padding: 2px 8px;
   border-radius: 10px;
   background: rgba(0,0,0,0.2);
@@ -1725,12 +1734,25 @@ body {
   margin-left: 0;
   border-color: rgba(0, 0, 0, 0.25);
   white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
+/* **Everything tied at the pace, on exactly one line.** Ties are the normal
+   case — speeds come from a table of four tiers — so this is usually several
+   names, and on a narrow window it is cut with an ellipsis rather than allowed
+   to wrap or to stretch the window (Leander, 2026-08-31: *"es sollte aber
+   maximal eine zeile bleiben, also wenn es sich staut, vielleicht mit '...'
+   abkürzen"*). Nothing is lost by the cut: the tooltip carries the full list,
+   with the owner of every animal in it. */
 .convoy-final .convoy-slowest {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: normal;
   opacity: 0.8;
-  font-size: 0.9em;
+  font-size: var(--dw-text-sm);
 }
 .convoy-final.speed-green { background: var(--speed-green-fill); }
 .convoy-final.speed-yellow { background: var(--speed-yellow-fill); }
