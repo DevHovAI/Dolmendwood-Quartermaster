@@ -95,12 +95,23 @@ export const LOCATION_ICONS: { icon: string; label: string }[] = [
 ];
 
 export const ZONE_ICONS: { icon: string; label: string }[] = [
+  // Containers
   { icon: "fa-backpack",  label: "Backpack" },
   { icon: "fa-sack",      label: "Sack / Pouch" },
   { icon: "fa-box",       label: "Chest / Box" },
+  // Creatures. The custom-animal dialog used to carry its own list of these in
+  // a plain <select>; when the two doors were merged into one editor
+  // (2026-08-30) the lists were merged with them. A zone is a zone whether it
+  // is a chest or a wolf, and two icon lists would only drift apart.
   { icon: "fa-horse",     label: "Horse" },
+  { icon: "fa-dog",       label: "Dog / Wolf" },
+  { icon: "fa-cat",       label: "Cat" },
+  { icon: "fa-crow",      label: "Bird" },
+  { icon: "fa-dragon",    label: "Dragon" },
+  { icon: "fa-spider",    label: "Spider" },
+  { icon: "fa-paw",       label: "Paw (generic)" },
+  // Vehicles
   { icon: "fa-caravan",   label: "Wagon / Cart" },
-  { icon: "fa-dog",       label: "Dog" },
   { icon: "fa-ship",      label: "Boat / Ship" },
 ];
 
@@ -144,20 +155,33 @@ export const LOOT_ICON_ARTWORK: Record<string, string> = {
   "fa-star":           "icons/magic/symbols/runes-star-blue.webp",
 };
 
-export const ZONE_COLORS: { key: string; label: string; bg: string; text: string }[] = [
-  { key: "green",   label: "Green (default)",  bg: "linear-gradient(135deg, #1a3d1a 0%, #2e6b2e 100%)", text: "#c8e6c8" },
-  { key: "brown",   label: "Brown",            bg: "linear-gradient(135deg, #3d1f0a 0%, #6b3515 100%)", text: "#e8c898" },
-  { key: "navy",    label: "Navy",             bg: "linear-gradient(135deg, #0a1f3d 0%, #153565 100%)", text: "#a8c8e8" },
-  { key: "purple",  label: "Purple",           bg: "linear-gradient(135deg, #2a0a3d 0%, #4a1565 100%)", text: "#d0a8e8" },
-  { key: "slate",   label: "Slate",            bg: "linear-gradient(135deg, #1f2a30 0%, #2e4050 100%)", text: "#a8c8d8" },
-  { key: "crimson", label: "Crimson",          bg: "linear-gradient(135deg, #3d0a0a 0%, #651515 100%)", text: "#e8a8a8" },
-  { key: "teal",    label: "Teal",             bg: "linear-gradient(135deg, #0a3d30 0%, #156550 100%)", text: "#a8e0d0" },
+/**
+ * The zone palette, by name only.
+ *
+ * **The colours themselves live in `styles/module.css`** as
+ * `--dw-zone-<key>-deep / -mid / -pale / -grad`, and this list no longer repeats
+ * them. It used to: the same seven gradients were written out here for the
+ * picker buttons and again in twenty-one CSS rules for the real headers, and the
+ * two had already drifted — the file carried #c8e6c8 and #c8e6c9, one digit
+ * apart, for what was meant to be one green.
+ *
+ * A picker button therefore paints itself with `var(--dw-zone-<key>-grad)`, so a
+ * button can never show a colour the header will not use.
+ */
+export const ZONE_COLORS: { key: string; label: string }[] = [
+  { key: "green",   label: "Green (default)" },
+  { key: "brown",   label: "Brown" },
+  { key: "navy",    label: "Navy" },
+  { key: "purple",  label: "Purple" },
+  { key: "slate",   label: "Slate" },
+  { key: "crimson", label: "Crimson" },
+  { key: "teal",    label: "Teal" },
 ];
 
 export function buildColorPickerHTML(selectedColor = "green"): string {
   const buttons = ZONE_COLORS.map((c) =>
     `<button type="button" class="color-picker-btn${c.key === selectedColor ? " selected" : ""}" ` +
-    `data-color="${c.key}" title="${c.label}" style="background:${c.bg};"></button>`
+    `data-color="${c.key}" title="${c.label}" style="background:var(--dw-zone-${c.key}-grad);"></button>`
   ).join("");
   return (
     `<div class="color-picker">${buttons}</div>` +
