@@ -6450,9 +6450,15 @@ span.day-bar-panel-tick {
 
 /* ── Who they are ── */
 
+/* **Stretch, not flex-start.** The portrait is sized by the column beside it
+   rather than by a number: it runs from the top of the name to the foot of the
+   moon sign, which is the last thing in that column, so the two finish on the
+   same line however tall the identity block turns out to be (Leander,
+   2026-08-31). A typed height would have to be re-typed every time a field is
+   added to the block. */
 .dw-sheet-head {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 12px;
 }
 
@@ -6465,11 +6471,15 @@ span.day-bar-panel-tick {
    not got — 200px here is 400 real pixels on most screens — so it offers the
    two things that can help instead: the picture at its own size, and a button
    to choose a bigger file. */
+/* The width is still a number, so the picture grows downward into a portrait
+   rather than sideways into the page. The floor keeps it at the size it has
+   always had, for the day somebody puts a sheet in front of it with less on
+   the right than there is now. */
 .dw-sheet-portrait-box {
   position: relative;
   flex: 0 0 auto;
   width: 200px;
-  height: 200px;
+  min-height: 200px;
 }
 
 .dw-sheet-portrait {
