@@ -4897,20 +4897,47 @@ body > #dolmenwood-day-bar {
   border-bottom: none;
 }
 
-/* **Every lane fixed but the text.** A step is a mark, an icon, what it says,
-   and the die — and only the third of those may decide its own width. Ticking
-   one swaps fa-square for fa-square-check and rolling one swaps the die for the
-   arrow that takes it back; neither glyph is the width of the one it replaces,
-   so without these the whole row shuffled sideways at every click. */
-.duty-group-tick-btn {
+/* **The four lanes of a step, and the two ways each of them is drawn.**
+   A step is a mark, an icon, what it says, and the die. Only the third may
+   decide its own width — but the trouble was never the glyphs, it was that a
+   rolling step and a plain one are built differently and nobody had made the
+   difference invisible.
+
+   A rolling step carries its tick inside a button and its die inside another;
+   a plain step is itself a button, and nested buttons are not markup, so its
+   tick was a bare `<i>` and it had no die at all. The bare icon was eight
+   pixels narrower than the button beside it and the missing die was a whole
+   lane, so every plain row's icon and text sat left of every rolling row's,
+   and the list read as a column that could not make up its mind (Leander,
+   2026-09-01: *"bei den camp actions shiften die icons und texte hin und
+   her"*).
+
+   Four boxes, one size, whether they hold a control or nothing at all.
+   `border-box` so the width is the whole lane and not the part inside its
+   padding — which is the other way two boxes of the same stated width end up
+   different. */
+.duty-group-tick-btn,
+.duty-group-tick-slot,
+.duty-group-roll,
+.duty-group-roll-slot {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   flex: 0 0 auto;
-  width: auto;
+  width: var(--dw-icon-btn);
   height: auto;
   min-height: 0;
   padding: 0;
   background: none;
   border: none;
   color: inherit;
+  font-size: var(--dw-text-base);
+  line-height: 1.2;
+}
+
+.duty-group-tick-btn,
+.duty-group-roll {
   cursor: pointer;
 }
 
@@ -4944,13 +4971,6 @@ body > #dolmenwood-day-bar {
   min-width: 0;
 }
 
-/* Drawn on every step whether or not it rolls, so that what a step says ends
-   in the same column all the way down the list — the same rule the inventory
-   rows follow. An empty lane costs one span; a missing one costs alignment. */
-.duty-group-roll-slot {
-  flex: 0 0 auto;
-  width: var(--dw-icon-btn);
-}
 
 .duty-group-label {
   font-weight: 600;
@@ -6054,26 +6074,9 @@ span.day-bar-panel-tick {
   cursor: default;
 }
 
-.duty-group-tick-btn,
+/* The lane boxes are settled above, for all four of them at once. This is only
+   what the die does that the others do not. */
 .duty-group-roll {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: var(--dw-icon-btn);
-  height: auto;
-  min-height: 0;
-  padding: 0 var(--dw-space-2);
-  background: none;
-  border: none;
-  color: inherit;
-  font-size: var(--dw-text-base);
-  line-height: 1.2;
-  cursor: pointer;
-}
-
-.duty-group-roll {
-  margin-left: auto;
   color: var(--dw-tertiary);
 }
 

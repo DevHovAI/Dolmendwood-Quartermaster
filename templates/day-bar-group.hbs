@@ -41,7 +41,13 @@
     {{else}}
     <button type="button" class="duty-group-step {{#if this.done}}is-done{{/if}}"
             data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}">
-      <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} duty-group-tick"></i>
+      {{!-- The tick stands in a slot of exactly the size of the button a
+            rolling step puts it in. It cannot BE that button — this step is a
+            button already and nested buttons are not markup — so the slot is
+            what makes the two rows the same shape (Leander, 2026-09-01). --}}
+      <span class="duty-group-tick-slot">
+        <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} duty-group-tick"></i>
+      </span>
       <i class="fas {{this.icon}} duty-group-icon"></i>
       <span class="duty-group-text">
         <span class="duty-group-label">{{this.label}}</span>
