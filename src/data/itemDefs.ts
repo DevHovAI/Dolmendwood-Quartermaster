@@ -40,11 +40,54 @@ export function definitionFor(
     ? catalogMap.get(item.definitionId)
     : CatalogManager.getDefinition(item.definitionId);
   const own = item.customDefinition;
-  if (!fromCatalog) return own as ItemDefinition | undefined;
+  if (!fromCatalog) return own ? complete(own) : undefined;
   if (!own) return fromCatalog;
   const merged: Record<string, unknown> = { ...fromCatalog };
   for (const [key, value] of Object.entries(own)) {
     if (value !== undefined) merged[key] = value;
   }
   return merged as unknown as ItemDefinition;
+}
+
+/**
+ * Fill a row-only definition out to the shape the type promises.
+ *
+ * **This is where a real crash came from** (Leander, 2026-08-30): the Add Custom
+ * Animal dialog writes a `Partial<ItemDefinition>` with no `cost`, the row has an
+ * empty `definitionId` so there is no catalogue entry to merge over it, and this
+ * function used to hand that partial straight back through an `as` cast. The cast
+ * is what kept `tsc` quiet. `saleValue` then read `def.cost.amount` and the whole
+ * inventory window failed to render — for the one character who owned the animal,
+ * on every Foundry version, which is why it looked like a v13 problem and was not.
+ *
+ * `cost` was simply the first required field a caller happened to touch. The same
+ * partial is also missing `tags`, `unit`, `cannotBeStowed` and `description`, so
+ * `def.tags.includes(...)` was the next crash waiting. Backfilling here fixes
+ * every consumer at once **and repairs actors that already carry the bad data**,
+ * which a fix in the dialog alone would not have done.
+ *
+ * Every default reproduces what the missing field already did when it was
+ * `undefined`, so nothing that works today changes behaviour: a cost of 0 is the
+ * module's own "by arrangement / worth nothing" convention, and a custom animal
+ * is not something a shop buys at a catalogue price anyway.
+ */
+function complete(own: Partial<ItemDefinition>): ItemDefinition {
+  return {
+    id: "",
+    name: "",
+    category: "Miscellaneous",
+    subcategory: "",
+    size: "normal",
+    cannotBeStowed: false,
+    unit: "piece",
+    cost: { amount: 0, currency: "gp" },
+    weight: 0,
+    description: "",
+    qualities: [],
+    tags: [],
+    isCustom: true,
+    // Same rule as the merge branch below: an absent field means "use the
+    // default", so an explicit undefined must not overwrite one back to nothing.
+    ...Object.fromEntries(Object.entries(own).filter(([, v]) => v !== undefined)),
+  };
 }
