@@ -78,7 +78,7 @@ Hooks.once("init", () => {
     scope: "world",
     config: false,
     type: Object,
-    default: { name: "", quality: "common" },
+    default: { name: "", quality: "common", released: false },
   });
 
   // Each inn's own copy of the book tables, keyed by inn name. Seeded on first
@@ -1411,7 +1411,11 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
   }
 
   // The rest are always the GM's; for players they are settings.
-  if (!barOnly && (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN))) {
+  // Two gates, and they answer different questions: the setting says whether
+  // players may reach the toolbar inn at all, and the release says whether this
+  // one is ready to be walked into. The Referee passes both by being the one
+  // who sets them.
+  if (!barOnly && (isGM || (g.settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN) && InnApp.isReleased()))) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-inn"] = {
       name: "dolmenwood-inn",
       title: "Inn",

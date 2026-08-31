@@ -415,7 +415,11 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       // the toolbar may not open it from here either.
       mayOpenLoot: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT),
       mayOpenTrash: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH),
-      mayOpenInn: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN),
+      // Two gates: the setting says whether players may reach the toolbar inn
+      // at all, the release says whether the Referee has finished making it.
+      mayOpenInn:
+        isGM ||
+        (!!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN) && InnApp.isReleased()),
       mayOpenShop: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP),
       day: state.day,
       // Told to the players only once it has been rolled: they are standing in

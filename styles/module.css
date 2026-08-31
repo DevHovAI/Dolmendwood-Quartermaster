@@ -3209,6 +3209,52 @@ body {
   flex: 1;
 }
 
+/* ─── Open to the party, or not yet ──────────────────────────────────────────
+   **The state is the label, not a light beside it.** A button that says "Open
+   to the party" while the inn is shut would need a second thing next to it
+   saying which of the two it means, and that second thing is what nobody
+   reads. This one says where the inn stands and changes it when clicked; the
+   tooltip carries what will happen.
+
+   Green when open, because it is the resting state a Referee wants to see from
+   across the window — and muted when closed, because closed is the state it is
+   born in and not a fault. */
+.dw-release-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: auto;
+  height: auto;
+  padding: 3px 10px;
+  border: 1px solid var(--dw-border);
+  border-radius: 3px;
+  background: var(--dw-bg-dark);
+  color: var(--dw-tertiary);
+  font-family: inherit;
+  font-size: var(--dw-text-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dw-release-btn.is-released {
+  border-color: var(--speed-green);
+  background: var(--speed-green-bg);
+  color: var(--speed-green);
+}
+
+.dw-release-btn:hover {
+  border-color: var(--dw-accent);
+  color: var(--dw-text);
+}
+
+.dw-release-btn.is-released:hover {
+  background: var(--speed-green);
+  color: var(--dw-on-fill);
+}
+
 .loot-release-btn {
   flex: 0 0 auto;
   width: auto;

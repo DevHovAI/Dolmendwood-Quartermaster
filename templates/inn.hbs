@@ -30,6 +30,19 @@
         {{else}}
         <span class="inn-quality-label" title="Set when this inn was placed">{{qualityLabel}}</span>
         {{/if}}
+
+        {{!-- **Last in the head, because it is the last thing done here**: name
+              it, grade it, then let the party in (Leander, 2026-08-31). Only
+              the toolbar inn has this — an inn on the map is opened by its own
+              note, and Foundry already decides who can see one. --}}
+        {{#if canRelease}}
+        <button type="button" class="dw-release-btn {{#if released}}is-released{{else}}is-staged{{/if}}"
+                data-action="toggleRelease"
+                title="{{#if released}}The party can reach this inn from the toolbar and the day bar. Click to close it to them again — anyone with it open will have it taken away.{{else}}Only you can reach this inn. Name it and set its quality first, then open it: the party is told in chat and the doors appear on their toolbar and day bar.{{/if}}">
+          <i class="fas {{#if released}}fa-door-open{{else}}fa-door-closed{{/if}}"></i>
+          {{#if released}}Open to the party{{else}}Closed{{/if}}
+        </button>
+        {{/if}}
       </span>
     </div>
 

@@ -48,6 +48,15 @@ import type { InnPurchasePayload, InventoryItem, ItemDefinition, CharacterInvent
 interface InnState {
   name: string;
   quality: InnQuality;
+  /**
+   * Whether the party may reach the toolbar inn at all.
+   *
+   * **A placed inn is not governed by this.** Its note on the map is its own
+   * door, and Foundry already decides who can see a note. This is for the inn
+   * that has no place: the Referee names it, sets its quality, and only then is
+   * it a thing the players can walk into (Leander, 2026-08-31).
+   */
+  released?: boolean;
 }
 
 /** The groups a section is divided into — and therefore what the daily roll draws against. */
@@ -89,6 +98,8 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   private priceFactor = 100;
   /** True once a map note or market entry has configured this window. */
   private isConfigured = false;
+  /** Toolbar inn only — see {@link InnState.released}. */
+  private released = false;
   private _scrollTop = 0;
 
   constructor(options: DeepPartial<ApplicationV2Options> = {}) {
@@ -102,6 +113,19 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     // before the toolbar inn became nameless does not keep showing it.
     if (saved?.name && saved.name !== LEGACY_INN_NAME) this.innName = saved.name;
     if (saved?.quality) this.quality = saved.quality;
+    this.released = saved?.released === true;
+  }
+
+  /**
+   * Whether the toolbar inn is open to the party.
+   *
+   * Read from the setting rather than from an instance, because the two places
+   * that have to ask — the scene toolbar and the day bar — ask before there is
+   * a window to ask.
+   */
+  static isReleased(): boolean {
+    const saved = (game as Game).settings?.get(MODULE_ID, SETTINGS.INN_STATE) as InnState | undefined;
+    return saved?.released === true;
   }
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
@@ -120,6 +144,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       buyForOther: InnApp._onBuyForOther,
       buyContainer: InnApp._onBuyContainer,
       setQuality: InnApp._onSetQuality,
+      toggleRelease: InnApp._onToggleRelease,
       newDay: InnApp._onNewDay,
       rerollMenu: InnApp._onRerollMenu,
       addEntry: InnApp._onAddEntry,
@@ -169,6 +194,10 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   ): Promise<Record<string, unknown>> {
     const g = game as Game;
     const isGM = g.user?.isGM ?? false;
+    // Re-read rather than trusted from the constructor: the Referee may have
+    // opened or shut the inn since this window was built, and a refresh is the
+    // only warning a player's copy gets. A placed inn has no release to read.
+    if (!this.isConfigured) this.released = InnApp.isReleased();
     const config = this.config();
     const day = getInnDay();
     const key = this.innKey;
@@ -283,6 +312,11 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       // A placed inn's quality was decided when it went on the map; only the
       // ad-hoc toolbar inn may still be switched.
       canSetQuality: isGM && !this.isConfigured,
+      // The same rule as the quality buttons, and deliberately so: the inn that
+      // can be named and graded is exactly the inn that has no note behind it,
+      // and so the only one whose door this button is.
+      canRelease: isGM && !this.isConfigured,
+      released: this.released,
       qualities: INN_QUALITIES.map((q) => ({ ...q, active: q.key === config.quality })),
       isGM,
       priceFactor: this.priceFactor,
@@ -450,6 +484,16 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     _context: DeepPartial<ApplicationV2RenderContext>,
     _options: DeepPartial<ApplicationV2RenderOptions>
   ): Promise<void> {
+    // **A player must not be left holding a window the Referee has just shut.**
+    // Taking the inn back hides its doors, but a window already open is not a
+    // door — it would sit there working until it was closed by hand. The
+    // refresh that follows a take-back re-renders every module window, and this
+    // is where that re-render becomes a closed one.
+    if (!((game as Game).user?.isGM ?? false) && !this.isConfigured && !this.released) {
+      void this.close();
+      return;
+    }
+
     const el = this.element;
 
     const wc = el.querySelector<HTMLElement>(".window-content");
@@ -482,7 +526,43 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     await (game as Game).settings?.set(MODULE_ID, SETTINGS.INN_STATE, {
       name: this.innName,
       quality: this.quality,
+      released: this.released,
     });
+  }
+
+  /**
+   * Open the inn to the party, or take it back.
+   *
+   * **Opening it is an announcement, not a permission change.** The inn's door
+   * is the toolbar button and the day bar's shortcut, both of which ask
+   * {@link InnApp.isReleased}; the chat message is how the party learns the
+   * door is there at all, the same way a released loot box announces itself.
+   *
+   * Taking it back closes the window on anyone who has it open — the refresh
+   * every client already listens for does that — so a Referee who released the
+   * wrong inn is not left arguing with a window they cannot reach.
+   */
+  private static async _onToggleRelease(this: InnApp): Promise<void> {
+    if (!((game as Game).user?.isGM ?? false)) return;
+    if (this.isConfigured) return;
+
+    this.released = !this.released;
+    await this._saveState();
+    if (this.released) await this._announceRelease();
+    SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+    this.render(false);
+  }
+
+  /** How the party finds out there is an inn to walk into. */
+  private async _announceRelease(): Promise<void> {
+    const name = this.innName || DEFAULT_INN_NAME;
+    await ChatMessage.create({
+      content: `
+        <div class="dw-inn-message">
+          <h3><i class="fas fa-beer-mug-empty"></i> ${escapeHTML(name)}</h3>
+          <p><em>${escapeHTML(qualityLabel(this.quality))}</em> — open for business.</p>
+        </div>`,
+    } as Parameters<typeof ChatMessage.create>[0]);
   }
 
   /** Persist an edited config and make sure the other clients see it. */

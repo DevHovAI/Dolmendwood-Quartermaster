@@ -32,7 +32,7 @@ declare global {
   interface SettingConfig {
     "dolmenwood-party-inventory.shopState": ShopState;
     "dolmenwood-party-inventory.transactionLog": Transaction[];
-    "dolmenwood-party-inventory.innState": { name: string; quality: InnQuality };
+    "dolmenwood-party-inventory.innState": { name: string; quality: InnQuality; released?: boolean };
     "dolmenwood-party-inventory.innConfigs": Record<string, InnConfig>;
     "dolmenwood-party-inventory.innDay": number;
     "dolmenwood-party-inventory.innDayLog": InnDayLog;
