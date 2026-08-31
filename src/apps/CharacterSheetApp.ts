@@ -352,7 +352,13 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     if (!box || !identity) return;
 
     for (let pass = 0; pass < 3; pass++) {
-      const side = Math.max(PORTRAIT_BOX, Math.round(identity.getBoundingClientRect().height));
+      // Never more than half the head. The block beside it has a floor to stand
+      // on — the sheet stops narrowing and scrolls instead — so this cap should
+      // not be reachable; it is here so that a picture can never eat the fields
+      // it is supposed to sit beside, whatever a future layout does.
+      const half = Math.round(this.element.getBoundingClientRect().width / 2);
+      const wanted = Math.round(identity.getBoundingClientRect().height);
+      const side = Math.max(PORTRAIT_BOX, Math.min(wanted, half || wanted));
       if (Math.abs(side - box.getBoundingClientRect().width) <= 1) return;
       box.style.width = `${side}px`;
     }

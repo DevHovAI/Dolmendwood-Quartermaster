@@ -6361,12 +6361,35 @@ span.day-bar-panel-tick {
   --dw-sheet-gap: 8px;
 }
 
+/* **The sheet reflows to its own width, not to the browser's.**
+   `container-type: inline-size` is what makes the three breakpoints below
+   measure this element. They were `@media` queries, which ask the viewport —
+   so dragging the sheet narrower did nothing to them and the six ability
+   columns simply got thinner and thinner until they held one digit each. They
+   only ever fired when the whole Foundry window was under 780px, which is not
+   a thing that happens at a table (Leander, 2026-08-31: the sheet *"verhält
+   sich seltsam, wenn man das fenster verschmälert"*).
+
+   And below the floor, it scrolls sideways rather than reflowing further —
+   what the party window does, and what he asked for. Under about 620px the
+   portrait, the gap and three readable fields no longer fit beside each other
+   at all, and no rearrangement makes them. */
 .dw-sheet-body {
+  container-type: inline-size;
+  container-name: dw-sheet;
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 10px 12px 16px;
   color: var(--dw-text);
+}
+
+.dw-sheet .window-content {
+  overflow-x: auto;
+}
+
+.window-content > .dw-sheet-body {
+  min-width: 620px;
 }
 
 .dw-sheet-warning {
@@ -6762,7 +6785,7 @@ span.day-bar-panel-tick {
 }
 
 /* Narrow enough and half the window is not a column any more. */
-@media (max-width: 780px) {
+@container dw-sheet (max-width: 780px) {
   .dw-sheet-columns.is-pair,
   .dw-sheet-columns.is-foot { grid-template-columns: minmax(0, 1fr); }
 }
@@ -6775,7 +6798,7 @@ span.day-bar-panel-tick {
   gap: 7px;
 }
 
-@media (max-width: 760px) {
+@container dw-sheet (max-width: 760px) {
   .dw-sheet-abilities { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
@@ -6845,7 +6868,7 @@ span.day-bar-panel-tick {
   gap: 7px;
 }
 
-@media (max-width: 760px) {
+@container dw-sheet (max-width: 760px) {
   .dw-sheet-saves { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
