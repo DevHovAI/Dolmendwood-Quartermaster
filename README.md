@@ -197,6 +197,11 @@ styles/
 
 ## Changelog
 
+### v2.0.0
+- **One look, everywhere** — the whole module settled on one type scale in absolute sizes (all 267 font sizes were `em` and compounded; a shop badge rendered at 8.1px), one face named in every window (Signika, which ships with Foundry), one eight-rung spacing ladder in place of ten gap values and twenty-five padding combinations, and fixed lanes so that ticking a box no longer nudges the row along beside it
+- **The day's weather reaches the map** — the morning's 2d6 is drawn through FXMaster in five quiet layers built from measured sizes, not FXMaster's own presets: cloud as the ground state with a fair day the exception, fog, whatever the book says is falling, lightning on the two rows that name thunder, and a glimmer of Fairy that rises over Hitching and Vague. Off by default and switched on one map at a time; weather you set by hand is never touched
+- **The two toolbar doors become places** — the generic shop is a shop you build and stock, the generic inn opens to the party when you say so, and a shut door is drawn rather than hidden
+- **Animals and vehicles are fully editable**, a tie in the slowest speed names everybody in it, the inventory scrolls sideways rather than squashing its item names, and the character sheet reflows to its own width — its breakpoints were media queries and had never once fired
 ### v1.9.0
 - **An attribute sheet of the module's own** — page one of the printed sheet in a window: the six scores, the five saves, level, experience, armour and attack. **Blocks** are one model for a trait, class ability, spell or extra skill, so the module ships no class or spell list and your table writes what it plays; every block is addressable as `@b.<slug>`. Foundry's own `Roll` resolves the references, so the whole dice syntax comes free
 - **Weapons roll from the inventory** — all twenty catalogue weapons carry their numbers, so the damage die, melee or missile and the three range bands come off the equipped row. Hunger and exhaustion are kept apart, as the book keeps them: exhaustion is −1 to attack *and* damage, hunger is −1 to −5 on attack plus Speed and never touches damage
