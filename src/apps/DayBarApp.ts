@@ -63,10 +63,23 @@ import { runCampDuty } from "./CampDuties";
 import { runMorningDuty } from "./MorningDuties";
 import { CAMP_ROLL_DUTIES } from "../data/campRolls";
 import { MORNING_ROLL_DUTIES } from "../data/morningRolls";
-import { travelPointPenalty, hasEffect, weatherSummary, weatherIcon } from "../data/weather";
+import {
+  travelPointPenalty,
+  hasEffect,
+  weatherSummary,
+  weatherIcon,
+  weatherSky,
+  skySummary,
+} from "../data/weather";
 import { lostChance } from "../data/gettingLost";
 import { partyTokensOn, tokenPoint } from "../data/partyPlace";
 import { calibrate, calibrationFor, followsToken, isComplete } from "../data/hexGrid";
+import {
+  sceneShowsWeather,
+  setSceneShowsWeather,
+  weatherFxAvailable,
+  weatherFxOn,
+} from "../data/weatherFx";
 
 /**
  * The day bar: the Referee's per-day checklist, docked at the top of the screen.
@@ -113,6 +126,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       clearDuty: DayBarApp._onClearDuty,
       confirmContext: DayBarApp._onConfirmContext,
       calibrateHex: DayBarApp._onCalibrateHex,
+      toggleWeatherFx: DayBarApp._onToggleWeatherFx,
       expandToContext: DayBarApp._onExpandToContext,
       expandToPanel: DayBarApp._onExpandToPanel,
       openShortcut: DayBarApp._onOpenShortcut,
@@ -869,6 +883,32 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     this.render();
   }
 
+/**
+   * Say whether the map on screen shows the party's weather.
+   *
+   * On the weather duty rather than in the settings, because "which map" is a
+   * question only answerable while looking at one — the same reason the
+   * crosshairs that calibrate a map live on the bar and not in a config window.
+   * Switching a map off takes the weather down before it forgets it: an effect
+   * left behind on a map nothing watches any more would stay there for good.
+   */
+  private static async _onToggleWeatherFx(this: DayBarApp): Promise<void> {
+    const g = game as Game;
+    const scene = g.scenes?.current as unknown as { id?: string; name?: string } | undefined;
+    if (!scene?.id) {
+      ui.notifications?.warn("There is no map in view to show the weather on.");
+      return;
+    }
+    const on = !sceneShowsWeather(scene.id);
+    await setSceneShowsWeather(scene, on);
+    ui.notifications?.info(
+      on
+        ? `${scene.name ?? "This map"} now shows the day's weather.`
+        : `${scene.name ?? "This map"} no longer shows the day's weather, and what was on it has been taken down.`
+    );
+    this.render();
+  }
+
   private static async _onRestChar(
     this: DayBarApp,
     _event: Event,
@@ -903,7 +943,45 @@ interface DutyBlock {
     result?: string;
     /** The face of the button that performs it — not every duty throws dice. */
     rollIcon?: string;
+    /**
+     * The weather duty alone: whether this map may be asked to show the
+     * weather, and whether it does. No other roll has a sky.
+     */
+    fxShown?: boolean;
+    fxOn?: boolean;
+    fxTitle?: string;
   }[];
+}
+
+/**
+ * The cloud beside the Weather duty: does this map show the day's sky?
+ *
+ * Nothing at all unless FXMaster is installed *and* the module setting is on.
+ * Two gates rather than one, and the button is the second: a setting that
+ * repainted every map in the world the moment it was ticked would be the very
+ * thing this design is avoiding.
+ */
+function weatherFxChip(): { fxShown: boolean; fxOn?: boolean; fxTitle?: string } {
+  if (!weatherFxAvailable() || !weatherFxOn()) return { fxShown: false };
+  const scene = (game as Game).scenes?.current as unknown as
+    | { id?: string; name?: string }
+    | undefined;
+  if (!scene?.id) return { fxShown: false };
+
+  const on = sceneShowsWeather(scene.id);
+  const here = scene.name ?? "this map";
+  // Named, because the mapping is the part a Referee cannot see and would
+  // otherwise have to guess at: it says what today would look like out there.
+  const today = skySummary(weatherSky(getDayState().weather));
+  return {
+    fxShown: true,
+    fxOn: on,
+    fxTitle: on
+      ? `${here} shows the day's weather. ${
+          today ? `Today that is ${today}.` : "Today there is nothing to draw."
+        } Click to stop drawing it here.`
+      : `Draw the day's weather on ${here}. Only the maps switched on here are ever touched, and weather you set through FXMaster yourself is left alone.`,
+  };
 }
 
 /**
@@ -947,6 +1025,7 @@ function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean): DutyBlock[] 
       // Referee reads today's weather without opening anything.
       result: rollable ? dutyResultLine(duty.id) : undefined,
       rollIcon: rollIconFor(duty.id),
+      ...(duty.id === "weather" ? weatherFxChip() : {}),
     };
     if (last && last.groupId === duty.group) last.duties.push(entry);
     else

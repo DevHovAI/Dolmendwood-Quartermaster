@@ -234,12 +234,217 @@ export function weatherIcon(result: WeatherResult | undefined): string {
 }
 
 /**
+ * The sky over the map, for a weather module to draw.
+ *
+ * The sibling of `weatherIcon` above, and built the same way: the book's own
+ * words pick the picture, read in order so the decisive one wins. The chip
+ * pictures what the day *does* to the party; this pictures what it looks like
+ * out of the window.
+ *
+ * **The letters gate and the words picture.** A row with no effect letter on it
+ * draws nothing at all, however it is worded — the map speaks up only for
+ * weather the rules already say costs the party something, which is the same
+ * test as "is there anything out there to see". That is what keeps a brooding
+ * summer sky, a muggy afternoon and a bracing wind off the map: eleven rows
+ * whose whole news is a cloud, and a drifting cloud sprite over a drawn hex map
+ * is the thing that made this look like a toy the first time round. It also
+ * keeps the picture honest with the numbers: "Brooding thunder" carries no wet
+ * letter, the firewood roll is about to treat the day as dry, and nothing rains.
+ *
+ * **A tint only where the book names a colour.** Dolmenwood's two unseasons
+ * have fae weather of their own — a purple mist, a sickly yellow one, a
+ * befuddling green fog — and they are the whole reason this is worth drawing.
+ * Everything else stays the grey a fog is.
+ *
+ * The numbers here are the book's reading, not the drawing: how much falls and
+ * how thick the air is, on FXMaster's own scales. What that becomes on screen —
+ * opacity, scale, whether it is drawn under the tokens — is `weatherFx.ts`,
+ * along with the strength the table has asked for.
+ */
+export type Falling = "rain" | "snow" | "snowstorm" | "hail";
+
+export interface WeatherSky {
+  /** What comes down, if anything. Plenty of days are only thick air. */
+  falls?: Falling;
+  /** How much of it, on FXMaster's own density scale, at ordinary strength. */
+  density?: number;
+  /** How much cloud is overhead. Almost every day has some; a fair day has none. */
+  cloud?: number;
+  /** A glimmer in the air. Faint every day; six times that in an unseason. */
+  glimmer?: number;
+  /** How thick the air is, as fog on FXMaster's own density scale. */
+  haze?: number;
+  /** A tint for whichever of the two is present, where the book names one. */
+  color?: string;
+  /** The book describes this one by its wind, so what is up there is driven. */
+  driven?: boolean;
+}
+
+/** The cast the ice family takes: a fog at freezing is not the same grey. */
+const ICE = "#cfe6ff";
+
+/**
+ * The densities are anchored on a figure measured rather than guessed.
+ *
+ * Leander tuned FXMaster by hand against the Dolmenwood world map (2026-09-01)
+ * and arrived at 0.51 for fog, 0.5 for rain, 0.27 for sleet, 0.21 for snow and
+ * 0.13 for a snowstorm. Those five are what the plain rows are set to here,
+ * and every other row of that kind is placed around its own anchor — a drizzle at two fifths of the rain,
+ * a torrential downpour at not quite double; a gentle snow at half the snow.
+ * The anchors are nothing like each other — they fall by a factor of three
+ * from rain to snowstorm — which is exactly why each had to be measured on its
+ * own rather than reasoned from its neighbour. FXMaster's own presets run at 1.5 to 5 for the
+ * same rows, which is a weather demo rather than a map somebody reads a hex
+ * grid off for three hours.
+ */
+const SKIES: [RegExp, WeatherSky][] = [
+  // The unseasons' own colours come first, because a green fog is green before
+  // it is a fog and nothing below would leave the tint on.
+  [/green/, { haze: 0.58, color: "#7bd47b" }],
+  [/purple|violet/, { haze: 0.45, color: "#8f6fd0" }],
+  [/yellow|sickly/, { haze: 0.45, color: "#d6cf6b" }],
+
+  // Snow before storm — the same reading `firewoodPenalty` makes of the same
+  // words: a snow storm is snow, not a storm.
+  [/blizzard|snow storm/, { falls: "snowstorm", density: 0.13, haze: 0.22 }],
+  [/gentle snow/, { falls: "snow", density: 0.12 }],
+  [/snow/, { falls: "snow", density: 0.21 }],
+  [/sleet|freezing rain/, { falls: "hail", density: 0.27, color: "#9aa5ad" }],
+  [/hail/, { falls: "hail", density: 0.27 }],
+
+  // Rain. The heavy rows carry a little haze as well, because that is what a
+  // downpour actually does to what you can see — and it is the letter the book
+  // puts on every one of them.
+  [/thunder ?storm/, { falls: "rain", density: 0.8, haze: 0.27 }],
+  [/torrential|pouring|driving rain|downpour/, { falls: "rain", density: 0.9, haze: 0.22 }],
+  [/drizzle/, { falls: "rain", density: 0.2 }],
+  [/gentle rain/, { falls: "rain", density: 0.3 }],
+  [/rain/, { falls: "rain", density: 0.5 }],
+
+  // Thick air, in the book's own gradations. Above cloud deliberately: "Low
+  // cloud, mist" and "Cloudy, misty" both carry the poor-visibility letter, and
+  // it is the mist that earns it.
+  [/thick, rolling/, { haze: 0.65, driven: true }],
+  [/rolling/, { haze: 0.55, driven: true }],
+  [/freezing fog/, { haze: 0.58, color: ICE }],
+  [/thick fog/, { haze: 0.65 }],
+  [/fog/, { haze: 0.51 }],
+  [/icy mist|chill mist|frigid mist/, { haze: 0.3, color: ICE }],
+  [/mist/, { haze: 0.27 }],
+  // A day the book calls only damp still hangs in the air. The wet letter is on
+  // the row and the firewood roll is about to take a point off for it.
+  [/damp/, { haze: 0.15 }],
+];
+
+/**
+ * How much cloud is overhead, which on most days is the only answer there is.
+ *
+ * **Cloud is the ground state and a fair day is the exception**, which is the
+ * opposite of how this file first had it. The first cut drew no cloud at all,
+ * on the reasoning that a row whose whole news is "overcast" costs the party
+ * nothing and so should cost the map nothing either. That is right about the
+ * rules and wrong about the sky: cloud is simply *there*, nearly always, and a
+ * map with a clear blue sky over a gloomy, cool day is drawing a fact that is
+ * not true (Leander, 2026-09-01: "wolken sind halt immer da").
+ *
+ * So the letters still gate what *falls* and how thick the air is — those are
+ * events, and the book says which days have them — and cloud is drawn on every
+ * day the module already calls unfair. `isSunny` is that test and it is not a
+ * new one: the Campaign Book's hex 0811 has already been asking it every day
+ * to decide whether the farm girls are out.
+ */
+const CLOUDS: [RegExp, number][] = [
+  // A sky with weather coming out of it is a heavier sky.
+  [/blizzard|snow storm|thunder|torrential|pouring|driving rain|downpour/, 0.3],
+  [/overcast|gloom|brooding|cloud/, 0.25],
+];
+
+/** What an ordinary unremarkable sky carries. Measured, like everything else. */
+const CLOUD_BASE = 0.147;
+
+/**
+ * A glitter in the air, always, and more of it in an unseason.
+ *
+ * Not weather, strictly — it is Dolmenwood. The wood is fairy-haunted every
+ * day of the year, so the faint figure is on every row of every table; and
+ * Hitching and Vague are not weather at all so much as Fairy leaking through,
+ * which the tables say out loud — a sleepy purple mist, a befuddling green fog,
+ * violet mist *rising*. The coloured tints carry half of that and this is the
+ * other half.
+ *
+ * **Nothing here reads words.** `WeatherResult.table` already says which table
+ * the day was rolled on, so the rule is exact: an unseason is an unseason,
+ * whatever the weather on the day happens to be doing.
+ */
+const GLIMMER = 0.05;
+const GLIMMER_UNSEASON = 0.28;
+
+/** Wind is not a picture of its own; it drives whatever is already up there. */
+const WINDY = /wind|blustery|gale|breez|relentless/;
+
+/**
+ * What today's weather looks like, or nothing at all.
+ *
+ * Nothing is the commonest answer and a real one: more than half of these
+ * sixty-six rows leave the map alone, either because the day carries no effect
+ * letter or because what it does carry has no picture — dew is dew.
+ * `weatherFx.ts` reads `undefined` as "take ours down".
+ */
+export function weatherSky(result: WeatherResult | undefined): WeatherSky | undefined {
+  if (!result) return undefined;
+  const text = result.text.toLowerCase();
+
+  // What falls, and how thick the air is: only where the book puts a letter on
+  // the row. Those are the day's events, and a day with none has none.
+  const event = result.effects.length
+    ? SKIES.find(([pattern]) => pattern.test(text))?.[1]
+    : undefined;
+
+  // What is overhead: on every day that is not a fair one, letters or no.
+  const cloud = isSunny(result)
+    ? undefined
+    : CLOUDS.find(([pattern]) => pattern.test(text))?.[1] ?? CLOUD_BASE;
+
+  // Fairy, everywhere, and nearer on the two tables that are Fairy's own.
+  const unseason = result.table === "hitching" || result.table === "vague";
+
+  const sky: WeatherSky = {
+    ...event,
+    ...(cloud === undefined ? {} : { cloud }),
+    glimmer: unseason ? GLIMMER_UNSEASON : GLIMMER,
+  };
+  return sky.driven || !WINDY.test(text) ? sky : { ...sky, driven: true };
+}
+
+/** What the map is about to show, in a word or two, for a tooltip. */
+export function skySummary(sky: WeatherSky | undefined): string {
+  if (!sky) return "";
+  const falling: Record<Falling, string> = {
+    rain: "rain",
+    snow: "snow",
+    snowstorm: "driving snow",
+    hail: "sleet",
+  };
+  const parts: string[] = [];
+  if (sky.falls) parts.push(falling[sky.falls]);
+  if (sky.haze) parts.push(sky.haze >= 0.45 ? "fog" : "haze in the air");
+  // Last, and only where it is the whole story: on a day it is raining, the
+  // cloud is not the news.
+  if (sky.cloud && !parts.length) parts.push(sky.cloud >= 0.25 ? "heavy cloud" : "cloud");
+  return parts.join(" and ");
+}
+/**
  * Whether the day's weather counts as sunny, for the one hex that asks.
  *
  * Hex 0811's farm girls are out "on sunny days", and the weather tables word
  * that half a dozen ways — "Warm, sunny", "Balmy, clear", "Brisk, clear". The
  * same words the icon reads, since the two questions are the same question.
+ *
+ * **Baking and sweltering were added 2026-09-01**, when the map started asking
+ * the same question to decide whether to draw cloud. A baking, dry summer day
+ * was coming out cloudy, which is absurd — and the farm girls should have been
+ * out on it all along.
  */
 export function isSunny(result: WeatherResult | undefined): boolean {
-  return !!result && /sun|clear|bright|balmy|fine|fair/i.test(result.text);
+  return !!result && /sun|clear|bright|balmy|fine|fair|baking|sweltering/i.test(result.text);
 }

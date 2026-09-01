@@ -91,6 +91,9 @@ export const SETTINGS = {
   HEX_CALIBRATION: "hexCalibration", // Record<sceneId, {i, j, hex}> — two measured hexes per map
   TP_FROM_MOVEMENT: "tpFromMovement", // charge the day's Travel Points for the hexes a move crosses
   TP_REFUSE_SHORT: "tpRefuseShort", // …and refuse a move the party cannot pay for outright
+  WEATHER_FX: "weatherFx", // paint the day's rolled weather onto the map with FXMaster
+  WEATHER_FX_STRENGTH: "weatherFxStrength", // how much of the map the weather may cover
+  WEATHER_FX_SCENES: "weatherFxScenes", // Record<sceneId, {on, applied}> — which maps take the weather
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in

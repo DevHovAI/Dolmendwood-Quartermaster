@@ -21,6 +21,7 @@ import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore
 import { hexOf, isPartyToken, tokenPoint, refusePlaceIfAway, canReachLoot } from "./data/partyPlace";
 import { bookHexAt, followsToken } from "./data/hexGrid";
 import { moveAccount, type MovedToken } from "./data/hexTravel";
+import { syncWeatherFx } from "./data/weatherFx";
 import { installTravelRuler } from "./apps/TravelRuler";
 import { hexInfo } from "./data/hexes";
 import { whisperToGMs } from "./data/rollCard";
@@ -401,6 +402,47 @@ Hooks.once("init", () => {
     config: true,
     type: Boolean,
     default: true,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // Off by default, and it stays off until a map is switched on as well. This
+  // writes effects to a scene document, and a module that redresses somebody's
+  // map uninvited is a module that gets uninstalled. FXMaster's own preset
+  // API touches only keys it made itself, so weather the Referee set by hand
+  // through FXMaster's window survives all of this untouched.
+  game.settings!.register(MODULE_ID, SETTINGS.WEATHER_FX, {
+    name: "Paint the day's weather onto the map",
+    hint:
+      "Needs the FXMaster module. The weather rolled each morning is drawn on the maps you switch on for it: rain, snow, fog, and the coloured mists the unseasons bring. Switch this on and then press the cloud beside the Weather duty on the day bar, once per map that should show it. A map you have not switched on is never touched, and neither is any weather you set yourself through FXMaster.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // Its own setting rather than a number in the code, because "how much of my
+  // map may this cover" is a matter of taste and of what the map is: a drawn
+  // hex map and a photographic battle map take very different amounts of it.
+  // Subtle by default — the first cut of this was too much, and the fix for too
+  // much is never to start there again.
+  game.settings!.register(MODULE_ID, SETTINGS.WEATHER_FX_STRENGTH, {
+    name: "How strongly the weather is drawn",
+    hint: "How much of it there is — how many drops, how thick the air. Not how big it is drawn: that is set for a world map seen from a long way up and is the same at every setting. Ordinary is the figure the Dolmenwood map was tuned to by hand; subtle halves it.",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: {
+      subtle: "Subtle",
+      normal: "Ordinary",
+      strong: "Strong",
+    },
+    default: "normal",
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  game.settings!.register(MODULE_ID, SETTINGS.WEATHER_FX_SCENES, {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.DAY_STATE, {
@@ -1098,10 +1140,31 @@ onUntypedHook("updateSetting", (setting: { key?: string }) => {
     SETTINGS.INN_CONFIGS,
     SETTINGS.DAY_STATE,
     SETTINGS.DAY_CONTEXT,
+    // Both switches, because the bar draws a control for them and the map has
+    // to catch up the moment either one moves.
+    SETTINGS.WEATHER_FX,
+    SETTINGS.WEATHER_FX_STRENGTH,
   ];
   if (!watched.some((s) => key.endsWith(`.${s}`))) return;
   getAppInstance("dolmenwood-inn")?.render();
   // "Eaten" and "slept" are read off the inn day log, and a new day clears the ticks.
+  refreshDayBar();
+  // The day state carries the weather, and the maps that show it have to
+  // agree with it. Cheap on every other write: a sky already right is a
+  // comparison and no work at all.
+  void syncWeatherFx();
+});
+
+/**
+ * Redraw the bar when another map comes up.
+ *
+ * Two of its controls are about the map on screen rather than about the day:
+ * the crosshairs say whether *this* map is calibrated, and the cloud whether it
+ * shows the weather. Both read `scenes.current` and neither was ever told when
+ * that changed — so they went on describing the map the Referee had just left
+ * while acting on the one in front of them.
+ */
+onUntypedHook("canvasReady", () => {
   refreshDayBar();
 });
 

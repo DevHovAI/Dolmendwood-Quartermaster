@@ -4307,6 +4307,34 @@ body > #dolmenwood-day-bar {
   color: var(--dw-primary);
 }
 
+/* The weather duty's own control: does the map on screen show the sky? It
+   borrows the tick's geometry rather than the die's, so the die keeps the last
+   lane and the dividing rule that marks it on every chip in the strip. */
+.day-bar-duty-fx {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--dw-icon-btn);
+  height: auto;
+  min-height: 0;
+  padding: 0 var(--dw-space-2);
+  background: none;
+  border: none;
+  color: var(--dw-tertiary);
+  font-size: var(--dw-text-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.day-bar-duty-fx:hover {
+  color: var(--dw-primary);
+}
+
+.day-bar-duty-fx.is-on {
+  color: var(--dw-accent, #7a5c2e);
+}
+
 .day-bar-duty-text {
   display: flex;
   flex-direction: column;

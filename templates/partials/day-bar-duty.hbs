@@ -18,6 +18,17 @@
     <span class="day-bar-duty-label">{{this.label}}</span>
     {{#if this.result}}<span class="day-bar-duty-result">{{this.result}}</span>{{/if}}
   </span>
+  {{!-- The weather duty alone carries a third control: whether the map on
+        screen shows the sky that was just rolled. It sits before the die
+        because it is about the answer, not about getting one, and it keeps the
+        die's lane where it is on every other chip. --}}
+  {{#if this.fxShown}}
+  <button type="button" class="day-bar-duty-fx{{#if this.fxOn}} is-on{{/if}}"
+          data-action="toggleWeatherFx" title="{{this.fxTitle}}"
+          aria-label="Show the weather on this map">
+    <i class="fas {{#if this.fxOn}}fa-cloud-sun-rain{{else}}fa-cloud-slash{{/if}}"></i>
+  </button>
+  {{/if}}
   {{#if this.result}}
   <button type="button" class="day-bar-duty-roll" data-action="clearDuty" data-duty-id="{{this.id}}"
           title="Take this roll back so it can be made again">

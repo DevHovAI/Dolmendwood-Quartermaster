@@ -30,6 +30,15 @@
       "path": "lang/de.json"
     }
   ],
+  "relationships": {
+    "recommends": [
+      {
+        "id": "fxmaster",
+        "type": "module",
+        "reason": "Draws the day bar's rolled weather on the maps you switch it on for. Everything else works without it."
+      }
+    ]
+  },
   "socket": true,
   "url": "https://github.com/DevHovAI/Dolmendwood-Quartermaster",
   "manifest": "https://github.com/DevHovAI/Dolmendwood-Quartermaster/releases/latest/download/module.json",

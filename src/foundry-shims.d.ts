@@ -68,6 +68,12 @@ declare global {
     "dolmenwood-party-inventory.hexFromToken": boolean;
     "dolmenwood-party-inventory.tpFromMovement": boolean;
     "dolmenwood-party-inventory.tpRefuseShort": boolean;
+    "dolmenwood-party-inventory.weatherFx": boolean;
+    "dolmenwood-party-inventory.weatherFxStrength": "subtle" | "normal" | "strong";
+    "dolmenwood-party-inventory.weatherFxScenes": Record<
+      string,
+      { on: boolean; applied?: string; scene?: string }
+    >;
     "dolmenwood-party-inventory.hexCalibration": Record<
       string,
       { i: number; j: number; hex: string; scene?: string }
