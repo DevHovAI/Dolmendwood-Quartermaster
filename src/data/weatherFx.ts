@@ -70,6 +70,7 @@ const FALLS_ID = "apiMacro_dolmenwoodWeatherFalls_p";
 const HAZE_ID = "apiMacro_dolmenwoodWeatherHaze_p";
 const CLOUD_ID = "apiMacro_dolmenwoodWeatherCloud_p";
 const GLIMMER_ID = "apiMacro_dolmenwoodWeatherGlimmer_p";
+const LIGHTNING_ID = "apiMacro_dolmenwoodWeatherLightning_f";
 const OLD_HAZE_FILTER_ID = "apiMacro_dolmenwoodWeatherHaze_f";
 
 /**
@@ -90,6 +91,9 @@ const OLD_HAZE_FILTER_ID = "apiMacro_dolmenwoodWeatherHaze_f";
 
 /** All of ours, for taking the whole sky down in one go. */
 const OURS = [FALLS_ID, HAZE_ID, CLOUD_ID, GLIMMER_ID];
+
+/** The filter half. `OLD_HAZE_FILTER_ID` is only ever stopped, never played. */
+const OUR_FILTERS = [LIGHTNING_ID, OLD_HAZE_FILTER_ID];
 
 /** The signature of a clear sky: ours taken down, nothing put up. */
 const CLEAR = "clear";
@@ -187,6 +191,17 @@ const CLOUD = { scale: 0.44, speed: 0.16, lifetime: 0.45, direction: 0, alpha: 0
 const GLIMMER = { scale: 0.21, speed: 0.27, lifetime: 0.21, alpha: 0.7 };
 
 /**
+ * Thunder, and the only filter here rather than a particle effect.
+ *
+ * Measured like everything else, and set well back from FXMaster's own: a flash
+ * every 8.3 seconds rather than every 5, lasting 220ms rather than 500, at 1.4
+ * brightness rather than 1.6. A canvas that flashes is the definition of the
+ * complaint this whole feature was rebuilt to answer, so this is a sky that
+ * answers now and then, not a strobe.
+ */
+const LIGHTNING = { frequency: 8300, spark_duration: 220, brightness: 1.4 };
+
+/**
  * What the table has asked for, as one multiplier on **how much** there is.
  *
  * Deliberately not on how big it is drawn, which was the first version of this
@@ -246,9 +261,10 @@ const clamp = (n: number, low: number, high: number) => Math.min(high, Math.max(
 /**
  * The day's sky as FXMaster effect definitions.
  *
- * Four layers. Three of them read the day — cloud overhead unless it is a fair
+ * Five layers, four of which read the day: cloud overhead unless it is a fair
  * one, haze where the air is thick, something falling where the book says it
- * falls — and the glimmer does not, because Fairy is not weather.
+ * falls, and lightning on the two rows that name thunder. The glimmer does not
+ * read anything, because Fairy is not weather.
  *
  * **What never changes is not drawn here at all.** Crows were offered and
  * turned down on exactly that test (Leander, 2026-09-01): a flight of crows
@@ -256,8 +272,9 @@ const clamp = (n: number, low: number, high: number) => Math.min(high, Math.max(
  * them can set them once in FXMaster and keep them, and this module has nothing
  * to add. It draws what the roll changes.
  */
-function effectsFor(sky: WeatherSky, strength: number): Record<string, unknown>[] {
+function effectsFor(sky: WeatherSky, strength: number) {
   const particles: Record<string, unknown>[] = [];
+  const filters: Record<string, unknown>[] = [];
   const amount = (n: number) => clamp(n * strength, 0.02, 5);
 
   // Highest first, so the list reads the way the sky is built: cloud over haze,
@@ -339,7 +356,21 @@ function effectsFor(sky: WeatherSky, strength: number): Record<string, unknown>[
     });
   }
 
-  return particles;
+  if (sky.lightning) {
+    filters.push({
+      id: LIGHTNING_ID,
+      type: "lightning",
+      options: {
+        belowTokens: false,
+        soundFxEnabled: false,
+        frequency: LIGHTNING.frequency,
+        spark_duration: LIGHTNING.spark_duration,
+        brightness: LIGHTNING.brightness,
+      },
+    });
+  }
+
+  return { particles, filters };
 }
 
 function allWeatherScenes(): Record<string, WeatherScene> {
@@ -387,6 +418,7 @@ function signatureOf(sky: WeatherSky | undefined, strength: number): string {
     sky.haze ?? "",
     sky.cloud ?? "",
     sky.glimmer ?? "",
+    sky.lightning ? "lightning" : "",
     sky.color ?? "",
     sky.driven ? "driven" : "",
     strength,
@@ -403,10 +435,10 @@ function signatureOf(sky: WeatherSky | undefined, strength: number): string {
 async function paint(scene: SceneLike, sky: WeatherSky | undefined): Promise<void> {
   const api = effectsApi();
   if (!api) return;
-  await api.stop({ particles: OURS, filters: [OLD_HAZE_FILTER_ID], scene });
+  await api.stop({ particles: OURS, filters: OUR_FILTERS, scene });
   if (!sky) return;
-  const particles = effectsFor(sky, weatherFxStrength());
-  if (particles.length) await api.play({ particles, scene });
+  const { particles, filters } = effectsFor(sky, weatherFxStrength());
+  if (particles.length || filters.length) await api.play({ particles, filters, scene });
 }
 
 /**

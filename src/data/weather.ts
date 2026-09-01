@@ -270,6 +270,8 @@ export interface WeatherSky {
   density?: number;
   /** How much cloud is overhead. Almost every day has some; a fair day has none. */
   cloud?: number;
+  /** The book names thunder on this row, so the sky answers now and then. */
+  lightning?: boolean;
   /** A glimmer in the air. Faint every day; six times that in an unseason. */
   glimmer?: number;
   /** How thick the air is, as fog on FXMaster's own density scale. */
@@ -379,6 +381,19 @@ const CLOUD_BASE = 0.147;
 const GLIMMER = 0.05;
 const GLIMMER_UNSEASON = 0.28;
 
+/**
+ * Thunder, which is on an axis of its own — the words, never the letters.
+ *
+ * Two rows name it and only one of them is wet. "Thunder storm" carries the
+ * poor-visibility and wet letters and pours; **"Brooding thunder" carries none
+ * at all**, and under the rule that governs everything else here it draws
+ * nothing but cloud. Lightning is the one thing that can be added to a dry row
+ * without contradicting it: it costs the party nothing, which is exactly why
+ * the book gave that row no letter, and a dry sky lit from inside is precisely
+ * what the words describe.
+ */
+const THUNDER = /thunder/;
+
 /** Wind is not a picture of its own; it drives whatever is already up there. */
 const WINDY = /wind|blustery|gale|breez|relentless/;
 
@@ -411,6 +426,7 @@ export function weatherSky(result: WeatherResult | undefined): WeatherSky | unde
   const sky: WeatherSky = {
     ...event,
     ...(cloud === undefined ? {} : { cloud }),
+    ...(THUNDER.test(text) ? { lightning: true } : {}),
     glimmer: unseason ? GLIMMER_UNSEASON : GLIMMER,
   };
   return sky.driven || !WINDY.test(text) ? sky : { ...sky, driven: true };
@@ -431,6 +447,7 @@ export function skySummary(sky: WeatherSky | undefined): string {
   // Last, and only where it is the whole story: on a day it is raining, the
   // cloud is not the news.
   if (sky.cloud && !parts.length) parts.push(sky.cloud >= 0.25 ? "heavy cloud" : "cloud");
+  if (sky.lightning) parts.push("lightning");
   return parts.join(" and ");
 }
 /**
