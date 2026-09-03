@@ -54,21 +54,33 @@ export async function whisperToGMs(content: string, rolls: Roll[] = []): Promise
     .filter((id): id is string => !!id);
   await ChatMessage.create({
     content,
-    rolls,
-    // Without this the card lands silently: Foundry plays the dice sound only
-    // for messages it can tell are rolls.
+    // **The dice are deliberately NOT attached to this document**, and that is
+    // the whole trick (Leander, 2026-09-04, after the first attempt failed).
+    // `ChatMessage#visible` reads:
+    //
+    //     if ( this.whisper.length ) { if ( this.isRoll ) return true; ... }
+    //
+    // — a whispered message carrying dice is visible to *everybody*, and its
+    // content is then replaced with "X rolled privately" and ??? for the
+    // numbers. `isRoll` is simply `rolls.length > 0`, so leaving them off makes
+    // the message invisible by Foundry's own rule: `ChatLog#postOne` returns at
+    // once for an invisible message, which means no card, no notification pip,
+    // no sound, and no Dice So Nice animation on a player's screen.
+    //
+    // The first fix tried to remove the rendered card in `renderChatMessageHTML`
+    // and did nothing at all: core fires that hook on an element it has *not
+    // yet inserted*, so `remove()` had no parent to remove it from.
+    //
+    // What this costs the Referee is the 3D dice and an inspectable roll in the
+    // log for these cards alone — the numbers themselves are printed in the
+    // card, which is what the card is for. Public cards (`announce`) still
+    // carry their rolls.
     sound: rolls.length ? CONFIG.sounds.dice : undefined,
     whisper: gmIds,
-    // **The flag is what lets the players' clients throw this card away.**
-    // Foundry deliberately shows a whispered message that carries dice to
-    // everybody — `ChatMessage#visible` returns true for any `isRoll` whisper —
-    // and paints it as "X rolled privately" with ??? for the numbers. Leander,
-    // 2026-09-04: *"kann man die für die Spieler komplett unsichtbar machen?"*
-    // Dropping the dice from the message would do it, and would cost the
-    // Referee the 3D dice and an inspectable roll in the log; hiding the
-    // rendered card on the other clients costs nothing. Only cards this module
-    // whispered are hidden — another module's private roll is not ours to
-    // suppress. See `renderChatMessageHTML` in module.ts.
+    // The flag no longer decides anything about *this* card — leaving the dice
+    // off already makes it invisible. It marks the card so that the cards from
+    // the two builds that did carry dice, and are sitting in players' logs
+    // right now, can be hidden there. See `hideFromPlayers` in module.ts.
     flags: { [MODULE_ID]: { gmOnly: true } },
   } as Parameters<typeof ChatMessage.create>[0]);
 }

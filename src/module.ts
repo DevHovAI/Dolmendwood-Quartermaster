@@ -1657,24 +1657,22 @@ onUntypedHook("renderChatMessageHTML", (message: unknown, element: unknown) => {
 });
 
 /**
- * Take the Referee's own cards off the players' screens entirely.
+ * Hide a Referee-only card that a player's log is still holding.
  *
- * **Foundry shows a whispered message that carries dice to everybody.**
- * `ChatMessage#visible` returns true for any whisper with an `isRoll`, and the
- * content is then replaced with "X rolled privately" and `???` in place of the
- * numbers — so getting lost, the wandering-monster checks and the watch's
- * mishaps each left a placeholder card in the players' log. That is core's
- * deliberate "somebody rolled something" cue, and Leander does not want it
- * (2026-09-04).
+ * **The real fix is in `whisperToGMs`**, which leaves the dice off the message
+ * so that Foundry never shows it at all — see the note there. This is for the
+ * cards posted before that, which carry dice and are therefore visible to
+ * everybody as "X rolled privately" with `???`.
  *
- * The card is removed rather than the dice being left off the message: without
- * `rolls` the message would be invisible by itself, but the Referee would lose
- * the 3D dice and an inspectable roll in the log. **Only this module's own
- * whispers are touched** — another module's private roll is not ours to hide —
- * and a card whispered *to* this player stays, which is what makes a refusal
- * reach the person it is about.
+ * **`style.display`, not `remove()`.** Core fires `renderChatMessageHTML` on an
+ * element it has *not yet inserted* into the log, so removing it has no parent
+ * to remove it from and the caller inserts it regardless — which is exactly why
+ * the first attempt at this changed nothing (2026-09-04). A style survives the
+ * insertion.
  *
- * A card posted before this flag existed has no flag and stays as it was.
+ * Only this module's own whispers are touched — another module's private roll
+ * is not ours to hide — and a card whispered *to* this player stays, which is
+ * what lets a refusal reach the person it is about.
  */
 function hideFromPlayers(message: unknown, element: HTMLElement): boolean {
   const g = game as Game;
@@ -1685,7 +1683,7 @@ function hideFromPlayers(message: unknown, element: HTMLElement): boolean {
   };
   if (!msg?.getFlag?.(MODULE_ID, "gmOnly")) return false;
   if ((msg.whisper ?? []).includes(g.user?.id ?? "")) return false;
-  element.remove();
+  element.style.display = "none";
   return true;
 }
 
