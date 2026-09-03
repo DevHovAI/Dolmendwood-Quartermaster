@@ -254,11 +254,18 @@ export async function promptFirewood(): Promise<FirewoodChoice | null> {
 
   const weather = getDayState().weather;
   const suggested = firewoodPenalty(weather);
+  // **A player who opened this is going for wood.** Anything else would be a
+  // form that asks them to tick themselves before they may do the thing they
+  // just pressed (Leander, 2026-09-04). The Referee's list is the whole party
+  // and stays empty: who goes is the question they are being asked.
+  const mineByDefault = !isGM();
   const rows = members
     .map(
       (m) => `
       <label class="dw-camp-member">
-        <input type="checkbox" name="dw-wood-who" value="${escapeHTML(m.actorId)}">
+        <input type="checkbox" name="dw-wood-who" value="${escapeHTML(m.actorId)}"${
+          mineByDefault && m.mine ? " checked" : ""
+        }>
         <span class="dw-camp-member-name">${escapeHTML(m.name)}</span>
       </label>`
     )
