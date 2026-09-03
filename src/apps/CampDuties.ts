@@ -26,6 +26,7 @@ import { displayQuantity } from "../data/consumables";
 import { firewoodPenalty, hasEffect } from "../data/weather";
 import { FIRE_MINIMUM_HOURS } from "../data/camping";
 import { allocate, partyStock, stockLine } from "../data/partySupply";
+import { isGM } from "../data/rollCard";
 
 /** What the fire dialog answers with: how hard it is, and what goes on it. */
 export interface FireChoice {
@@ -80,6 +81,15 @@ import {
 interface Member {
   actorId: string;
   name: string;
+  /**
+   * Is this character the reader's to answer for?
+   *
+   * True for every actor on the Referee's screen. On a player's it marks the
+   * rows they may fill in, and the rest are drawn greyed rather than dropped —
+   * a camp is a thing the whole party does, and *"man sollte auch sehen können,
+   * was die anderen ausgewählt haben"* (Leander, 2026-09-03).
+   */
+  mine: boolean;
   /** Undefined where this actor carries no scores this module can read. */
   scores?: { con: number; conMod: number; wis: number; wisMod: number; cha: number; chaMod: number };
   /** The Save Versus Doom target off the sheet; 0 where there is none to read. */
@@ -130,6 +140,7 @@ function partyMembers(whose: Whose = "party"): Member[] {
     return {
       actorId: actor.id ?? "",
       name: actor.name ?? "Someone",
+      mine: !!(actor as { isOwner?: boolean }).isOwner,
       ...(readable
         ? {
             scores: {
@@ -934,8 +945,17 @@ export interface SleepChoice {
  * it.
  */
 export async function promptSleep(): Promise<SleepChoice | null> {
-  const members = partyMembers("mine");
+  // **The whole camp is listed; only your own rows are yours to fill in.**
+  // Leander, 2026-09-03. The night is one thing the party does together, and a
+  // player who sees only their own row cannot tell whether anybody else has
+  // bedded down yet — so the others are drawn greyed, showing whatever they
+  // have already rolled tonight.
+  const members = partyMembers("party");
   if (!members.length) return noParty(), null;
+  if (!members.some((m) => m.mine)) {
+    ui.notifications?.warn("None of these characters are yours to bed down.");
+    return null;
+  }
 
   const camp = getCampState();
   const season = seasonInfo(getDayContext().season);
@@ -981,30 +1001,52 @@ export async function promptSleep(): Promise<SleepChoice | null> {
   const withBedroll = new Set(allocate(bedrolls.spaces, carriersOf(bedrolls), everyone));
   const withTent = new Set(allocate(tents.spaces, carriersOf(tents), everyone));
 
+  // Whoever has already bedded down tonight, and on what. Their row shows it
+  // rather than the module's guess at it — the roll has happened, so the guess
+  // is no longer the interesting thing.
+  const rolled = new Map((camp.sleep?.sleepers ?? []).map((s) => [s.actorId, s]));
+
   const rows = members
-    .map(
-      (m) => `
-      <div class="dw-sleep-row" data-actor-id="${escapeHTML(m.actorId)}">
-        <input type="checkbox" class="dw-sleep-in" checked
+    .map((m) => {
+      const done = rolled.get(m.actorId);
+      // A row that is not the reader's is read-only, and so is one already
+      // rolled: both are facts to be seen rather than questions to answer.
+      const locked = !m.mine || !!done;
+      const off = locked ? " disabled" : "";
+      // **What was recorded is "none", "some" or "both", not which of the two.**
+      // So both ticks are only shown set where the record says both, and the
+      // row's own note names the bedding in the book's words — inventing a
+      // bedroll for a "some" would be a guess printed as a fact.
+      const bedroll = done ? done.bedding === "both" : withBedroll.has(m.actorId);
+      const tent = done ? done.bedding === "both" : withTent.has(m.actorId);
+      const short = done ? done.shortNight : shortFromWatch.has(m.actorId);
+      const bedding = BEDDING.find((b) => b.id === done?.bedding)?.label ?? "";
+      const note = done
+        ? ` — already bedded down · ${bedding.toLowerCase()}`
+        : m.mine
+          ? ""
+          : " — somebody else's to roll";
+      return `
+      <div class="dw-sleep-row${locked ? " is-locked" : ""}" data-actor-id="${escapeHTML(m.actorId)}"
+           data-mine="${m.mine && !done}">
+        <input type="checkbox" class="dw-sleep-in" checked${off}
                title="Sleeping in this camp tonight. Unticked, nothing is written to this character at all.">
         <span class="dw-camp-member-name">${escapeHTML(m.name)}</span>
-        <span class="dw-camp-member-stat">(${escapeHTML(statLabel(m, "con"))})</span>
+        <span class="dw-camp-member-stat">(${escapeHTML(statLabel(m, "con"))})${escapeHTML(note)}</span>
         <label class="dw-sleep-gear" title="A bedroll of their own.">
-          <input type="checkbox" class="dw-sleep-bedroll" ${withBedroll.has(m.actorId) ? "checked" : ""}>
+          <input type="checkbox" class="dw-sleep-bedroll" ${bedroll ? "checked" : ""}${off}>
           bedroll
         </label>
         <label class="dw-sleep-gear" title="A place under a tent. One tent holds two.">
-          <input type="checkbox" class="dw-sleep-tent" ${withTent.has(m.actorId) ? "checked" : ""}>
+          <input type="checkbox" class="dw-sleep-tent" ${tent ? "checked" : ""}${off}>
           tent
         </label>
         <label class="dw-sleep-short" title="Under ${MIN_SLEEP_HOURS} hours asleep is not a good night's rest, whatever the conditions.">
-          <input type="checkbox" class="dw-sleep-short-box" ${
-            shortFromWatch.has(m.actorId) ? "checked" : ""
-          }> short night
+          <input type="checkbox" class="dw-sleep-short-box" ${short ? "checked" : ""}${off}> short night
         </label>
         <span class="dw-sleep-difficulty"></span>
-      </div>`
-    )
+      </div>`;
+    })
     .join("");
 
   const fireHours = camp.firewood?.hours;
@@ -1017,8 +1059,14 @@ export async function promptSleep(): Promise<SleepChoice | null> {
     "Sleep",
     `<form class="dw-camp-form dw-sleep-form">
       <label class="dw-sleep-fire">
-        <input type="checkbox" id="dw-sleep-fire" ${campfire ? "checked" : ""}>
-        A campfire is burning
+        <input type="checkbox" id="dw-sleep-fire" ${campfire ? "checked" : ""}${
+          isGM() ? "" : " disabled"
+        }>
+        A campfire is burning${
+          isGM()
+            ? ""
+            : ` — ${campfire ? "the camp has one" : "there is none"}, as the fire step left it`
+        }
       </label>
       <p class="hint">${escapeHTML(season.label)}${
         host === (season.id as string) ? "" : ` (an unseason falling in ${host})`
@@ -1040,7 +1088,11 @@ export async function promptSleep(): Promise<SleepChoice | null> {
     (html) => {
       const fire = !!html.find("#dw-sleep-fire").prop("checked");
       const sleepers: SleeperChoice[] = html
-        .find(".dw-sleep-row")
+        // **Only the rows this reader owns and has not already rolled.** The
+        // others are on the form to be seen, not to be answered for; the
+        // Referee's client checks the same thing again when the request
+        // arrives, because a disabled input is a courtesy and not a lock.
+        .find('.dw-sleep-row[data-mine="true"]')
         .toArray()
         // A character who is not in this camp is skipped entirely rather than
         // rolled and ignored: sleep is the one camp roll that writes to the
@@ -1089,8 +1141,11 @@ export async function promptSleep(): Promise<SleepChoice | null> {
           for (const row of rows) {
             const input = box(row, cls);
             if (!input) continue;
+            // A locked row's ticks are facts, not offers: never hand them back
+            // just because the party has a place left over.
+            const locked = row.classList.contains("is-locked");
             const blocked = !input.checked && (left === 0 || !isHere(row));
-            input.disabled = blocked;
+            input.disabled = blocked || locked;
             const label = input.closest("label") as HTMLElement | null;
             if (label) {
               label.classList.toggle("is-spent", blocked && left === 0);

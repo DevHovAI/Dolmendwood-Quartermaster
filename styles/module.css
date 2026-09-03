@@ -6066,6 +6066,14 @@ span.day-bar-panel-tick {
   border-top: none;
 }
 
+/* A row that is somebody else's, or one already rolled tonight. **Dimmed, not
+   dropped**: the night is a thing the whole party does, and a player who saw
+   only their own row could not tell whether anybody else had bedded down
+   (Leander, 2026-09-03). Still legible — the point is to be read. */
+.dw-sleep-row.is-locked > * {
+  opacity: 0.55;
+}
+
 /* A bedroll or a tent place. Spent ones stay legible rather than being greyed
    into the background — the Referee has to be able to read what is taken in
    order to know whom to untick. */

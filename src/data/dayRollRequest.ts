@@ -33,6 +33,7 @@
 import { SOCKET_EVENTS } from "../constants";
 import { SocketHandler } from "../socket/SocketHandler";
 import { getDayState, markRolledBy, setDutyDone, type DayState } from "./dayDuties";
+import { getCampState } from "./campRolls";
 import {
   campLeaderId,
   mayRoll,
@@ -300,14 +301,22 @@ export async function applyDayRoll(payload: DayRollPayload, userId: string): Pro
     return;
   }
 
-  await carryOut(payload);
+  await carryOut(payload, userId);
 
   // Serving is the tail of a roll already recorded, not a roll of its own.
   if (payload.choice.kind !== "serve") await markRolledBy(payload.dutyId, payload.actorId);
 }
 
-/** The choice, applied. Every branch here is GM-side and writes the day. */
-async function carryOut({ dutyId, choice }: DayRollPayload): Promise<void> {
+/**
+ * The choice, applied. Every branch here is GM-side and writes the day.
+ *
+ * **Where a request could be worth cheating with, the value is taken from the
+ * world rather than from the message.** A disabled input on a player's screen
+ * is a courtesy; this is the lock. See the sleep branch.
+ */
+async function carryOut({ dutyId, choice }: DayRollPayload, userId: string): Promise<void> {
+  const user = (game as Game).users?.get(userId);
+  const fromGM = !!user?.isGM;
   switch (choice.kind) {
     case "tick":
       await setDutyDone(dutyId, true);
@@ -327,9 +336,22 @@ async function carryOut({ dutyId, choice }: DayRollPayload): Promise<void> {
     case "watches":
       await rollWatches(choice.keepers, choice.nightHours);
       return;
-    case "sleep":
-      await rollSleep(choice.sleepers, choice.campfire);
+    case "sleep": {
+      // **The fire is a fact of the camp, not an answer on the form.** It eases
+      // the Sleep Difficulty for everyone with bedding, so a player who could
+      // tick it would be rolling a different table (Leander, 2026-09-03:
+      // *"sonst kann man ja cheaten"*). The Referee's own tick still stands —
+      // a fire the module never saw lit is a ruling they are entitled to make.
+      const campfire = fromGM ? choice.campfire : (getCampState().fire?.lit ?? true);
+      // And a player beds down their own characters and nobody else's, however
+      // the message arrived.
+      const sleepers = fromGM
+        ? choice.sleepers
+        : choice.sleepers.filter((s) => ownedBy(s.actorId, user));
+      if (!sleepers.length) return;
+      await rollSleep(sleepers, campfire);
       return;
+    }
     case "forage":
       await rollFindingFood(
         choice.method,
@@ -349,6 +371,12 @@ async function carryOut({ dutyId, choice }: DayRollPayload): Promise<void> {
       else await noteSpellsPreparedFreely();
       return;
   }
+}
+
+/** Does that user own that character? The one question a message cannot answer. */
+function ownedBy(actorId: string, user: unknown): boolean {
+  const actor = (game as Game).actors?.get(actorId);
+  return !!actor && !!user && actor.testUserPermission(user as User, "OWNER");
 }
 
 /**
