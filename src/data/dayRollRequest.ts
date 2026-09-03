@@ -54,7 +54,11 @@ import {
   type WatchKeeperChoice,
 } from "./campRolls";
 import { rollEncounter, rollFindingFood, rollGettingLost, rollWeather } from "./dayRolls";
-import { rollSpellPreparation, type CasterChoice } from "./morningRolls";
+import {
+  noteSpellsPreparedFreely,
+  rollSpellPreparation,
+  type CasterChoice,
+} from "./morningRolls";
 import type { CampActivity } from "./camping";
 import type { FoodMethod } from "./findingFood";
 import {
@@ -337,7 +341,12 @@ async function carryOut({ dutyId, choice }: DayRollPayload): Promise<void> {
       );
       return;
     case "spells":
-      await rollSpellPreparation(choice.casters);
+      // An empty list is the answer "nobody in the party lost sleep", not an
+      // empty request: every caster then prepares their whole list without a
+      // die, and the card and the credits are written here, once, on the
+      // Referee's client. See `promptSpellPreparation`.
+      if (choice.casters.length) await rollSpellPreparation(choice.casters);
+      else await noteSpellsPreparedFreely();
       return;
   }
 }

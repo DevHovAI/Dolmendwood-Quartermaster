@@ -64,19 +64,29 @@ export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[
   // 2026-09-03). The Class decides it, and the sheet's own spell count
   // overrules — see `preparesSpells`.
   //
-  // **And only the player's own, on a player's screen** (Leander's job 3,
-  // 2026-09-03). Preparing spells is one of the three duties the rights model
-  // calls personal, so the list a player is shown is now exactly the list they
-  // may write to — the `isOwner` guard further down, which stopped Foundry
-  // refusing a write halfway through somebody else's caster, is the same rule
-  // arriving one step too late.
-  const badly = sleptBadly()
-    .filter(preparesSpells)
-    .filter((actor) => (actor as { isOwner?: boolean }).isOwner);
+  // **Two questions, and they are not the same one** — which is what the first
+  // cut of the player's side got wrong (Leander, 2026-09-03: *"prepare spells
+  // lässt sich vom spieler gerade nicht würfeln"*). Whether the duty needs dice
+  // at all is a question about **the whole party**; which names to put on the
+  // form is a question about **the person pressing**. Asking only the second
+  // meant that a player whose own casters had slept well fell into the
+  // "everybody prepared freely" branch — which is GM-only and therefore did
+  // nothing whatsoever on their screen.
+  const partyBadly = sleptBadly().filter(preparesSpells);
+  if (!partyBadly.length) {
+    // Not a refusal: the duty is done, it simply took no dice. An empty list is
+    // that answer, and the caller writes it — on the Referee's client directly,
+    // from a player's over the socket, so the card and the credits happen once.
+    return { casters: [] };
+  }
+
+  // Leander's job 3: a player is only ever asked about their own characters.
+  // The Referee owns every actor, so their form is the party's.
+  const badly = partyBadly.filter((actor) => (actor as { isOwner?: boolean }).isOwner);
   if (!badly.length) {
-    // Not a refusal: the duty is done, it simply took no dice. A card says so,
-    // because a button that answers with silence looks broken.
-    await noteSpellsPreparedFreely();
+    ui.notifications?.info(
+      "None of your spell-casters lost sleep last night — there is nothing for you to roll."
+    );
     return null;
   }
 
@@ -173,6 +183,10 @@ export async function runMorningDuty(dutyId: string): Promise<void> {
   }
   if (dutyId === "prepare-spells") {
     const choice = await promptSpellPreparation();
-    if (choice) await rollSpellPreparation(choice.casters);
+    if (!choice) return;
+    // An empty list is an answer, not a cancellation: nobody in the party lost
+    // sleep, so every caster prepares their whole list without a die.
+    if (choice.casters.length) await rollSpellPreparation(choice.casters);
+    else await noteSpellsPreparedFreely();
   }
 }
