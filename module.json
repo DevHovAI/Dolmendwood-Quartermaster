@@ -2,7 +2,7 @@
   "id": "dolmenwood-party-inventory",
   "title": "Dolmendudes Companion",
   "description": "A companion for running Dolmenwood: party inventory and encumbrance, coins, shops and inns, the Referee's day bar with its travel, camp and settlement procedures, encounters off the Monster Book, and page references that open your own copy of the books.",
-  "version": "2.1.0-rc2",
+  "version": "2.1.0-rc3",
   "authors": [
     {
       "name": "Dolmendudes"
@@ -41,6 +41,6 @@
   },
   "socket": true,
   "url": "https://github.com/DevHovAI/Dolmendwood-Quartermaster",
-  "manifest": "https://github.com/DevHovAI/Dolmendwood-Quartermaster/releases/download/v2.1.0-rc2/module.json",
-  "download": "https://github.com/DevHovAI/Dolmendwood-Quartermaster/releases/download/v2.1.0-rc2/quartermaster-v2.1.0-rc2.zip"
+  "manifest": "https://github.com/DevHovAI/Dolmendwood-Quartermaster/releases/download/v2.1.0-rc3/module.json",
+  "download": "https://github.com/DevHovAI/Dolmendwood-Quartermaster/releases/download/v2.1.0-rc3/quartermaster-v2.1.0-rc3.zip"
 }
