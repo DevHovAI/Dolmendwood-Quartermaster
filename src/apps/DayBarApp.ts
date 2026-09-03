@@ -54,6 +54,7 @@ import {
   dutyResultLine,
   dutyHoverNote,
   ROLLABLE_DUTIES,
+  SECRET_DUTIES,
   type RollableDuty,
 } from "../data/dayRolls";
 import { CharacterSheetApp } from "./CharacterSheetApp";
@@ -1101,7 +1102,13 @@ function rollChip(
   actorId: string
 ): { mine: boolean; canRoll: boolean; rollTitle: string; actorId: string } {
   const isGM = !!(game as Game).user?.isGM;
-  const roll = "Roll it. The dice are real dice and the result is whispered to the GMs.";
+  // **The die says what will happen to the answer.** The old text promised
+  // every result to the GMs alone, which was true of four duties and false of
+  // the other nine — and reading it on Prepare spells is what made that roll
+  // look like a secret one (Leander, 2026-09-04).
+  const roll = SECRET_DUTIES.has(dutyId)
+    ? "Roll it. Real dice, and the result is whispered to the Referee alone."
+    : "Roll it. Real dice, and the result is announced to the table.";
   if (isGM) {
     return { mine: true, canRoll: true, rollTitle: roll, actorId: "" };
   }
@@ -1124,6 +1131,25 @@ function rollChip(
     rollTitle: verdict.allowed ? roll : (verdict.reason ?? "Not yours to roll."),
     actorId,
   };
+}
+
+/**
+ * What a duty's line under the label says, to this reader.
+ *
+ * **A secret duty tells a player only that it happened.** The watch is rollable
+ * by the party, and its card is whispered — so printing "Ada, Bo asleep on
+ * watch" on their own strip would have handed back the very thing the whisper
+ * held. They get the fact of the roll; the Referee gets the answer.
+ */
+function resultFor(
+  dutyId: string,
+  rollable: boolean,
+  done: boolean,
+  isGM: boolean
+): string | undefined {
+  if (!rollable) return undefined;
+  if (isGM || !SECRET_DUTIES.has(dutyId)) return dutyResultLine(dutyId);
+  return done ? "rolled — the Referee has it" : undefined;
 }
 
 /**
@@ -1154,7 +1180,7 @@ function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean, actorId = "")
       rollable,
       // Only meaningful once rolled; the strip prints it under the label so the
       // Referee reads today's weather without opening anything.
-      result: rollable ? dutyResultLine(duty.id) : undefined,
+      result: resultFor(duty.id, rollable, isDone(duty), isGM),
       rollIcon: rollIconFor(duty.id),
       ...rollChip(duty.id, rollable, state, actorId),
       ...(duty.id === "weather" ? weatherFxChip() : {}),
@@ -1358,7 +1384,8 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
         rollable,
         // The result takes the hint's place once there is one: the hint is what
         // the step is for, and after the dice the Referee wants what it said.
-        result: rollable ? dutyResultLine(d.id) : undefined,
+        // The watch is whispered, so a player is told only that it happened.
+        result: resultFor(d.id, rollable, state.done[d.id] === true, isGM),
         rollIcon: rollIconFor(d.id),
         // The same key the strip carries — built by the same function, so the
         // two cannot drift apart again.

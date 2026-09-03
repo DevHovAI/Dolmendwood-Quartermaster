@@ -2335,6 +2335,30 @@ export const ROLLABLE_DUTIES = new Set<string>([
   ...MORNING_ROLL_DUTIES,
 ]);
 
+/**
+ * The duties whose card is whispered to the Referee and to nobody else.
+ *
+ * **Written down once here because two screens have to agree with it**: the die
+ * says what will happen to the result, and a player's strip must not print the
+ * answer to a roll the card kept from them. It is the list of `whisperToGMs`
+ * callers among the duties — getting lost, the two wandering-monster checks,
+ * and the watch, whose slapstick is exactly what a Referee holds back until
+ * something creeps into the camp.
+ *
+ * **The watch is the one that matters in practice**, because it is a party duty
+ * a player may roll: without this, their own strip would have told them who
+ * nodded off. The other three are the Referee's and never reach their strip.
+ *
+ * Everything else — the weather, healing, spells, the camp's work, the night's
+ * sleep, finding food — is announced to the table, and always was.
+ */
+export const SECRET_DUTIES = new Set<string>([
+  "lost",
+  "encounter-day",
+  "encounter-night",
+  "watches",
+]);
+
 /** The line the strip shows under a rolled duty, or nothing if it has not been rolled. */
 export function dutyResultLine(dutyId: string): string | undefined {
   if (CAMP_ROLL_DUTIES.has(dutyId)) return campResultLine(dutyId);
