@@ -102,7 +102,7 @@ export const DUTIES: Duty[] = [
     label: "Finding food",
     icon: "fa-wheat-awn",
     modes: ["travel"],
-    hint: "Optional — one Survival Check per group per day to fish, forage, or hunt. Foraging yields 1d6 fresh rations, 1d4 in winter and 1d8 in autumn; a whole day given over to it grants +2.",
+    hint: "Optional — ONE Survival Check per travelling group per day, on the best Skill Target among them (Player's Book p152). Splitting up allows a check each, at the cost of a separate getting-lost and wandering-monster check per group. Foraging yields 1d6 fresh rations, 1d4 in winter and 1d8 in autumn; a whole day given over to it grants +2.",
   },
 
   // ── Making camp: one job, seven steps ──
@@ -198,6 +198,27 @@ export interface DayState {
   mode: DutyMode;
   /** Duty id → ticked. */
   done: Record<string, boolean>;
+  /**
+   * Duty id → the characters it has already been rolled for today.
+   *
+   * **The players' once-a-day lock, and it lives here on purpose.** The rule is
+   * that a player may make each of their rolls once and that it comes back with
+   * the next in-game day — so it is kept in the one record that is already
+   * cleared on roll-over, rather than in a second place that could disagree
+   * with the first about which day it is. See `dayRollRights.ts` for what is
+   * asked of it; the Referee is never limited by it.
+   */
+  rolledBy?: Record<string, string[]>;
+  /**
+   * The duties the Referee has opened to the players today.
+   *
+   * **Nothing is open until a key is turned** (his ask, 2026-09-02), so the
+   * empty list is both the default and the common state — which is why it is a
+   * list of the open ones rather than a record of flags for all of them. It
+   * falls closed again with the day, like the rolls themselves: an evening is
+   * opened a step at a time, and tomorrow evening is a different one.
+   */
+  openDuties?: string[];
   /** Travel Points spent so far today; the budget itself is derived from Speed. */
   travelPointsUsed: number;
   /**
@@ -291,6 +312,9 @@ export function getDayState(): DayState {
       encounterNight: undefined,
       camp: undefined,
       morning: undefined,
+      // A new day gives every player their rolls back — that is the whole rule.
+      rolledBy: {},
+      openDuties: [],
     };
   }
   return { ...stored, travelPointsUsed: stored.travelPointsUsed ?? 0, forcedMarch: stored.forcedMarch ?? false };
@@ -324,6 +348,10 @@ export async function reconcileDay(): Promise<void> {
     // A new day opens at its start, whatever the last one ended as.
     mode: "dawn",
     done: {},
+    // A new day gives every player their rolls back — that is the whole rule.
+    rolledBy: {},
+    // And closes every key the Referee turned last night.
+    openDuties: [],
     travelPointsUsed: 0,
     // A forced march is a decision taken for one day, never carried into the next.
     forcedMarch: false,
@@ -491,6 +519,31 @@ export async function setDutyDone(id: string, done: boolean): Promise<void> {
 }
 
 /**
+ * Turn the key on one duty, opening it to the players — or turn it back.
+ *
+ * `writeState` is GM-only, which is exactly right: the key is the Referee
+ * saying "this part of the evening is happening now", and it would be a strange
+ * lock that the locked-out could open.
+ */
+export async function setDutyOpen(id: string, open: boolean): Promise<void> {
+  const state = getDayState();
+  const list = state.openDuties ?? [];
+  const next = open ? (list.includes(id) ? list : [...list, id]) : list.filter((d) => d !== id);
+  await writeState({ ...state, openDuties: next });
+}
+
+/** Record that a duty has been rolled for this character today. */
+export async function markRolledBy(id: string, actorId: string): Promise<void> {
+  const state = getDayState();
+  const rolled = state.rolledBy?.[id] ?? [];
+  if (rolled.includes(actorId)) return;
+  await writeState({
+    ...state,
+    rolledBy: { ...(state.rolledBy ?? {}), [id]: [...rolled, actorId] },
+  });
+}
+
+/**
  * Record what a table produced today.
  *
  * The result and the tick are written together: a rolled duty is a done duty,
@@ -573,6 +626,9 @@ export async function resetDuties(): Promise<void> {
   await writeState({
     ...getDayState(),
     done: {},
+    // Resetting the day hands the players' rolls back with everything else.
+    rolledBy: {},
+    openDuties: [],
     travelPointsUsed: 0,
     forcedMarch: false,
     travelPointBudget: undefined,

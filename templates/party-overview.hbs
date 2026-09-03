@@ -12,6 +12,15 @@
     </span>
     {{/if}}
     <div class="toolbar-buttons">
+      {{#if isGM}}
+      {{!-- The second door to the XP window, and the one that survives the
+            bar-only setting folding the toolbar away. This is the window that
+            already shows every character at once, which is the same thought. --}}
+      <button type="button" data-action="openXp" class="btn-toolbar"
+              title="Award the session's experience, with each character's own modifier">
+        <i class="fas fa-star"></i> XP
+      </button>
+      {{/if}}
       <button type="button" data-action="openShop" class="btn-toolbar btn-shop">
         <i class="fas fa-store"></i> Open Shop
       </button>

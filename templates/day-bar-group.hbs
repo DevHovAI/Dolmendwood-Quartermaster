@@ -12,11 +12,19 @@
     {{#each duties}}
     {{#if this.rollable}}
     <div class="duty-group-step duty-group-step-rollable {{#if this.done}}is-done{{/if}}">
+      {{#if @root.isGM}}
       <button type="button" class="duty-group-tick-btn"
               data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
               title="Tick off by hand, without rolling">
         <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} duty-group-tick"></i>
       </button>
+      {{else}}
+      {{!-- Ticking by hand is the Referee's; a player says a step is done by
+            doing it. The slot keeps the rows the same shape. --}}
+      <span class="duty-group-tick-slot">
+        <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} duty-group-tick"></i>
+      </span>
+      {{/if}}
       <i class="fas {{this.icon}} duty-group-icon"></i>
       <span class="duty-group-text">
         <span class="duty-group-label">{{this.label}}</span>
@@ -26,6 +34,20 @@
         <span class="duty-group-hint">{{this.hint}}</span>
         {{/if}}
       </span>
+      {{!-- The same key the strip carries. The seven steps of making camp live
+            in this window rather than on the strip, so without this the very
+            duties the players were meant to get — the fire, the watches, the
+            cooking — would have been the only ones with no way to open them
+            (Leander spotted it from the other end: a lock on Sleep and none in
+            here). --}}
+      {{#if this.keyable}}
+      <button type="button" class="day-bar-duty-key{{#if this.open}} is-open{{/if}}"
+              data-action="toggleDutyOpen" data-duty-id="{{this.id}}" data-open="{{this.open}}"
+              title="{{this.keyTitle}}" aria-label="Open this step to the players">
+        <i class="fas {{#if this.open}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
+      </button>
+      {{/if}}
+      {{#if @root.isGM}}
       {{#if this.result}}
       <button type="button" class="duty-group-roll" data-action="clearDuty" data-duty-id="{{this.id}}"
               title="Take this roll back so it can be made again">
@@ -37,10 +59,27 @@
         <i class="fas {{#if this.rollIcon}}{{this.rollIcon}}{{else}}fa-dice-d20{{/if}}"></i>
       </button>
       {{/if}}
+      {{else}}
+      {{!-- The player's die: it carries the character it rolls for, and stays
+            greyed with the reason on it until the Referee turns the key. Taking
+            a roll back is the Referee's alone, so there is no arrow here. --}}
+      <button type="button" class="duty-group-roll" data-action="rollDuty"
+              data-duty-id="{{this.id}}" data-actor-id="{{this.actorId}}"
+              title="{{this.rollTitle}}" {{#unless this.canRoll}}disabled{{/unless}}>
+        <i class="fas {{#if this.rollIcon}}{{this.rollIcon}}{{else}}fa-dice-d20{{/if}}"></i>
+      </button>
+      {{/if}}
     </div>
     {{else}}
+    {{!-- A step with no table behind it. The Referee ticks it; a player presses
+          it to say they did it, which goes down the same socket as a roll. --}}
     <button type="button" class="duty-group-step {{#if this.done}}is-done{{/if}}"
-            data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}">
+            {{#if @root.isGM}}
+            data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
+            {{else}}
+            data-action="rollDuty" data-duty-id="{{this.id}}" data-actor-id="{{this.actorId}}"
+            title="{{this.rollTitle}}" {{#unless this.canRoll}}disabled{{/unless}}
+            {{/if}}>
       {{!-- The tick stands in a slot of exactly the size of the button a
             rolling step puts it in. It cannot BE that button — this step is a
             button already and nested buttons are not markup — so the slot is
@@ -64,6 +103,8 @@
 
   <div class="duty-group-foot">
     <span class="duty-group-count {{#if allDone}}is-done{{/if}}">{{doneCount}}/{{total}} done</span>
+    {{!-- Ticking or clearing the whole camp at a stroke is the Referee's. --}}
+    {{#if isGM}}
     <button type="button" class="duty-group-btn" data-action="tickAll"
             title="Tick every step of this group">
       <i class="fas fa-check-double"></i> All
@@ -72,5 +113,6 @@
             title="Clear every step of this group">
       <i class="fas fa-rotate-left"></i> None
     </button>
+    {{/if}}
   </div>
 </div>

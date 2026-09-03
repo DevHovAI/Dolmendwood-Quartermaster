@@ -6,13 +6,22 @@
 
       What the day knows *before* a roll rides on the chip's own tooltip
       instead: a line naming three characters costs the strip too much room for
-      something read once. --}}
+      something read once.
+
+      **On a player's strip the same chip is thinner**: no hand-tick and no way
+      to take a roll back, because both are the Referee's alone. What is left is
+      the label, the result once there is one, and the die — greyed, with the
+      reason on its hover, until the Referee turns the key. --}}
 <span class="day-bar-duty day-bar-duty-rollable {{#if this.done}}is-done{{/if}}" title="{{this.hint}}">
+  {{#if @root.isGM}}
   <button type="button" class="day-bar-duty-tick"
           data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
           title="Tick off by hand, without rolling">
     <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} day-bar-tick"></i>
   </button>
+  {{else}}
+  <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} day-bar-tick"></i>
+  {{/if}}
   <i class="fas {{this.icon}} day-bar-duty-icon"></i>
   <span class="day-bar-duty-text">
     <span class="day-bar-duty-label">{{this.label}}</span>
@@ -29,6 +38,17 @@
     <i class="fas {{#if this.fxOn}}fa-cloud-sun-rain{{else}}fa-cloud-slash{{/if}}"></i>
   </button>
   {{/if}}
+  {{!-- The key that hands this duty to the players. Only drawn where a player
+        could ever roll it and only while the table's players-roll setting is
+        on, so the Referee's own strip does not grow a column of dead locks. --}}
+  {{#if this.keyable}}
+  <button type="button" class="day-bar-duty-key{{#if this.open}} is-open{{/if}}"
+          data-action="toggleDutyOpen" data-duty-id="{{this.id}}" data-open="{{this.open}}"
+          title="{{this.keyTitle}}" aria-label="Open this duty to the players">
+    <i class="fas {{#if this.open}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
+  </button>
+  {{/if}}
+  {{#if @root.isGM}}
   {{#if this.result}}
   <button type="button" class="day-bar-duty-roll" data-action="clearDuty" data-duty-id="{{this.id}}"
           title="Take this roll back so it can be made again">
@@ -36,12 +56,23 @@
   </button>
   {{else}}
   <button type="button" class="day-bar-duty-roll" data-action="rollDuty" data-duty-id="{{this.id}}"
-          title="Roll it. The dice are real dice and the result is whispered to the GMs.">
+          title="{{this.rollTitle}}">
+    <i class="fas {{#if this.rollIcon}}{{this.rollIcon}}{{else}}fa-dice-d20{{/if}}"></i>
+  </button>
+  {{/if}}
+  {{else}}
+  {{!-- A player's die. It carries the character it rolls for — the rights model
+        cannot answer "is this yours" without one — and it is disabled rather
+        than hidden while the duty is shut, so the reason can be read off it. --}}
+  <button type="button" class="day-bar-duty-roll" data-action="rollDuty"
+          data-duty-id="{{this.id}}" data-actor-id="{{this.actorId}}"
+          title="{{this.rollTitle}}" {{#unless this.canRoll}}disabled{{/unless}}>
     <i class="fas {{#if this.rollIcon}}{{this.rollIcon}}{{else}}fa-dice-d20{{/if}}"></i>
   </button>
   {{/if}}
 </span>
 {{else}}
+{{#if @root.isGM}}
 <button type="button" class="day-bar-duty {{#if this.done}}is-done{{/if}}"
         data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
         title="{{this.hint}}">
@@ -49,4 +80,16 @@
   <i class="fas {{this.icon}} day-bar-duty-icon"></i>
   <span class="day-bar-duty-label">{{this.label}}</span>
 </button>
+{{else}}
+{{!-- A step with no table behind it — the campsite, the water. A player says it
+      is done by pressing it, which is the same request the dice make and goes
+      down the same socket. --}}
+<button type="button" class="day-bar-duty {{#if this.done}}is-done{{/if}}"
+        data-action="rollDuty" data-duty-id="{{this.id}}" data-actor-id="{{this.actorId}}"
+        title="{{this.rollTitle}}" {{#unless this.canRoll}}disabled{{/unless}}>
+  <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} day-bar-tick"></i>
+  <i class="fas {{this.icon}} day-bar-duty-icon"></i>
+  <span class="day-bar-duty-label">{{this.label}}</span>
+</button>
+{{/if}}
 {{/if}}

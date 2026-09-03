@@ -295,7 +295,11 @@ export async function promptBlock(
               })(),
               // A block that has stopped being a spell should not keep a tick
               // that only spells have.
-              ...(existing?.prepared && val("dw-block-spell") ? { prepared: true } : {}),
+              // Charges survive an edit, but only while it is still a spell:
+              // turning a spell into a plain trait leaves nothing to prepare.
+              ...(existing?.prepared && val("dw-block-spell")
+                ? { prepared: existing.prepared }
+                : {}),
             });
           },
         },

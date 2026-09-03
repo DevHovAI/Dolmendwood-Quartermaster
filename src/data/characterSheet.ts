@@ -137,6 +137,98 @@ export function abilityModifier(score: number): number {
 /** A skill with nothing said about it. Kindred and Class only ever lower it. */
 export const DEFAULT_SKILL_TARGET = 6;
 
+// ─── What the book offers the identity fields ─────────────────────────────────
+
+/**
+ * The six playable Kindreds (Player's Book p30, in the book's own order, which
+ * happens to be alphabetical).
+ *
+ * **Offered, not imposed** — the same ruling the Class field already lives
+ * under: OSE keeps these as free text, a table may play something this book
+ * has never printed, and a `<select>` would make the module the authority on
+ * what a character is allowed to be.
+ */
+export const KINDREDS = ["Breggle", "Elf", "Grimalkin", "Human", "Mossling", "Woodgrue"];
+
+/** The three, in the book's order rather than alphabetically (p24). */
+export const ALIGNMENTS = ["Lawful", "Neutral", "Chaotic"];
+
+/**
+ * The tongues of Dolmenwood, grouped as the book groups them (p26-27).
+ *
+ * **Every Kindred's native languages are in here**, which is what the list is
+ * mostly for: Woldish for everybody, plus Gaffe and Caprice (breggle), Sylvan
+ * and High Elfish (elf), Mewl (grimalkin), Mulch (mossling), Sylvan (woodgrue).
+ * The four at the end have no section of their own in the book and appear only
+ * in its list of obscure tongues a Referee may allow.
+ *
+ * **Two are deliberately absent.** The Immortal Tongue of Fairy cannot be
+ * learned by any mortal or lesser fairy, and Old Drunic is "virtually lost" and
+ * kept by Drune sages — putting either in a character's picker would offer as a
+ * choice what the book prints as impossible. Both can still be typed by hand,
+ * which is the whole reason the field stays a field.
+ */
+export const LANGUAGE_GROUPS: { label: string; languages: string[] }[] = [
+  { label: "The common tongue", languages: ["Woldish", "Old Woldish"] },
+  { label: "Breggle tongues", languages: ["Caprice", "Gaffe"] },
+  { label: "The scriptural tongue", languages: ["Liturgic"] },
+  { label: "Fairy tongues", languages: ["Sylvan", "High Elfish", "Mewl", "Dwelve"] },
+  { label: "The mossling tongue", languages: ["Mulch"] },
+  { label: "Drunic", languages: ["Drunic"] },
+  {
+    label: "Obscure, at the Referee's discretion",
+    languages: ["Boggin", "Deorling", "Merfolk", "Wyrm"],
+  },
+];
+
+/** Every language the picker knows, flattened — the order they are added in. */
+export const LANGUAGES = LANGUAGE_GROUPS.flatMap((g) => g.languages);
+
+/**
+ * The languages field, read and written as one line.
+ *
+ * The sheet asks for a comma-separated line because OSE stores an array and a
+ * table writes "Woldish, Sylvan" without thinking about it. Splitting is
+ * therefore forgiving — any amount of space, no empty entries — and joining is
+ * always ", " so a line that has been through the picker looks typed.
+ */
+export function splitLanguages(line: string): string[] {
+  return line
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export function joinLanguages(languages: string[]): string {
+  return languages.join(", ");
+}
+
+/**
+ * The line a tick produces, given what is already written.
+ *
+ * Three things it has to get right, and the third is the reason it is a
+ * function rather than three lines in an event handler:
+ *
+ * - **What the table typed by hand survives.** A language the picker has never
+ *   heard of is left exactly where it was written, in the order it was written.
+ * - **Unticking removes only what the picker put there**, matched without case
+ *   so "sylvan" and "Sylvan" are the same word.
+ * - **A new tick joins at the end**, not in the book's order: the line then
+ *   reads as the order the ticks happened, which is what somebody watching the
+ *   field expects to see.
+ */
+export function applyLanguagePicks(line: string, ticked: string[]): string {
+  const lower = (s: string) => s.toLowerCase();
+  const known = new Set(LANGUAGES.map(lower));
+  const on = new Set(ticked.map(lower));
+
+  const kept = splitLanguages(line).filter((entry) => !known.has(lower(entry)) || on.has(lower(entry)));
+  const already = new Set(kept.map(lower));
+  const added = ticked.filter((name) => !already.has(lower(name)));
+
+  return joinLanguages([...kept, ...added]);
+}
+
 // ─── The module's own half ────────────────────────────────────────────────────
 
 /**
@@ -191,6 +283,31 @@ export interface CharacterExtras {
    * by that dialog, so the answer given once is the answer offered next time.
    */
   prepares: number;
+  /**
+   * Whether the XP modifier on this sheet was typed by hand.
+   *
+   * **False is the normal state and means "work it out".** With a Class on the
+   * sheet the modifier follows from the character's own Prime Ability scores
+   * (Player's Book p22), so it should not have to be maintained — raise a score
+   * and the percentage follows by itself.
+   *
+   * The flag exists because "take it from the Class" and "let me overrule it"
+   * cannot both be true of one number without somewhere to record which was
+   * meant (Leander, 2026-09-02: *"direkt übernehmen (aber überschreibbar
+   * lassen, falls nötig)"*). Typing in the box sets it; the reset beside the
+   * box clears it and hands the number back to the Class.
+   */
+  xpBonusManual: boolean;
+  /**
+   * Spell slots prepared this morning and not yet spent on a spell.
+   *
+   * **The morning hands these out; the sheet spends them.** Preparing spells
+   * says how many a caster got through — attempted less whatever a bad night
+   * cost them — and each credit buys one charge of one spell on the list, the
+   * same spell as often as they like. Cleared and reissued every morning by the
+   * duty, so a credit is never older than the night before it.
+   */
+  spellCredits: number;
   blocks: CharacterBlock[];
 }
 
@@ -248,7 +365,19 @@ export interface CharacterBlock {
    * applies to both alike: the book says "memorising or praying" (p159).
    */
   spell?: "arcane" | "holy";
-  prepared?: boolean;
+  /**
+   * How many charges of this spell are ready today.
+   *
+   * **A number, not a tick** — Leander's ask, 2026-09-02: *"ein spell sollte
+   * dabei mehrfach wählbar sein. ein roll auf den spell soll dann den spell bzw.
+   * eine Ladung davon aufbrauchen."* A magician who memorised *magic missile*
+   * twice has two of it, and casting spends one. Absent or nought means the
+   * spell is known but not prepared, which is the state most of a list is in.
+   *
+   * It was a boolean until this change; `getExtras` folds an old `true` into 1
+   * and an old `false` into 0 on the way in, so nobody's sheet loses anything.
+   */
+  prepared?: number;
 }
 
 /**
@@ -279,6 +408,18 @@ export type BlockRoll =
   /** Straight dice, no success or failure to report. */
   | { kind: "formula"; formula: string };
 
+/**
+ * The group a moon sign's effect is filed under, on the sheet and nowhere else.
+ *
+ * **One character, one moon sign** (Player's Book p175: its effects are
+ * "permanent and unalterable"), so choosing a second one is a correction rather
+ * than an addition — and the group is what lets the sheet find the old block to
+ * replace. Free text like every other group, so a table that would rather keep
+ * it among the Kindred traits can simply rename it and the picker will stop
+ * treating it as its own.
+ */
+export const MOON_SIGN_GROUP = "Moon Sign";
+
 export function defaultExtras(): CharacterExtras {
   return {
     kindred: "",
@@ -297,6 +438,9 @@ export function defaultExtras(): CharacterExtras {
     // Nobody is assumed to cast: a party of fighters should never be asked to
     // untick four boxes on its first morning.
     prepares: 0,
+    // Worked out from the Class until somebody says otherwise.
+    xpBonusManual: false,
+    spellCredits: 0,
     blocks: [],
   };
 }
@@ -339,8 +483,20 @@ export function getExtras(actor: Actor): CharacterExtras {
     skills: { ...base.skills, ...(stored.skills ?? {}) },
     moreSkills: (stored.moreSkills ?? []).map((s) => ({ ...s, slug: s.slug || slugify(s.name) })),
     persona: { ...base.persona, ...(stored.persona ?? {}) },
-    blocks: (stored.blocks ?? []).map((b) => ({ ...b, slug: b.slug || slugify(b.name) })),
+    blocks: (stored.blocks ?? []).map((b) => ({
+      ...b,
+      slug: b.slug || slugify(b.name),
+      // `prepared` was a tick before charges existed. An old `true` is one
+      // charge and an old `false` is none, so a sheet written last week opens
+      // saying exactly what it said then.
+      prepared: migratePrepared((b as { prepared?: number | boolean }).prepared),
+    })),
   };
+}
+
+function migratePrepared(value: number | boolean | undefined): number | undefined {
+  if (typeof value === "boolean") return value ? 1 : 0;
+  return value;
 }
 
 export async function setExtras(actor: Actor, extras: CharacterExtras): Promise<void> {
@@ -379,7 +535,7 @@ type SystemActor = Actor & {
       class?: string;
       alignment?: string;
       level?: number;
-      xp?: { value?: number; next?: number; bonus?: number };
+      xp?: { value?: number; next?: number; bonus?: number; share?: number };
     };
   };
   update?: (data: Record<string, unknown>) => Promise<unknown>;
@@ -396,7 +552,14 @@ export interface SystemFields {
   class: string;
   alignment: string;
   level: number;
-  xp: { value: number; next: number; bonus: number };
+  /**
+   * `share` is OSE's own share-of-the-party percentage, and it happens to be
+   * exactly the book's retainer rule: an adventurer retainer counts as a party
+   * member when XP is divided but earns half of it (Player's Book p25). It is
+   * 100 unless somebody has set it, so reading it costs nothing and the XP
+   * window gets the rule for free instead of inventing a flag of its own.
+   */
+  xp: { value: number; next: number; bonus: number; share: number };
 }
 
 /**
@@ -440,6 +603,7 @@ export function getSystemFields(actor: Actor): SystemFields {
       value: num(sys?.details?.xp?.value),
       next: num(sys?.details?.xp?.next),
       bonus: num(sys?.details?.xp?.bonus),
+      share: num(sys?.details?.xp?.share, 100),
     },
   };
 }
@@ -489,6 +653,33 @@ export async function setSystemField(actor: Actor, field: string, value: unknown
 }
 
 /**
+ * Several fields, one write.
+ *
+ * A level-up moves nine or ten values at once — Level, XP, the next threshold,
+ * Attack, five Save Targets and both Hit Point figures. Sent one at a time that
+ * is ten actor updates, ten re-renders and ten chances for a half-applied
+ * character if one of them fails; sent together it is one document update that
+ * either happens or does not.
+ *
+ * **Plain paths only.** `ac` and `languages` are deliberately not accepted: one
+ * is derived from the armour worn and the other is an array built from a line
+ * of commas, and both need the reasoning in `setSystemField` above. Anything
+ * this map does not know is skipped rather than guessed at.
+ */
+export async function setSystemFields(
+  actor: Actor,
+  fields: Record<string, unknown>
+): Promise<void> {
+  const update: Record<string, unknown> = {};
+  for (const [field, value] of Object.entries(fields)) {
+    const path = SYSTEM_PATHS[field];
+    if (path) update[path] = value;
+  }
+  if (Object.keys(update).length === 0) return;
+  await (actor as SystemActor).update?.(update);
+}
+
+/**
  * The path each editable field writes to.
  *
  * Data rather than a switch, so the template can carry the key on the input and
@@ -508,6 +699,7 @@ export const SYSTEM_PATHS: Record<string, string> = {
   xp: "system.details.xp.value",
   xpNext: "system.details.xp.next",
   xpBonus: "system.details.xp.bonus",
+  xpShare: "system.details.xp.share",
   ...Object.fromEntries(
     ABILITIES.flatMap(({ key }) => [
       [`score-${key}`, `system.scores.${key}.value`],

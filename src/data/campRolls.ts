@@ -240,8 +240,15 @@ export async function rollFirewood(
     results.push({ name: g.name, roll, hours: firewoodHours(roll, modifier) });
   }
 
-  const hours = results.reduce((sum, r) => sum + r.hours, 0);
-  await setCampResult("firewood", { firewood: { modifier, hours, gatherers: results } });
+  // **The night's woodpile adds up; it is not replaced.** Once the players roll
+  // their own (2026-09-03) a second gatherer would otherwise wipe the first —
+  // and the same is true of a Referee who rolls for two characters in turn
+  // because a third arrived late at the table. Rows already recorded stay, in
+  // the order they were rolled, and the total is the total of all of them.
+  const before = getCampState().firewood;
+  const gathered = [...(before?.gatherers ?? []), ...results];
+  const hours = gathered.reduce((sum, r) => sum + r.hours, 0);
+  await setCampResult("firewood", { firewood: { modifier, hours, gatherers: gathered } });
 
   // **Into the pack of whoever carried it back** (Leander, 2026-08-28). One row
   // per gatherer rather than one pile for the party: they are the ones under
@@ -270,15 +277,26 @@ export async function rollFirewood(
         ? `<p class="dw-day-roll-consequence">Enough for ${hours} of the night's ${NIGHT_HOURS} hours — the fire will not see them to morning unless it is fed from the packs.</p>`
         : `<p class="dw-day-roll-consequence">Enough to burn through the night.</p>`;
 
+  // The card is about the wood these hands just brought in; the pile it joins
+  // is said underneath, because that is the number the night is judged by.
+  const justNow = results.reduce((sum, r) => sum + r.hours, 0);
+  const earlier =
+    hours > justNow
+      ? `<p class="dw-day-roll-sub">Added to what was already gathered: the pile now stands at ${hours} hour${
+          hours === 1 ? "" : "s"
+        }.</p>`
+      : "";
+
   await announce(
     card(
       "fa-fire-burner",
       "Fetching firewood",
-      `<p class="dw-day-roll-headline">${hours} hour${hours === 1 ? "" : "s"} of campfire</p>
+      `<p class="dw-day-roll-headline">${justNow} hour${justNow === 1 ? "" : "s"} of campfire</p>
        <p class="dw-day-roll-sub">${gatherers.length} gathering${
          modifier ? `, ${modifier} for the conditions` : ""
        } &middot; ${bookRef("players", 158, "Player's Book p158")}</p>
        ${rows(lines)}
+       ${earlier}
        ${shortfall}`
     ),
     dice
@@ -762,7 +780,16 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
     if (actor) await setSleptWell(actor, r.sleptWell, travelledToday);
   }
 
-  await setCampResult("sleep", { sleep: { campfire, season, bonus, sleepers: results } });
+  // **The night's sleepers add up too**, and for the same reason as the wood:
+  // with the players bedding their own characters down, the second to press
+  // would otherwise erase the first. A character rolled twice keeps the later
+  // result — that is a re-roll, not a second night.
+  const already = (getCampState().sleep?.sleepers ?? []).filter(
+    (s) => !results.some((r) => r.actorId === s.actorId)
+  );
+  await setCampResult("sleep", {
+    sleep: { campfire, season, bonus, sleepers: [...already, ...results] },
+  });
 
   const lines = results.map((r) => {
     const d = SLEEP_DIFFICULTIES[r.difficulty];

@@ -1,5 +1,5 @@
 import { MODULE_ID, SETTINGS, TEMPLATES, TRAVEL_DAYS_PER_REST } from "../constants";
-import { getConvoyActors } from "../data/sharedStore";
+import { getConvoyActors, getPartyActors } from "../data/sharedStore";
 import { getEncumbranceMode } from "../data/zoneGrants";
 import { SETTLEMENTS } from "../data/settlementEncounters";
 import { hexInfo } from "../data/hexes";
@@ -10,6 +10,7 @@ import { PlayerInventoryApp } from "./PlayerInventoryApp";
 import { ShopApp } from "./ShopApp";
 import { InnApp } from "./InnApp";
 import { openLootBrowser } from "./LootApp";
+import { campLeaderId, isOpen, mayRoll, playersMayRoll, scopeOf } from "../data/dayRollRights";
 import { openTrash } from "./TrashApp";
 import {
   DUTIES,
@@ -22,12 +23,14 @@ import {
   setDutiesDone,
   setDutyDone,
   setDutyMode,
+  setDutyOpen,
   setForcedMarch,
   setTravelPointBudget,
   spendTravelPoints,
   travelPointSeconds,
   describeDuration,
   startNewDay,
+  type DayState,
   type Duty,
   type DutyMode,
 } from "../data/dayDuties";
@@ -50,19 +53,12 @@ import {
   clearDayRoll,
   dutyResultLine,
   dutyHoverNote,
-  rollEncounter,
-  rollFindingFood,
-  rollGettingLost,
-  rollWeather,
   ROLLABLE_DUTIES,
   type RollableDuty,
 } from "../data/dayRolls";
-import { promptFindFood } from "./FindFoodDialog";
 import { CharacterSheetApp } from "./CharacterSheetApp";
-import { runCampDuty } from "./CampDuties";
-import { runMorningDuty } from "./MorningDuties";
+import { requestDayRoll } from "../data/dayRollRequest";
 import { CAMP_ROLL_DUTIES } from "../data/campRolls";
-import { MORNING_ROLL_DUTIES } from "../data/morningRolls";
 import {
   travelPointPenalty,
   hasEffect,
@@ -84,9 +80,18 @@ import {
 /**
  * The day bar: the Referee's per-day checklist, docked at the top of the screen.
  *
- * **GM only.** Weather, getting lost, and the wandering-monster checks are the
- * Referee's business, and once these start rolling themselves a visible result
- * would tell the players a monster is coming before their characters know it.
+ * **The Referee's list, and — since 2026-09-03 — the players' own few.** What a
+ * player sees is filtered by `dayRollRights` to what they could ever roll: the
+ * three that are their character's and the party's group steps. The weather,
+ * getting lost and the two wandering-monster checks never reach their strip at
+ * all, because a visible result would tell the players a monster is coming
+ * before their characters know it.
+ *
+ * **Every write into the day state stays on the Referee's client.** The state is
+ * a world setting, so a player's press cannot write it: their die asks instead,
+ * over the socket, and `dayRollRequest` carries it. The hand-tick, the key, the
+ * undo arrow and the tick-all are therefore drawn for a GM only — not to keep
+ * players out, but because those controls would silently do nothing.
  *
  * Frameless and unpositioned (`frame: false`, `positioned: false`), inserted
  * into Foundry's own `#ui-top` region — the top half of `#ui-middle`, a centred
@@ -123,6 +128,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       restChar: DayBarApp._onRestChar,
       openGroup: DayBarApp._onOpenGroup,
       rollDuty: DayBarApp._onRollDuty,
+      toggleDutyOpen: DayBarApp._onToggleDutyOpen,
       clearDuty: DayBarApp._onClearDuty,
       confirmContext: DayBarApp._onConfirmContext,
       calibrateHex: DayBarApp._onCalibrateHex,
@@ -213,11 +219,13 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     // one point on it looks calibrated and answers nothing.
     const calibrationDone = isComplete(calibration);
     const collapsed = !!(game as Game).settings.get(MODULE_ID, SETTINGS.DAY_BAR_COLLAPSED);
+    const isGM = (game as Game).user?.isGM ?? false;
     const duties = dutiesForMode(state.mode);
     const isDone = (d: Duty) => state.done[d.id] === true;
-    const blocks = buildBlocks(duties, isDone);
-
-    const isGM = (game as Game).user?.isGM ?? false;
+    // The character a player's own dice are rolled for; unused on the Referee's
+    // strip, which rolls for the table.
+    const dayActorId = isGM ? "" : ownDayActorId();
+    const blocks = buildBlocks(duties, isDone, dayActorId);
     // A player's bar carries their own characters and nobody else's. The party
     // tallies above it stay whole — how many of the party have eaten is not a
     // secret, and it is what makes somebody go and fix it.
@@ -450,6 +458,10 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       //
       // The slot is held whether or not the day has been rolled for, so the two
       // units after it do not slide along the row when it appears.
+      // **The players get a duty row of their own once the table switches their
+      // rolls on** (his ask, 2026-09-02). Empty of anything they may not touch,
+      // so a table that leaves the setting off sees exactly what it saw before.
+      showDuties: isGM || (playersMayRoll() && blocks.length > 0),
       weatherSlot: !isGM,
       showOwn: !isGM && ownRows.length > 0,
       weather: !isGM && state.weather ? weatherSummary(state.weather) : "",
@@ -539,6 +551,8 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     _event: Event,
     target: HTMLElement
   ): Promise<void> {
+    // The Referee's, like every other write into the day state.
+    if (!(game as Game).user?.isGM) return;
     const id = target.dataset.dutyId;
     if (!id) return;
     await setDutyDone(id, target.dataset.done !== "true");
@@ -552,6 +566,12 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
    * with it, because a rolled duty is a done duty and leaving it to be ticked
    * by hand afterwards was exactly the sort of half-step that made the bar feel
    * unfinished.
+   *
+   * **Which client actually rolls is `dayRollRequest`'s business, not the
+   * bar's.** The Referee's press rolls here; a player's press asks the GM's
+   * client to roll it, having asked the same dialog first. Both go through the
+   * one door so the two strips cannot drift into rolling the same duty two
+   * different ways — the same reason `runCampDuty` exists at all.
    */
   private static async _onRollDuty(
     this: DayBarApp,
@@ -559,30 +579,28 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     target: HTMLElement
   ): Promise<void> {
     const id = target.dataset.dutyId;
-    if (id === "weather") await rollWeather();
-    else if (id === "lost") await rollGettingLost();
-    else if (id === "encounter-day") await rollEncounter("day");
-    else if (id === "encounter-night") await rollEncounter("night");
-    // The camp's six ask their own questions first — who fetched the wood, whose
-    // Wisdom is cooking, who is sleeping on what.
-    else if (id && CAMP_ROLL_DUTIES.has(id)) await runCampDuty(id);
-    // Waking up: the healing that a good night earns, and the spells a bad one
-    // threatens.
-    else if (id && MORNING_ROLL_DUTIES.has(id)) await runMorningDuty(id);
-    else if (id === "forage") {
-      // Three procedures share this duty and need different things, so it asks
-      // before it rolls. Cancelling leaves the duty exactly as it was.
-      const choice = await promptFindFood();
-      if (!choice) return;
-      await rollFindingFood(
-        choice.method,
-        choice.target,
-        choice.fullDay,
-        choice.situational,
-        choice.forager,
-        choice.storeToId
-      );
-    }
+    if (!id) return;
+    await requestDayRoll(id, target.dataset.actorId ?? "");
+    this.render();
+  }
+
+  /**
+   * Open one duty to the players, or close it again.
+   *
+   * The Referee's alone, and deliberately per duty rather than per phase: the
+   * afternoon's foraging opens hours before the camp's steps do, and a switch
+   * that opened a whole phase at once would hand out the evening in one go
+   * (Leander, 2026-09-02).
+   */
+  private static async _onToggleDutyOpen(
+    this: DayBarApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    if (!(game as Game).user?.isGM) return;
+    const id = target.dataset.dutyId;
+    if (!id) return;
+    await setDutyOpen(id, target.dataset.open !== "true");
     this.render();
   }
 
@@ -592,6 +610,9 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     _event: Event,
     target: HTMLElement
   ): Promise<void> {
+    // Taking a roll back is what un-does the players' once-a-day lock, so it is
+    // the Referee's alone — see `dayRollRights`.
+    if (!(game as Game).user?.isGM) return;
     const id = target.dataset.dutyId;
     if (!id || !ROLLABLE_DUTIES.has(id)) return;
     await clearDayRoll(id as RollableDuty);
@@ -939,6 +960,11 @@ interface DutyBlock {
     done: boolean;
     /** Does this duty roll on a table, rather than only being ticked off? */
     rollable?: boolean;
+    /** Is a key worth drawing here at all — could a player ever roll this one? */
+    keyable?: boolean;
+    /** Has the Referee turned it, opening this duty to the players today? */
+    open?: boolean;
+    keyTitle?: string;
     /** What the table produced today, shown under the label once it has. */
     result?: string;
     /** The face of the button that performs it — not every duty throws dice. */
@@ -1000,14 +1026,118 @@ function withNote(hint: string, note: string | undefined): string {
 }
 
 /**
+ * The key that opens one duty to the players, as the templates need it.
+ *
+ * **One function, because the chip is built in two places.** The strip builds
+ * its own and the "Making camp" window builds its seven steps separately, and
+ * the first version of this added the key to only the first of them — so the
+ * very steps the players were meant to be given, the fire and the watches and
+ * the cooking, were the ones with no way to open them. Leander found it from
+ * the other end: a lock on Sleep and none inside the camp window.
+ *
+ * No key at all where a key could not mean anything: a duty no player may ever
+ * roll, or a table that has not switched the players' half on.
+ */
+function keyChip(
+  dutyId: string,
+  rollable: boolean,
+  openDuties: string[] | undefined
+): { keyable: boolean; open: boolean; keyTitle: string } {
+  const scope = scopeOf(dutyId);
+  // **The Referee's control, and only ever drawn on the Referee's screen.** It
+  // would be a strange lock that the locked-out could turn.
+  const keyable =
+    !!(game as Game).user?.isGM && playersMayRoll() && rollable && scope !== "referee";
+  const open = isOpen(openDuties, dutyId);
+  return {
+    keyable,
+    open,
+    keyTitle: open
+      ? `Open to the players. ${
+          scope === "own"
+            ? "Each of them may roll it once today, for their own character."
+            : "One of them may roll it for the party, once."
+        } Click to close it again.`
+      : "Closed. Turn the key when this part of the day is happening, and the players get the die for it.",
+  };
+}
+
+/**
+ * Which character a player's own strip rolls as.
+ *
+ * **Their assigned character first** — that is what Foundry's own "player
+ * character" field is for, and on a table where everybody plays one it is the
+ * whole answer. A player with none assigned falls back to the first party
+ * character they own, so the strip works before anybody has tidied the user
+ * configuration; a player who owns nothing at all gets "", and the rights model
+ * turns every die off with "No character of yours to roll it for".
+ *
+ * **This is deliberately one character, not all of them.** The once-a-day lock
+ * on the three personal duties is kept per character, and a player with a
+ * retinue rolls for the one they are playing; the dialogs are where a second
+ * character would be picked, and scoping those is its own job.
+ */
+function ownDayActorId(): string {
+  const g = game as Game;
+  const party = getPartyActors();
+  const assigned = (g.user as { character?: { id?: string } } | undefined)?.character;
+  if (assigned?.id && party.some((a) => a.id === assigned.id)) return assigned.id;
+  return party.find((a) => (a as { isOwner?: boolean }).isOwner)?.id ?? "";
+}
+
+/**
+ * What one duty offers the person looking at it.
+ *
+ * The Referee gets a die on everything, always: their strip is not gated by any
+ * of this. A player gets one only where `dayRollRights` says so, and where it
+ * says no, the chip stays on the strip **greyed, with the reason on its
+ * hover** — the evening then reads as a shape they can see coming rather than
+ * as controls that appear from nowhere as the Referee turns keys.
+ */
+function rollChip(
+  dutyId: string,
+  rollable: boolean,
+  state: DayState,
+  actorId: string
+): { mine: boolean; canRoll: boolean; rollTitle: string; actorId: string } {
+  const isGM = !!(game as Game).user?.isGM;
+  const roll = "Roll it. The dice are real dice and the result is whispered to the GMs.";
+  if (isGM) {
+    return { mine: true, canRoll: true, rollTitle: roll, actorId: "" };
+  }
+
+  const scope = scopeOf(dutyId);
+  if (!rollable && scope === "referee") return { mine: false, canRoll: false, rollTitle: "", actorId };
+  if (scope === "referee") return { mine: false, canRoll: false, rollTitle: "", actorId };
+
+  const verdict = mayRoll(dutyId, {
+    isGM: false,
+    playersMayRoll: playersMayRoll(),
+    actorId,
+    campLeaderId: campLeaderId(),
+    rolledBy: state.rolledBy ?? {},
+    openDuties: state.openDuties,
+  });
+  return {
+    mine: true,
+    canRoll: verdict.allowed,
+    rollTitle: verdict.allowed ? roll : (verdict.reason ?? "Not yours to roll."),
+    actorId,
+  };
+}
+
+/**
  * Lay the duties out in runs, so a group collapses to a single tick.
  *
  * Consecutive duties sharing a group become one block; everything else falls
  * into an unlabelled block whose duties are drawn one by one. Order is the
  * catalogue's, so moving a duty in the table moves it on screen.
  */
-function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean): DutyBlock[] {
+function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean, actorId = ""): DutyBlock[] {
   const blocks: DutyBlock[] = [];
+  const state = getDayState();
+  const openDuties = state.openDuties;
+  const isGM = !!(game as Game).user?.isGM;
   for (const duty of duties) {
     const group = duty.group ? DUTY_GROUPS[duty.group] : undefined;
     const last = blocks[blocks.length - 1];
@@ -1016,6 +1146,7 @@ function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean): DutyBlock[] 
       id: duty.id,
       label: duty.label,
       icon: duty.icon,
+      ...keyChip(duty.id, rollable, openDuties),
       // What the day already knows goes on the hover, not into the strip: the
       // strip is a checklist, and a line naming three characters unbalances it.
       hint: withNote(duty.hint, dutyHoverNote(duty.id)),
@@ -1025,8 +1156,13 @@ function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean): DutyBlock[] 
       // Referee reads today's weather without opening anything.
       result: rollable ? dutyResultLine(duty.id) : undefined,
       rollIcon: rollIconFor(duty.id),
+      ...rollChip(duty.id, rollable, state, actorId),
       ...(duty.id === "weather" ? weatherFxChip() : {}),
     };
+    // A player's strip carries what a player could ever roll and nothing else —
+    // the weather, getting lost and the two encounter checks are the Referee's
+    // and are not theirs to look at, let alone to press.
+    if (!isGM && !entry.mine) continue;
     if (last && last.groupId === duty.group) last.duties.push(entry);
     else
       blocks.push({
@@ -1176,6 +1312,7 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
     actions: {
       toggleDuty: DutyGroupApp._onToggleDuty,
       rollDuty: DutyGroupApp._onRollDuty,
+      toggleDutyOpen: DutyGroupApp._onToggleDutyOpen,
       clearDuty: DutyGroupApp._onClearDuty,
       tickAll: DutyGroupApp._onTickAll,
       clearAll: DutyGroupApp._onClearAll,
@@ -1208,6 +1345,8 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
 
   override async _prepareContext(): Promise<Record<string, unknown>> {
     let state = getDayState();
+    const isGM = !!(game as Game).user?.isGM;
+    const actorId = isGM ? "" : ownDayActorId();
     const duties = this.steps().map((d) => {
       const rollable = ROLLABLE_DUTIES.has(d.id);
       return {
@@ -1221,6 +1360,13 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
         // the step is for, and after the dice the Referee wants what it said.
         result: rollable ? dutyResultLine(d.id) : undefined,
         rollIcon: rollIconFor(d.id),
+        // The same key the strip carries — built by the same function, so the
+        // two cannot drift apart again.
+        ...keyChip(d.id, rollable, state.openDuties),
+        // …and the same die, for the same reason: the camp's steps are most of
+        // what a player may roll, so this window has to answer "is this mine"
+        // exactly as the strip does.
+        ...rollChip(d.id, rollable, state, actorId),
       };
     });
     const doneCount = duties.filter((d) => d.done).length;
@@ -1229,6 +1375,7 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
       doneCount,
       total: duties.length,
       allDone: duties.length > 0 && doneCount === duties.length,
+      isGM,
     };
   }
 
@@ -1237,6 +1384,10 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
     _event: Event,
     target: HTMLElement
   ): Promise<void> {
+    // Ticking writes the day state, which is a world setting: a player's press
+    // would reach `writeState` and be dropped there without a word. Their own
+    // button is the die, which asks the Referee's client instead.
+    if (!(game as Game).user?.isGM) return;
     const id = target.dataset.dutyId;
     if (!id) return;
     await setDutyDone(id, target.dataset.done !== "true");
@@ -1244,12 +1395,28 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
     refreshDayBar();
   }
 
+  /** Open one camp step to the players, or close it. Same key, same writer. */
+  private static async _onToggleDutyOpen(
+    this: DutyGroupApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    if (!(game as Game).user?.isGM) return;
+    const id = target.dataset.dutyId;
+    if (!id) return;
+    await setDutyOpen(id, target.dataset.open !== "true");
+    this.render();
+    // The strip carries the same keys, so it has to hear about this one.
+    refreshDayBar();
+  }
+
   /**
    * Roll one of the camp's steps from the window it lives in.
    *
-   * The strip's own die does the same thing through the same `runCampDuty`, so
-   * a Referee who rolls the firewood from the Camp tab and the cooking from
-   * this window gets the same dialogs and the same cards.
+   * The strip's own die goes through the same `requestDayRoll`, so a Referee
+   * who rolls the firewood from the Camp tab and the cooking from this window
+   * gets the same dialogs and the same cards — and a player pressing either one
+   * asks the GM's client in the same way.
    */
   private static async _onRollDuty(
     this: DutyGroupApp,
@@ -1258,7 +1425,7 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
   ): Promise<void> {
     const id = target.dataset.dutyId;
     if (!id || !CAMP_ROLL_DUTIES.has(id)) return;
-    await runCampDuty(id);
+    await requestDayRoll(id, target.dataset.actorId ?? "");
     this.render();
     refreshDayBar();
   }
@@ -1289,6 +1456,7 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
    * seven re-renders for one click.
    */
   private async setAll(done: boolean): Promise<void> {
+    if (!(game as Game).user?.isGM) return;
     await setDutiesDone(this.steps().map((d) => d.id), done);
     this.render();
     refreshDayBar();

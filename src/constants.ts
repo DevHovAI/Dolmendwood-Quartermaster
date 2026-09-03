@@ -21,6 +21,7 @@ export const TEMPLATES = {
   DAY_BAR_GROUP: `modules/${MODULE_ID}/templates/day-bar-group.hbs`,
   MARKET: `modules/${MODULE_ID}/templates/market.hbs`,
   CHARACTER_SHEET: `modules/${MODULE_ID}/templates/character-sheet.hbs`,
+  XP_AWARD: `modules/${MODULE_ID}/templates/xp-award.hbs`,
   PARTIALS: {
     INVENTORY_ZONE: `modules/${MODULE_ID}/templates/partials/inventory-zone.hbs`,
     ITEM_ROW: `modules/${MODULE_ID}/templates/partials/item-row.hbs`,
@@ -48,6 +49,10 @@ export const SOCKET_EVENTS = {
   INN_PURCHASE: "innPurchase",
   PURCHASE_SERVICE: "purchaseService",
   SELL_ITEM: "sellItem",
+  // A player asking the GM's client to make one of the day's rolls for them.
+  // The day state is a world setting and only a GM may write one, so the roll
+  // itself has to happen there — see `dayRollRequest.ts`.
+  DAY_ROLL: "dayRoll",
 } as const;
 
 export const SETTINGS = {
@@ -84,6 +89,8 @@ export const SETTINGS = {
   BOOK_MONSTERS: "bookMonsters", // …the Monster Book
   AUTO_OPEN_INVENTORY: "autoOpenInventory", // throw a player's inventory open when they log in
   PLAYER_DAY_BAR: "playerDayBar", // may players have a day bar of their own?
+  PLAYER_DAY_ROLLS: "playerDayRolls", // may players roll the day's duties themselves?
+  CAMP_LEADER: "campLeader", // actor id of the character who rolls the camp's group steps; "" = anybody
   BAR_ONLY_ACCESS: "barOnlyAccess", // reach the module's windows from the bar instead of the toolbar
   BOOKS_FOR_PLAYERS: "booksForPlayers", // which of the three books players may open: "none" | "players" | "all"
   BOOK_PAGE_OFFSET: "bookPageOffset", // PDF page = printed page + this; two pages of front matter in all three books

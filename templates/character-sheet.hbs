@@ -69,19 +69,50 @@
       <div class="dw-fields dw-fields-3">
         <label class="dw-field">
           <span>Kindred</span>
-          <input type="text" data-extra="kindred" value="{{identity.kindred}}" {{#unless canEdit}}disabled{{/unless}}>
+          {{!-- A list, not a dropdown, for the reason the Class field gives
+                below: the six are offered without being imposed. --}}
+          <input type="text" data-extra="kindred" value="{{identity.kindred}}" list="dw-kindred-list"
+                 {{#unless canEdit}}disabled{{/unless}}>
+          <datalist id="dw-kindred-list">
+            {{#each kindredNames}}<option value="{{this}}"></option>{{/each}}
+          </datalist>
         </label>
         <label class="dw-field">
           <span>Class</span>
-          <input type="text" data-field="class" value="{{identity.class}}" {{#unless canEdit}}disabled{{/unless}}>
+          {{!-- A list, not a dropdown: OSE keeps this as free text and a table
+                may write "Fighter 3" or a Class this module has never heard of,
+                so the nine are offered without being imposed. Naming one of
+                them is what unlocks the XP modifier and the level-up buttons
+                below. --}}
+          <input type="text" data-field="class" value="{{identity.class}}" list="dw-class-list"
+                 {{#unless canEdit}}disabled{{/unless}}>
+          <datalist id="dw-class-list">
+            {{#each classNames}}<option value="{{this}}"></option>{{/each}}
+          </datalist>
         </label>
         <label class="dw-field">
           <span>Alignment</span>
-          <input type="text" data-field="alignment" value="{{identity.alignment}}" {{#unless canEdit}}disabled{{/unless}}>
+          <input type="text" data-field="alignment" value="{{identity.alignment}}" list="dw-alignment-list"
+                 {{#unless canEdit}}disabled{{/unless}}>
+          <datalist id="dw-alignment-list">
+            {{#each alignmentNames}}<option value="{{this}}"></option>{{/each}}
+          </datalist>
         </label>
         <label class="dw-field">
           <span>Background</span>
-          <input type="text" data-extra="background" value="{{identity.background}}" {{#unless canEdit}}disabled{{/unless}}>
+          {{!-- **The suggestions are the Kindred's own d20 table**, because the
+                book prints one per Kindred rather than one for everybody. Fill
+                the Kindred in first and this fills itself with onion farmers or
+                unicorn handlers as the case may be; a Kindred the book never
+                printed offers nothing rather than somebody else's trades. --}}
+          <input type="text" data-extra="background" value="{{identity.background}}"
+                 {{#if backgroundOptions}}list="dw-background-list"{{/if}}
+                 {{#unless canEdit}}disabled{{/unless}}>
+          {{#if backgroundOptions}}
+          <datalist id="dw-background-list">
+            {{#each backgroundOptions}}<option value="{{this}}"></option>{{/each}}
+          </datalist>
+          {{/if}}
         </label>
         <label class="dw-field">
           <span>Affiliation</span>
@@ -91,24 +122,95 @@
               as an array; the sheet asks for one line and splits on commas.
               **No example in the box** — Leander, 2026-08-28: a greyed-out
               "Woldish, Sylvan" reads as though it were already filled in. --}}
-        <label class="dw-field">
-          <span>Languages</span>
-          <input type="text" data-field="languages" value="{{languages}}"
-                 title="Separated by commas. Extra languages come from Intelligence."
-                 {{#unless canEdit}}disabled{{/unless}}>
-        </label>
+        {{!-- **The picker lives in the field's own cell**, under the box rather
+              than under the row (Leander, 2026-09-03): a panel that writes into
+              one field belongs against that field, and a full-width strip below
+              three columns reads as though it belonged to all of them.
+              The <label> is nested so that clicking the word still focuses the
+              box; a <summary> inside a <label> would focus it too, which is
+              precisely what the nesting keeps apart. --}}
+        <div class="dw-field dw-field-langs">
+          <label class="dw-field">
+            <span>Languages</span>
+            <input type="text" data-field="languages" value="{{languages}}"
+                   title="Separated by commas. Extra languages come from Intelligence."
+                   {{#unless canEdit}}disabled{{/unless}}>
+          </label>
+          {{!-- **Ticked rather than listed** (Leander, 2026-09-03). A datalist
+                is no use here: the field holds a comma-separated line, and a
+                browser matches its suggestions against the whole box, so it
+                would help with the first language and never again. So the
+                book's own tongues are ticked and the line is written from the
+                ticks — while anything typed by hand stays exactly where it was
+                typed, which is what keeps the field the authority and the panel
+                only a convenience. --}}
+          {{#if canEdit}}
+          <details class="dw-lang-picker" {{#if langPickerOpen}}open{{/if}}>
+            <summary><i class="fas fa-chevron-right dw-lang-caret"></i>Pick from the book</summary>
+            <div class="dw-lang-groups">
+              {{#each languageGroups}}
+              <div class="dw-lang-group">
+                <span class="dw-lang-group-label">{{this.label}}</span>
+                {{#each this.languages}}
+                <label class="dw-lang-pick">
+                  <input type="checkbox" class="dw-lang-box" value="{{this}}">
+                  <span>{{this}}</span>
+                </label>
+                {{/each}}
+              </div>
+              {{/each}}
+            </div>
+          </details>
+          {{/if}}
+        </div>
       </div>
 
       {{!-- **The moon sign gets the whole line and room to breathe.** It is not
             a label but a rule: each sign carries effects the table has to be
             able to write down and read back, and a one-word box would have made
             it a name with the mechanics kept somewhere else. --}}
-      <label class="dw-field dw-field-wide">
-        <span>Moon Sign</span>
-        <textarea data-extra="moonSign" rows="2"
-                  placeholder="The sign, and what it does"
-                  {{#unless canEdit}}disabled{{/unless}}>{{identity.moonSign}}</textarea>
-      </label>
+      <div class="dw-field dw-field-wide dw-field-moon">
+        <label class="dw-field">
+          <span>Moon Sign</span>
+          <textarea data-extra="moonSign" rows="2"
+                    placeholder="The sign, and what it does"
+                    {{#unless canEdit}}disabled{{/unless}}>{{identity.moonSign}}</textarea>
+        </label>
+        {{!-- **Picked, not typed, and the effect goes where rules go.** A sign
+              is permanent (p175) and gets read mid-fight, so choosing one both
+              writes this field and files a block of its own beside the Kindred
+              traits — see `_onPickMoonSign`. The panel floats for the same
+              reason the languages one does: the portrait is drawn square from
+              this block's height, and a panel that opened in the flow made the
+              picture swallow the window. --}}
+        {{#if canEdit}}
+        <details class="dw-moon-picker" {{#if moonPickerOpen}}open{{/if}}>
+          <summary><i class="fas fa-chevron-right dw-lang-caret"></i>Pick from the book's 36</summary>
+          <div class="dw-moon-panel">
+            {{#if moonSignForeign}}
+            <p class="hint dw-moon-note">Moon signs fall on those born in the mortal world — mortals
+              and demi-fey. Elves and grimalkins are fairies and have none, unless your table says
+              otherwise.</p>
+            {{/if}}
+            <div class="dw-moon-months">
+              {{#each moonSigns}}
+              <div class="dw-moon-group">
+                <span class="dw-moon-name">{{this.moon}} moon</span>
+                {{#each this.signs}}
+                <button type="button" class="dw-moon-sign {{#if this.chosen}}is-chosen{{/if}}"
+                        data-action="pickMoonSign" data-moon-index="{{this.index}}"
+                        title="Rolled on {{this.range}} — click to take this sign">
+                  <span class="dw-moon-phase">{{this.phase}}</span>
+                  <span class="dw-moon-effect">{{this.effect}}</span>
+                </button>
+                {{/each}}
+              </div>
+              {{/each}}
+            </div>
+          </div>
+        </details>
+        {{/if}}
+      </div>
     </div>
   </header>
 
@@ -119,18 +221,57 @@
         It used to open itself when filled, which was right at the foot of the
         page and wrong above the scores: it would push every number down the
         window on exactly the sheets that had most written on them. --}}
-  <details class="dw-sheet-section dw-sheet-persona">
+  {{!-- **It starts folded and stays as it was put.** Folded on a fresh window
+        is Leander's ruling above; what it must not do is fold itself while
+        somebody is working in it. Picking a suggestion writes the actor, that
+        re-draws the whole sheet, and a <details> with no `open` on it comes
+        back shut — which read as "man kann die eingaben nicht wieder ändern"
+        (Leander, 2026-09-03). Same fix as the two pickers: the state rides on
+        the window. --}}
+  <details class="dw-sheet-section dw-sheet-persona" {{#if personaOpen}}open{{/if}}>
     <summary><i class="fas fa-chevron-right dw-sheet-persona-caret"></i>Appearance and bearing</summary>
     <div class="dw-fields dw-fields-3">
+      {{!-- Each box offers its Kindred's own d12 table. The two wide ones hold a
+            sentence and are therefore textareas, and no browser puts a datalist
+            on one of those — so Desires and Beliefs keep their tables in the
+            book and their boxes empty. --}}
       {{#each persona}}
-      <label class="dw-field {{#if this.wide}}dw-field-span{{/if}}">
+      {{#if this.wide}}
+      {{!-- Desires and Beliefs hold a sentence, so they are textareas — and a
+            textarea takes no datalist. Their d12 goes under the box as a panel
+            instead: same table, offered the other way round. --}}
+      <div class="dw-field dw-field-span dw-field-persona">
+        <label class="dw-field">
+          <span>{{this.label}}</span>
+          <textarea data-extra="persona-{{this.key}}" rows="2" {{#unless ../canEdit}}disabled{{/unless}}>{{this.value}}</textarea>
+        </label>
+        {{#if this.picks}}{{#if ../canEdit}}
+        <details class="dw-persona-picker" data-persona-key="{{this.key}}" {{#if this.pickerOpen}}open{{/if}}>
+          <summary><i class="fas fa-chevron-right dw-lang-caret"></i>Pick from the book</summary>
+          <div class="dw-persona-panel">
+            {{#each this.picks}}
+            <button type="button" class="dw-persona-pick {{#if this.chosen}}is-chosen{{/if}}"
+                    data-action="pickPersona" data-persona-key="{{../key}}"
+                    data-persona-value="{{this.text}}"
+                    title="Take this one — it replaces what is written">{{this.text}}</button>
+            {{/each}}
+          </div>
+        </details>
+        {{/if}}{{/if}}
+      </div>
+      {{else}}
+      <label class="dw-field">
         <span>{{this.label}}</span>
-        {{#if this.wide}}
-        <textarea data-extra="persona-{{this.key}}" rows="2" {{#unless ../canEdit}}disabled{{/unless}}>{{this.value}}</textarea>
-        {{else}}
-        <input type="text" data-extra="persona-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
+        <input type="text" data-extra="persona-{{this.key}}" value="{{this.value}}"
+               {{#if this.options}}list="dw-persona-{{this.key}}-list"{{/if}}
+               {{#unless ../canEdit}}disabled{{/unless}}>
+        {{#if this.options}}
+        <datalist id="dw-persona-{{this.key}}-list">
+          {{#each this.options}}<option value="{{this}}"></option>{{/each}}
+        </datalist>
         {{/if}}
       </label>
+      {{/if}}
       {{/each}}
     </div>
   </details>
@@ -291,6 +432,14 @@
         <span>Spells prepared daily</span>
         <input type="number" class="is-number" data-extra="prepares" min="0" max="20" value="{{prepares}}" {{#unless canEdit}}disabled{{/unless}}>
       </label>
+      {{!-- What this morning's preparation left to spend. Only shown to a sheet
+            that has spells on it at all — a fighter has no use for the line. --}}
+      {{#if hasSpells}}
+      <span class="dw-sheet-credits {{#unless spellCredits}}is-spent{{/unless}}"
+            title="Handed out when spells are prepared of a morning: one for each spell that got through. Spend one to memorise or pray for a spell below — the same spell as often as they last. Casting spends the charge, not the credit.">
+        <i class="fas fa-wand-sparkles"></i> {{spellCreditLine}}
+      </span>
+      {{/if}}
       {{#if canEdit}}
       <button type="button" class="dw-sheet-add" data-action="addBlock" title="Write a new block">
         <i class="fas fa-plus"></i> Add
@@ -345,12 +494,27 @@
             {{/if}}
             {{#if ../../canEdit}}
             {{!-- Only a spell. Ticking a Kindred trait as "prepared for today"
-                  is a control with nothing behind it. --}}
+                  is a control with nothing behind it.
+
+                  A pair of controls rather than one tick, because a spell may
+                  be prepared more than once: one credit buys one charge, and
+                  taking a charge back hands the credit over again. Casting is
+                  what spends a charge for good, and that is the Roll button. --}}
             {{#if this.spell}}
-            <button type="button" class="icon-btn" data-action="togglePrepared" data-block-id="{{this.id}}"
-                    title="{{#if this.isArcane}}Memorised for today{{else}}Bestowed for today{{/if}} — {{#if this.prepared}}click to clear it{{else}}click to mark it{{/if}}">
-              <i class="fas {{#if this.prepared}}fa-book-bookmark{{else}}fa-book{{/if}}"></i>
-            </button>
+            <span class="dw-spell-charges">
+              {{#if this.charges}}
+              <button type="button" class="dw-uses-btn" data-action="togglePrepared"
+                      data-block-id="{{this.id}}" data-unmark="true"
+                      title="Take a charge back off {{this.name}} and get the credit returned">&minus;</button>
+              {{/if}}
+              <button type="button" class="icon-btn{{#unless this.canMark}} is-spent{{/unless}}"
+                      data-action="togglePrepared" data-block-id="{{this.id}}"
+                      {{#unless this.canMark}}disabled{{/unless}}
+                      title="{{#if this.isArcane}}Memorise{{else}}Pray for{{/if}} it — spends one spell credit. The same spell may be prepared more than once.">
+                <i class="fas {{#if this.charges}}fa-book-bookmark{{else}}fa-book{{/if}}"></i>
+              </button>
+              {{#if this.charges}}<span class="dw-spell-charge-count" title="{{this.chargeLabel}} to cast">{{this.charges}}</span>{{/if}}
+            </span>
             {{else}}
             <span class="icon-slot"></span>
             {{/if}}
@@ -435,9 +599,19 @@
           <span>Level</span>
           <input type="number" class="is-number" data-field="level" value="{{level}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
-        <label class="dw-field" title="The percentage a high Prime Ability earns — Player's Book p22.">
-          <span>XP Modifier %</span>
-          <input type="number" class="is-number" data-field="xpBonus" value="{{xp.bonus}}" {{#unless canEdit}}disabled{{/unless}}>
+        {{!-- Worked out from the Class's Prime Abilities and still typeable:
+              typing marks it hand-set, and the arrow hands it back. --}}
+        <label class="dw-field" title="{{#if xpMod.hasDerived}}{{#if xpMod.manual}}Typed by hand. The Class would say {{xpMod.derived}}% — the arrow puts that back.{{else}}Taken from the Class's Prime Abilities (Player's Book p22). Typing here overrules it.{{/if}}{{else}}The percentage a high Prime Ability earns — Player's Book p22.{{/if}}">
+          <span>XP Modifier %{{#if xpMod.manual}} <em class="dw-sheet-handset">set</em>{{/if}}</span>
+          <span class="dw-field-with-reset">
+            <input type="number" class="is-number" data-field="xpBonus" value="{{xpMod.value}}" {{#unless canEdit}}disabled{{/unless}}>
+            {{#if xpMod.canReset}}
+            <button type="button" class="icon-btn" data-action="resetXpMod" {{#unless canEdit}}disabled{{/unless}}
+                    title="Back to the Class's own figure, {{xpMod.derived}}%">
+              <i class="fas fa-rotate-left"></i>
+            </button>
+            {{/if}}
+          </span>
         </label>
         {{!-- Wide, because these hold five and six digits, and a box that cuts
               a number in half is worse than no box at all. --}}
@@ -445,11 +619,73 @@
           <span>Experience</span>
           <input type="number" class="is-wide" data-field="xp" value="{{xp.value}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
+
+        {{#if advance}}
+        {{!-- Read out of the Class's advancement table rather than typed: both
+              are printed facts about a Class and a Level (Leander, 2026-09-02).
+              Italic, which in this module means "this was not typed here". --}}
+        <div class="dw-field dw-field-derived" title="The XP the next Level asks for, from the {{advance.classLabel}} advancement table.">
+          <span>Next level at</span>
+          <span class="dw-derived-value">{{#if advance.hasNext}}{{advance.nextXp}}{{else}}&mdash;{{/if}}</span>
+        </div>
+        <div class="dw-field dw-field-derived {{#if advance.atCap}}is-at-cap{{/if}}" title="The ceiling on this character's XP while they stay at this Level — the threshold two Levels up. Reaching it opens the fourth route below.">
+          <span>Cap</span>
+          <span class="dw-derived-value">
+            {{#if advance.hasCap}}{{advance.capXp}}{{#unless advance.atCap}} <em>({{advance.toCap}} to go)</em>{{/unless}}{{else}}&mdash;{{/if}}
+          </span>
+        </div>
+        {{else}}
         <label class="dw-field dw-field-span">
           <span>Next level at</span>
           <input type="number" class="is-wide" data-field="xpNext" value="{{xp.next}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
+        {{/if}}
       </div>
+
+      {{!-- Levelling up, by the Dolmendudes house rules (docs/Hausregeln.pdf).
+            All four routes are always shown, blocked ones included: "1,750 XP
+            short of the cap" is the answer to the question actually being
+            asked, and a missing button answers nothing. --}}
+      {{#if advance}}
+      <div class="dw-levelup">
+        <div class="dw-levelup-head">
+          <span class="dw-levelup-class">{{advance.classLabel}} &middot; Level {{level}}</span>
+          <span class="dw-levelup-cap {{#if advance.atCap}}is-at-cap{{/if}}" title="A character may keep earning past the next threshold, but only as far as the one above it. That ceiling is the cap, and it is where XP stops counting. Reaching it opens the fourth route: the same one Level as the others, taken at once and paid for in experience instead of weeks.">
+            {{advance.capLine}}
+          </span>
+        </div>
+
+        {{!-- One line per route: the name, the time it takes, and nothing else
+              on the page. The price lives in the tooltip — it is what you want
+              to know before pressing and never while scanning the list
+              (Leander, 2026-09-02: *"den text für kosten weglassen und
+              stattdessen nur im mouseover"*). The confirmation dialog spells it
+              out again before anything is paid, so nothing is hidden. --}}
+        <div class="dw-levelup-routes">
+          {{#each advance.routes}}
+          <button type="button" class="dw-levelup-route {{#unless this.available}}is-blocked{{/unless}}"
+                  data-action="levelUp" data-route="{{this.id}}"
+                  {{#unless ../canEdit}}disabled{{/unless}} {{#unless this.available}}disabled{{/unless}}
+                  title="{{this.label}} — {{this.duration}}. Costs {{this.costNote}}.{{#if this.blocked}} {{this.blocked}}{{/if}}">
+            <i class="fas fa-angles-up dw-levelup-mark"></i>
+            <span class="dw-levelup-label">{{this.label}}</span>
+            <span class="dw-levelup-when">{{#if this.available}}{{this.duration}}{{else}}{{this.blocked}}{{/if}}</span>
+          </button>
+          {{/each}}
+        </div>
+      </div>
+      {{else}}
+      <p class="dw-levelup-none">
+        <i class="fas fa-circle-info"></i>
+        {{#if identity.class}}
+          <em>&ldquo;{{identity.class}}&rdquo;</em> is not one of the nine Classes, so there are no
+          advancement figures to level against. Name a Class above to get the buttons.
+        {{else}}
+          No Class on the sheet. Name one above and the level-up routes appear, with the XP
+          thresholds from the Player's Book behind them.
+        {{/if}}
+      </p>
+      {{/if}}
     </section>
 
   </div>

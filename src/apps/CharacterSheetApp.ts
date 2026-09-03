@@ -1,10 +1,16 @@
 import { TEMPLATES } from "../constants";
 import {
   ABILITIES,
+  ALIGNMENTS,
   DEFAULT_SKILL_TARGET,
+  KINDREDS,
+  LANGUAGE_GROUPS,
+  MOON_SIGN_GROUP,
   PERSONA_FIELDS,
   SAVES,
   abilityModifier,
+  applyLanguagePicks,
+  splitLanguages,
   getExtras,
   getSystemFields,
   hasSystemFields,
@@ -12,6 +18,7 @@ import {
   uniqueSlug,
   updateExtras,
   type CharacterBlock,
+  type PersonaKey,
 } from "../data/characterSheet";
 import { characterPenalties, planRoll } from "../data/characterRolls";
 import { performRoll } from "../data/characterCards";
@@ -22,6 +29,13 @@ import {
   equippedWeapons,
   type RangeBand,
 } from "../data/weapons";
+import { tablesFor, type KindredTables } from "../data/kindredTables";
+import { MOON_SIGNS, moonSignLabel, moonSignLine, moonSignsByMoon } from "../data/moonSigns";
+import { CLASSES, classFromText, readModifier, xpModifierForScore } from "../data/xpAward";
+import { levelChange, routesFor, thresholdFor, xpCapFor } from "../data/levelUp";
+import { escapeHTML } from "../helpers/handlebars";
+import { applyLevelUp, capLine } from "../data/levelUpApply";
+import { castOne, markOne, unmarkOne, chargeLabel, creditLine } from "../data/spellCharges";
 import { promptBlock } from "./BlockDialog";
 import { PlayerInventoryApp } from "./PlayerInventoryApp";
 
@@ -62,6 +76,33 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
 
   readonly actor: Actor;
 
+  /**
+   * Is the languages tick-list unfolded?
+   *
+   * Per-instance and not persisted: it is a moment during character creation
+   * rather than a preference. It exists at all because ticking a language
+   * writes the actor, and that re-draws the sheet from scratch — see
+   * `#wirePickers`.
+   */
+  #langPickerOpen = false;
+
+  /** …and the moon signs', kept for the same reason. */
+  #moonPickerOpen = false;
+
+  /**
+   * …and the Appearance section, which is not a picker but is folded the same
+   * way and was snapping shut on every suggestion taken inside it.
+   */
+  #personaOpen = false;
+
+  /**
+   * Which of the Desires/Beliefs panels are unfolded, by field key.
+   *
+   * A set rather than two more flags: they are the same control twice, and a
+   * third wide persona field would need no new state at all.
+   */
+  #openPersonaPickers = new Set<string>();
+
   constructor(actor: Actor, options: Record<string, unknown> = {}) {
     super({ ...options, id: `dolmenwood-character-${actor.id}` });
     this.actor = actor;
@@ -96,6 +137,8 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       rollAttack: CharacterSheetApp._onRollAttack,
       rollDamage: CharacterSheetApp._onRollDamage,
       addBlock: CharacterSheetApp._onAddBlock,
+      pickMoonSign: CharacterSheetApp._onPickMoonSign,
+      pickPersona: CharacterSheetApp._onPickPersona,
       editBlock: CharacterSheetApp._onEditBlock,
       deleteBlock: CharacterSheetApp._onDeleteBlock,
       addSkill: CharacterSheetApp._onAddSkill,
@@ -103,6 +146,8 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       spendUse: CharacterSheetApp._onSpendUse,
       restoreUses: CharacterSheetApp._onRestoreUses,
       togglePrepared: CharacterSheetApp._onTogglePrepared,
+      levelUp: CharacterSheetApp._onLevelUp,
+      resetXpMod: CharacterSheetApp._onResetXpMod,
       openInventory: CharacterSheetApp._onOpenInventory,
       showPortrait: CharacterSheetApp._onShowPortrait,
       pickPortrait: CharacterSheetApp._onPickPortrait,
@@ -191,6 +236,9 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       notesLine: w.notes.join(" · "),
     }));
 
+    // Whatever the Kindred field says, if the book has tables for it.
+    const tables = tablesFor(extras.kindred);
+
     return {
       actorId: actor.id,
       name: actor.name,
@@ -234,6 +282,36 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       xp: sys.xp,
       prepares: extras.prepares,
 
+      // The nine Classes, offered to the Class field as a datalist. Naming one
+      // is what turns the advancement tables on.
+      classNames: CLASSES.map((c) => c.label),
+      // The same offer, for the two other identity fields the book enumerates.
+      // Background and Affiliation get none: the book prints a background table
+      // per Kindred rather than one list, and names no factions to choose from.
+      kindredNames: KINDREDS,
+      alignmentNames: ALIGNMENTS,
+      languageGroups: LANGUAGE_GROUPS,
+      langPickerOpen: this.#langPickerOpen,
+      advance: advanceView(actor),
+
+      // The XP modifier follows the Class until somebody types over it. The box
+      // shows whichever is in force and says which one that is.
+      xpMod: (() => {
+        const derived = derivedXpModifier(actor);
+        const manual = extras.xpBonusManual;
+        const value = manual || derived === null ? sys.xp.bonus : derived;
+        return {
+          value,
+          manual,
+          hasDerived: derived !== null,
+          derived: derived ?? 0,
+          // The way back is offered whenever there is a Class to go back to,
+          // even if the typed number happens to match it — otherwise a sheet
+          // could stay hand-set with nothing on it saying so.
+          canReset: manual && derived !== null,
+        };
+      })(),
+
       weapons,
       hasWeapons: weapons.length > 0,
       // **Shown, never ticked.** Hunger and exhaustion reach an Attack Roll by
@@ -242,12 +320,60 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       // This line only says what the formulas are already doing.
       penalties: penaltyLine(actor),
 
-      groups: groupBlocks(extras.blocks),
+      groups: groupBlocks(extras.blocks, extras.spellCredits),
+      // The morning's preparation, waiting to be spent on the list below.
+      spellCredits: extras.spellCredits,
+      spellCreditLine: creditLine(extras.spellCredits),
+      hasSpells: extras.blocks.some((b) => !!b.spell),
       hasBlocks: extras.blocks.length > 0,
 
       // Free text, every one of it, and never read by a formula. Folded away by
       // default: it is written once and read at the table, not during a round.
-      persona: PERSONA_FIELDS.map((f) => ({ ...f, value: extras.persona[f.key] ?? "" })),
+      // **The suggestions follow the Kindred**, because the book's tables do:
+      // a breggle's backgrounds are onion farmers and standard-bearers, an
+      // elf's are poets and unicorn handlers. A Kindred the book never printed
+      // gets no suggestions rather than somebody else's.
+      persona: PERSONA_FIELDS.map((f) => {
+        const rows = tables?.persona[f.key as keyof KindredTables["persona"]] ?? [];
+        const written = (extras.persona[f.key] ?? "").trim();
+        return {
+          ...f,
+          value: extras.persona[f.key] ?? "",
+          // Breggles and grimalkins have fur where the others have a body, and
+          // the field takes the Kindred's own word for it.
+          label: f.key === "body" ? (tables?.bodyLabel ?? f.label) : f.label,
+          // **The two wide ones are textareas, and no browser puts a datalist
+          // on one** — so where the other six get suggestions in the box,
+          // Desires and Beliefs get a panel under it (Leander, 2026-09-03).
+          // Same table either way; only the way it is offered differs.
+          options: f.wide ? [] : rows,
+          picks: f.wide
+            ? rows.map((text) => ({ text, chosen: written === text }))
+            : [],
+          pickerOpen: this.#openPersonaPickers.has(f.key),
+        };
+      }),
+      backgroundOptions: tables?.backgrounds ?? [],
+      // Grouped by moon for reading, but each row carries its place in the flat
+      // table: that index is what the button hands back, and it is the one
+      // identifier the book's own table already gives every sign.
+      moonSigns: moonSignsByMoon().map((m) => ({
+        moon: m.moon,
+        signs: m.signs.map((s) => ({
+          ...s,
+          label: moonSignLabel(s),
+          index: MOON_SIGNS.indexOf(s),
+          // Which one is already this character's. Matched on the name rather
+          // than the whole line, so a sign whose wording a table has edited is
+          // still recognised as the one they chose.
+          chosen: extras.moonSign.trim().startsWith(moonSignLabel(s)),
+        })),
+      })),
+      // Elves and grimalkins are fairies, and the rule is for those born in the
+      // mortal world. Said beside the picker, never enforced by it.
+      moonSignForeign: /^(elf|grimalkin)$/i.test(extras.kindred.trim()),
+      moonPickerOpen: this.#moonPickerOpen,
+      personaOpen: this.#personaOpen,
       hasPersona: PERSONA_FIELDS.some((f) => !!extras.persona[f.key]),
     };
   }
@@ -258,6 +384,9 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     const el = this.element;
     this.#squarePortrait();
     this.#measurePortrait();
+    // The folds remember themselves for every reader, owner or not.
+    this.#wirePickers(el);
+
     if (!this.actor.isOwner) return;
 
     // One handler for every box, keyed by what the input says it is. The
@@ -278,6 +407,17 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
         if (field.startsWith("score-")) {
           const key = field.slice(6);
           await setSystemField(this.actor, `mod-${key}`, abilityModifier(Number(value) || 0));
+        }
+
+        // **Typing the XP modifier is what makes it hand-set.** Until somebody
+        // does, the number belongs to the Class and follows the Prime Ability
+        // scores by itself; afterwards it is theirs, and the reset beside the
+        // box is the way back.
+        if (field === "xpBonus") {
+          await updateExtras(this.actor, (x) => {
+            x.xpBonusManual = true;
+            return x;
+          });
         }
         void this.render(false);
       });
@@ -313,6 +453,72 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
         void this.render(false);
       });
     });
+
+  }
+
+  /**
+   * The tick-list under the Languages field.
+   *
+   * **The field stays the authority.** The panel only writes into it, the
+   * boxes are re-derived from whatever it says, and a language typed by hand
+   * survives every tick — see `applyLanguagePicks`. That order matters because
+   * the book's list is not exhaustive: two of its own tongues are left out of
+   * the picker on purpose, and a table may play something it never printed.
+   *
+   * **Ticking writes straight through** rather than firing the field's own
+   * change handler, which re-renders the whole sheet: a panel that shut itself
+   * after every box would make picking three languages three journeys. Nothing
+   * else on the sheet reads the languages, so there is nothing to re-draw.
+   */
+  #wirePickers(el: HTMLElement): void {
+    // **Whether a fold is open outlives the re-render**, which is the only way
+    // any of them can stay open at all: writing a language, a moon sign or a
+    // persona field updates the actor, `updateActor` re-draws every open sheet
+    // (module.ts), and a <details> with no `open` attribute comes back shut.
+    // Kept on the instance rather than in a setting: these are moments during
+    // character creation, not preferences.
+    //
+    // Wired before anything else here, and for every reader rather than only
+    // for owners: a fold that closes itself is just as wrong on a sheet that
+    // cannot be edited.
+    const folds: [string, (open: boolean) => void][] = [
+      [".dw-lang-picker", (open) => (this.#langPickerOpen = open)],
+      [".dw-moon-picker", (open) => (this.#moonPickerOpen = open)],
+      [".dw-sheet-persona", (open) => (this.#personaOpen = open)],
+    ];
+    for (const [selector, remember] of folds) {
+      const fold = el.querySelector<HTMLDetailsElement>(selector);
+      fold?.addEventListener("toggle", () => remember(fold.open));
+    }
+
+    // The Desires/Beliefs panels, which are the same control once per field.
+    for (const fold of el.querySelectorAll<HTMLDetailsElement>(".dw-persona-picker")) {
+      const key = fold.dataset.personaKey ?? "";
+      fold.addEventListener("toggle", () => {
+        if (fold.open) this.#openPersonaPickers.add(key);
+        else this.#openPersonaPickers.delete(key);
+      });
+    }
+
+    const field = el.querySelector<HTMLInputElement>('[data-field="languages"]');
+    const boxes = [...el.querySelectorAll<HTMLInputElement>(".dw-lang-box")];
+    if (!field || !boxes.length) return;
+
+    const sync = (): void => {
+      const written = new Set(splitLanguages(field.value).map((s) => s.toLowerCase()));
+      for (const box of boxes) box.checked = written.has(box.value.toLowerCase());
+    };
+    sync();
+    // Typed as it is typed, so a word finished by hand ticks its own box.
+    field.addEventListener("input", sync);
+
+    for (const box of boxes) {
+      box.addEventListener("change", async () => {
+        const ticked = boxes.filter((b) => b.checked).map((b) => b.value);
+        field.value = applyLanguagePicks(field.value, ticked);
+        await setSystemField(this.actor, "languages", field.value);
+      });
+    }
   }
 
   /**
@@ -489,9 +695,29 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
   ): Promise<void> {
     const block = getExtras(this.actor).blocks.find((b) => b.id === target.dataset.blockId);
     if (!block?.roll) return;
+
+    // **Casting a spell spends one of its charges** (Leander, 2026-09-02).
+    // Taken before the roll, not after: a die that lands and then finds there
+    // was nothing to cast has already been seen by the table.
+    if (block.spell) {
+      const left = castOne(block.prepared);
+      if (left === null) {
+        ui.notifications?.warn(
+          `${block.name} is not prepared. Mark it with a spell credit first — those are handed out when spells are prepared of a morning.`
+        );
+        return;
+      }
+      await updateExtras(this.actor, (x) => {
+        const b = x.blocks.find((s) => s.id === block.id);
+        if (b) b.prepared = left;
+        return x;
+      });
+    }
+
     await performRoll(this.actor, planRoll(block, block.roll), {
       ...(block.text ? { note: block.text } : {}),
     });
+    if (block.spell) void this.render(false);
   }
 
   private static async _onRollAttack(
@@ -542,6 +768,80 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       },
       { icon: "fa-burst" }
     );
+  }
+
+  /**
+   * A moon sign chosen, and its effect put where the character's other rules
+   * live.
+   *
+   * **The field alone was never enough** (Leander, 2026-09-03: *"kannst du den
+   * effekt des ausgewählten moon signs direkt in traits, abilities und spells
+   * einfügen?"*). A sign is a permanent rule — "+1 Attack bonus against undead
+   * monsters" is read in the middle of a fight — and a line of prose in the
+   * identity block is not where anybody looks then. So the sign is written into
+   * its own field *and* filed as a block, in a group of its own, where it sits
+   * beside the Kindred traits and Class abilities and can be given a roll, a
+   * value or a number of uses like any other.
+   *
+   * **Choosing again replaces**, because a character has exactly one moon sign
+   * and the book calls its effects permanent — a second choice is somebody
+   * correcting a mis-click, not a character acquiring a second birth. Anything
+   * the table wrote into the old block goes with it, which is the one thing
+   * this could take away; renaming the group is how a table keeps such a block
+   * out of the picker's reach.
+   */
+  private static async _onPickMoonSign(
+    this: CharacterSheetApp,
+    _e: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const sign = MOON_SIGNS[Number(target.dataset.moonIndex)];
+    if (!sign) return;
+    const name = moonSignLabel(sign);
+
+    await updateExtras(this.actor, (x) => {
+      x.moonSign = moonSignLine(sign);
+      x.blocks = x.blocks.filter((b) => b.group !== MOON_SIGN_GROUP);
+      x.blocks.push({
+        id: foundry.utils.randomID(),
+        group: MOON_SIGN_GROUP,
+        name,
+        slug: uniqueSlug(name, x.blocks.map((b) => b.slug)),
+        text: sign.effect,
+      });
+      return x;
+    });
+
+    // One sign is one decision, so the panel has done its job and shuts.
+    this.#moonPickerOpen = false;
+    void this.render(false);
+  }
+
+  /**
+   * A desire or a belief taken off the Kindred's own d12.
+   *
+   * **It replaces what is in the box**, exactly as choosing a moon sign does,
+   * and for the same reason: this is an explicit press on one of twelve named
+   * things, not a text tool. The panel marks whichever one is currently
+   * written, so pressing it again is how a mis-click is undone — and the box
+   * stays a box, so a table that wants to write a sentence around the roll just
+   * carries on typing.
+   */
+  private static async _onPickPersona(
+    this: CharacterSheetApp,
+    _e: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    const key = target.dataset.personaKey as PersonaKey | undefined;
+    const value = target.dataset.personaValue ?? "";
+    if (!key || !value) return;
+    await updateExtras(this.actor, (x) => {
+      // Guarded rather than trusted: the key came off an attribute, and writing
+      // a field the persona has never had would put a ghost in the flag.
+      if (key in x.persona) x.persona[key] = value;
+      return x;
+    });
+    void this.render(false);
   }
 
   // ─── Blocks ──────────────────────────────────────────────────────────────────
@@ -668,17 +968,119 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     void this.render(false);
   }
 
+  /**
+   * Spend a credit on one charge of this spell, or hand one back.
+   *
+   * **Marking is not a one-way door.** A player who put their last credit on
+   * the wrong spell can take it off again and move it, right up until they cast
+   * — which is the whole difference between unmarking and casting: one returns
+   * the credit, the other does not.
+   */
   private static async _onTogglePrepared(
     this: CharacterSheetApp,
     _e: Event,
     target: HTMLElement
   ): Promise<void> {
+    if (!this.actor.isOwner) return;
     const id = target.dataset.blockId;
+    const back = target.dataset.unmark === "true";
+    let refused = "";
+
     await updateExtras(this.actor, (x) => {
       const block = x.blocks.find((b) => b.id === id);
-      if (block) block.prepared = !block.prepared;
+      if (!block) return x;
+      const move = back
+        ? unmarkOne(block.prepared, x.spellCredits)
+        : markOne(block.prepared, x.spellCredits);
+      if (!move) {
+        refused = back
+          ? `${block.name} has no charge to take back.`
+          : "No spell credits left. They are handed out when spells are prepared of a morning.";
+        return x;
+      }
+      block.prepared = move.prepared;
+      x.spellCredits = move.credits;
       return x;
     });
+
+    if (refused) ui.notifications?.warn(refused);
+    void this.render(false);
+  }
+
+  /** Hand the XP modifier back to the Class, and write the Class's own figure. */
+  private static async _onResetXpMod(this: CharacterSheetApp): Promise<void> {
+    if (!this.actor.isOwner) return;
+    const derived = derivedXpModifier(this.actor);
+    if (derived === null) return;
+    await updateExtras(this.actor, (x) => {
+      x.xpBonusManual = false;
+      return x;
+    });
+    // Written as well as un-flagged, so anything reading the actor rather than
+    // this sheet — a macro, another module — sees the same number the sheet does.
+    await setSystemField(this.actor, "xpBonus", derived);
+    void this.render(false);
+  }
+
+  /**
+   * Take a Level by one of the four house-rule routes.
+   *
+   * **Confirmed, and the confirmation is a bill rather than a question.** A
+   * level-up moves ten figures, spends coins and sometimes experience, and none
+   * of it comes back — so the dialog spells out every one of them before
+   * anything is written, and the chat card repeats it afterwards for the table.
+   *
+   * The Hit Points are deliberately *not* previewed: they are rolled, and a
+   * dialog that showed them would have had to roll them first, leaving a
+   * character who cancelled with a die already thrown.
+   */
+  private static async _onLevelUp(
+    this: CharacterSheetApp,
+    _event: Event,
+    target: HTMLElement
+  ): Promise<void> {
+    if (!this.actor.isOwner) return;
+
+    const sys = getSystemFields(this.actor);
+    const key = classFromText(sys.class ?? "");
+    if (!key) return;
+
+    const routeId = target.dataset.route ?? "";
+    const offer = routesFor(key, sys.level, sys.xp.value).find((r) => r.id === routeId);
+    if (!offer || !offer.available) return;
+
+    const change = levelChange(key, sys.level, offer.toLevel);
+    if (!change) return;
+
+    const bill: string[] = [];
+    if (offer.costGp > 0) bill.push(`<li><strong>${offer.costGp} gp</strong> — ${offer.costNote}</li>`);
+    if (offer.costXp > 0)
+      bill.push(
+        `<li><strong>${offer.costXp.toLocaleString()} XP</strong> — ${sys.xp.value.toLocaleString()} becomes ${(
+          sys.xp.value - offer.costXp
+        ).toLocaleString()}</li>`
+      );
+    if (bill.length === 0) bill.push("<li>Nothing to pay</li>");
+
+    const confirmed = await Dialog.confirm({
+      title: `Level ${sys.level} → ${offer.toLevel}`,
+      content:
+        `<p><strong>${escapeHTML(this.actor.name ?? "")}</strong> — ${escapeHTML(offer.label)}, ${escapeHTML(offer.duration)}.</p>` +
+        `<p class="qm-hint">Paid:</p><ul>${bill.join("")}</ul>` +
+        "<p class=\"qm-hint\">Written to the sheet: Level, XP, the next threshold, Attack " +
+        `${signed(change.attack.from)} → ${signed(change.attack.to)}, the five Save Targets, and ` +
+        "Hit Points rolled for each Level gained. Skill Targets, spells and Class traits are left alone.</p>",
+    });
+    if (!confirmed) return;
+
+    const result = await applyLevelUp(this.actor, key, offer);
+    if (!result.ok) {
+      ui.notifications?.warn(result.reason ?? "The Level could not be taken.");
+      return;
+    }
+    ui.notifications?.info(
+      `${this.actor.name} is now Level ${offer.toLevel}. The chat card lists every figure that moved.`
+    );
     void this.render(false);
   }
 
@@ -781,6 +1183,56 @@ async function promptText(title: string, label: string, placeholder = ""): Promi
 }
 
 /**
+ * The level-up block, or nothing at all.
+ *
+ * **Nothing at all is the honest answer without a Class.** The four routes are
+ * measured against the Class's own XP thresholds, and there is no sensible
+ * default for a character whose sheet does not say what they are — so the block
+ * is replaced by a line saying exactly that, and how to fix it.
+ */
+function advanceView(actor: Actor): Record<string, unknown> | null {
+  const sys = getSystemFields(actor);
+  const key = classFromText(sys.class ?? "");
+  if (!key) return null;
+
+  const cls = CLASSES.find((c) => c.key === key)!;
+  const cap = xpCapFor(key, sys.level);
+  const next = thresholdFor(key, sys.level + 1);
+
+  return {
+    classLabel: cls.label,
+    // **Both figures come out of the book, not out of a box.** Leander's ask,
+    // 2026-09-02 — the next threshold and the cap are printed facts about a
+    // Class and a Level, so a sheet that asks somebody to type them is asking
+    // them to make a mistake. The stored `xp.next` is still written when a
+    // Level is taken, so anything reading the actor rather than this sheet
+    // agrees with it.
+    nextXp: next,
+    capXp: cap,
+    hasNext: next !== undefined,
+    hasCap: cap !== undefined,
+    toCap: cap !== undefined ? Math.max(0, cap - sys.xp.value) : 0,
+    capLine: capLine(key, sys.level, sys.xp.value),
+    atCap: cap !== undefined && sys.xp.value >= cap,
+    routes: routesFor(key, sys.level, sys.xp.value),
+  };
+}
+
+/**
+ * What the Class says this character's XP modifier is, or null.
+ *
+ * Null covers both "no Class the module knows" and "the scores are not filled
+ * in yet" — in either case there is nothing to derive and the box stands on its
+ * own.
+ */
+function derivedXpModifier(actor: Actor): number | null {
+  const mod = readModifier(actor);
+  if (!mod.prime) return null;
+  if (mod.prime.scores.some((s) => s.score <= 0)) return null;
+  return xpModifierForScore(mod.prime.lowest);
+}
+
+/**
  * What the day is already costing this character, in words.
  *
  * Nothing at all when they are fed and rested, which is the common case and
@@ -822,18 +1274,36 @@ function bonusFor(situational: number): { bonus?: string } {
  * that reshuffles itself alphabetically is harder to read down than one that
  * stays where it was put. Blocks with no heading gather at the end under one.
  */
+type BlockView = CharacterBlock & {
+  rollable: boolean;
+  isArcane: boolean;
+  /** How many charges are ready, and the word for it. Empty when none. */
+  charges: number;
+  chargeLabel: string;
+  /** May another credit be spent on this one? */
+  canMark: boolean;
+};
+
 function groupBlocks(
-  blocks: CharacterBlock[]
-): { label: string; blocks: (CharacterBlock & { rollable: boolean; isArcane: boolean })[] }[] {
+  blocks: CharacterBlock[],
+  credits = 0
+): { label: string; blocks: BlockView[] }[] {
   const order: string[] = [];
-  const byGroup = new Map<string, (CharacterBlock & { rollable: boolean; isArcane: boolean })[]>();
+  const byGroup = new Map<string, BlockView[]>();
   for (const b of blocks) {
     const key = b.group.trim() || "Other";
     if (!byGroup.has(key)) {
       byGroup.set(key, []);
       order.push(key);
     }
-    byGroup.get(key)!.push({ ...b, rollable: !!b.roll, isArcane: b.spell === "arcane" });
+    byGroup.get(key)!.push({
+      ...b,
+      rollable: !!b.roll,
+      isArcane: b.spell === "arcane",
+      charges: b.spell ? (b.prepared ?? 0) : 0,
+      chargeLabel: b.spell ? chargeLabel(b.prepared) : "",
+      canMark: !!b.spell && credits > 0,
+    });
   }
   return order.map((label) => ({ label, blocks: byGroup.get(label)! }));
 }

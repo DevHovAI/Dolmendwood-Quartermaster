@@ -6,6 +6,7 @@ import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { ShopApp } from "./ShopApp";
 import { PlayerInventoryApp } from "./PlayerInventoryApp";
 import { CharacterSheetApp } from "./CharacterSheetApp";
+import { openXpAward } from "./XpAwardApp";
 import { getPartyActors, getSharedActor, isSharedActor } from "../data/sharedStore";
 import { displayQuantity } from "../data/consumables";
 import type { PartyConvoy, PartyConvoyMember } from "../types";
@@ -189,6 +190,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     actions: {
       openShop: PartyOverviewApp._onOpenShop,
       openSheet: PartyOverviewApp._onOpenSheet,
+      openXp: PartyOverviewApp._onOpenXp,
     },
   };
 
@@ -358,6 +360,11 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
 
   private static _onOpenShop(this: PartyOverviewApp): void {
     new ShopApp().render(true);
+  }
+
+  /** The session's XP — the party window is where every character is already listed. */
+  private static _onOpenXp(this: PartyOverviewApp): void {
+    openXpAward();
   }
 
   /** The attribute sheet for one member — the party window is where the GM is. */

@@ -3,7 +3,9 @@ import { announce, isGM, rollDice, total } from "./rollCard";
 import { bookRef } from "./books";
 import { getCharacterDay, setHealed } from "./characterDay";
 import { getPartyActors } from "./sharedStore";
-import { getSystemFields, setSystemField } from "./characterSheet";
+import { getExtras, getSystemFields, setSystemField, updateExtras } from "./characterSheet";
+import { creditsFrom } from "./spellCharges";
+import { preparesSpells } from "./xpAward";
 import { setMorningResult, getDayState } from "./dayDuties";
 import {
   OVERNIGHT_HEALING,
@@ -138,6 +140,40 @@ export async function grantMorningHealing(): Promise<void> {
 
 // ─── Preparing spells ─────────────────────────────────────────────────────────
 
+/**
+ * Set a character's spell credits for the day, and wipe yesterday's charges.
+ *
+ * **Set, never added to.** Credits are a morning's worth of preparation, not a
+ * currency that accrues: a caster who left three unassigned yesterday does not
+ * wake with six. And the charges left on their list go with them — a spell held
+ * overnight is not a spell still memorised (Player's Book p78: an arcane spell
+ * is gone from the mind "until it is memorised again").
+ */
+async function issueCredits(actorId: string, credits: number): Promise<void> {
+  const actor = (game as Game).actors?.get(actorId);
+  if (!actor) return;
+  await updateExtras(actor, (x) => {
+    x.spellCredits = credits;
+    for (const block of x.blocks) if (block.spell) block.prepared = 0;
+    return x;
+  });
+}
+
+/**
+ * Hand every casting character who is not in `rolled` their whole list.
+ *
+ * A rested caster loses nothing, so their credits are simply the number of
+ * spells they prepare. Characters who were rolled are skipped: theirs were
+ * issued with their result, dice and all.
+ */
+async function issueRestedCredits(rolled: Set<string>): Promise<void> {
+  for (const actor of getPartyActors()) {
+    const id = actor.id ?? "";
+    if (rolled.has(id) || !preparesSpells(actor)) continue;
+    await issueCredits(id, getExtras(actor).prepares ?? 0);
+  }
+}
+
 export interface CasterChoice {
   actorId: string;
   name: string;
@@ -175,7 +211,14 @@ export async function rollSpellPreparation(casters: CasterChoice[]): Promise<voi
       if (spellLost(roll)) lost++;
     }
     results.push({ name: caster.name, spells: caster.spells, rolls, lost });
+    await issueCredits(caster.actorId, creditsFrom(caster.spells, lost));
   }
+
+  // **Everyone else who casts got their whole list**, and has to be given it.
+  // Only the badly-slept are rolled, so without this the rested casters would
+  // wake up with no credits at all on exactly the mornings when nothing went
+  // wrong for them.
+  await issueRestedCredits(new Set(casters.map((c) => c.actorId)));
 
   const lost = results.reduce((sum, r) => sum + r.lost, 0);
   await setMorningResult("prepare-spells", { spells: { casters: results, lost } });
@@ -306,6 +349,8 @@ export function morningWarningLine(dutyId: string): string | undefined {
 export async function noteSpellsPreparedFreely(): Promise<void> {
   if (!isGM()) return;
   await setMorningResult("prepare-spells", { spells: { casters: [], lost: 0 } });
+  // Nobody rolled, so every caster in the party gets their whole list.
+  await issueRestedCredits(new Set());
   await announce(
     card(
       "fa-wand-sparkles",

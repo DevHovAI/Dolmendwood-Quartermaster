@@ -11,6 +11,7 @@ import { InnApp } from "./apps/InnApp";
 import { MarketApp } from "./apps/MarketApp";
 import { openLootBrowser, openLootFromNote, activateLootChatButtons } from "./apps/LootApp";
 import { openTrash } from "./apps/TrashApp";
+import { openXpAward } from "./apps/XpAwardApp";
 import { syncDayBar, toggleDayBar, refreshDayBar, travelBudgetNow } from "./apps/DayBarApp";
 import { getDayState, spendTravelPoints, syncDayToWorldTime } from "./data/dayDuties";
 import { activateEncounterChatButtons, ENCOUNTER_FOLDER } from "./data/dayRolls";
@@ -325,6 +326,32 @@ Hooks.once("init", () => {
     onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
+  // **The players' own rolls**, Leander's ask of 2026-09-02. Off by default: it
+  // hands three of the day's duties and the camp's group steps to the table,
+  // and a Referee should switch that on deliberately rather than discover it.
+  game.settings!.register(MODULE_ID, SETTINGS.PLAYER_DAY_ROLLS, {
+    name: "Players roll their own day duties",
+    hint: "Puts the die on the players' own bar for preparing spells, finding food and fetching firewood — each for their own character, once a day — and for the camp's group steps. The weather, getting lost and both wandering-monster checks stay with the GM, and every result still goes to whoever it went to before: the watches are still whispered. Every roll comes back with the next in-game day.",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: () => refreshDayBar(),
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // **Who rolls the camp's group steps**, when more than one player could.
+  // Empty means anybody, which is Leander's own resolution: name a leader and
+  // it is theirs, name nobody and whoever gets there first does it.
+  game.settings!.register(MODULE_ID, SETTINGS.CAMP_LEADER, {
+    name: "Party leader",
+    hint: "The character who rolls what the whole party shares — finding food, and the camp's steps: the campsite, water, the fire, cooking, camaraderie, the watches and bedding down. Leave it empty and any player may roll them, first come first served. Preparing spells and fetching firewood are never affected: those are each character's own, and gathered wood goes into their own pack.",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "",
+    onChange: () => refreshDayBar(),
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
   // Everything through one door. Off by default, because the bar can be folded
   // away or switched off and the toolbar is then the only way back in.
   game.settings!.register(MODULE_ID, SETTINGS.BAR_ONLY_ACCESS, {
@@ -571,6 +598,7 @@ Hooks.once("ready", async () => {
       openMarket: (noteDoc: { getFlag?: (m: string, k: string) => unknown; setFlag?: (m: string, k: string, v: unknown) => Promise<void> }) => openMarket(noteDoc),
       openLoot: () => openLootBrowser(),
       openTrash: () => openTrash(),
+      openXpAward: () => openXpAward(),
       toggleDayBar: () => toggleDayBar(),
       // Every page reference the module prints is a click, and this is the same
       // door for anything outside it: a journal button, a macro, another module.
@@ -1515,12 +1543,27 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     } as SceneControlTool;
   }
 
+  // **The Referee's alone, with no setting to share it.** Every other window
+  // here has a case for a player opening it; this one hands out experience, and
+  // that is awarded rather than claimed. The party window carries the same door
+  // for a Referee who has the toolbar folded away into the day bar.
+  if (!barOnly && isGM) {
+    (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-xp"] = {
+      name: "dolmenwood-xp",
+      title: "Experience",
+      icon: "fas fa-star",
+      order: existingToolCount + 6,
+      button: true,
+      onChange: () => openXpAward(),
+    } as SceneControlTool;
+  }
+
   if (isGM || g.settings.get(MODULE_ID, SETTINGS.PLAYER_DAY_BAR)) {
     (tokens.tools as Record<string, SceneControlTool>)["dolmenwood-day-bar"] = {
       name: "dolmenwood-day-bar",
       title: "Day Duties",
       icon: "fas fa-calendar-day",
-      order: existingToolCount + 6,
+      order: existingToolCount + 7,
       button: true,
       onChange: () => void toggleDayBar(),
     } as SceneControlTool;

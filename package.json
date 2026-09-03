@@ -1,6 +1,6 @@
 {
   "name": "dolmenwood-party-inventory",
-  "version": "2.0.0",
+  "version": "2.1.0-rc1",
   "description": "Companion party inventory manager for Dolmenwood RPG in Foundry VTT",
   "type": "module",
   "scripts": {

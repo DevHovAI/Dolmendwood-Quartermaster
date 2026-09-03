@@ -64,20 +64,60 @@ jobs:
             *) echo "::error::module.json download URL does not end in $EXPECTED (it is $DOWNLOAD)"; exit 1 ;;
           esac
 
+      # **A pre-release must not use the `latest` URLs, and a release must.**
+      # GitHub keeps pre-releases out of `releases/latest`, so a test build that
+      # pointed there would hand the installer a 404 for its own zip and offer
+      # every test world a "update" back to the last real version. The two forms
+      # are therefore checked against the kind of tag being pushed — this is the
+      # one thing about a pre-release that is easy to get wrong and silent when
+      # you do.
+      - name: Check the URLs match the kind of tag
+        run: |
+          MANIFEST=$(node -p "require('./dist/module.json').manifest")
+          DOWNLOAD=$(node -p "require('./dist/module.json').download")
+          case "$GITHUB_REF_NAME" in
+            *-*)
+              for URL in "$MANIFEST" "$DOWNLOAD"; do
+                case "$URL" in
+                  *"/releases/download/${GITHUB_REF_NAME}/"*) ;;
+                  *) echo "::error::a pre-release must point at /releases/download/${GITHUB_REF_NAME}/, not $URL"; exit 1 ;;
+                esac
+              done
+              echo "pre-release URLs point at this tag" ;;
+            *)
+              for URL in "$MANIFEST" "$DOWNLOAD"; do
+                case "$URL" in
+                  *"/releases/latest/download/"*) ;;
+                  *) echo "::error::a release must point at /releases/latest/download/, not $URL"; exit 1 ;;
+                esac
+              done
+              echo "release URLs point at latest" ;;
+          esac
+
       - name: Zip
         run: zip -r "quartermaster-${GITHUB_REF_NAME}.zip" dist
 
+      # **A tag with a hyphen in it is a test build, not a release.**
+      # `releases/latest/download/module.json` is the URL every installed world
+      # checks for updates, and GitHub keeps pre-releases out of `latest` — so
+      # `v2.1.0-rc1` can be installed into one test world, by the manifest URL
+      # of that release itself, while everybody else stays on the last real one.
+      # Without this every tag would reach every table the moment it was pushed.
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          case "$GITHUB_REF_NAME" in
+            *-*) PRE="--prerelease"; echo "a pre-release: it will not become 'latest'" ;;
+            *)   PRE=""; echo "a release: this becomes 'latest'" ;;
+          esac
           NOTES="RELEASE_NOTES_${GITHUB_REF_NAME}.md"
           if [ -f "$NOTES" ]; then
             gh release create "$GITHUB_REF_NAME" \
               "quartermaster-${GITHUB_REF_NAME}.zip" dist/module.json \
-              --title "$GITHUB_REF_NAME" --notes-file "$NOTES"
+              --title "$GITHUB_REF_NAME" --notes-file "$NOTES" $PRE
           else
             gh release create "$GITHUB_REF_NAME" \
               "quartermaster-${GITHUB_REF_NAME}.zip" dist/module.json \
-              --title "$GITHUB_REF_NAME" --generate-notes
+              --title "$GITHUB_REF_NAME" --generate-notes $PRE
           fi

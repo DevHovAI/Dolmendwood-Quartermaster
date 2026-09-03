@@ -365,12 +365,15 @@
   {{/unless}}
 
   {{#unless collapsed}}
-  {{#if isGM}}
-  {{!-- The duty list and the party tallies are both the Referee’s. A player’s
-        own eating and sleeping moved up to the top line, so this row would be
-        an empty band on their bar. --}}
+  {{#if showDuties}}
+  {{!-- **The row is the Referee's list and, since 2026-09-03, the players' own
+        few.** What a player sees here is filtered to what they could ever roll
+        — their three, and the party's — so the weather and the two encounter
+        checks never reach their screen. The party tallies below stay the
+        Referee's: a player's own eating and sleeping moved up to the top line,
+        and the row would otherwise be an empty band on their bar. --}}
   <div class="day-bar-row day-bar-duties">
-    {{#if isGM}}
+    {{#if blocks}}
     {{#each blocks}}
     {{#if this.groupId}}
     {{!-- Making camp is one job done in one stretch, so it takes one tick here

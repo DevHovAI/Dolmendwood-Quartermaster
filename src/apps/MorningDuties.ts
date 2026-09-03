@@ -1,5 +1,6 @@
 import { escapeHTML } from "../helpers/handlebars";
 import { stepper, wireSteppers } from "../helpers/steppers";
+import { preparesSpells } from "../data/xpAward";
 import { getExtras, updateExtras } from "../data/characterSheet";
 import {
   grantMorningHealing,
@@ -57,7 +58,21 @@ function ask<T>(
 }
 
 export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[] } | null> {
-  const badly = sleptBadly();
+  // **Only the ones who cast.** A fighter has never had a spell to lose, and a
+  // dialog that listed the whole party and asked the Referee to untick five of
+  // them every morning was asking them to do the module's work (Leander,
+  // 2026-09-03). The Class decides it, and the sheet's own spell count
+  // overrules — see `preparesSpells`.
+  //
+  // **And only the player's own, on a player's screen** (Leander's job 3,
+  // 2026-09-03). Preparing spells is one of the three duties the rights model
+  // calls personal, so the list a player is shown is now exactly the list they
+  // may write to — the `isOwner` guard further down, which stopped Foundry
+  // refusing a write halfway through somebody else's caster, is the same rule
+  // arriving one step too late.
+  const badly = sleptBadly()
+    .filter(preparesSpells)
+    .filter((actor) => (actor as { isOwner?: boolean }).isOwner);
   if (!badly.length) {
     // Not a refusal: the duty is done, it simply took no dice. A card says so,
     // because a button that answers with silence looks broken.
@@ -76,9 +91,12 @@ export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[
     .map((actor) => {
       const id = actor.id ?? "";
       const spells = remembered.get(id) ?? 0;
+      // Ticked, because being on this list now means casting: the row is only
+      // here at all if the Class prepares spells or the sheet's own count says
+      // so. Before the filter, most rows were people who never had a spell.
       return `
       <div class="dw-spell-row" data-actor-id="${escapeHTML(id)}">
-        <input type="checkbox" class="dw-spell-caster" ${spells > 0 ? "checked" : ""}>
+        <input type="checkbox" class="dw-spell-caster" checked>
         <span class="dw-camp-member-name">${escapeHTML(actor.name ?? "Someone")}</span>
         ${stepper(`class="dw-spell-count" min="0" max="20" value="${spells > 0 ? spells : 1}"`)}
         <span class="dw-camp-member-stat">spells attempted</span>
@@ -89,9 +107,9 @@ export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[
   const choice = await ask<{ casters: CasterChoice[]; remember: Map<string, number> }>(
     "Preparing spells",
     `<form class="dw-camp-form">
-      <p class="hint">These characters failed to get a good night's rest, so each spell they try to
-        memorise or pray for has a <strong>${SPELL_LOSS_IN_6}-in-6</strong> chance of failing — the
-        slot stays empty and unusable today. Untick anyone who casts no spells; the ticks and the
+      <p class="hint">These spell-casters failed to get a good night's rest, so each spell they try
+        to memorise or pray for has a <strong>${SPELL_LOSS_IN_6}-in-6</strong> chance of failing —
+        the slot stays empty and unusable today. Only Classes that prepare spells are listed; the
         numbers are remembered on the characters, so this is asked properly only once.</p>
       <div class="dw-spell-rows">${rows}</div>
       <p class="hint">Everyone else in the party slept well and prepares their spells without
@@ -131,6 +149,10 @@ export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[
   for (const [actorId, spells] of choice.remember) {
     const actor = (game as Game).actors?.get(actorId);
     if (!actor) continue;
+    // Remembering the number is a write on the character, so it goes only where
+    // this client may write. A player opening this dialog would otherwise be
+    // stopped by Foundry halfway down the list, on somebody else's caster.
+    if (!actor.isOwner) continue;
     if ((getExtras(actor).prepares ?? 0) === spells) continue;
     await updateExtras(actor, (extras) => ({ ...extras, prepares: spells }));
   }

@@ -8,6 +8,7 @@ import { addItemWithZones, getEncumbranceMode } from "../data/zoneGrants";
 import { transferZone } from "../data/zoneTransfer";
 import { ensureSharedActor } from "../data/sharedStore";
 import { AMMO_CONTAINER_MAP } from "../data/consumables";
+import { applyDayRoll, type DayRollPayload } from "../data/dayRollRequest";
 import type {
   SocketPayload,
   GMGrantPayload,
@@ -84,7 +85,10 @@ export class SocketHandler {
     }
     // Every remaining event writes to an actor, which only the GM may do
     if (!(game as Game).user?.isGM) return;
-    void SocketHandler.runGMAction(payload.event, payload.data)
+    // Who asked travels with the action: the day's rolls are the first thing
+    // here that a player may only do for their own characters, and that
+    // question cannot be answered without knowing whose message this is.
+    void SocketHandler.runGMAction(payload.event, payload.data, payload.userId)
       .then(() => SocketHandler.onRequestRefresh());
   }
 
@@ -93,13 +97,22 @@ export class SocketHandler {
   // silently discard the earlier one.
   private static queue: Promise<unknown> = Promise.resolve();
 
-  private static runGMAction(event: string, data: unknown): Promise<void> {
-    const next = SocketHandler.queue.then(() => SocketHandler.dispatchGMAction(event, data));
+  private static runGMAction(event: string, data: unknown, userId?: string): Promise<void> {
+    // No sender means this client is acting for itself — emitOrHandle on the
+    // GM's own machine, which never sends a message at all.
+    const asker = userId ?? (game as Game).user?.id ?? "";
+    const next = SocketHandler.queue.then(() =>
+      SocketHandler.dispatchGMAction(event, data, asker)
+    );
     SocketHandler.queue = next.catch(() => undefined);
     return next;
   }
 
-  private static async dispatchGMAction(event: string, data: unknown): Promise<void> {
+  private static async dispatchGMAction(
+    event: string,
+    data: unknown,
+    userId: string
+  ): Promise<void> {
     switch (event) {
       case SOCKET_EVENTS.GM_GRANT:
         await SocketHandler.onGMGrant(data as GMGrantPayload);
@@ -139,6 +152,14 @@ export class SocketHandler {
       case SOCKET_EVENTS.SELL_ITEM:
         await processSale(data as SellItemPayload);
         SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
+        break;
+
+      // The only event here that is not a write to an actor: a player asking
+      // for one of the day's rolls. It checks its own rights — see
+      // `dayRollRequest.ts` — because whose character it is cannot be known
+      // from the message alone.
+      case SOCKET_EVENTS.DAY_ROLL:
+        await applyDayRoll(data as DayRollPayload, userId);
         break;
     }
   }

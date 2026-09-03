@@ -79,11 +79,19 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
   // The party, with the Survival target each of them carries. Read from the
   // module's own extras rather than the system: OSE has no Dolmenwood skills,
   // and this is one of the fields the attribute sheet exists to hold.
-  const foragers = getPartyActors().map((actor) => ({
-    actorId: actor.id ?? "",
-    name: actor.name ?? "Someone",
-    survival: getExtras(actor).skills.survival,
-  }));
+  //
+  // **A player is offered their own characters only** (Leander's job 3,
+  // 2026-09-03): finding food is one roll for the travelling group, and the
+  // question this list answers is *whose* Survival is used — which is a
+  // character the person pressing actually plays. The Referee owns every actor,
+  // so their list is unchanged.
+  const foragers = getPartyActors()
+    .filter((actor) => (actor as { isOwner?: boolean }).isOwner)
+    .map((actor) => ({
+      actorId: actor.id ?? "",
+      name: actor.name ?? "Someone",
+      survival: getExtras(actor).skills.survival,
+    }));
   // The best forager is the lowest target, which is who the party would send.
   const best = foragers.reduce(
     (a, b) => (b.survival < a.survival ? b : a),

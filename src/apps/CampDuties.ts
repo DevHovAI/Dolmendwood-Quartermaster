@@ -25,6 +25,7 @@ import { definitionFor } from "../data/itemDefs";
 import { displayQuantity } from "../data/consumables";
 import { firewoodPenalty, hasEffect } from "../data/weather";
 import { FIRE_MINIMUM_HOURS } from "../data/camping";
+import { allocate, partyStock, stockLine } from "../data/partySupply";
 
 /** What the fire dialog answers with: how hard it is, and what goes on it. */
 export interface FireChoice {
@@ -96,8 +97,32 @@ interface Member {
  * Only catalogue ids count: an item somebody typed the word "bedroll" into is
  * not a thing the module can be sure about.
  */
-function partyMembers(): Member[] {
-  return getPartyActors().map((actor) => {
+/**
+ * **Whose names a dialog may offer, and it is not always the whole party.**
+ *
+ * Leander's job 3, 2026-09-03: *"a player may only enter their own character"*.
+ * The split follows the rights model rather than the dialog:
+ *
+ * - **"mine"** where the answer is *which of my characters did this* — who went
+ *   for wood, who is bedding down, who is preparing spells, who cooks, who
+ *   forages. A player is offered their own; the Referee is offered everyone.
+ * - **"party"** where the answer is about the whole camp and would be nonsense
+ *   scoped — the watch rota divides the night among *everybody*, supper is
+ *   eaten by everybody, and the fire burns wood out of the party's packs. A
+ *   player rolling one of these is rolling *for* the party, which is exactly
+ *   what `GROUP_DUTIES` says they are doing.
+ *
+ * The Referee is never narrowed by this: `isOwner` is true for them on every
+ * actor, so "mine" and "party" are the same list on their screen.
+ */
+type Whose = "mine" | "party";
+
+function partyMembers(whose: Whose = "party"): Member[] {
+  const actors =
+    whose === "mine"
+      ? getPartyActors().filter((a) => (a as { isOwner?: boolean }).isOwner)
+      : getPartyActors();
+  return actors.map((actor) => {
     const sys = getSystemFields(actor);
     const items = FlagManager.getInventory(actor).items ?? [];
     const has = (id: string) => items.some((i) => i.definitionId === id && i.quantity > 0);
@@ -213,7 +238,7 @@ export interface FirewoodChoice {
  * a d12 of weather text cannot always settle.
  */
 export async function promptFirewood(): Promise<FirewoodChoice | null> {
-  const members = partyMembers();
+  const members = partyMembers("mine");
   if (!members.length) return noParty(), null;
 
   const weather = getDayState().weather;
@@ -280,9 +305,13 @@ export async function promptFirewood(): Promise<FirewoodChoice | null> {
 export async function promptFire(): Promise<FireChoice | null> {
   const wet = hasEffect(getDayState().weather, "W");
   const preferred = wet ? 4 : FIRE_AUTOMATIC;
-  // **The wood comes out of the packs**, chosen the way the pot's ingredients
-  // are (Leander, 2026-08-28). The steppers start full: the ordinary evening
-  // puts the night's wood on the fire, and taking some back is one press.
+  // **The wood comes out of the packs, exactly the way the pot's ingredients
+  // do** — and that now means the whole shape of the form, not just where the
+  // wood comes from (Leander, 2026-09-03: *"mach feuer machen am besten wie das
+  // kochen"*). Every stepper starts at **0** rather than full, which reverses
+  // the 2026-08-28 ruling: what goes on the fire is a decision to be made
+  // rather than one to be taken back, and starting full meant an evening's
+  // whole woodpile burned by pressing nothing at all.
   const stack = partyFirewood();
   const carried = stack.reduce((sum, r) => sum + r.hours, 0);
 
@@ -328,6 +357,11 @@ export async function promptFire(): Promise<FireChoice | null> {
  * The same shape as the pot's ingredients, and for the same reason: the wood is
  * somebody's, it is spent when the match is struck, and a number typed into a
  * box is a number nobody checks against the pack it came out of.
+ *
+ * **Each row says what that character still has, and says it while the stepper
+ * moves.** The pot prints what is in the pack and leaves it standing; wood is
+ * the thing a party runs out of halfway through a bad week, so the number that
+ * matters is what is left after tonight rather than what there was before it.
  */
 function woodSection(stack: WoodRow[], carried: number): string {
   if (!stack.length) {
@@ -340,10 +374,12 @@ function woodSection(stack: WoodRow[], carried: number): string {
       (row) => `
       <div class="dw-wood-row" data-item-id="${escapeHTML(row.itemId)}" data-holder-id="${escapeHTML(
         row.holderId
-      )}">
+      )}" data-carried="${row.hours}">
         <span class="dw-camp-member-name">${escapeHTML(row.holderName)}</span>
-        <span class="dw-camp-member-stat">${row.hours}h carried</span>
-        ${stepper(`class="dw-wood-take" min="0" max="${row.hours}" value="${row.hours}"`)}
+        <span class="dw-camp-member-stat">${row.hours}h carried · <span class="dw-wood-left">${
+          row.hours
+        }h left</span></span>
+        ${stepper(`class="dw-wood-take" min="0" max="${row.hours}" value="0"`)}
       </div>`
     )
     .join("");
@@ -355,12 +391,24 @@ function woodSection(stack: WoodRow[], carried: number): string {
     <p class="dw-wood-count"></p>`;
 }
 
-/** The live "six hours — two short of the night" line. */
+/**
+ * The live "six hours — two short of the night" line, and what each pack has
+ * left while the wood is being picked.
+ */
 function paintFireHours(html: JQuery): void {
-  const hours = html
-    .find(".dw-wood-take")
-    .toArray()
-    .reduce((sum, el) => sum + (Number((el as HTMLInputElement).value) || 0), 0);
+  let hours = 0;
+  for (const el of html.find(".dw-wood-row").toArray()) {
+    const row = el as HTMLElement;
+    const take = Number((row.querySelector(".dw-wood-take") as HTMLInputElement)?.value) || 0;
+    const carried = Number(row.dataset.carried) || 0;
+    hours += take;
+    const left = row.querySelector(".dw-wood-left");
+    if (!left) continue;
+    const rest = Math.max(0, carried - take);
+    left.textContent = rest === 0 ? "nothing left" : `${rest}h left`;
+    left.classList.toggle("is-short", rest === 0 && carried > 0);
+  }
+
   const out = html.find(".dw-wood-count");
   if (!out.length) return;
   const short = NIGHT_HOURS - hours;
@@ -414,7 +462,7 @@ export async function promptCampActivity(
   activity: CampActivity
 ): Promise<{ actorId: string; meal?: MealChoice; doomTarget?: number } | null> {
   const spec = CAMP_ACTIVITIES[activity];
-  const members = partyMembers();
+  const members = partyMembers("mine");
   if (!members.length) return noParty(), null;
 
   const ability = spec.ability;
@@ -596,6 +644,11 @@ function partyFood(): FoodRow[] {
  * clear and retype for a change of one, and the ordinary change *is* one. The
  * box is still there under the buttons — it is what the reader reads, and it
  * keeps the row honest about its maximum.
+ *
+ * **And each row says what that pack still has, while the stepper moves**
+ * (Leander, 2026-09-03, pulling the pot level with the fire). Standing text
+ * saying "3 left" beside a stepper that has taken all three is the one thing on
+ * either form that can be read as a fact and be wrong.
  */
 function foodSection(larder: FoodRow[]): string {
   if (!larder.length) {
@@ -608,9 +661,10 @@ function foodSection(larder: FoodRow[]): string {
       (row) => `
       <div class="dw-meal-row" data-item-id="${escapeHTML(row.itemId)}" data-holder-id="${escapeHTML(
         row.holderId
-      )}">
+      )}" data-available="${row.available}">
         <span class="dw-camp-member-name">${escapeHTML(row.itemName)}</span>
-        <span class="dw-camp-member-stat">${escapeHTML(row.holderName)} · ${row.available} left</span>
+        <span class="dw-camp-member-stat">${escapeHTML(row.holderName)} · <span
+          class="dw-meal-left">${row.available} left</span></span>
         ${stepper(`class="dw-meal-take" min="0" max="${row.available}" value="0"`)}
       </div>`
     )
@@ -624,12 +678,28 @@ function foodSection(larder: FoodRow[]): string {
     <p class="dw-meal-count"></p>`;
 }
 
-/** The live "four portions — feeds four of five" line. */
+/**
+ * The live "four portions — feeds four of five" line, and what each pack has
+ * left while the ingredients are being picked.
+ *
+ * The twin of `paintFireHours`, down to the wording: both forms take somebody
+ * else's supplies out of somebody else's pack, and in both the number worth
+ * seeing is the one that will be there tomorrow.
+ */
 function paintPortions(html: JQuery, partySize: number): void {
-  const portions = html
-    .find(".dw-meal-take")
-    .toArray()
-    .reduce((sum, el) => sum + (Number((el as HTMLInputElement).value) || 0), 0);
+  let portions = 0;
+  for (const el of html.find(".dw-meal-row").toArray()) {
+    const row = el as HTMLElement;
+    const take = Number((row.querySelector(".dw-meal-take") as HTMLInputElement)?.value) || 0;
+    const available = Number(row.dataset.available) || 0;
+    portions += take;
+    const left = row.querySelector(".dw-meal-left");
+    if (!left) continue;
+    const rest = Math.max(0, available - take);
+    left.textContent = rest === 0 ? "none left" : `${rest} left`;
+    left.classList.toggle("is-short", rest === 0 && available > 0);
+  }
+
   const out = html.find(".dw-meal-count");
   if (!out.length) return;
 
@@ -864,7 +934,7 @@ export interface SleepChoice {
  * it.
  */
 export async function promptSleep(): Promise<SleepChoice | null> {
-  const members = partyMembers();
+  const members = partyMembers("mine");
   if (!members.length) return noParty(), null;
 
   const camp = getCampState();
@@ -890,11 +960,26 @@ export async function promptSleep(): Promise<SleepChoice | null> {
     camp.watches?.shortNight ? (camp.watches.keepers ?? []).map((k) => k.actorId) : []
   );
 
-  const beddingOptions = (selected: Bedding) =>
-    BEDDING.map(
-      (b) =>
-        `<option value="${b.id}" ${b.id === selected ? "selected" : ""}>${escapeHTML(b.label)}</option>`
-    ).join("");
+  // **What the party actually owns, counted across every pack and the store.**
+  // Before this the bedding was read out of each character's own bag alone, so
+  // a tent Alice carried sheltered Alice and one in the shared store sheltered
+  // nobody — and nothing stopped the dropdown offering bedding to a party that
+  // owned none (Leander, 2026-09-03).
+  const bedrolls = partyStock(BEDROLL_ID);
+  const tents = partyStock(TENT_ID);
+  const everyone = members.map((m) => m.actorId);
+  const carriersOf = (stock: { carriers: { actorId: string }[] }) =>
+    stock.carriers.map((c) => c.actorId);
+
+  // Pre-ticked, carriers first. A tent holds two, so one tent in the party
+  // covers its owner and one more.
+  //
+  // **Two ticks rather than one dropdown.** The book's bedding ladder is
+  // "neither / one of them / both", which is exactly what two independent ticks
+  // say — and unlike a three-way select, each one can be stopped on its own the
+  // moment the party runs out of that particular thing.
+  const withBedroll = new Set(allocate(bedrolls.spaces, carriersOf(bedrolls), everyone));
+  const withTent = new Set(allocate(tents.spaces, carriersOf(tents), everyone));
 
   const rows = members
     .map(
@@ -904,7 +989,14 @@ export async function promptSleep(): Promise<SleepChoice | null> {
                title="Sleeping in this camp tonight. Unticked, nothing is written to this character at all.">
         <span class="dw-camp-member-name">${escapeHTML(m.name)}</span>
         <span class="dw-camp-member-stat">(${escapeHTML(statLabel(m, "con"))})</span>
-        <select class="dw-sleep-bedding">${beddingOptions(m.bedding)}</select>
+        <label class="dw-sleep-gear" title="A bedroll of their own.">
+          <input type="checkbox" class="dw-sleep-bedroll" ${withBedroll.has(m.actorId) ? "checked" : ""}>
+          bedroll
+        </label>
+        <label class="dw-sleep-gear" title="A place under a tent. One tent holds two.">
+          <input type="checkbox" class="dw-sleep-tent" ${withTent.has(m.actorId) ? "checked" : ""}>
+          tent
+        </label>
         <label class="dw-sleep-short" title="Under ${MIN_SLEEP_HOURS} hours asleep is not a good night's rest, whatever the conditions.">
           <input type="checkbox" class="dw-sleep-short-box" ${
             shortFromWatch.has(m.actorId) ? "checked" : ""
@@ -933,6 +1025,10 @@ export async function promptSleep(): Promise<SleepChoice | null> {
       }${
         bonus ? `, ${bonus > 0 ? "+" : ""}${bonus} from the evening's cooking and company` : ""
       }. Easy sleeps without a roll, impossible fails without one; the rest is a Constitution Check against 4.</p>
+      <p class="dw-sleep-stock hint">
+        <i class="fas fa-box-open"></i>
+        <span data-stock="bedroll"></span> &middot; <span data-stock="tent"></span>
+      </p>
       <div class="dw-sleep-rows">${rows}</div>
       ${
         shortFromWatch.size
@@ -954,8 +1050,10 @@ export async function promptSleep(): Promise<SleepChoice | null> {
           const row = el as HTMLElement;
           return {
             actorId: row.dataset.actorId ?? "",
-            bedding: ((row.querySelector(".dw-sleep-bedding") as HTMLSelectElement)?.value ??
-              "none") as Bedding,
+            bedding: beddingFrom(
+              !!(row.querySelector(".dw-sleep-bedroll") as HTMLInputElement)?.checked,
+              !!(row.querySelector(".dw-sleep-tent") as HTMLInputElement)?.checked
+            ),
             shortNight: !!(row.querySelector(".dw-sleep-short-box") as HTMLInputElement)?.checked,
           };
         })
@@ -971,17 +1069,60 @@ export async function promptSleep(): Promise<SleepChoice | null> {
       // Live, because the table is the thing worth seeing. Bound once on the
       // form rather than per control, so it survives whatever the rows contain.
       render: (html) => {
+        const rowEls = () => html.find(".dw-sleep-row").toArray() as HTMLElement[];
+        const box = (row: HTMLElement, cls: string) =>
+          row.querySelector(cls) as HTMLInputElement | null;
+        const isHere = (row: HTMLElement) => !!box(row, ".dw-sleep-in")?.checked;
+
+        /**
+         * Stop a tick the party cannot pay for.
+         *
+         * Only what is *claimed by somebody sleeping here* counts against the
+         * stock: a character who is not in this camp is holding nothing. The
+         * already-ticked are never disabled, or a full list would freeze itself
+         * and the Referee could not free a place by moving one.
+         */
+        const limit = (cls: string, stock: { spaces: number }, noun: string) => {
+          const rows = rowEls();
+          const claimed = rows.filter((r) => isHere(r) && box(r, cls)?.checked).length;
+          const left = Math.max(0, stock.spaces - claimed);
+          for (const row of rows) {
+            const input = box(row, cls);
+            if (!input) continue;
+            const blocked = !input.checked && (left === 0 || !isHere(row));
+            input.disabled = blocked;
+            const label = input.closest("label") as HTMLElement | null;
+            if (label) {
+              label.classList.toggle("is-spent", blocked && left === 0);
+              if (blocked && left === 0) {
+                label.title = `The party has ${stock.spaces} ${noun} place${
+                  stock.spaces === 1 ? "" : "s"
+                } and they are all taken. Untick somebody to free one.`;
+              }
+            }
+          }
+          return { claimed, left };
+        };
+
         const paint = () => {
           const fire = !!html.find("#dw-sleep-fire").prop("checked");
-          html
-            .find(".dw-sleep-row")
-            .toArray()
-            .forEach((el) => {
-              const row = el as HTMLElement;
-              const here = !!(row.querySelector(".dw-sleep-in") as HTMLInputElement)?.checked;
+
+          const bed = limit(".dw-sleep-bedroll", bedrolls, "bedroll");
+          const tent = limit(".dw-sleep-tent", tents, "tent");
+          const stockOut = (key: string, text: string) => {
+            const el = html.find(`[data-stock="${key}"]`)[0] as HTMLElement | undefined;
+            if (el) el.textContent = text;
+          };
+          stockOut("bedroll", stockLine(bedrolls, "bedrolls", bed.claimed));
+          stockOut("tent", stockLine(tents, "tents", tent.claimed));
+
+          rowEls().forEach((row) => {
+              const here = isHere(row);
               row.classList.toggle("is-away", !here);
-              const bedding = ((row.querySelector(".dw-sleep-bedding") as HTMLSelectElement)
-                ?.value ?? "none") as Bedding;
+              const bedding = beddingFrom(
+                !!box(row, ".dw-sleep-bedroll")?.checked,
+                !!box(row, ".dw-sleep-tent")?.checked
+              );
               const short = !!(row.querySelector(".dw-sleep-short-box") as HTMLInputElement)
                 ?.checked;
               const difficulty = sleepDifficulty(fire, bedding, host);

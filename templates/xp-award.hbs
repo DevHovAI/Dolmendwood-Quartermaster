@@ -1,0 +1,187 @@
+<div class="xp-window-inner">
+
+  <div class="dw-window-head">
+    <i class="fas fa-star"></i>
+    <h2>Experience</h2>
+    <div class="dw-window-head-extra">
+      <div class="xp-mode">
+        <button type="button" class="xp-mode-btn {{#if isSplit}}is-on{{/if}}"
+                data-action="setMode" data-mode="split"
+                title="One figure for the whole party, divided evenly — the book's own way (Player's Book p25)">
+          <i class="fas fa-divide"></i> Split a total
+        </button>
+        <button type="button" class="xp-mode-btn {{#unless isSplit}}is-on{{/unless}}"
+                data-action="setMode" data-mode="each"
+                title="Type what each character earned, and let the window do the modifiers">
+          <i class="fas fa-user-pen"></i> Per character
+        </button>
+      </div>
+    </div>
+  </div>
+
+  {{!-- **One band, both modes.** The switch above changes what is inside it and
+        not how tall it is, so the table below does not move under the cursor
+        when you press it. --}}
+  <div class="xp-total-band">
+    {{#if isSplit}}
+    <label class="xp-total-label" for="xp-total">Party XP</label>
+    <input id="xp-total" class="xp-total-input" type="number" min="0" step="1"
+           data-xp-field="total" value="{{total}}" autocomplete="off">
+    <span class="xp-total-note">
+      Divided evenly between the {{countIn}} counted below, then each character's own
+      modifier. Press <kbd>Enter</kbd> or click away to reckon it.
+    </span>
+    {{#if remainder}}
+    <span class="xp-remainder" title="What the division could not place, plus anything you took off a row by hand. The book does not say who gets the odd point, so nobody does until you say so.">
+      <i class="fas fa-circle-info"></i> {{remainder}} left over
+    </span>
+    {{/if}}
+    {{#if overspent}}
+    <span class="xp-remainder is-over" title="The shares below add up to more than the party earned, because a row was raised by hand. Nothing stops you — it is only worth knowing.">
+      <i class="fas fa-triangle-exclamation"></i> {{overspent}} over the total
+    </span>
+    {{/if}}
+    {{else}}
+    <span class="xp-total-label">Per character</span>
+    <span class="xp-hint">
+      <i class="fas fa-circle-info"></i>
+      Type what each one earned in the Earned column. The half share and the Prime Ability
+      modifier are still applied on top — this only skips the dividing.
+    </span>
+    {{/if}}
+  </div>
+
+  {{#if hasRows}}
+  <div class="xp-table">
+
+    <div class="xp-row xp-row-head">
+      <span class="xp-lane-tick"></span>
+      <span class="xp-lane-name">Character</span>
+      <span class="xp-lane-base">{{#if isSplit}}Share{{else}}Earned{{/if}}</span>
+      <span class="xp-lane-mod">Modifier</span>
+      <span class="xp-lane-award">Credited</span>
+      <span class="xp-lane-total">New total</span>
+      <span class="xp-lane-reset"></span>
+    </div>
+
+    {{#each rows}}
+    <div class="xp-row {{#unless this.included}}is-out{{/unless}}">
+
+      <span class="xp-lane-tick">
+        <input type="checkbox" data-xp-field="include" data-actor-id="{{this.actorId}}"
+               {{#if this.included}}checked{{/if}}
+               title="Counted when the total is divided. Untick for anyone who was not there.">
+      </span>
+
+      <span class="xp-lane-name">
+        <span class="xp-name">{{this.name}}</span>
+        <span class="xp-sub" title="{{this.primeTitle}}">
+          {{#if this.classLabel}}
+            {{this.classLabel}} &middot; {{this.primeLabel}}
+          {{else if this.className}}
+            <em>{{this.className}}</em> &middot; not a Class I know
+          {{else}}
+            <em>no Class on the sheet</em>
+          {{/if}}
+          {{#if this.isHalfShare}}
+          <span class="xp-half" title="This character's share is set to {{this.sharePct}}% on the sheet — the book's rule for an adventurer retainer (Player's Book p25).">
+            <i class="fas fa-scale-unbalanced"></i> {{this.sharePct}}%
+          </span>
+          {{/if}}
+        </span>
+      </span>
+
+      <span class="xp-lane-base">
+        <input type="number" step="1" class="xp-base-input {{#if this.overridden}}is-hand-set{{/if}}"
+               data-xp-field="base" data-actor-id="{{this.actorId}}" value="{{this.base}}"
+               {{#unless this.included}}disabled{{/unless}} autocomplete="off">
+      </span>
+
+      <span class="xp-lane-mod">
+        {{#if this.percentEditable}}
+        <input type="number" step="1" class="xp-percent-input" data-xp-field="percent"
+               data-actor-id="{{this.actorId}}" value="{{this.percent}}" autocomplete="off"
+               title="No Class to read it from, so this is the XP bonus field on the sheet. Typing here writes it there — set it once and it stays.">
+        <span class="xp-percent-sign">%</span>
+        {{else}}
+        <span class="xp-percent-chip {{#if (lt this.percent 0)}}is-bad{{/if}} {{#if (gt this.percent 0)}}is-good{{/if}}"
+              title="{{this.primeTitle}}">{{this.percentText}}</span>
+        {{/if}}
+      </span>
+
+      <span class="xp-lane-award">
+        {{#if this.included}}
+        <strong class="xp-award {{#if (lt this.award.award 0)}}is-bad{{/if}}">
+          {{#if (gte this.award.award 0)}}+{{/if}}{{this.award.award}}
+        </strong>
+        {{else}}
+        <span class="xp-none">—</span>
+        {{/if}}
+      </span>
+
+      <span class="xp-lane-total">
+        <span class="xp-from">{{this.current}}</span>
+        <i class="fas fa-arrow-right xp-arrow"></i>
+        <span class="xp-to">{{this.award.newTotal}}</span>
+        {{#if this.award.levelUp}}
+        {{!-- "May", not "does": by the house rules a Level is trained for, paid
+              for and takes time. This card only says the threshold is passed. --}}
+        <span class="xp-levelup" title="Passes {{this.next}} XP, the threshold on the attribute sheet. Taking the Level is a separate step on the sheet — it costs time and coins.">
+          <i class="fas fa-angles-up"></i> May level
+        </span>
+        {{/if}}
+        {{#if this.capLost}}
+        <span class="xp-capped" title="The house cap stops a character at the threshold two Levels above them ({{this.capAt}} XP). {{this.capLost}} XP had nowhere to go and were not credited.">
+          <i class="fas fa-hand"></i> capped, {{this.capLost}} lost
+        </span>
+        {{/if}}
+      </span>
+
+      <span class="xp-lane-reset">
+        {{#if this.overridden}}
+        <button type="button" class="icon-btn" data-action="resetRow" data-actor-id="{{this.actorId}}"
+                title="Put this row back on the even share">
+          <i class="fas fa-rotate-left"></i>
+        </button>
+        {{/if}}
+      </span>
+
+    </div>
+    {{/each}}
+  </div>
+  {{else}}
+  <p class="xp-empty">
+    <i class="fas fa-star"></i>
+    <em>No party characters this module can read. XP is kept by the game system, so a
+      character needs Ability Scores before it can be credited any.</em>
+  </p>
+  {{/if}}
+
+  <footer class="xp-footer">
+    <label class="xp-chat">
+      <input type="checkbox" data-xp-field="toChat" {{#if toChat}}checked{{/if}}>
+      Announce in chat
+    </label>
+
+    <span class="xp-footer-sum">
+      {{#if canAward}}
+      <strong>{{awarded}}</strong> XP to {{countIn}} character{{#unless (eq countIn 1)}}s{{/unless}}
+      {{#if levelUps}}
+      <span class="xp-levelup-note" title="{{levelUpNames}}">
+        <i class="fas fa-angles-up"></i> {{levelUps}} level up
+      </span>
+      {{/if}}
+      {{else}}
+      <span class="xp-none">Nothing to award yet</span>
+      {{/if}}
+    </span>
+
+    <button type="button" class="btn-toolbar" data-action="clearAll" title="Empty every field and count everyone again">
+      <i class="fas fa-eraser"></i> Clear
+    </button>
+    <button type="button" class="btn-toolbar xp-award-btn" data-action="award" {{#unless canAward}}disabled{{/unless}}>
+      <i class="fas fa-star"></i> Award XP
+    </button>
+  </footer>
+
+</div>

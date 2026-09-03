@@ -118,6 +118,15 @@
   --dw-count-controls: calc(var(--dw-step-btn) * 2 + var(--dw-count-lane) + 4px);
   --dw-notes-lane: 150px;  /* the notes box: fixed, so they stack in one column */
   --dw-value-lane:  62px;  /* five figures and a currency, in tabular digits   */
+  /* **XP runs wider than money.** A purse is five figures and a currency; a
+     Level 15 magician is 1,220,000. These three lanes are what the XP ledger
+     stands on, and they are named here rather than typed into its own rules so
+     that the head and every row keep agreeing — the same reason the count lane
+     above exists (Leander, 2026-09-02: *"die Eingabefelder sind zu klein"*). */
+  --dw-xp-entry-lane:  150px; /* a box somebody types six figures into         */
+  --dw-xp-figure-lane:  96px; /* a six-figure reading, signed, in tabular digits */
+  --dw-xp-mod-lane:     84px; /* a percentage box and its sign                  */
+  --dw-xp-total-lane:  176px; /* "9,400 → 10,450" plus room for a chip          */
   /* ══ SPACING ═══════════════════════════════════════════════════════════
      **One ladder, eight rungs, and every gap and padding names one.**
 
@@ -2877,6 +2886,7 @@ body {
    the two sit side by side without pushing the price column around. */
 .btn-inn-treat {
   background: linear-gradient(to bottom, var(--dw-bg-parchment), var(--dw-accent-light));
+  color: var(--dw-primary);
 }
 
 /* Bottle or cask — the only inn purchase that goes into a pack, so it reads as
@@ -2884,6 +2894,7 @@ body {
 .btn-inn-container {
   background: linear-gradient(to bottom, var(--dw-accent-light), var(--dw-border-light));
   border-color: var(--dw-tertiary);
+  color: var(--dw-primary);
 }
 
 .btn-inn-container:hover {
@@ -4301,6 +4312,33 @@ body > #dolmenwood-day-bar {
   border-left: 1px solid var(--dw-border-light);
   padding-left: var(--dw-space-4);
   margin-left: var(--dw-space-2);
+}
+
+/* A player's die before the Referee has turned the key, or after they have had
+   their roll for the day. **Dimmed and still there**, because the reason is on
+   its tooltip and a control that vanished would leave the question "was I ever
+   allowed that?" unanswered — the same reasoning the rights model gives every
+   refusal a sentence. */
+.day-bar-duty-roll:disabled,
+.duty-group-roll:disabled,
+.day-bar-duty:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.day-bar-duty-roll:disabled:hover,
+.duty-group-roll:disabled:hover {
+  color: var(--dw-tertiary);
+  background: none;
+}
+
+/* The tick a player cannot press: the same icon in the same lane as the
+   Referee's button, so the two strips line up chip for chip. */
+.day-bar-duty-rollable > .day-bar-tick {
+  flex: 0 0 auto;
+  width: var(--dw-icon-btn);
+  padding: 0 var(--dw-space-2);
+  text-align: center;
 }
 
 .day-bar-duty-roll:hover {
@@ -6001,9 +6039,14 @@ span.day-bar-panel-tick {
    controls up and nothing lines up with the row above it, which is exactly what
    "die einzelnen elemente sind noch lose" looks like. The rows become
    display:contents so their cells sit in the list's own columns. */
+/* **Seven lanes, not six**: the bedding dropdown became two ticks on
+   2026-09-03 — a bedroll and a place in a tent, each stoppable on its own once
+   the party runs out of that particular thing. The rows are `display: contents`
+   and sit on this grid, so a cell added in the markup has to be added here or
+   every row after it shifts one column left. */
 .dw-sleep-rows {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto auto;
   align-items: center;
   gap: var(--dw-space-3) var(--dw-space-5);
   margin: var(--dw-space-5) 0;
@@ -6023,11 +6066,33 @@ span.day-bar-panel-tick {
   border-top: none;
 }
 
-.dw-sleep-row .dw-sleep-bedding {
-  width: auto;
-  min-width: 118px;
-  height: 22px;
+/* A bedroll or a tent place. Spent ones stay legible rather than being greyed
+   into the background — the Referee has to be able to read what is taken in
+   order to know whom to untick. */
+.dw-sleep-gear {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
   font-size: var(--dw-text-sm);
+  color: var(--dw-tertiary);
+  white-space: nowrap;
+}
+
+.dw-sleep-gear.is-spent {
+  color: var(--dw-ink-faint);
+  font-style: italic;
+}
+
+/* What the party owns, above the list. Its own line because it governs every
+   row below it rather than belonging to any one of them — and it is the counts
+   alone: where they are counted from is not something a Referee needs told
+   every night (Leander, 2026-09-03). The greyed-out tick explains itself on
+   hover, where an explanation belongs. */
+.dw-sleep-stock {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--dw-space-3) var(--dw-space-4);
 }
 
 .dw-sleep-short {
@@ -6153,16 +6218,24 @@ span.day-bar-panel-tick {
   margin: var(--dw-space-5) 0;
 }
 
-.dw-meal-row {
+/* The fire's woodpile is a meal list in everything but name — same container,
+   same three cells (whose it is, how much there is, how much goes on) — so it
+   is styled with it rather than beside it. Without the `display: contents` the
+   row is one grid ITEM instead of three, and three rows fill the three lanes of
+   a single line: every name lands on top of the next one's stock. */
+.dw-meal-row,
+.dw-wood-row {
   display: contents;
 }
 
-.dw-meal-row > * {
+.dw-meal-row > *,
+.dw-wood-row > * {
   padding: var(--dw-space-3) 0;
   border-top: 1px solid var(--dw-border-light);
 }
 
-.dw-meal-row:first-child > * {
+.dw-meal-row:first-child > *,
+.dw-wood-row:first-child > * {
   border-top: none;
 }
 
@@ -6172,8 +6245,10 @@ span.day-bar-panel-tick {
   text-align: center;
 }
 
-/* The live readouts: how many the pot feeds, how long each watcher sleeps. */
+/* The live readouts: how many the pot feeds, how much of the night the fire
+   covers, how long each watcher sleeps. */
 .dw-meal-count,
+.dw-wood-count,
 .dw-watch-count {
   margin: var(--dw-space-3) 0 0;
   color: var(--dw-secondary);
@@ -6181,7 +6256,17 @@ span.day-bar-panel-tick {
 }
 
 .dw-meal-count.is-short,
+.dw-wood-count.is-short,
 .dw-watch-count.is-short {
+  color: var(--speed-orange);
+  font-weight: 600;
+}
+
+/* What that pack still has once tonight's wood — or supper — is off it. It only
+   colours when the pack is emptied, which is the one state worth catching
+   before the dice: both are spent whether or not the roll goes well. */
+.dw-wood-left.is-short,
+.dw-meal-left.is-short {
   color: var(--speed-orange);
   font-weight: 600;
 }
@@ -7325,6 +7410,7 @@ span.day-bar-panel-tick {
   padding: var(--dw-space-1) var(--dw-space-4);
   border-radius: 3px;
   background: var(--dw-bg-dark);
+  color: var(--dw-primary);
   font-size: var(--dw-text-sm);
   font-weight: 700;
 }
@@ -7344,16 +7430,37 @@ span.day-bar-panel-tick {
   font-variant-numeric: tabular-nums;
 }
 
+/* **The ink is named, and that is not a nicety here.** This button carries a
+   text glyph rather than an icon, on a parchment ground of its own — and with
+   no `color` of its own it fell through to Foundry's, which is near-white in
+   some themes. The minus was there all along and simply could not be seen, so
+   the control read as an empty box (Leander, 2026-09-03). The same omission had
+   already cost a round on the XP window's inputs; anything that names a
+   background names an ink.
+
+   Centred by flex rather than by line-height, so the glyph sits dead centre
+   whatever the face does with it. */
 .dw-uses-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: var(--dw-step-btn);
   height: var(--dw-step-btn);
   padding: 0;
   border: 1px solid var(--dw-border);
   border-radius: 3px;
   background: var(--dw-bg-dark);
+  color: var(--dw-primary);
+  font-family: inherit;
   font-size: var(--dw-text-sm);
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
+}
+
+.dw-uses-btn:hover {
+  background: var(--dw-accent-light);
+  border-color: var(--dw-accent);
 }
 
 .dw-block-actions {
@@ -7415,7 +7522,8 @@ span.day-bar-panel-tick {
 /* ── Who this person is when they are not rolling dice ── */
 
 /* A <details>, so folding it costs no script and no stored state. */
-.dw-sheet-persona > summary {
+.dw-sheet-persona > summary,
+.dw-lang-picker > summary {
   cursor: pointer;
   color: var(--dw-primary);
   font-size: var(--dw-text-sm);
@@ -7425,7 +7533,8 @@ span.day-bar-panel-tick {
   list-style: none;
 }
 
-.dw-sheet-persona > summary::-webkit-details-marker {
+.dw-sheet-persona > summary::-webkit-details-marker,
+.dw-lang-picker > summary::-webkit-details-marker {
   display: none;
 }
 
@@ -7434,7 +7543,8 @@ span.day-bar-panel-tick {
    it — Foundry does not ship the family the name asks for — so the caret is an
    <i> in the markup and this only turns it. `check-forms.js` asserts no rule
    has gone back to the other way. */
-.dw-sheet-persona-caret {
+.dw-sheet-persona-caret,
+.dw-lang-caret {
   flex: none;
   width: 10px;
   margin-right: var(--dw-space-4);
@@ -7443,14 +7553,306 @@ span.day-bar-panel-tick {
   transition: transform 120ms ease;
 }
 
-.dw-sheet-persona[open] > summary .dw-sheet-persona-caret {
+.dw-sheet-persona[open] > summary .dw-sheet-persona-caret,
+.dw-lang-picker[open] > summary .dw-lang-caret {
   transform: rotate(90deg);
 }
 
+/* The persona block only: it opens in the flow and wants a rule under its head.
+   The language picker floats over the sheet instead and has a border of its
+   own, so a second line under its summary would be a line to nowhere. */
 .dw-sheet-persona[open] > summary {
   margin-bottom: var(--dw-space-5);
   padding-bottom: var(--dw-space-3);
   border-bottom: 1px solid var(--dw-border-light);
+}
+
+/* ── The languages tick-list ──────────────────────────────────────────────────
+   In the Languages field's own cell, folded, and grouped the way the book
+   groups the tongues — a party works out who can talk to whom by Kindred, and
+   the headings are what make that readable at a glance. It writes into the box
+   above it and never replaces it: see `#wireLanguagePicker`.
+
+   **No margin of its own**: the cell is a flex column and already puts its own
+   gap between the box and the panel, and a second one would undo the whole
+   point of moving it in here. */
+/* **The open panel floats; it does not push.** The portrait beside the identity
+   block is sized from that block's own height — it is drawn square, with the
+   fields' height as its side — so a panel that opened *in* the layout made the
+   picture grow to match and swallow half the window (Leander, 2026-09-03). A
+   panel laid over the sheet takes no height at all, so nothing below it moves
+   and the portrait never notices it opened. */
+.dw-field-langs {
+  position: relative;
+}
+
+.dw-lang-picker[open] > .dw-lang-groups {
+  position: absolute;
+  /* Anchored to the field's right edge and grown leftwards: Languages is the
+     last box of its row, so this is the direction with the sheet in it. */
+  right: 0;
+  width: 100%;
+  min-width: 240px;
+  z-index: 5;
+  margin-top: var(--dw-space-2);
+  padding: var(--dw-space-4);
+  background: var(--dw-surface-parchment);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius);
+  box-shadow: 0 2px 8px var(--dw-shadow);
+}
+
+.dw-lang-groups {
+  display: grid;
+  /* Narrow lanes, because the panel is the width of one field rather than of
+     the row. Two columns where there is room, one where there is not. */
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--dw-space-3) var(--dw-space-4);
+  /* Fifteen tongues under seven headings is taller than most sheets are open. */
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.dw-lang-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  min-width: 0;
+}
+
+.dw-lang-group-label {
+  color: var(--dw-secondary);
+  font-size: var(--dw-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dw-lang-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+  min-width: 0;
+  cursor: pointer;
+}
+
+.dw-lang-pick input {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+/* ── The moon signs ───────────────────────────────────────────────────────────
+   Thirty-six rows of rule text, so this one is read rather than scanned: one
+   line per phase with the effect beside it, grouped by the moon of the month.
+   It floats over the sheet for the same reason the languages panel does — the
+   portrait is sized from this block's height. */
+.dw-field-moon {
+  position: relative;
+}
+
+.dw-moon-picker > summary {
+  cursor: pointer;
+  color: var(--dw-primary);
+  font-size: var(--dw-text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  list-style: none;
+}
+
+.dw-moon-picker > summary::-webkit-details-marker {
+  display: none;
+}
+
+.dw-moon-picker[open] > summary .dw-lang-caret {
+  transform: rotate(90deg);
+}
+
+.dw-moon-picker[open] > .dw-moon-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  margin-top: var(--dw-space-2);
+  padding: var(--dw-space-4);
+  background: var(--dw-surface-parchment);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius);
+  box-shadow: 0 2px 8px var(--dw-shadow);
+  /* Twelve moons of three: taller than any sheet, so it scrolls in place. */
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+/* Twelve moons read as twelve things, not as thirty-six rows: two columns of
+   months where the sheet is wide enough, one where it is not. */
+.dw-moon-months {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--dw-space-4) var(--dw-space-6);
+  align-items: start;
+}
+
+/* Each moon is a card of its own, which is the whole answer to "die abgrenzung
+   der moon signs könnte besser sein": a boundary you can see beats three rows
+   under a heading that only indentation separates. */
+.dw-moon-group {
+  display: flex;
+  flex-direction: column;
+  padding: var(--dw-space-3);
+  border: 1px solid var(--dw-border-light);
+  border-radius: var(--dw-radius);
+  background: var(--dw-surface-field);
+}
+
+.dw-moon-name {
+  margin-bottom: var(--dw-space-2);
+  padding-bottom: var(--dw-space-2);
+  border-bottom: 1px solid var(--dw-border-light);
+  color: var(--dw-primary);
+  font-size: var(--dw-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dw-moon-note {
+  margin: 0 0 var(--dw-space-4);
+}
+
+/* One sign: the phase in its own column so the three line up under each moon,
+   and the book's own words beside it — the effect is what is being chosen.
+
+   **`height` and `min-height` are named, and they have to be.** Foundry styles
+   every `button` with `height: var(--button-size)` and the same min-height —
+   two fixed ems — and a rule that takes four lines to say then spills out of
+   its own box and over the sign below it (*"text überlagert sich teilweise"*,
+   Leander, 2026-09-03). Core outranks a plain class on anything it names, which
+   this project has now learned twice: see the number inputs. */
+.dw-moon-sign {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: var(--dw-space-3);
+  align-items: baseline;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: var(--dw-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--dw-radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+}
+
+/* A hairline between the three phases, and none above the first. */
+.dw-moon-sign + .dw-moon-sign {
+  border-top-color: var(--dw-border-light);
+  border-radius: 0;
+}
+
+.dw-moon-sign:hover {
+  border-color: var(--dw-accent);
+  background: var(--dw-accent-light);
+}
+
+/* The one this character already has. Marked rather than removed from the list:
+   choosing it again is how a mis-click is undone. */
+.dw-moon-sign.is-chosen {
+  border-color: var(--dw-accent);
+  background: var(--dw-accent-light);
+  font-weight: 600;
+}
+
+.dw-moon-phase {
+  color: var(--dw-secondary);
+  font-size: var(--dw-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dw-moon-effect {
+  font-size: var(--dw-text-sm);
+}
+
+/* ── Desires and Beliefs ──────────────────────────────────────────────────────
+   The two persona boxes that hold a sentence, and therefore the two that no
+   datalist can reach. Their d12 sits under the box as a panel of twelve short
+   presses; it floats like the others so the section below it does not jump
+   every time somebody opens it. */
+.dw-field-persona {
+  position: relative;
+}
+
+.dw-persona-picker > summary {
+  cursor: pointer;
+  color: var(--dw-primary);
+  font-size: var(--dw-text-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  list-style: none;
+}
+
+.dw-persona-picker > summary::-webkit-details-marker {
+  display: none;
+}
+
+.dw-persona-picker[open] > summary .dw-lang-caret {
+  transform: rotate(90deg);
+}
+
+.dw-persona-picker[open] > .dw-persona-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: grid;
+  /* Twelve short phrases: three lanes where there is room, fewer where not. */
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--dw-space-2);
+  margin-top: var(--dw-space-2);
+  padding: var(--dw-space-4);
+  background: var(--dw-surface-parchment);
+  border: 1px solid var(--dw-border);
+  border-radius: var(--dw-radius);
+  box-shadow: 0 2px 8px var(--dw-shadow);
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+/* `height` and `min-height` named for the same reason the moon signs name them:
+   core gives every button two fixed ems, and a belief can take two lines. */
+.dw-persona-pick {
+  height: auto;
+  min-height: 0;
+  padding: var(--dw-space-2) var(--dw-space-3);
+  border: 1px solid var(--dw-border-light);
+  border-radius: var(--dw-radius);
+  background: var(--dw-surface-field);
+  color: inherit;
+  font: inherit;
+  font-size: var(--dw-text-sm);
+  line-height: 1.35;
+  text-align: left;
+  justify-content: flex-start;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.dw-persona-pick:hover {
+  border-color: var(--dw-accent);
+  background: var(--dw-accent-light);
+}
+
+/* Whichever is written in the box. Still pressable — that is how it is undone. */
+.dw-persona-pick.is-chosen {
+  border-color: var(--dw-accent);
+  background: var(--dw-accent-light);
+  font-weight: 600;
 }
 
 /* ── The drag ruler, counting in Travel Points ─────────────────────────────────
@@ -7461,4 +7863,651 @@ span.day-bar-panel-tick {
 #hud #measurement .waypoint-label.dw-tp-short .delta-measurement {
   color: #ff9b6a;
   font-weight: 700;
+}
+
+/* ── The XP window ─────────────────────────────────────────────────────────────
+   A ledger, so it is laid out as one: seven fixed lanes and every row on the
+   same grid, including the head. The lanes are named rather than repeated so
+   that changing one column changes the head with it — which is the fault the
+   design pass exists to keep out, and a table is where it shows first.
+
+   The numbers are the content here, so they lead: the credited figure is the
+   only bold thing in a row, and everything explaining it is soft ink at sm. */
+.xp-window .window-content { padding: var(--dw-space-5); }
+
+.xp-window-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-5);
+  height: 100%;
+}
+
+/* The head is a label, not a section of its own: this window has one job and
+   the title is the smallest part of doing it, so it gives its space back to the
+   table (Leander, 2026-09-02: *"oben ist viel zu viel platz"*). */
+.xp-window .dw-window-head { padding-bottom: var(--dw-space-3); }
+
+/* Two states of one control, so they are one control: the pressed side takes
+   the accent and the other stays flat. */
+.xp-mode { display: flex; gap: var(--dw-space-3); }
+
+.xp-mode-btn {
+  height: var(--dw-control-h);
+  padding: 0 var(--dw-space-4);
+  font-family: inherit;
+  font-size: var(--dw-text-sm);
+  color: var(--dw-ink-soft);
+  background: transparent;
+  border: 1px solid var(--dw-line);
+  border-radius: var(--dw-radius);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.xp-mode-btn.is-on {
+  background: var(--dw-surface-raised);
+  border-color: var(--dw-line-strong);
+  color: var(--dw-ink-strong);
+  font-weight: 600;
+}
+
+/* The one field the whole window turns on, so it is the one thing above the
+   table and it is given the room to look like an entry rather than a cell. */
+.xp-total-band {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-5);
+  flex-wrap: wrap;
+  padding: var(--dw-space-5) var(--dw-space-6);
+  background: var(--dw-surface);
+  border: 1px solid var(--dw-line);
+  border-radius: var(--dw-radius-lg);
+}
+
+.xp-total-label {
+  font-size: var(--dw-text-base);
+  font-weight: 600;
+  color: var(--dw-ink-strong);
+}
+
+/* The one entry the whole window turns on. Its band is already a flex row, so
+   it takes a basis for the same reason the row boxes do — `width` on a number
+   input is core's to decide, not ours. */
+.xp-total-input {
+  flex: 0 0 calc(var(--dw-xp-entry-lane) + var(--dw-space-8));
+  width: auto;
+}
+
+/* **Both modes put their words in the same band**, so switching between them
+   moves nothing: the band keeps its height and the table below it stays where
+   the eye left it. Before this the hint was a flex child of the column and its
+   `flex-basis` became a *height* — 240px of nothing, which pushed the entry
+   fields off the bottom of the window (Leander, 2026-09-02: *"wenn man auf per
+   character klickt, rutscht die eingabemaske nach unten"*). */
+.xp-total-note,
+.xp-hint {
+  flex: 1 1 200px;
+  margin: 0;
+  font-size: var(--dw-text-sm);
+  color: var(--dw-ink-faint);
+  font-style: italic;
+}
+
+.xp-remainder {
+  font-size: var(--dw-text-sm);
+  color: var(--dw-warn-ink);
+  white-space: nowrap;
+}
+
+.xp-table {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  border: 1px solid var(--dw-line);
+  border-radius: var(--dw-radius-lg);
+  background: var(--dw-surface-field);
+}
+
+/* One grid for the head and every row under it, so a column cannot say one
+   thing at the top and another further down.
+
+   **The tick sits in a control lane, not a mark lane.** A checkbox is a control
+   about 14px wide and the mark lane is 14px of glyph, which left it touching
+   the name (Leander, 2026-09-02: *"die häkchenfelder haben zu geringen abstand
+   zum namen"*). The lane is the module's icon-button width now and the column
+   gap is a rung wider. */
+.xp-row {
+  display: grid;
+  grid-template-columns:
+    var(--dw-icon-btn)
+    minmax(0, 1fr)
+    var(--dw-xp-entry-lane)
+    var(--dw-xp-mod-lane)
+    var(--dw-xp-figure-lane)
+    var(--dw-xp-total-lane)
+    var(--dw-icon-btn);
+  align-items: center;
+  column-gap: var(--dw-space-5);
+  padding: var(--dw-space-4) var(--dw-space-5);
+  border-bottom: 1px solid var(--dw-line-hair);
+}
+
+.xp-row:last-child { border-bottom: none; }
+
+.xp-row-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--dw-surface-raised);
+  font-size: var(--dw-text-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dw-ink-soft);
+}
+
+/* Left out, not removed: the row stays where it was so the eye does not have to
+   find it again when it is ticked back on. */
+.xp-row.is-out { opacity: 0.45; }
+
+/* The tick fills its lane rather than floating in the middle of it, so the
+   column of boxes lines up with the head above and with itself down the list. */
+.xp-lane-tick { display: flex; align-items: center; justify-content: center; }
+.xp-lane-tick input { margin: 0; }
+
+.xp-lane-name { display: flex; flex-direction: column; gap: var(--dw-space-1); min-width: 0; }
+
+.xp-name {
+  font-size: var(--dw-text-base);
+  color: var(--dw-ink-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Italic, because none of it was typed here: it is read off the sheet. */
+.xp-sub {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+  font-size: var(--dw-text-xs);
+  color: var(--dw-ink-faint);
+  font-style: italic;
+}
+
+.xp-half {
+  font-style: normal;
+  padding: var(--dw-space-1) var(--dw-space-3);
+  border-radius: var(--dw-radius);
+  background: var(--dw-warn-bg);
+  color: var(--dw-ink-soft);
+}
+
+/* **The boxes a Referee actually types into**, and the ones that kept coming
+   out too small (Leander, twice).
+
+   Widening the lane alone did not fix it, because most of a number box is not
+   the number: a spinner is about 16px of arrows nobody has ever clicked to
+   reach 1,750 XP, and it is subtracted from the inside of the field where it
+   cannot be seen. Turning it off is worth more than any width. What is left is
+   a lane wide enough for seven figures, a rung of height over a plain control,
+   and real padding so the digits are not against the frame. */
+.xp-total-input,
+.xp-base-input,
+.xp-percent-input {
+  height: calc(var(--dw-control-h) + var(--dw-space-5));
+  padding: 0 var(--dw-space-4);
+  text-align: right;
+  font-size: var(--dw-text-lg);
+  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+  background: var(--dw-surface-field);
+  /* **Named, because Foundry's own is not the same colour twice.** An input
+     with no `color` of its own falls through to core's, which is near-white in
+     one theme and mid-grey in another — on a near-white field that is either
+     unreadable or nearly so, and it changes under the Referee without anybody
+     touching the module. The attribute sheet learned this the same way and
+     names it for every field on the page; this window had not (Leander,
+     2026-09-02: *"die schriftfarbe auf dem hintergrund"*). */
+  color: var(--dw-text);
+  border: 1px solid var(--dw-line);
+  border-radius: var(--dw-radius);
+  /* Firefox, then everything else. */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.xp-total-input:focus,
+.xp-base-input:focus,
+.xp-percent-input:focus {
+  outline: 1px solid var(--dw-accent);
+  border-color: var(--dw-accent);
+}
+
+/* A box on a row that is not counted is still read, so it is muted rather than
+   greyed into the ground — the same rule the sheet's disabled fields follow. */
+.xp-base-input:disabled {
+  color: var(--dw-ink-soft);
+  opacity: 1;
+  border-style: dashed;
+}
+
+.xp-total-input::-webkit-outer-spin-button,
+.xp-total-input::-webkit-inner-spin-button,
+.xp-base-input::-webkit-outer-spin-button,
+.xp-base-input::-webkit-inner-spin-button,
+.xp-percent-input::-webkit-outer-spin-button,
+.xp-percent-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* **The lanes are flex, and the boxes are sized by flex-basis, not by width.**
+   This is the third time this module has walked into the same wall and the
+   second place that has to say so: core styles every number box as
+   `body.game .app input[type="number"] { width: calc(100% - 2px) }`, at a
+   specificity a plain class cannot beat — so `width` on `.xp-base-input` was
+   simply never applied, whatever number it held, and the field stayed at the
+   browser's own default. That is why it fitted two digits after three goes at
+   widening it (Leander, 2026-09-02).
+
+   Core sets no `flex` on those inputs, so a basis of nought with room to grow
+   fills the lane and wins outright — no `!important` anywhere. The zone coin
+   purse solves it the same way; see the note beside `.zone-coin-input`. */
+.xp-lane-base,
+.xp-lane-mod {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+  min-width: 0;
+}
+
+.xp-base-input,
+.xp-percent-input {
+  flex: 1 0 0;
+  min-width: 0;
+  width: auto;
+}
+
+/* A rung larger again: it is the figure the whole window is derived from, and
+   it is typed once per session rather than once per row. */
+.xp-total-input { font-size: var(--dw-text-xl); }
+
+/* A share the Referee set by hand is not the share the division worked out, and
+   the row must say so — otherwise a stale override quietly outlives the session
+   it was typed for. */
+.xp-base-input.is-hand-set {
+  border-color: var(--dw-line-strong);
+  font-weight: 600;
+  background: var(--dw-surface-raised);
+}
+
+
+/* A percentage is two digits and a minus, so it takes the base size where the
+   XP boxes take lg — a 16px "−10" in this lane would be swimming. The sign
+   beside it is the lane's other flex child and takes what it needs. */
+.xp-percent-input { font-size: var(--dw-text-base); }
+
+.xp-percent-sign { font-size: var(--dw-text-xs); color: var(--dw-ink-faint); }
+
+.xp-percent-chip {
+  padding: var(--dw-space-1) var(--dw-space-3);
+  border-radius: var(--dw-radius);
+  font-size: var(--dw-text-sm);
+  font-variant-numeric: tabular-nums;
+  background: var(--dw-surface-raised);
+  color: var(--dw-ink-soft);
+}
+
+.xp-percent-chip.is-good { background: var(--dw-good-bg); color: var(--dw-good-ink); }
+.xp-percent-chip.is-bad  { background: var(--dw-bad-bg);  color: var(--dw-bad-ink); }
+
+.xp-lane-award { text-align: right; }
+
+.xp-award {
+  font-size: var(--dw-text-lg);
+  font-variant-numeric: tabular-nums;
+  color: var(--dw-ink-strong);
+}
+
+.xp-award.is-bad { color: var(--dw-bad-ink); }
+
+/* **What was earned and what it adds up to are two different subjects**, so the
+   step between them is a section gap and a hairline rather than the same gap
+   that separates one figure from the next (Leander, 2026-09-02: *"zwischen
+   credited und new total ist der abstand zu gering"*).
+
+   Wrapping, because a row can carry two chips at once — passing the threshold
+   and hitting the cap happen together more often than not. */
+.xp-lane-total {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--dw-space-2) var(--dw-space-3);
+  padding-left: var(--dw-space-6);
+  border-left: 1px solid var(--dw-line-hair);
+  font-size: var(--dw-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--dw-ink-soft);
+}
+
+.xp-from { opacity: 0.7; }
+.xp-to { color: var(--dw-ink-strong); font-weight: 600; }
+.xp-arrow { font-size: var(--dw-text-xs); opacity: 0.5; }
+
+.xp-levelup {
+  padding: var(--dw-space-1) var(--dw-space-3);
+  border-radius: var(--dw-radius);
+  background: var(--dw-good-bg);
+  color: var(--dw-good-ink);
+  font-size: var(--dw-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.xp-none { color: var(--dw-ink-faint); font-style: italic; }
+
+.xp-empty {
+  margin: 0;
+  padding: var(--dw-space-8);
+  text-align: center;
+  color: var(--dw-ink-faint);
+  font-size: var(--dw-text-sm);
+}
+
+.xp-empty i { display: block; margin-bottom: var(--dw-space-5); font-size: 26px; opacity: 0.35; }
+
+.xp-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-5);
+  padding-top: var(--dw-space-5);
+  border-top: 1px solid var(--dw-line-hair);
+}
+
+.xp-chat {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+  font-size: var(--dw-text-sm);
+  color: var(--dw-ink-soft);
+}
+
+.xp-footer-sum {
+  flex: 1 1 auto;
+  font-size: var(--dw-text-sm);
+  color: var(--dw-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-levelup-note { margin-left: var(--dw-space-4); color: var(--dw-good-ink); }
+
+.xp-award-btn { font-weight: 700; border-color: var(--dw-accent); }
+
+.xp-award-btn[disabled] { opacity: 0.45; cursor: default; }
+
+/* The chat card's own two marks. */
+.xp-card-detail { opacity: 0.75; font-size: var(--dw-text-sm); }
+.xp-card-up { color: var(--dw-good-ink); font-weight: 600; }
+
+/* Handing out more than the party earned is allowed and only worth flagging —
+   the bad ink would read as an error, and it is not one. */
+.xp-remainder.is-over { color: var(--dw-bad-ink); }
+
+/* ── Levelling up, on the attribute sheet ──────────────────────────────────────
+   Four routes stacked, each one a button with its terms beside it and, where it
+   is not open, the reason underneath. A blocked route keeps its full height and
+   place: the list is read down the same way every time, and a row that
+   disappears when it does not apply is a row nobody learns the position of. */
+.dw-levelup {
+  margin-top: var(--dw-space-6);
+  padding-top: var(--dw-space-5);
+  border-top: 1px solid var(--dw-line-hair);
+}
+
+.dw-levelup-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--dw-space-5);
+  margin-bottom: var(--dw-space-5);
+}
+
+.dw-levelup-class {
+  font-size: var(--dw-text-sm);
+  font-weight: 600;
+  color: var(--dw-ink-strong);
+}
+
+/* Italic: read off the table, not typed here — the sheet's own rule for a
+   derived value. */
+.dw-levelup-cap {
+  font-size: var(--dw-text-xs);
+  color: var(--dw-ink-faint);
+  font-style: italic;
+  text-align: right;
+}
+
+/* At the cap the fourth route is open and the character stops earning, so it
+   stops being a hint and becomes a state. */
+.dw-levelup-cap.is-at-cap {
+  color: var(--dw-good-ink);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.dw-levelup-routes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-3);
+}
+
+/* **One button per route, and the button is the whole row.** It was a button
+   beside a strip of terms beside a reason, on a grid — three things competing
+   for one line, which is what overlapped (Leander, 2026-09-02: *"alles
+   überlagert sich"*). Now there are three lanes inside one control: the mark,
+   the name, and the one fact that changes — how long it takes, or why it is
+   shut. The price is in the tooltip and again in the confirmation. */
+.dw-levelup-route {
+  display: grid;
+  grid-template-columns: var(--dw-mark-lane) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--dw-space-4);
+  width: 100%;
+  min-height: var(--dw-control-h);
+  padding: var(--dw-space-3) var(--dw-space-5);
+  font-family: inherit;
+  font-size: var(--dw-text-sm);
+  text-align: left;
+  color: var(--dw-primary);
+  background: linear-gradient(to bottom, var(--dw-bg-dark), var(--dw-zone-gold-pale));
+  border: 1px solid var(--dw-line);
+  border-radius: var(--dw-radius);
+  cursor: pointer;
+}
+
+.dw-levelup-route:hover:not([disabled]) {
+  background: linear-gradient(to bottom, var(--dw-accent-light), var(--dw-accent));
+}
+
+/* A shut route keeps its place and its full height — the list is read down the
+   same way every time — but stops looking pressable. */
+.dw-levelup-route[disabled] {
+  cursor: default;
+  background: transparent;
+  color: var(--dw-ink-soft);
+  border-color: var(--dw-line-hair);
+}
+
+.dw-levelup-mark { opacity: 0.65; }
+.dw-levelup-route[disabled] .dw-levelup-mark { opacity: 0.3; }
+
+.dw-levelup-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The right-hand lane says the duration when the route is open and the reason
+   when it is not — one lane, because only ever one of the two is worth reading. */
+.dw-levelup-when {
+  font-size: var(--dw-text-xs);
+  color: var(--dw-ink-soft);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+.dw-levelup-route[disabled] .dw-levelup-when { color: var(--dw-ink-faint); }
+
+.dw-levelup-none {
+  margin: var(--dw-space-6) 0 0;
+  padding-top: var(--dw-space-5);
+  border-top: 1px solid var(--dw-line-hair);
+  font-size: var(--dw-text-xs);
+  color: var(--dw-ink-faint);
+}
+
+.dw-levelup-none i { margin-right: var(--dw-space-3); opacity: 0.6; }
+
+/* The card's own list of what moved sits tighter than a camp card's, because
+   every line is a pair of numbers rather than a sentence. */
+.dw-levelup-card .dw-camp-rows li { margin-bottom: var(--dw-space-2); }
+
+/* Warn, not bad: hitting the cap is the rule working, and the row is telling
+   the Referee that a decision is theirs to make — not that something broke. */
+.xp-capped {
+  padding: var(--dw-space-1) var(--dw-space-3);
+  border-radius: var(--dw-radius);
+  background: var(--dw-warn-bg);
+  color: var(--dw-warn-ink);
+  font-size: var(--dw-text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── The derived pair in the Experience block ────────────────────────────────
+   The next threshold and the cap are read out of the Class's advancement table,
+   so they are set as readings rather than as boxes: same lane and same height
+   as the fields beside them, no border, and the italic that means "not typed
+   here" everywhere else on this sheet. */
+.dw-field-derived {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-2);
+  justify-content: flex-start;
+}
+
+.dw-derived-value {
+  min-height: var(--dw-control-h);
+  display: flex;
+  align-items: center;
+  font-size: var(--dw-text-base);
+  font-variant-numeric: tabular-nums;
+  color: var(--dw-ink);
+  font-style: italic;
+}
+
+.dw-derived-value em {
+  margin-left: var(--dw-space-3);
+  font-size: var(--dw-text-xs);
+  color: var(--dw-ink-faint);
+}
+
+/* At the cap the reading stops being a countdown and becomes a state, so it
+   takes the good ink and drops the italic — the same move the cap line above
+   the routes makes. */
+.dw-field-derived.is-at-cap .dw-derived-value {
+  color: var(--dw-good-ink);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* A box with its own way back beside it. The reset only appears when there is
+   something to go back to, so the lane is content-sized rather than reserved. */
+.dw-field-with-reset {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-3);
+}
+
+.dw-field-with-reset input { flex: 1 1 auto; min-width: 0; }
+
+/* The one word that says this number was typed rather than worked out. */
+.dw-sheet-handset {
+  font-size: var(--dw-text-xs);
+  font-style: normal;
+  color: var(--dw-warn-ink);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── The key that opens one duty to the players ────────────────────────────────
+   The Referee's own strip only, and only on duties a player could ever roll —
+   so it is a lane that appears rather than a lock that sits there greyed out on
+   the weather. Same width and same lane as the die beside it, because it is the
+   same kind of control: one press, one consequence.
+
+   **Closed is quiet and open is loud.** The common state all day is closed, and
+   a strip of eight bright locks would be a strip about locks. Turned, it takes
+   the good ink — the same colour the day bar already uses for a thing that has
+   happened rather than a thing that might. */
+.day-bar-duty-key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: var(--dw-icon-btn);
+  height: auto;
+  min-height: 0;
+  padding: 0 var(--dw-space-2);
+  background: none;
+  border: none;
+  color: var(--dw-ink-faint);
+  font-size: var(--dw-text-xs);
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.day-bar-duty-key:hover { opacity: 1; }
+
+.day-bar-duty-key.is-open {
+  color: var(--dw-good-ink);
+  opacity: 1;
+}
+
+/* ── Spell credits and the charges they buy ────────────────────────────────────
+   A credit is what a morning's preparation left over; a charge is a credit
+   spent on one spell. The same spell may hold several, which is why the count
+   sits beside the book rather than the book merely being open or shut. */
+.dw-sheet-credits {
+  font-size: var(--dw-text-xs);
+  color: var(--dw-good-ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Nothing left is a state, not an error: the caster simply spent them. */
+.dw-sheet-credits.is-spent {
+  color: var(--dw-ink-faint);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.dw-spell-charges {
+  display: flex;
+  align-items: center;
+  gap: var(--dw-space-2);
+}
+
+.dw-spell-charge-count {
+  min-width: 12px;
+  font-size: var(--dw-text-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--dw-good-ink);
+  text-align: center;
+}
+
+/* No credit to spend: the book stays readable but stops inviting a click. */
+.dw-spell-charges .icon-btn.is-spent {
+  opacity: 0.35;
+  cursor: default;
 }
