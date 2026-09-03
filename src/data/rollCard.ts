@@ -1,3 +1,4 @@
+import { MODULE_ID } from "../constants";
 import { escapeHTML } from "../helpers/handlebars";
 
 /**
@@ -58,6 +59,17 @@ export async function whisperToGMs(content: string, rolls: Roll[] = []): Promise
     // for messages it can tell are rolls.
     sound: rolls.length ? CONFIG.sounds.dice : undefined,
     whisper: gmIds,
+    // **The flag is what lets the players' clients throw this card away.**
+    // Foundry deliberately shows a whispered message that carries dice to
+    // everybody — `ChatMessage#visible` returns true for any `isRoll` whisper —
+    // and paints it as "X rolled privately" with ??? for the numbers. Leander,
+    // 2026-09-04: *"kann man die für die Spieler komplett unsichtbar machen?"*
+    // Dropping the dice from the message would do it, and would cost the
+    // Referee the 3D dice and an inspectable roll in the log; hiding the
+    // rendered card on the other clients costs nothing. Only cards this module
+    // whispered are hidden — another module's private roll is not ours to
+    // suppress. See `renderChatMessageHTML` in module.ts.
+    flags: { [MODULE_ID]: { gmOnly: true } },
   } as Parameters<typeof ChatMessage.create>[0]);
 }
 

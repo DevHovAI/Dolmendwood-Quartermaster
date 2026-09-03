@@ -1650,9 +1650,44 @@ onUntypedHook("renderActorDirectory", (_app: unknown, htmlOrEl: unknown) => {
  * therefore wired every button twice, and one click rolled twice. v13 is the
  * module's minimum and has `renderChatMessageHTML`, so nothing is lost.
  */
-onUntypedHook("renderChatMessageHTML", (_message: unknown, element: unknown) => {
-  if (element instanceof HTMLElement) activateChatButtons(element);
+onUntypedHook("renderChatMessageHTML", (message: unknown, element: unknown) => {
+  if (!(element instanceof HTMLElement)) return;
+  if (hideFromPlayers(message, element)) return;
+  activateChatButtons(element);
 });
+
+/**
+ * Take the Referee's own cards off the players' screens entirely.
+ *
+ * **Foundry shows a whispered message that carries dice to everybody.**
+ * `ChatMessage#visible` returns true for any whisper with an `isRoll`, and the
+ * content is then replaced with "X rolled privately" and `???` in place of the
+ * numbers — so getting lost, the wandering-monster checks and the watch's
+ * mishaps each left a placeholder card in the players' log. That is core's
+ * deliberate "somebody rolled something" cue, and Leander does not want it
+ * (2026-09-04).
+ *
+ * The card is removed rather than the dice being left off the message: without
+ * `rolls` the message would be invisible by itself, but the Referee would lose
+ * the 3D dice and an inspectable roll in the log. **Only this module's own
+ * whispers are touched** — another module's private roll is not ours to hide —
+ * and a card whispered *to* this player stays, which is what makes a refusal
+ * reach the person it is about.
+ *
+ * A card posted before this flag existed has no flag and stays as it was.
+ */
+function hideFromPlayers(message: unknown, element: HTMLElement): boolean {
+  const g = game as Game;
+  if (g.user?.isGM) return false;
+  const msg = message as {
+    getFlag?: (scope: string, key: string) => unknown;
+    whisper?: string[];
+  };
+  if (!msg?.getFlag?.(MODULE_ID, "gmOnly")) return false;
+  if ((msg.whisper ?? []).includes(g.user?.id ?? "")) return false;
+  element.remove();
+  return true;
+}
 
 /** Both kinds of card the module posts carry buttons; both get wired here. */
 function activateChatButtons(element: HTMLElement): void {
