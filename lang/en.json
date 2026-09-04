@@ -36,6 +36,10 @@
   "DOLMENWOOD.Currency.GoldPieces": "Gold Pieces",
   "DOLMENWOOD.Currency.Pellucidium": "Pellucidium",
 
+  "DOLMENWOOD.Zone.Purse.Hint": "Coins in this zone",
+  "DOLMENWOOD.Zone.Purse.Move.Hint": "Move coins to another zone",
+  "DOLMENWOOD.Currency.OfAvailable": "(of {n})",
+
   "DOLMENWOOD.Shop.BuyingFor": "Buying for",
   "DOLMENWOOD.Shop.Purchase": "Purchase",
   "DOLMENWOOD.Shop.Grant": "Grant",

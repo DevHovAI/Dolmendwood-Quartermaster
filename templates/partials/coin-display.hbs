@@ -1,8 +1,8 @@
 <div class="coin-display">
   <div class="coin-totals-readonly">
-    {{#if (gt inventory.coins.pp 0)}}<span class="coin-val">{{inventory.coins.pp}}<span class="coin-unit pp">pp</span></span>{{/if}}
-    <span class="coin-val">{{inventory.coins.gp}}<span class="coin-unit gp">gp</span></span>
-    <span class="coin-val">{{inventory.coins.sp}}<span class="coin-unit sp">sp</span></span>
-    <span class="coin-val">{{inventory.coins.cp}}<span class="coin-unit cp">cp</span></span>
+    {{#if (gt inventory.coins.pp 0)}}<span class="coin-val">{{inventory.coins.pp}}<span class="coin-unit pp">{{localize "DOLMENWOOD.Currency.PP"}}</span></span>{{/if}}
+    <span class="coin-val">{{inventory.coins.gp}}<span class="coin-unit gp">{{localize "DOLMENWOOD.Currency.GP"}}</span></span>
+    <span class="coin-val">{{inventory.coins.sp}}<span class="coin-unit sp">{{localize "DOLMENWOOD.Currency.SP"}}</span></span>
+    <span class="coin-val">{{inventory.coins.cp}}<span class="coin-unit cp">{{localize "DOLMENWOOD.Currency.CP"}}</span></span>
   </div>
 </div>

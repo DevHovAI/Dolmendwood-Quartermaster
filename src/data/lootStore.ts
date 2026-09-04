@@ -2,6 +2,7 @@ import { MODULE_ID, FLAGS, LOOT_ACTOR_IMG, LOOT_ZONE } from "../constants";
 import { FlagManager, addCoinsToZone } from "./FlagManager";
 import { LOOT_ICON_ARTWORK } from "../helpers/handlebars";
 import type { ZoneCoins } from "../types";
+import { t } from "../helpers/i18n";
 
 /**
  * A loot box is an ordinary actor carrying the module's `inventory` flag, marked
@@ -332,9 +333,20 @@ export async function syncLootNoteVisibility(actor: Actor, released: boolean): P
 export const COIN_KEYS = ["pp", "gp", "sp", "cp"] as const;
 export type CoinKey = (typeof COIN_KEYS)[number];
 
-export const COIN_LABELS: Record<CoinKey, string> = {
-  pp: "PP", gp: "GP", sp: "SP", cp: "CP",
-};
+/**
+ * The unit a coin is counted in, as the language file writes it.
+ *
+ * **A function, not the table it used to be.** `game.i18n` does not exist when
+ * this module is evaluated, so a `Record` built at module scope would hold the
+ * four raw key names for the rest of the session — the same trap `t()` guards
+ * against, arrived at from the other side.
+ *
+ * Lower case, because that is what every coin readout in the module already
+ * prints; the old table said "PP" and was the only place that did.
+ */
+export function coinLabel(key: CoinKey): string {
+  return t(`DOLMENWOOD.Currency.${key.toUpperCase()}`);
+}
 
 export function emptyCoins(): ZoneCoins {
   return { cp: 0, sp: 0, gp: 0, pp: 0 };

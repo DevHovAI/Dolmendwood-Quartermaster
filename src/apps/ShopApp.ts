@@ -37,6 +37,7 @@ import type {
   ServicePurchasePayload,
   SellItemPayload,
 } from "../types";
+import { t } from "../helpers/i18n";
 
 export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -1445,10 +1446,10 @@ class AddToShopDialog extends Dialog {
             <div class="qm-field">
               <input type="number" id="shop-item-price" value="${was?.cost.amount ?? 1}" min="0" />
               <select id="shop-item-currency">
-                <option value="cp"${sel(was?.cost.currency === "cp")}>cp</option>
-                <option value="sp"${sel(was?.cost.currency === "sp")}>sp</option>
-                <option value="gp"${sel(!was || was.cost.currency === "gp")}>gp</option>
-                <option value="pp"${sel(was?.cost.currency === "pp")}>pp</option>
+                <option value="cp"${sel(was?.cost.currency === "cp")}>${t("DOLMENWOOD.Currency.CP")}</option>
+                <option value="sp"${sel(was?.cost.currency === "sp")}>${t("DOLMENWOOD.Currency.SP")}</option>
+                <option value="gp"${sel(!was || was.cost.currency === "gp")}>${t("DOLMENWOOD.Currency.GP")}</option>
+                <option value="pp"${sel(was?.cost.currency === "pp")}>${t("DOLMENWOOD.Currency.PP")}</option>
               </select>
             </div>
             <p class="qm-hint">0 means the price is settled at the table — the shelf shows it as "by arrangement".</p>

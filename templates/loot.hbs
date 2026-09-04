@@ -80,10 +80,10 @@
   <div class="loot-purse">
     <i class="fas fa-coins loot-purse-icon"></i>
     <span class="loot-purse-coins">
-      {{#if coins.pp}}<span class="coin coin-pp">{{coins.pp}} pp</span>{{/if}}
-      {{#if coins.gp}}<span class="coin coin-gp">{{coins.gp}} gp</span>{{/if}}
-      {{#if coins.sp}}<span class="coin coin-sp">{{coins.sp}} sp</span>{{/if}}
-      {{#if coins.cp}}<span class="coin coin-cp">{{coins.cp}} cp</span>{{/if}}
+      {{#if coins.pp}}<span class="coin coin-pp">{{coins.pp}} {{localize "DOLMENWOOD.Currency.PP"}}</span>{{/if}}
+      {{#if coins.gp}}<span class="coin coin-gp">{{coins.gp}} {{localize "DOLMENWOOD.Currency.GP"}}</span>{{/if}}
+      {{#if coins.sp}}<span class="coin coin-sp">{{coins.sp}} {{localize "DOLMENWOOD.Currency.SP"}}</span>{{/if}}
+      {{#if coins.cp}}<span class="coin coin-cp">{{coins.cp}} {{localize "DOLMENWOOD.Currency.CP"}}</span>{{/if}}
     </span>
     {{#if canSplit}}
     <button type="button" data-action="splitCoins" class="loot-take-btn" title="Divide evenly among the party">

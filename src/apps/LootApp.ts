@@ -10,7 +10,7 @@ import { getPartyActors } from "../data/sharedStore";
 import { discardItem } from "../data/trash";
 import {
   COIN_KEYS,
-  COIN_LABELS,
+  coinLabel,
   coinCount,
   createLootActor,
   emptyCoins,
@@ -42,6 +42,7 @@ import {
   LOOT_ICONS,
 } from "../helpers/handlebars";
 import type { InventoryItem, ItemDefinition, ZoneCoins } from "../types";
+import { t } from "../helpers/i18n";
 
 /**
  * A loot box's own window. Deliberately not the player inventory: a hoard is a
@@ -438,7 +439,7 @@ async function postLootMessage(actor: Actor): Promise<void> {
 }
 
 export function coinSummary(coins: ZoneCoins): string {
-  const parts = COIN_KEYS.filter((k) => coins[k] > 0).map((k) => `${coins[k]} ${COIN_LABELS[k]}`);
+  const parts = COIN_KEYS.filter((k) => coins[k] > 0).map((k) => `${coins[k]} ${coinLabel(k)}`);
   return parts.length ? parts.join(", ") : "—";
 }
 
@@ -530,7 +531,7 @@ class SetLootCoinsDialog extends Dialog {
     const fields = COIN_KEYS.map(
       (key) => `
         <div class="form-group">
-          <label>${COIN_LABELS[key]}</label>
+          <label>${coinLabel(key)}</label>
           <input type="number" id="loot-coin-${key}" value="${coins[key]}" min="0" />
         </div>`
     ).join("");
@@ -679,7 +680,9 @@ class TakeLootCoinsDialog extends Dialog {
       .map(
         (key) => `
         <div class="form-group">
-          <label>${COIN_LABELS[key]} <span style="opacity:0.7;">(of ${coins[key]})</span></label>
+          <label>${coinLabel(key)} <span style="opacity:0.7;">${t("DOLMENWOOD.Currency.OfAvailable", {
+            n: coins[key],
+          })}</span></label>
           <input type="number" class="loot-take-coin" data-coin="${key}" id="take-coin-${key}"
                  value="0" min="0" max="${coins[key]}" />
         </div>`

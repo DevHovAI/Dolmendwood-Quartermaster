@@ -43,6 +43,7 @@ import {
   isSharedActor,
 } from "../data/sharedStore";
 import type { InventoryItem, ItemDefinition, ExtraZone, ZoneCoins, CharacterInventory, EncumbranceResult } from "../types";
+import { t } from "../helpers/i18n";
 
 /**
  * Per-zone view model for the inventory template. Built once for the character's
@@ -3114,10 +3115,10 @@ class EditItemDialog extends Dialog {
           <div class="qm-field">
             <input type="number" id="edit-cost" value="${def?.cost?.amount ?? 0}" min="0" step="1" />
             <select id="edit-currency">
-              <option value="cp"${currSel("cp")}>cp</option>
-              <option value="sp"${currSel("sp")}>sp</option>
-              <option value="gp"${currSel("gp")}>gp</option>
-              <option value="pp"${currSel("pp")}>pp</option>
+              <option value="cp"${currSel("cp")}>${t("DOLMENWOOD.Currency.CP")}</option>
+              <option value="sp"${currSel("sp")}>${t("DOLMENWOOD.Currency.SP")}</option>
+              <option value="gp"${currSel("gp")}>${t("DOLMENWOOD.Currency.GP")}</option>
+              <option value="pp"${currSel("pp")}>${t("DOLMENWOOD.Currency.PP")}</option>
             </select>
           </div>
           <p class="qm-hint">What a shop reckons it is worth. One that buys back pays its own share of this.</p>

@@ -27,14 +27,18 @@
   "DOLMENWOOD.Item.Size.Large": "Groß",
   "DOLMENWOOD.Item.CannotBeStowed": "Kann nicht verstaut werden",
 
-  "DOLMENWOOD.Currency.CP": "kp",
+  "DOLMENWOOD.Currency.CP": "cp",
   "DOLMENWOOD.Currency.SP": "sp",
   "DOLMENWOOD.Currency.GP": "gp",
   "DOLMENWOOD.Currency.PP": "pp",
-  "DOLMENWOOD.Currency.CopperPieces": "Kupferpfennige",
-  "DOLMENWOOD.Currency.SilverPieces": "Silberpfennige",
-  "DOLMENWOOD.Currency.GoldPieces": "Goldmünzen",
+  "DOLMENWOOD.Currency.CopperPieces": "Kupferstücke",
+  "DOLMENWOOD.Currency.SilverPieces": "Silberstücke",
+  "DOLMENWOOD.Currency.GoldPieces": "Goldstücke",
   "DOLMENWOOD.Currency.Pellucidium": "Pellucidium",
+
+  "DOLMENWOOD.Zone.Purse.Hint": "Münzen in dieser Zone",
+  "DOLMENWOOD.Zone.Purse.Move.Hint": "Münzen in eine andere Zone verschieben",
+  "DOLMENWOOD.Currency.OfAvailable": "(von {n})",
 
   "DOLMENWOOD.Shop.BuyingFor": "Kauft für",
   "DOLMENWOOD.Shop.Purchase": "Kaufen",
