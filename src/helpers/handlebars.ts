@@ -479,12 +479,13 @@ export function registerHandlebarsHelpers(): void {
     }
   });
 
-  // Slot cost label for a size
+  // Slot cost label for a size. English inflects "slot" only at one, German at
+  // the other two, so the three are three keys rather than a number and a noun.
   Handlebars.registerHelper("slotCost", (size: string) => {
     switch (size) {
-      case "tiny": return "0 slots";
-      case "normal": return "1 slot";
-      case "large": return "2 slots";
+      case "tiny": return t("DOLMENWOOD.Item.Slots.Tiny");
+      case "normal": return t("DOLMENWOOD.Item.Slots.Normal");
+      case "large": return t("DOLMENWOOD.Item.Slots.Large");
       default: return "-";
     }
   });

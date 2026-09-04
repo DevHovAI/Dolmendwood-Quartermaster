@@ -38,6 +38,13 @@ import type {
   SellItemPayload,
 } from "../types";
 import { t } from "../helpers/i18n";
+import { coinLabel } from "../data/coins";
+import type { Coin } from "../data/coins";
+
+/** A price as it is read: the figure, then the coin it is counted in. */
+function coinText(c: Coin): string {
+  return `${c.amount} ${coinLabel(c.currency)}`;
+}
 
 export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -207,7 +214,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       content: `
         <div class="dw-shop-message">
           <h3><i class="fas fa-store"></i> ${escapeHTML(this.displayName)}</h3>
-          <p><em>Open for business.</em></p>
+          <p><em>${t("DOLMENWOOD.Shop.Chat.Open")}</em></p>
         </div>`,
     } as Parameters<typeof ChatMessage.create>[0]);
   }
@@ -215,7 +222,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-shop",
     window: {
-      title: "Shop",
+      title: "DOLMENWOOD.Shop.Title",
       resizable: true,
     },
     position: {
@@ -412,7 +419,10 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
       addToGrouped({
         ...item,
-        cost: byArrangement ? item.cost : priced(item.cost),
+        cost: (() => {
+          const c = byArrangement ? item.cost : priced(item.cost);
+          return { ...c, currencyLabel: coinLabel(c.currency) };
+        })(),
         isLocalCustom: true,
         isHidden: false,
         isService: item.service === true,
@@ -502,6 +512,10 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
           worthless: perItem <= 0,
           perItem: cpToCoin(perItem),
           total: cpToCoin(perItem * value.units),
+          // Written out here rather than in the template: a price is a figure and
+          // a coin, and only one of the two comes out of the language file.
+          perItemText: coinText(cpToCoin(perItem)),
+          totalText: coinText(cpToCoin(perItem * value.units)),
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -648,7 +662,9 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
     // Non-GM players cannot buy items they can't afford
     if (!canAfford && !isGM) {
-      ui.notifications?.warn(`${actor.name} cannot afford ${def.name}.`);
+      ui.notifications?.warn(
+        t("DOLMENWOOD.Shop.CannotAfford", { actor: actor.name ?? "", what: def.name })
+      );
       return;
     }
 
@@ -657,25 +673,36 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     const zoneFormGroup = encMode === "weight"
       ? ""
       : `<div class="form-group">
-           <label>Add to zone:</label>
+           <label>${t("DOLMENWOOD.Shop.Purchase.Zone")}</label>
            <select id="purchase-zone">
-             <option value="equipped">Equipped</option>
-             <option value="stowed" selected>Stowed</option>
-             <option value="tiny">Belt Pouch</option>
+             <option value="equipped">${t("DOLMENWOOD.Zone.Equipped")}</option>
+             <option value="stowed" selected>${t("DOLMENWOOD.Zone.Stowed")}</option>
+             <option value="tiny">${t("DOLMENWOOD.Zone.BeltPouch")}</option>
            </select>
          </div>`;
     const result = await new Promise<{ confirmed: boolean; zone: string }>((resolve) => {
       new Dialog({
-        title: "Purchase Item",
+        title: t("DOLMENWOOD.Shop.Purchase.Title"),
         content: `
-          <p>Purchase <strong>${def.name}</strong> for <strong>${adjustedAmount} ${def.cost.currency}</strong>?</p>
-          <p>Target: <strong>${actor.name}</strong></p>
-          ${!canAfford ? '<p class="warning"><i class="fas fa-exclamation-triangle"></i> Insufficient funds! Proceed anyway (GM override)?</p>' : ""}
+          ${t("DOLMENWOOD.Shop.Purchase.Body", {
+            what: escapeHTML(def.name),
+            cost: `${adjustedAmount} ${coinLabel(def.cost.currency)}`,
+          })}
+          ${t("DOLMENWOOD.Shop.Purchase.Target", { who: escapeHTML(actor.name ?? "") })}
+          ${
+            !canAfford
+              ? `<p class="warning"><i class="fas fa-exclamation-triangle"></i> ${t(
+                  "DOLMENWOOD.Shop.Purchase.Insufficient"
+                )}</p>`
+              : ""
+          }
           ${zoneFormGroup}
         `,
         buttons: {
           confirm: {
-            label: canAfford ? "Purchase" : "Override & Purchase",
+            label: t(
+              canAfford ? "DOLMENWOOD.Shop.Purchase.Confirm" : "DOLMENWOOD.Shop.Purchase.Override"
+            ),
             icon: `<i class="fas ${canAfford ? "fa-shopping-cart" : "fa-exclamation-triangle"}"></i>`,
             callback: (html: JQuery) => {
               const zone = encMode === "weight" ? "stowed" : ((html.find("#purchase-zone").val() as string) ?? "stowed");
@@ -706,7 +733,9 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
     SocketHandler.emitOrHandle(SOCKET_EVENTS.PURCHASE_ITEM, payload);
 
-    ui.notifications?.info(`Purchased ${def.name} for ${actor.name}.`);
+    ui.notifications?.info(
+      t("DOLMENWOOD.Shop.Purchased", { what: def.name, who: actor.name ?? "" })
+    );
   }
 
   /**
@@ -736,23 +765,25 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       const walletCp =
         inventory.coins.cp + inventory.coins.sp * 10 + inventory.coins.gp * 100 + inventory.coins.pp * 500;
       if (walletCp < cost.amount * IN_CP[cost.currency]) {
-        ui.notifications?.warn(`${actor.name} cannot afford ${entry.name}.`);
+        ui.notifications?.warn(
+          t("DOLMENWOOD.Shop.CannotAfford", { actor: actor.name ?? "", what: entry.name })
+        );
         return;
       }
     }
 
     const confirmed = await new Promise<boolean>((resolve) => {
       new Dialog({
-        title: free ? "Grant Service" : "Buy Service",
+        title: t(free ? "DOLMENWOOD.Shop.Service.GrantTitle" : "DOLMENWOOD.Shop.Service.BuyTitle"),
         content: `
-          <p>${escapeHTML(entry.name)} ${priceText}?</p>
-          <p>For: <strong>${escapeHTML(actor.name ?? "")}</strong></p>
+          ${t("DOLMENWOOD.Shop.Service.Body", { name: escapeHTML(entry.name), price: priceText })}
+          ${t("DOLMENWOOD.Shop.Service.For", { who: escapeHTML(actor.name ?? "") })}
           ${entry.description ? `<p class="qm-hint">${escapeHTML(entry.description)}</p>` : ""}
-          <p class="qm-hint"><i class="fas fa-circle-info"></i> Nothing is added to the inventory — a service is used where it is bought.</p>
+          <p class="qm-hint"><i class="fas fa-circle-info"></i> ${t("DOLMENWOOD.Shop.Service.Note")}</p>
         `,
         buttons: {
           confirm: {
-            label: free ? "Grant" : "Buy",
+            label: t(free ? "DOLMENWOOD.Shop.Grant" : "DOLMENWOOD.Shop.Buy.Label"),
             icon: '<i class="fas fa-hand-holding-dollar"></i>',
             callback: () => resolve(true),
           },
@@ -787,7 +818,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
   ): void {
     const definitionId = target.dataset.itemId!;
     if (!this.selectedActorId) {
-      ui.notifications?.warn("Select a party member first.");
+      ui.notifications?.warn(t("DOLMENWOOD.Shop.SelectFirst"));
       return;
     }
 
@@ -795,7 +826,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     const catalogDef = CatalogManager.getDefinition(definitionId);
     const def = catalogDef ?? this.customItems().find((i) => i.id === definitionId);
     if (!def) {
-      ui.notifications?.warn("Item not found.");
+      ui.notifications?.warn(t("DOLMENWOOD.Shop.ItemNotFound"));
       return;
     }
 
@@ -821,7 +852,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
         ...(isLocalCustom ? { customDefinition: def as Partial<ItemDefinition> } : {}),
       },
     });
-    ui.notifications?.info(`Granted ${def.name}.`);
+    ui.notifications?.info(t("DOLMENWOOD.Shop.Granted", { what: def.name }));
   }
 
   private static async _onToggleHideItem(
@@ -910,11 +941,11 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
     const library = serviceLibrary();
     if (library.some((e) => e.id === entry.id)) {
-      ui.notifications?.info(`${entry.name} is already in the library.`);
+      ui.notifications?.info(t("DOLMENWOOD.Shop.Library.Already", { name: entry.name }));
       return;
     }
     await setServiceLibrary([...library, foundry.utils.deepClone(entry)]);
-    ui.notifications?.info(`${entry.name} saved to the service library.`);
+    ui.notifications?.info(t("DOLMENWOOD.Shop.Library.Saved", { name: entry.name }));
   }
 
   private static _onToggleSelling(this: ShopApp): void {
@@ -929,7 +960,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
    */
   private static async _onNewVisit(this: ShopApp): Promise<void> {
     await bumpShopVisit(this.shopKey);
-    ui.notifications?.info("The shop's chancy stock has been rolled again.");
+    ui.notifications?.info(t("DOLMENWOOD.Shop.Rerolled"));
     this.render(false);
   }
 
@@ -945,19 +976,19 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     const itemId = target.dataset.itemId!;
     const g = game as Game;
     if (!this.selectedActorId) {
-      ui.notifications?.warn("Select a party member first.");
+      ui.notifications?.warn(t("DOLMENWOOD.Shop.SelectFirst"));
       return;
     }
     const actor = g.actors?.get(this.selectedActorId);
     if (!actor) {
-      ui.notifications?.warn("That character is no longer in the world.");
+      ui.notifications?.warn(t("DOLMENWOOD.Shop.NoLongerInWorld"));
       return;
     }
 
     const inventory = FlagManager.getInventory(actor);
     const row = inventory.items.find((i) => i.id === itemId);
     if (!row) {
-      ui.notifications?.warn(`${actor.name} is no longer carrying that — reopen the shop.`);
+      ui.notifications?.warn(t("DOLMENWOOD.Shop.NoLongerCarrying", { who: actor.name ?? "" }));
       return;
     }
 
@@ -967,7 +998,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     // outlive the shelf that justified it, if the shop is reconfigured while
     // the window is open.
     if (!shopBuys(def?.category, this.buyCategories())) {
-      ui.notifications?.warn(`${this.localName ?? "This shop"} does not deal in ${row.name}.`);
+      ui.notifications?.warn(
+        t("DOLMENWOOD.Shop.DoesNotDeal", {
+          shop: this.localName ?? t("DOLMENWOOD.Shop.ThisShop"),
+          what: row.name,
+        })
+      );
       return;
     }
 
@@ -977,9 +1013,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       // A part-full container can land here on its own: three arrows out of
       // twenty is a fifteenth of five gold, and at half rate that rounds away.
       ui.notifications?.warn(
-        value.fill && value.fill.used < value.fill.capacity
-          ? `${row.name} is too nearly empty to be worth anything here.`
-          : `${row.name} is worth nothing to this shop.`
+        t(
+          value.fill && value.fill.used < value.fill.capacity
+            ? "DOLMENWOOD.Shop.TooEmpty"
+            : "DOLMENWOOD.Shop.WorthNothing",
+          { what: row.name }
+        )
       );
       return;
     }
@@ -991,16 +1030,23 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     if (value.units > 1) {
       const answer = await new Promise<number>((resolve) => {
         new Dialog({
-          title: "Sell",
-          content: `
-            <p>Sell how many of <strong>${escapeHTML(row.name)}</strong>?</p>
-            <p class="qm-hint">${cpToCoin(perItemCp).amount} ${cpToCoin(perItemCp).currency} each, ${value.units} in hand.</p>
+          title: t("DOLMENWOOD.Shop.SellQty.Title"),
+          content: `<form class="qm-form">
+            ${t("DOLMENWOOD.Shop.SellQty.Body", { what: escapeHTML(row.name) })}
+            <p class="qm-hint">${t("DOLMENWOOD.Shop.SellQty.Hint", {
+              cost: coinText(cpToCoin(perItemCp)),
+              n: value.units,
+            })}</p>
             <div class="form-group">
-              <input type="number" id="sell-qty" value="1" min="1" max="${value.units}" />
-            </div>`,
+              <label>${t("DOLMENWOOD.Common.HowMany")}</label>
+              <div class="qm-field">
+                <input type="number" id="sell-qty" value="1" min="1" max="${value.units}" />
+              </div>
+            </div>
+          </form>`,
           buttons: {
             sell: {
-              label: "Sell",
+              label: t("DOLMENWOOD.Shop.SellBtn"),
               callback: (html: JQuery) =>
                 resolve(Math.max(1, Math.min(value.units, parseInt(html.find("#sell-qty").val() as string, 10) || 1))),
             },
@@ -1016,18 +1062,39 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     const proceeds = cpToCoin(perItemCp * quantity);
     const confirmed = await new Promise<boolean>((resolve) => {
       new Dialog({
-        title: "Sell",
-        content: `<p>Sell ${quantity} × <strong>${escapeHTML(row.name)}</strong> for <strong>${proceeds.amount} ${proceeds.currency}</strong>?</p>
+        title: t("DOLMENWOOD.Shop.SellQty.Title"),
+        content: `${t("DOLMENWOOD.Shop.SellConfirm.Body", {
+            n: quantity,
+            what: escapeHTML(row.name),
+            cost: coinText(proceeds),
+          })}
           <p class="qm-hint">${
             value.fill
-              ? `${value.fill.used} of ${value.fill.capacity} left in it — the shop pays for what is in it, not for the empty ${escapeHTML(row.name.toLowerCase())}.`
+              ? t("DOLMENWOOD.Shop.SellConfirm.Fill", {
+                  used: value.fill.used,
+                  capacity: value.fill.capacity,
+                  what: escapeHTML(row.name.toLowerCase()),
+                })
               : value.units - quantity > 0
-                ? `${escapeHTML(actor.name ?? "")} keeps ${value.units - quantity} of ${value.units}.`
-                : `That is the last of ${value.units === 1 ? "them" : `all ${value.units}`}.`
+                ? t("DOLMENWOOD.Shop.SellConfirm.Keeps", {
+                    who: escapeHTML(actor.name ?? ""),
+                    left: value.units - quantity,
+                    total: value.units,
+                  })
+                : value.units === 1
+                  ? t("DOLMENWOOD.Shop.SellConfirm.LastOne")
+                  : t("DOLMENWOOD.Shop.SellConfirm.LastAll", { n: value.units })
           }</p>
-          <p class="qm-hint">${this.localName ?? "The shop"} pays ${this.buyBackRate}% of what a thing is worth.</p>`,
+          <p class="qm-hint">${t("DOLMENWOOD.Shop.SellConfirm.Rate", {
+            shop: this.localName ?? t("DOLMENWOOD.Shop.TheShop"),
+            pct: this.buyBackRate,
+          })}</p>`,
         buttons: {
-          sell: { label: "Sell", icon: '<i class="fas fa-hand-holding-dollar"></i>', callback: () => resolve(true) },
+          sell: {
+            label: t("DOLMENWOOD.Shop.SellBtn"),
+            icon: '<i class="fas fa-hand-holding-dollar"></i>',
+            callback: () => resolve(true),
+          },
           cancel: { label: "Cancel", callback: () => resolve(false) },
         },
         default: "sell",
@@ -1061,7 +1128,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
 
   private static _onAddCustomItem(this: ShopApp): void {
     if (!this.selectedActorId) {
-      ui.notifications?.warn("Select a party member first.");
+      ui.notifications?.warn(t("DOLMENWOOD.Shop.SelectFirst"));
       return;
     }
     new AddCustomShopItemDialog(this.selectedActorId).render(true);
@@ -1075,16 +1142,20 @@ class AddCustomShopItemDialog extends Dialog {
     const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
     const sizeOrWeightField = encMode === "weight"
       ? `<div class="form-group">
-            <label>Weight (coin wt)</label>
-            <input type="number" id="custom-weight" value="10" min="0" />
+            <label>${t("DOLMENWOOD.ItemDialog.Weight")}</label>
+            <div class="qm-field">
+              <input type="number" id="custom-weight" value="10" min="0" />
+            </div>
           </div>`
       : `<div class="form-group">
-            <label>Size</label>
-            <select id="custom-size">
-              <option value="tiny">Tiny (0 slots)</option>
-              <option value="normal" selected>Normal (1 slot)</option>
-              <option value="large">Large (2 slots)</option>
-            </select>
+            <label>${t("DOLMENWOOD.ItemDialog.Size")}</label>
+            <div class="qm-field">
+              <select id="custom-size">
+                <option value="tiny">${t("DOLMENWOOD.ItemDialog.Slots.Tiny")}</option>
+                <option value="normal" selected>${t("DOLMENWOOD.ItemDialog.Slots.Normal")}</option>
+                <option value="large">${t("DOLMENWOOD.ItemDialog.Slots.Large")}</option>
+              </select>
+            </div>
           </div>`;
     const targetActor = (game as Game).actors?.get(actorId);
     const zoneOptions = buildZoneOptionsHTML(
@@ -1092,52 +1163,62 @@ class AddCustomShopItemDialog extends Dialog {
       encMode
     );
     super({
-      title: "Grant Custom Item",
+      title: t("DOLMENWOOD.Shop.CustomGrant.Title"),
       content: `
-        <form>
+        <form class="qm-form">
           <div class="form-group">
-            <label>Item Name</label>
-            <input type="text" id="custom-name" placeholder="Custom item name" />
+            <label>${t("DOLMENWOOD.Shop.CustomGrant.ItemName")}</label>
+            <div class="qm-field">
+              <input type="text" id="custom-name" placeholder="${escapeHTML(
+                t("DOLMENWOOD.ItemDialog.CustomName.Placeholder")
+              )}" />
+            </div>
           </div>
           ${sizeOrWeightField}
           <div class="form-group">
-            <label>Quantity</label>
-            <input type="number" id="custom-qty" value="1" min="1" />
+            <label>${t("DOLMENWOOD.Item.Quantity")}</label>
+            <div class="qm-field"><input type="number" id="custom-qty" value="1" min="1" /></div>
           </div>
           <div class="form-group">
-            <label>Zone</label>
-            <select id="custom-zone">
-              ${zoneOptions}
-            </select>
+            <label>${t("DOLMENWOOD.Item.Zone")}</label>
+            <div class="qm-field"><select id="custom-zone">${zoneOptions}</select></div>
           </div>
           <div class="form-group">
-            <label>Icon</label>
-            ${buildIconPickerHTML()}
+            <label>${t("DOLMENWOOD.Shop.Entry.Icon")}</label>
+            <div class="qm-field qm-field-icons">${buildIconPickerHTML()}</div>
+          </div>
+          <div class="form-group qm-wide">
+            <label>${t("DOLMENWOOD.ItemDialog.Description.Label")}</label>
+            <div class="qm-field">
+              <textarea id="custom-desc" placeholder="${escapeHTML(
+                t("DOLMENWOOD.ItemDialog.Description.Placeholder")
+              )}" rows="2"></textarea>
+            </div>
           </div>
           <div class="form-group">
-            <label>Description</label>
-            <textarea id="custom-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+            <label>${t("DOLMENWOOD.ItemDialog.Edible.Label")}</label>
+            <div class="qm-field"><input type="checkbox" id="custom-edible" /></div>
+            <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edible.Hint")}</p>
           </div>
           <div class="form-group">
-            <label>Edible</label>
-            <input type="checkbox" id="custom-edible" />
-            <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
+            <label>${t("DOLMENWOOD.ItemDialog.Qualities.Label")}</label>
+            <div class="qm-field">
+              <input type="text" id="custom-qualities" placeholder="${escapeHTML(
+                t("DOLMENWOOD.ItemDialog.Qualities.Placeholder")
+              )}" />
+            </div>
+            <p class="qm-hint">${escapeHTML(qualitiesHint())}</p>
+            <p class="qm-hint" data-read-for="custom-qualities"></p>
           </div>
           <div class="form-group">
-            <label>Qualities</label>
-            <input type="text" id="custom-qualities" placeholder="e.g. 1d8, Melee, Two-handed" style="width:100%;" />
-            <span class="qm-hint">${escapeHTML(qualitiesHint())}</span>
-            <span class="qm-hint" data-read-for="custom-qualities"></span>
-          </div>
-          <div class="form-group">
-            <label>Secret?</label>
-            <input type="checkbox" id="custom-secret" />
+            <label>${t("DOLMENWOOD.Shop.CustomGrant.Secret")}</label>
+            <div class="qm-field"><input type="checkbox" id="custom-secret" /></div>
           </div>
         </form>
       `,
       buttons: {
         add: {
-          label: "Grant Item",
+          label: t("DOLMENWOOD.Shop.CustomGrant.Button"),
           callback: (html: JQuery) => {
             const name = (html.find("#custom-name").val() as string).trim();
             if (!name) return;
@@ -1241,7 +1322,7 @@ class StockFromCatalogueDialog extends Dialog {
               <i class="fas fa-chevron-right dw-stock-caret"></i>
               <span class="dw-stock-group-name">${escapeHTML(category)}</span>
               <span class="dw-stock-group-count">${items.length}</span>
-              <input type="checkbox" class="dw-stock-all" title="Tick everything under this heading" />
+              <input type="checkbox" class="dw-stock-all" title="${escapeHTML(t("DOLMENWOOD.Shop.Stock.TickAll.Hint"))}" />
             </summary>
             <div class="dw-stock-rows">${rows}</div>
           </details>`;
@@ -1249,20 +1330,20 @@ class StockFromCatalogueDialog extends Dialog {
       .join("");
 
     super({
-      title: "Stock from Catalogue",
+      title: t("DOLMENWOOD.Shop.Stock.Title"),
       content: `<div class="dw-stock-picker">
           <div class="dw-stock-toolbar">
-            <input type="search" class="dw-stock-search" placeholder="Search the whole catalogue…" autofocus />
-            <button type="button" class="dw-stock-expand" title="Open or close every category">
+            <input type="search" class="dw-stock-search" placeholder="${escapeHTML(t("DOLMENWOOD.Shop.Stock.Search"))}" autofocus />
+            <button type="button" class="dw-stock-expand" title="${escapeHTML(t("DOLMENWOOD.Shop.Stock.Expand.Hint"))}">
               <i class="fas fa-angles-down"></i>
             </button>
-            <span class="dw-stock-chosen">nothing picked</span>
+            <span class="dw-stock-chosen">${t("DOLMENWOOD.Shop.Stock.NothingPicked")}</span>
           </div>
           <div class="dw-stock-list">${sections}</div>
         </div>`,
       buttons: {
         add: {
-          label: "Add to Shop",
+          label: t("DOLMENWOOD.Shop.AddToShop.Label"),
           callback: async (html: JQuery) => {
             const chosen = html
               .find(".dw-stock-rows input:checked")
@@ -1405,44 +1486,46 @@ class AddToShopDialog extends Dialog {
 
     const sizeOrWeightField = encMode === "weight"
       ? `<div class="form-group">
-            <label for="shop-item-weight">Weight</label>
+            <label for="shop-item-weight">${t("DOLMENWOOD.Shop.Entry.Weight.Label")}</label>
             <div class="qm-field">
               <input type="number" id="shop-item-weight" value="${was?.weight ?? 10}" min="0" />
-              <span class="qm-unit">coin wt</span>
+              <span class="qm-unit">${t("DOLMENWOOD.Shop.Entry.Weight.Unit")}</span>
             </div>
           </div>`
       : `<div class="form-group">
-            <label for="shop-item-size">Size</label>
+            <label for="shop-item-size">${t("DOLMENWOOD.Shop.Entry.Size.Label")}</label>
             <div class="qm-field">
             <select id="shop-item-size">
-              <option value="tiny"${sel(was?.size === "tiny")}>Tiny (0 slots)</option>
-              <option value="normal"${sel(!was || was.size === "normal")}>Normal (1 slot)</option>
-              <option value="large"${sel(was?.size === "large")}>Large (2 slots)</option>
+              <option value="tiny"${sel(was?.size === "tiny")}>${t("DOLMENWOOD.ItemDialog.Slots.Tiny")}</option>
+              <option value="normal"${sel(!was || was.size === "normal")}>${t("DOLMENWOOD.ItemDialog.Slots.Normal")}</option>
+              <option value="large"${sel(was?.size === "large")}>${t("DOLMENWOOD.ItemDialog.Slots.Large")}</option>
             </select>
             </div>
           </div>`;
 
     super({
-      title: was ? `Edit: ${was.name}` : "Add to Shop",
+      title: was
+        ? t("DOLMENWOOD.Shop.Entry.EditTitle", { name: was.name })
+        : t("DOLMENWOOD.Shop.AddToShop.Label"),
       content: `
         <form class="qm-form">
           <div class="form-group">
-            <label for="shop-item-kind">This is</label>
+            <label for="shop-item-kind">${t("DOLMENWOOD.Shop.Entry.Kind.Label")}</label>
             <div class="qm-field">
             <select id="shop-item-kind">
-              <option value="goods"${sel(!was?.service)}>Goods — carried away and kept</option>
-              <option value="service"${sel(!!was?.service)}>A service — used here, nothing to carry</option>
+              <option value="goods"${sel(!was?.service)}>${t("DOLMENWOOD.Shop.Entry.Kind.Goods")}</option>
+              <option value="service"${sel(!!was?.service)}>${t("DOLMENWOOD.Shop.Entry.Kind.Service")}</option>
             </select>
             </div>
           </div>
           <div class="form-group">
-            <label for="shop-item-name">Name</label>
+            <label for="shop-item-name">${t("DOLMENWOOD.Shop.Entry.Name.Label")}</label>
             <div class="qm-field">
-              <input type="text" id="shop-item-name" value="${escapeHTML(was?.name ?? "")}" placeholder="e.g. Bath, attended by Heggid" />
+              <input type="text" id="shop-item-name" value="${escapeHTML(was?.name ?? "")}" placeholder="${escapeHTML(t("DOLMENWOOD.Shop.Entry.Name.Placeholder"))}" />
             </div>
           </div>
           <div class="form-group">
-            <label for="shop-item-price">Price</label>
+            <label for="shop-item-price">${t("DOLMENWOOD.Shop.Entry.Price.Label")}</label>
             <div class="qm-field">
               <input type="number" id="shop-item-price" value="${was?.cost.amount ?? 1}" min="0" />
               <select id="shop-item-currency">
@@ -1452,67 +1535,67 @@ class AddToShopDialog extends Dialog {
                 <option value="pp"${sel(was?.cost.currency === "pp")}>${t("DOLMENWOOD.Currency.PP")}</option>
               </select>
             </div>
-            <p class="qm-hint">0 means the price is settled at the table — the shelf shows it as "by arrangement".</p>
+            <p class="qm-hint">${escapeHTML(t("DOLMENWOOD.Shop.Entry.Price.Hint"))}</p>
           </div>
           <div class="form-group">
-            <label for="shop-item-unit">Per</label>
+            <label for="shop-item-unit">${t("DOLMENWOOD.Shop.Entry.Per.Label")}</label>
             <div class="qm-field">
-              <input type="text" id="shop-item-unit" value="${escapeHTML(was && was.unit !== "piece" ? was.unit : "")}" placeholder="e.g. per person, per day, per night" />
+              <input type="text" id="shop-item-unit" value="${escapeHTML(was && was.unit !== "piece" ? was.unit : "")}" placeholder="${escapeHTML(t("DOLMENWOOD.Shop.Entry.Per.Placeholder"))}" />
             </div>
-            <p class="qm-hint">Printed after the price. Leave empty for a plain each-one price.</p>
+            <p class="qm-hint">${t("DOLMENWOOD.Shop.Entry.Per.Hint")}</p>
           </div>
           <div id="shop-item-carry">
             ${sizeOrWeightField}
           </div>
           <div class="form-group">
-            <label for="shop-item-category">Category</label>
+            <label for="shop-item-category">${t("DOLMENWOOD.Shop.Entry.Category.Label")}</label>
             <div class="qm-field">
-              <input type="text" id="shop-item-category" list="shop-item-categories" value="${escapeHTML(was?.category ?? "")}" placeholder="Type one, or pick a known one" />
+              <input type="text" id="shop-item-category" list="shop-item-categories" value="${escapeHTML(was?.category ?? "")}" placeholder="${escapeHTML(t("DOLMENWOOD.Shop.Entry.Category.Placeholder"))}" />
               <datalist id="shop-item-categories">${categoryOptions}</datalist>
             </div>
-            <p class="qm-hint">Anything you like — a bath belongs under Baths, not under Adventuring Gear.</p>
+            <p class="qm-hint">${t("DOLMENWOOD.Shop.Entry.Category.Hint")}</p>
           </div>
           <div class="form-group">
-            <label for="shop-item-subcategory">Subcategory</label>
+            <label for="shop-item-subcategory">${t("DOLMENWOOD.Shop.Entry.Subcategory.Label")}</label>
             <div class="qm-field">
-              <input type="text" id="shop-item-subcategory" value="${escapeHTML(was?.subcategory ?? "")}" placeholder="Optional — e.g. Melee Weapons" />
+              <input type="text" id="shop-item-subcategory" value="${escapeHTML(was?.subcategory ?? "")}" placeholder="${escapeHTML(t("DOLMENWOOD.Shop.Entry.Subcategory.Placeholder"))}" />
             </div>
           </div>
           <div class="form-group">
-            <label for="shop-item-availability">In stock</label>
+            <label for="shop-item-availability">${t("DOLMENWOOD.Shop.Entry.Availability.Label")}</label>
             <div class="qm-field">
               <select id="shop-item-availability">
-                <option value=""${sel(was?.availability === undefined)}>Always</option>
-                ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}"${sel(was?.availability === n)}>${n} in 6</option>`).join("")}
+                <option value=""${sel(was?.availability === undefined)}>${t("DOLMENWOOD.Shop.Entry.Availability.Always")}</option>
+                ${[1, 2, 3, 4, 5].map((n) => `<option value="${n}"${sel(was?.availability === n)}>${t("DOLMENWOOD.Shop.Entry.Availability.NInSix", { n })}</option>`).join("")}
               </select>
             </div>
-            <p class="qm-hint">Rolled once per visit and the same for everyone. Move a shop on with <strong>New visit</strong>.</p>
+            <p class="qm-hint">${t("DOLMENWOOD.Shop.Entry.Availability.Hint")}</p>
           </div>
           <div class="form-group qm-wide">
-            <label>Icon</label>
+            <label>${t("DOLMENWOOD.Shop.Entry.Icon")}</label>
             <div class="qm-field qm-field-icons">
               ${buildIconPickerHTML(was?.icon)}
             </div>
           </div>
           <div class="form-group qm-wide">
-            <label for="shop-item-desc">Description</label>
+            <label for="shop-item-desc">${t("DOLMENWOOD.Shop.Entry.Description.Label")}</label>
             <div class="qm-field">
-              <textarea id="shop-item-desc" placeholder="Conditions, waiting time, what it actually does…" rows="2">${escapeHTML(was?.description ?? "")}</textarea>
+              <textarea id="shop-item-desc" placeholder="${escapeHTML(t("DOLMENWOOD.Shop.Entry.Description.Placeholder"))}" rows="2">${escapeHTML(was?.description ?? "")}</textarea>
             </div>
-            <p class="qm-hint">A page reference like "Player's Book p132" becomes a link, on the shelf and on the chat card.</p>
+            <p class="qm-hint">${escapeHTML(t("DOLMENWOOD.Shop.Entry.Description.Hint"))}</p>
           </div>
           <div class="form-group" id="shop-item-edible-group">
-            <label for="shop-item-edible">Edible</label>
+            <label for="shop-item-edible">${t("DOLMENWOOD.Shop.Entry.Edible.Label")}</label>
             <div class="qm-field">
               <input type="checkbox" id="shop-item-edible"${was?.edible ? " checked" : ""} />
             </div>
-            <p class="qm-hint">Gives the row an Eat button that feeds the character for the day.</p>
+            <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edible.Hint")}</p>
           </div>
           <div class="form-group">
-            <label for="shop-item-qualities">Qualities</label>
+            <label for="shop-item-qualities">${t("DOLMENWOOD.Shop.Entry.Qualities.Label")}</label>
             <div class="qm-field">
               <input type="text" id="shop-item-qualities" value="${escapeHTML((was?.qualities ?? []).join(", "))}"
-                     placeholder="e.g. 1d8, Melee, Two-handed" />
+                     placeholder="${escapeHTML(t("DOLMENWOOD.ItemDialog.Qualities.Placeholder"))}" />
             </div>
             <p class="qm-hint">${escapeHTML(qualitiesHint())}</p>
             <p class="qm-hint" data-read-for="shop-item-qualities"></p>
@@ -1649,7 +1732,7 @@ class StockFromLibraryDialog extends Dialog {
               <i class="fas fa-chevron-right dw-stock-caret"></i>
               <span class="dw-stock-group-name">${escapeHTML(group)}</span>
               <span class="dw-stock-group-count">${entries.length}</span>
-              <input type="checkbox" class="dw-stock-all" title="Tick everything under this heading" />
+              <input type="checkbox" class="dw-stock-all" title="${escapeHTML(t("DOLMENWOOD.Shop.Stock.TickAll.Hint"))}" />
             </summary>
             <div class="dw-stock-rows">${rows}</div>
           </details>`;
@@ -1664,7 +1747,7 @@ class StockFromLibraryDialog extends Dialog {
             <button type="button" class="dw-stock-expand" title="Open or close every heading">
               <i class="fas fa-angles-down"></i>
             </button>
-            <span class="dw-stock-chosen">nothing picked</span>
+            <span class="dw-stock-chosen">${t("DOLMENWOOD.Shop.Stock.NothingPicked")}</span>
           </div>
           <div class="dw-stock-list">${sections}</div>
           <p class="qm-hint">A copy goes on this shop's shelf. Repricing it here leaves the library alone.
@@ -1673,7 +1756,7 @@ class StockFromLibraryDialog extends Dialog {
         </div>`,
       buttons: {
         add: {
-          label: "Add to Shop",
+          label: t("DOLMENWOOD.Shop.AddToShop.Label"),
           callback: async (html: JQuery) => {
             const chosen = html
               .find(".dw-stock-rows input:checked")

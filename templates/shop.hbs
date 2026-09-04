@@ -8,28 +8,28 @@
       <i class="fas fa-store"></i>
       {{#if canRelease}}
       <input type="text" id="shop-name-input" class="dw-title-input" value="{{toolbarName}}"
-             placeholder="Unnamed shop" title="Name this shop — leave empty for none" />
+             placeholder="{{localize "DOLMENWOOD.Shop.Name.Placeholder"}}" title="{{localize "DOLMENWOOD.Shop.Name.Hint"}}" />
       {{else}}
       <h2>{{shopName}}</h2>
       {{/if}}
       <span class="dw-window-head-extra">
-        {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
-        {{#if buysAnything}}<span class="buy-back-badge" title="This shop buys what you bring in at {{buyBackRate}}% of its own value">buys at {{buyBackRate}}%</span>{{/if}}
+        {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="{{localize "DOLMENWOOD.Shop.PriceFactor.Hint" pct=priceFactor}}">{{priceFactor}}%</span>{{/if}}
+        {{#if buysAnything}}<span class="buy-back-badge" title="{{localize "DOLMENWOOD.Shop.BuyBack.Hint" pct=buyBackRate}}">{{localize "DOLMENWOOD.Shop.BuyBack.Badge" pct=buyBackRate}}</span>{{/if}}
 
         {{#if canRelease}}
         {{!-- Which of the two the shop is showing. It starts on its own shelf,
               which is what makes it empty until the Referee stocks it. --}}
         <button type="button" class="dw-shelf-btn" data-action="toggleOwnStock"
-                title="{{#if ownStockOnly}}This shop sells only what you have put on its shelf. Click to sell the whole catalogue instead.{{else}}This shop sells the whole catalogue. Click to keep it to its own shelf — which is what makes it a shop rather than a warehouse.{{/if}}">
+                title="{{#if ownStockOnly}}{{localize "DOLMENWOOD.Shop.Shelf.Own.Hint"}}{{else}}{{localize "DOLMENWOOD.Shop.Shelf.Catalogue.Hint"}}{{/if}}">
           <i class="fas {{#if ownStockOnly}}fa-list-check{{else}}fa-book-open{{/if}}"></i>
-          {{#if ownStockOnly}}Own shelf{{else}}Catalogue{{/if}}
+          {{#if ownStockOnly}}{{localize "DOLMENWOOD.Shop.Shelf.Own.Label"}}{{else}}{{localize "DOLMENWOOD.Shop.Shelf.Catalogue.Label"}}{{/if}}
         </button>
 
         <button type="button" class="dw-release-btn {{#if released}}is-released{{else}}is-staged{{/if}}"
                 data-action="toggleRelease"
-                title="{{#if released}}The party can reach this shop from the toolbar, the day bar and their own inventory. Click to shut it again — anyone with it open will have it taken away.{{else}}Only you can reach this shop. Name it and stock it first, then open it: the party is told in chat and the doors on their bar light up.{{/if}}">
+                title="{{#if released}}{{localize "DOLMENWOOD.Shop.Release.Open.Hint"}}{{else}}{{localize "DOLMENWOOD.Shop.Release.Closed.Hint"}}{{/if}}">
           <i class="fas {{#if released}}fa-door-open{{else}}fa-door-closed{{/if}}"></i>
-          {{#if released}}Open to the party{{else}}Closed{{/if}}
+          {{#if released}}{{localize "DOLMENWOOD.Shop.Release.Open.Label"}}{{else}}{{localize "DOLMENWOOD.Shop.Release.Closed.Label"}}{{/if}}
         </button>
         {{/if}}
       </span>
@@ -38,9 +38,9 @@
     {{!-- Target actor selector (GM can pick any party member; players buy for themselves) --}}
     {{#if isGM}}
     <div class="shop-target">
-      <label for="shop-target-actor">Buying for:</label>
+      <label for="shop-target-actor">{{localize "DOLMENWOOD.Shop.BuyingFor"}}:</label>
       <select id="shop-target-actor">
-        <option value="">— Select party member —</option>
+        <option value="">{{localize "DOLMENWOOD.Shop.SelectMember"}}</option>
         {{#each partyMembers}}
         <option value="{{this.id}}" {{#if (eq this.id ../selectedActorId)}}selected{{/if}}>
           {{this.name}}
@@ -50,7 +50,7 @@
     </div>
     {{else}}
     <div class="shop-target">
-      <span>Buying for: <strong>{{selectedActor.name}}</strong></span>
+      <span>{{localize "DOLMENWOOD.Shop.BuyingFor"}}: <strong>{{selectedActor.name}}</strong></span>
     </div>
     {{/if}}
 
@@ -59,9 +59,9 @@
           number you want while shopping was the one you had to leave the window
           to find. --}}
     {{#if selectedActor}}
-    <div class="shop-coins" title="Every coin {{selectedActor.name}} is carrying, wherever it is stowed — belt, pack, cart and all">
+    <div class="shop-coins" title="{{localize "DOLMENWOOD.Shop.Coins.Hint" name=selectedActor.name}}">
       <i class="fas fa-coins"></i>
-      <span class="shop-coins-label">Coins:</span>
+      <span class="shop-coins-label">{{localize "DOLMENWOOD.Shop.Coins.Label"}}</span>
       {{#if (gt selectedInventory.coins.pp 0)}}<span class="coin-val">{{selectedInventory.coins.pp}}<span class="coin-unit pp">{{localize "DOLMENWOOD.Currency.PP"}}</span></span>{{/if}}
       <span class="coin-val">{{selectedInventory.coins.gp}}<span class="coin-unit gp">{{localize "DOLMENWOOD.Currency.GP"}}</span></span>
       <span class="coin-val">{{selectedInventory.coins.sp}}<span class="coin-unit sp">{{localize "DOLMENWOOD.Currency.SP"}}</span></span>
@@ -82,7 +82,7 @@
   {{#unless ownStockOnly}}
   {{#if allTags.length}}
   <div class="shop-tag-filters">
-    <span class="tag-filter-label">Tags:</span>
+    <span class="tag-filter-label">{{localize "DOLMENWOOD.Shop.Tags"}}:</span>
     {{#each allTags}}
     <button type="button" class="tag-chip {{#if (includes ../shopState.activeTags this)}}active{{/if}}"
             data-action="toggleTag" data-tag="{{this}}">
@@ -95,46 +95,46 @@
 
   {{!-- Search --}}
   <div class="shop-search">
-    <input type="text" id="shop-search" placeholder="Search items…" value="{{searchText}}" />
+    <input type="text" id="shop-search" placeholder="{{localize "DOLMENWOOD.Shop.Search"}}" value="{{searchText}}" />
     {{#if selectedActor}}
     <button type="button" data-action="toggleAffordable"
             class="btn-affordable {{#if showAffordableOnly}}active{{/if}}"
-            title="Show only items you can afford">
-      <i class="fas fa-coins"></i> Affordable
+            title="{{localize "DOLMENWOOD.Shop.Affordable.Hint"}}">
+      <i class="fas fa-coins"></i> {{localize "DOLMENWOOD.Shop.Affordable.Label"}}
     </button>
     {{/if}}
     {{#if buysAnything}}
     {{#if selectedActor}}
     <button type="button" data-action="toggleSelling"
             class="btn-sell-toggle {{#if selling}}active{{/if}}"
-            title="{{#if selling}}Back to the shelves{{else}}Sell what {{selectedActor.name}} is carrying — this shop pays {{buyBackRate}}% of an item's own value{{/if}}">
-      <i class="fas {{#if selling}}fa-shelves{{else}}fa-hand-holding-dollar{{/if}}"></i> {{#if selling}}Shelves{{else}}Sell{{/if}}
+            title="{{#if selling}}{{localize "DOLMENWOOD.Shop.Shelves.Hint"}}{{else}}{{localize "DOLMENWOOD.Shop.SellMode.Hint" name=selectedActor.name pct=buyBackRate}}{{/if}}">
+      <i class="fas {{#if selling}}fa-shelves{{else}}fa-hand-holding-dollar{{/if}}"></i> {{#if selling}}{{localize "DOLMENWOOD.Shop.Shelves.Label"}}{{else}}{{localize "DOLMENWOOD.Shop.SellMode.Label"}}{{/if}}
     </button>
     {{/if}}
     {{/if}}
     {{#if selectedActor}}
     <button type="button" data-action="addCustomItem" class="btn-custom-item"
-            title="Add a custom item{{#if isGM}} to the selected party member{{/if}}">
-      <i class="fas fa-magic"></i> Custom Item
+            title="{{#if isGM}}{{localize "DOLMENWOOD.Shop.CustomItem.HintGM"}}{{else}}{{localize "DOLMENWOOD.Shop.CustomItem.Hint"}}{{/if}}">
+      <i class="fas fa-magic"></i> {{localize "DOLMENWOOD.Shop.CustomItem.Label"}}
     </button>
     {{/if}}
     {{#if isGM}}
     <button type="button" data-action="addToShop" class="btn-add-to-shop"
-            title="Add goods or a service that stay in {{#if isLocalShop}}this shop{{else}}the general shop{{/if}} permanently">
-      <i class="fas fa-plus"></i> Add to Shop
+            title="{{#if isLocalShop}}{{localize "DOLMENWOOD.Shop.AddToShop.HintLocal"}}{{else}}{{localize "DOLMENWOOD.Shop.AddToShop.HintGeneral"}}{{/if}}">
+      <i class="fas fa-plus"></i> {{localize "DOLMENWOOD.Shop.AddToShop.Label"}}
     </button>
     <button type="button" data-action="stockFromCatalogue" class="btn-add-to-shop"
-            title="Put catalogue items on this shelf by hand — including the treasures that are never on sale by default">
-      <i class="fas fa-book"></i> From Catalogue
+            title="{{localize "DOLMENWOOD.Shop.FromCatalogue.Hint"}}">
+      <i class="fas fa-book"></i> {{localize "DOLMENWOOD.Shop.FromCatalogue.Label"}}
     </button>
     <button type="button" data-action="stockFromLibrary" class="btn-add-to-shop"
-            title="Put a service on this shelf: the Player's Book specialists, and whatever you have written yourself">
-      <i class="fas fa-hand-holding-dollar"></i> Add a Service
+            title="{{localize "DOLMENWOOD.Shop.AddService.Hint"}}">
+      <i class="fas fa-hand-holding-dollar"></i> {{localize "DOLMENWOOD.Shop.AddService.Label"}}
     </button>
     {{#if hasChancyStock}}
     <button type="button" data-action="newVisit" class="btn-add-to-shop"
-            title="Roll again for everything this shop stocks on a chance. Visit {{visit}}.">
-      <i class="fas fa-dice-d6"></i> New visit
+            title="{{localize "DOLMENWOOD.Shop.NewVisit.Hint" n=visit}}">
+      <i class="fas fa-dice-d6"></i> {{localize "DOLMENWOOD.Shop.NewVisit.Label"}}
     </button>
     {{/if}}
     {{/if}}
@@ -145,9 +145,9 @@
   <div class="shop-catalog shop-sell">
     <p class="shop-sell-note">
       <i class="fas fa-circle-info"></i>
-      {{shopName}} pays <strong>{{buyBackRate}}%</strong> of what a thing is worth — reckoned on its own value, not on this shop's asking price.
-      {{#if buysOnlyItsTrade}}It takes only what it deals in: <strong>{{buyCategoryList}}</strong>.{{/if}}
-      Anything that carries a zone of its own (a backpack, a cart) is not listed: selling one would have to decide what happens to everything inside it.
+      {{{localize "DOLMENWOOD.Shop.SellView.Note" shop=shopName pct=buyBackRate}}}
+      {{#if buysOnlyItsTrade}}{{{localize "DOLMENWOOD.Shop.SellView.OnlyTrade" list=buyCategoryList}}}{{/if}}
+      {{localize "DOLMENWOOD.Shop.SellView.NoZones"}}
     </p>
     {{#if sellRows.length}}
     <div class="shop-item-list">
@@ -158,27 +158,27 @@
             <i class="fas {{#if this.icon}}{{this.icon}}{{else}}fa-sack{{/if}} shop-item-icon"></i>
             {{this.name}}
             {{#if this.fill}}
-            <span class="shop-sell-count" title="The shop pays for what is in it, not for the empty container">{{this.fill.used}} of {{this.fill.capacity}}</span>
+            <span class="shop-sell-count" title="{{localize "DOLMENWOOD.Shop.SellView.Fill.Hint"}}">{{localize "DOLMENWOOD.Shop.SellView.Fill.Label" used=this.fill.used capacity=this.fill.capacity}}</span>
             {{else}}
-            <span class="shop-sell-count" title="How many {{@root.selectedActor.name}} still carries">{{this.quantity}} in hand</span>
+            <span class="shop-sell-count" title="{{localize "DOLMENWOOD.Shop.SellView.InHand.Hint" name=@root.selectedActor.name}}">{{localize "DOLMENWOOD.Shop.SellView.InHand.Label" n=this.quantity}}</span>
             {{/if}}
           </span>
         </div>
         <div class="shop-item-meta">
           {{#if this.worthless}}
-          <span class="shop-item-cost">nothing</span>
+          <span class="shop-item-cost">{{localize "DOLMENWOOD.Shop.SellView.Worthless"}}</span>
           {{else}}
-          <span class="shop-item-cost">{{this.perItem.amount}} {{this.perItem.currency}} each</span>
+          <span class="shop-item-cost">{{localize "DOLMENWOOD.Shop.SellView.Each" cost=this.perItemText}}</span>
           {{#if (neq this.quantity 1)}}
-          <span class="shop-sell-total" title="If you sold all {{this.quantity}}">all: {{this.total.amount}} {{this.total.currency}}</span>
+          <span class="shop-sell-total" title="{{localize "DOLMENWOOD.Shop.SellView.All.Hint" n=this.quantity}}">{{localize "DOLMENWOOD.Shop.SellView.All.Label" cost=this.totalText}}</span>
           {{/if}}
           {{/if}}
         </div>
         <div class="shop-item-actions">
           {{#unless this.worthless}}
           <button type="button" data-action="sellItem" data-item-id="{{this.id}}"
-                  class="btn-purchase" title="Sell to {{@root.shopName}}">
-            <i class="fas fa-hand-holding-dollar"></i> Sell
+                  class="btn-purchase" title="{{localize "DOLMENWOOD.Shop.SellView.Button.Hint" shop=@root.shopName}}">
+            <i class="fas fa-hand-holding-dollar"></i> {{localize "DOLMENWOOD.Shop.SellView.Button.Label"}}
           </button>
           {{/unless}}
         </div>
@@ -186,7 +186,7 @@
       {{/each}}
     </div>
     {{else}}
-    <p class="shop-sell-empty">{{selectedActor.name}} has nothing this shop would take.</p>
+    <p class="shop-sell-empty">{{localize "DOLMENWOOD.Shop.SellView.Empty" name=selectedActor.name}}</p>
     {{/if}}
   </div>
 
@@ -211,10 +211,10 @@
               <span class="shop-item-name">
                 <i class="fas {{#if this.icon}}{{this.icon}}{{else}}{{itemIcon this.category this.subcategory}}{{/if}} shop-item-icon" title="{{this.category}}"></i>
                 {{this.name}}
-                {{#if this.isService}}<span class="shop-service-badge" title="A service: nothing is added to the inventory"><i class="fas fa-hand-holding-dollar"></i></span>{{/if}}
-                {{#if this.isHidden}}<span class="shop-hidden-badge" title="Hidden from players"><i class="fas fa-eye-slash"></i></span>{{/if}}
-                {{#if this.outOfStock}}<span class="shop-out-badge" title="Stocked on a {{this.availability}}-in-6 chance, and not in this visit. Players do not see this row at all.">out this visit</span>{{/if}}
-                {{#if this.isLocalCustom}}{{#unless this.isService}}<span class="shop-custom-badge" title="Custom shop item"><i class="fas fa-plus-circle"></i></span>{{/unless}}{{/if}}
+                {{#if this.isService}}<span class="shop-service-badge" title="{{localize "DOLMENWOOD.Shop.Badge.Service.Hint"}}"><i class="fas fa-hand-holding-dollar"></i></span>{{/if}}
+                {{#if this.isHidden}}<span class="shop-hidden-badge" title="{{localize "DOLMENWOOD.Shop.Badge.Hidden.Hint"}}"><i class="fas fa-eye-slash"></i></span>{{/if}}
+                {{#if this.outOfStock}}<span class="shop-out-badge" title="{{localize "DOLMENWOOD.Shop.Badge.Out.Hint" n=this.availability}}">{{localize "DOLMENWOOD.Shop.Badge.Out.Label"}}</span>{{/if}}
+                {{#if this.isLocalCustom}}{{#unless this.isService}}<span class="shop-custom-badge" title="{{localize "DOLMENWOOD.Shop.Badge.Custom.Hint"}}"><i class="fas fa-plus-circle"></i></span>{{/unless}}{{/if}}
               </span>
               {{#if this.description}}<span class="shop-item-desc-inline">{{this.description}}</span>{{/if}}
               {{#if this.qualities.length}}
@@ -225,20 +225,20 @@
               {{#if this.isService}}
               {{!-- No size, no weight: nothing is carried away. The unit takes that column instead. --}}
               {{#if this.availability}}
-              <span class="shop-item-size shop-chance-badge" title="Stocked on a {{this.availability}}-in-6 chance, rolled once per visit">{{this.availability}}-in-6</span>
+              <span class="shop-item-size shop-chance-badge" title="{{localize "DOLMENWOOD.Shop.Badge.Chance.Hint" n=this.availability}}">{{localize "DOLMENWOOD.Shop.Badge.Chance.Label" n=this.availability}}</span>
               {{/if}}
               {{else}}
               {{#if (eq @root.encMode "weight")}}
-              <span class="shop-item-size item-weight-badge" title="Weight per unit">{{this.weight}} wt</span>
+              <span class="shop-item-size item-weight-badge" title="{{localize "DOLMENWOOD.Shop.Weight.Hint"}}">{{this.weight}} wt</span>
               {{else}}
               <span class="shop-item-size size-{{this.size}}" title="{{slotCost this.size}}">{{sizeLabel this.size}}</span>
               {{/if}}
               {{#if this.availability}}
-              <span class="shop-item-size shop-chance-badge" title="Stocked on a {{this.availability}}-in-6 chance, rolled once per visit">{{this.availability}}-in-6</span>
+              <span class="shop-item-size shop-chance-badge" title="{{localize "DOLMENWOOD.Shop.Badge.Chance.Hint" n=this.availability}}">{{localize "DOLMENWOOD.Shop.Badge.Chance.Label" n=this.availability}}</span>
               {{/if}}
               {{/if}}
               <span class="shop-item-cost">
-                {{#if this.byArrangement}}by arrangement{{else}}{{this.cost.amount}} {{this.cost.currency}}{{/if}}
+                {{#if this.byArrangement}}{{localize "DOLMENWOOD.Shop.ByArrangement"}}{{else}}{{this.cost.amount}} {{this.cost.currencyLabel}}{{/if}}
                 {{#if this.unit}}{{#if (neq this.unit "piece")}}<span class="shop-item-unit">{{this.unit}}</span>{{/if}}{{/if}}
               </span>
             </div>
@@ -246,8 +246,8 @@
               {{#unless this.isHidden}}
               {{#unless this.outOfStock}}
               <button type="button" data-action="purchaseItem" data-item-id="{{this.id}}"
-                      class="btn-purchase" title="{{#if this.isService}}Pay for this — nothing enters the inventory{{else}}Purchase (deducts coins){{/if}}">
-                <i class="fas {{#if this.isService}}fa-hand-holding-dollar{{else}}fa-shopping-cart{{/if}}"></i> {{#if this.isService}}Pay{{else}}Buy{{/if}}
+                      class="btn-purchase" title="{{#if this.isService}}{{localize "DOLMENWOOD.Shop.Pay.Hint"}}{{else}}{{localize "DOLMENWOOD.Shop.Buy.Hint"}}{{/if}}">
+                <i class="fas {{#if this.isService}}fa-hand-holding-dollar{{else}}fa-shopping-cart{{/if}}"></i> {{#if this.isService}}{{localize "DOLMENWOOD.Shop.Pay.Label"}}{{else}}{{localize "DOLMENWOOD.Shop.Buy.Label"}}{{/if}}
               </button>
               {{/unless}}
               {{/unless}}
@@ -255,8 +255,8 @@
               {{#unless this.isHidden}}
               {{#unless this.outOfStock}}
               <button type="button" data-action="grantItem" data-item-id="{{this.id}}"
-                      class="btn-grant" title="{{#if this.isService}}With the shop's compliments — no coins move{{else}}Grant item (no cost){{/if}}">
-                <i class="fas fa-gift"></i> Grant
+                      class="btn-grant" title="{{#if this.isService}}{{localize "DOLMENWOOD.Shop.GrantService.Hint"}}{{else}}{{localize "DOLMENWOOD.Shop.GrantGoods.Hint"}}{{/if}}">
+                <i class="fas fa-gift"></i> {{localize "DOLMENWOOD.Shop.Grant"}}
               </button>
               {{/unless}}
               {{/unless}}
@@ -265,23 +265,23 @@
                       data-action="{{#if @root.isLocalShop}}toggleLocalHideItem{{else}}toggleHideItem{{/if}}"
                       data-item-id="{{this.id}}"
                       class="icon-btn btn-hide-item {{#if this.isHidden}}is-hidden{{/if}}"
-                      title="{{#if this.isHidden}}Show for players{{else}}Hide from players{{/if}}">
+                      title="{{#if this.isHidden}}{{localize "DOLMENWOOD.Shop.Show.Hint"}}{{else}}{{localize "DOLMENWOOD.Shop.Hide.Hint"}}{{/if}}">
                 <i class="fas {{#if this.isHidden}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
               </button>
               {{/unless}}
               {{#if this.isService}}
               <button type="button" data-action="saveToLibrary" data-item-id="{{this.id}}"
-                      class="icon-btn btn-save-library" title="Keep this service in the library, so another shop can offer it too">
+                      class="icon-btn btn-save-library" title="{{localize "DOLMENWOOD.Shop.SaveLibrary.Hint"}}">
                 <i class="fas fa-box-archive"></i>
               </button>
               {{/if}}
               {{#if this.isLocalCustom}}
               <button type="button" data-action="editShopEntry" data-item-id="{{this.id}}"
-                      class="icon-btn btn-edit-shop-entry" title="Change the price, the chance of it being in stock, or anything else about this row">
+                      class="icon-btn btn-edit-shop-entry" title="{{localize "DOLMENWOOD.Shop.EditEntry.Hint"}}">
                 <i class="fas fa-pen"></i>
               </button>
               <button type="button" data-action="removeFromShop" data-item-id="{{this.id}}"
-                      class="icon-btn btn-remove-from-shop" title="Remove from shop">
+                      class="icon-btn btn-remove-from-shop" title="{{localize "DOLMENWOOD.Shop.RemoveEntry.Hint"}}">
                 <i class="fas fa-trash"></i>
               </button>
               {{/if}}
