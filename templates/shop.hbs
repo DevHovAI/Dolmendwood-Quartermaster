@@ -112,13 +112,16 @@
     </button>
     {{/if}}
     {{/if}}
-    {{#if selectedActor}}
-    <button type="button" data-action="addCustomItem" class="btn-custom-item"
-            title="{{#if isGM}}{{localize "DOLMENWOOD.Shop.CustomItem.HintGM"}}{{else}}{{localize "DOLMENWOOD.Shop.CustomItem.Hint"}}{{/if}}">
-      <i class="fas fa-magic"></i> {{localize "DOLMENWOOD.Shop.CustomItem.Label"}}
-    </button>
-    {{/if}}
-    {{#if isGM}}
+  </div>
+
+  {{!-- **Stocking the shop is the Referee's row, and its own.** The two jobs
+        were one line: searching and buying, which everyone does, beside filling
+        the shelves, which only the Referee does. Seven controls fitted in
+        English and not in German (Leander, 2026-09-05), and splitting them by
+        who uses them is the answer that also reads better — the toolbar now
+        says what is yours and what is his. --}}
+  {{#if isGM}}
+  <div class="shop-gm-tools">
     <button type="button" data-action="addToShop" class="btn-add-to-shop"
             title="{{#if isLocalShop}}{{localize "DOLMENWOOD.Shop.AddToShop.HintLocal"}}{{else}}{{localize "DOLMENWOOD.Shop.AddToShop.HintGeneral"}}{{/if}}">
       <i class="fas fa-plus"></i> {{localize "DOLMENWOOD.Shop.AddToShop.Label"}}
@@ -137,8 +140,8 @@
       <i class="fas fa-dice-d6"></i> {{localize "DOLMENWOOD.Shop.NewVisit.Label"}}
     </button>
     {{/if}}
-    {{/if}}
   </div>
+  {{/if}}
 
   {{#if selling}}
   {{!-- ── Selling: what the character carries, and what this shop would pay ── --}}

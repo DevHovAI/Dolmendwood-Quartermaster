@@ -1592,6 +1592,16 @@ body {
   align-items: center;
 }
 
+/* The Referee's own row, under the search. Same wrap, because four buttons in
+   German are already close to the width three took in English. */
+.shop-gm-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-space-4);
+  align-items: center;
+  margin-top: var(--dw-space-4);
+}
+
 #shop-search {
   flex: 1 1 12rem;
   padding: var(--dw-space-4) var(--dw-space-5);

@@ -6,7 +6,7 @@ import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { zoneRejection } from "../data/zoneGrants";
 import { getPartyActors } from "../data/sharedStore";
 import { SocketHandler } from "../socket/SocketHandler";
-import { buildIconPickerHTML, activateIconPicker, buildZoneOptionsHTML, escapeHTML, activateQualitiesPreview } from "../helpers/handlebars";
+import { buildIconPickerHTML, activateIconPicker, escapeHTML, activateQualitiesPreview } from "../helpers/handlebars";
 import {
   shopEntries,
   setShopEntries,
@@ -237,7 +237,6 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       toggleAffordable: ShopApp._onToggleAffordable,
       purchaseItem: ShopApp._onPurchaseItem,
       grantItem: ShopApp._onGrantItem,
-      addCustomItem: ShopApp._onAddCustomItem,
       toggleHideItem: ShopApp._onToggleHideItem,
       toggleLocalHideItem: ShopApp._onToggleLocalHideItem,
       addToShop: ShopApp._onAddToShop,
@@ -1126,153 +1125,6 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     this.render(false);
   }
 
-  private static _onAddCustomItem(this: ShopApp): void {
-    if (!this.selectedActorId) {
-      ui.notifications?.warn(t("DOLMENWOOD.Shop.SelectFirst"));
-      return;
-    }
-    new AddCustomShopItemDialog(this.selectedActorId).render(true);
-  }
-}
-
-// ─── Add Custom Shop Item Dialog ──────────────────────────────────────────────
-
-class AddCustomShopItemDialog extends Dialog {
-  constructor(actorId: string) {
-    const encMode = ((game as Game).settings.get(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE) ?? "slots") as "slots" | "weight";
-    const sizeOrWeightField = encMode === "weight"
-      ? `<div class="form-group">
-            <label>${t("DOLMENWOOD.ItemDialog.Weight")}</label>
-            <div class="qm-field">
-              <input type="number" id="custom-weight" value="10" min="0" />
-            </div>
-          </div>`
-      : `<div class="form-group">
-            <label>${t("DOLMENWOOD.ItemDialog.Size")}</label>
-            <div class="qm-field">
-              <select id="custom-size">
-                <option value="tiny">${t("DOLMENWOOD.ItemDialog.Slots.Tiny")}</option>
-                <option value="normal" selected>${t("DOLMENWOOD.ItemDialog.Slots.Normal")}</option>
-                <option value="large">${t("DOLMENWOOD.ItemDialog.Slots.Large")}</option>
-              </select>
-            </div>
-          </div>`;
-    const targetActor = (game as Game).actors?.get(actorId);
-    const zoneOptions = buildZoneOptionsHTML(
-      targetActor ? FlagManager.getInventory(targetActor).extraZones ?? [] : [],
-      encMode
-    );
-    super({
-      title: t("DOLMENWOOD.Shop.CustomGrant.Title"),
-      content: `
-        <form class="qm-form">
-          <div class="form-group">
-            <label>${t("DOLMENWOOD.Shop.CustomGrant.ItemName")}</label>
-            <div class="qm-field">
-              <input type="text" id="custom-name" placeholder="${escapeHTML(
-                t("DOLMENWOOD.ItemDialog.CustomName.Placeholder")
-              )}" />
-            </div>
-          </div>
-          ${sizeOrWeightField}
-          <div class="form-group">
-            <label>${t("DOLMENWOOD.Item.Quantity")}</label>
-            <div class="qm-field"><input type="number" id="custom-qty" value="1" min="1" /></div>
-          </div>
-          <div class="form-group">
-            <label>${t("DOLMENWOOD.Item.Zone")}</label>
-            <div class="qm-field"><select id="custom-zone">${zoneOptions}</select></div>
-          </div>
-          <div class="form-group">
-            <label>${t("DOLMENWOOD.Shop.Entry.Icon")}</label>
-            <div class="qm-field qm-field-icons">${buildIconPickerHTML()}</div>
-          </div>
-          <div class="form-group qm-wide">
-            <label>${t("DOLMENWOOD.ItemDialog.Description.Label")}</label>
-            <div class="qm-field">
-              <textarea id="custom-desc" placeholder="${escapeHTML(
-                t("DOLMENWOOD.ItemDialog.Description.Placeholder")
-              )}" rows="2"></textarea>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>${t("DOLMENWOOD.ItemDialog.Edible.Label")}</label>
-            <div class="qm-field"><input type="checkbox" id="custom-edible" /></div>
-            <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edible.Hint")}</p>
-          </div>
-          <div class="form-group">
-            <label>${t("DOLMENWOOD.ItemDialog.Qualities.Label")}</label>
-            <div class="qm-field">
-              <input type="text" id="custom-qualities" placeholder="${escapeHTML(
-                t("DOLMENWOOD.ItemDialog.Qualities.Placeholder")
-              )}" />
-            </div>
-            <p class="qm-hint">${escapeHTML(qualitiesHint())}</p>
-            <p class="qm-hint" data-read-for="custom-qualities"></p>
-          </div>
-          <div class="form-group">
-            <label>${t("DOLMENWOOD.Shop.CustomGrant.Secret")}</label>
-            <div class="qm-field"><input type="checkbox" id="custom-secret" /></div>
-          </div>
-        </form>
-      `,
-      buttons: {
-        add: {
-          label: t("DOLMENWOOD.Shop.CustomGrant.Button"),
-          callback: (html: JQuery) => {
-            const name = (html.find("#custom-name").val() as string).trim();
-            if (!name) return;
-            const qty = Math.max(1, parseInt(html.find("#custom-qty").val() as string, 10) || 1);
-            const zone = html.find("#custom-zone").val() as InventoryItem["zone"];
-            const icon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
-            const description = (html.find("#custom-desc").val() as string).trim();
-            const isSecret = html.find("#custom-secret").prop("checked") as boolean;
-            const customDef: Partial<ItemDefinition> = { isCustom: true, icon };
-            if (encMode === "weight") {
-              customDef.weight = Math.max(0, parseInt(html.find("#custom-weight").val() as string, 10) || 0);
-              customDef.size = "normal";
-            } else {
-              customDef.size = html.find("#custom-size").val() as "tiny" | "normal" | "large";
-            }
-            if (description) customDef.description = description;
-            if (html.find("#custom-edible").is(":checked")) customDef.edible = true;
-            customDef.qualities = parseQualities((html.find("#custom-qualities").val() as string) ?? "");
-
-            // Same zone rules as moving an item by hand
-            if (targetActor) {
-              const rejection = zoneRejection(
-                FlagManager.getInventory(targetActor),
-                zone,
-                { id: "", definitionId: "", name, quantity: qty, zone, isSecret, notes: "", customDefinition: customDef }
-              );
-              if (rejection) { ui.notifications?.warn(rejection); return; }
-            }
-
-            SocketHandler.emitOrHandle(SOCKET_EVENTS.GM_GRANT, {
-              actorId,
-              item: {
-                definitionId: "",
-                name,
-                quantity: qty,
-                zone,
-                isSecret,
-                notes: "",
-                customDefinition: customDef,
-              },
-            });
-          },
-        },
-        cancel: { label: "Cancel" },
-      },
-      default: "add",
-    });
-  }
-
-  override activateListeners(html: JQuery): void {
-    super.activateListeners(html);
-    activateIconPicker(html);
-    activateQualitiesPreview(html[0] ?? html.get(0), "custom-qualities");
-  }
 }
 
 // ─── Add To Shop Dialog ───────────────────────────────────────────────────────
