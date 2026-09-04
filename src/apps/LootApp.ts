@@ -427,16 +427,27 @@ async function postLootMessage(actor: Actor): Promise<void> {
       return `<li>${escapeHTML(item.name)}${count > 1 ? ` ×${count}` : ""}</li>`;
     })
     .join("");
-  const more = inv.items.length > 8 ? `<li>…and ${inv.items.length - 8} more</li>` : "";
+  const more =
+    inv.items.length > 8
+      ? `<li>${t("DOLMENWOOD.Loot.Chat.More", { n: inv.items.length - 8 })}</li>`
+      : "";
   const coins = coinCount(inv.coins) > 0 ? `<p>${coinSummary(inv.coins)}</p>` : "";
 
   await ChatMessage.create({
     content: `
       <div class="dw-loot-message">
-        <h3><i class="fas ${getLootIcon(actor)}"></i> ${escapeHTML(actor.name ?? "Loot")}</h3>
-        ${lines || more ? `<ul>${lines}${more}</ul>` : "<p><em>Empty</em></p>"}
+        <h3><i class="fas ${getLootIcon(actor)}"></i> ${escapeHTML(
+          actor.name ?? t("DOLMENWOOD.Loot.Title")
+        )}</h3>
+        ${
+          lines || more
+            ? `<ul>${lines}${more}</ul>`
+            : `<p><em>${t("DOLMENWOOD.Loot.Chat.Empty")}</em></p>`
+        }
         ${coins}
-        <button type="button" class="dw-open-loot" data-actor-id="${actor.id}">Open</button>
+        <button type="button" class="dw-open-loot" data-actor-id="${actor.id}">${t(
+          "DOLMENWOOD.Loot.Chat.Open"
+        )}</button>
       </div>`,
   } as Parameters<typeof ChatMessage.create>[0]);
 }

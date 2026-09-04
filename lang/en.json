@@ -302,5 +302,9 @@
   "DOLMENWOOD.ItemDialog.Edible.Hint": "Gives the row an Eat button that feeds the character for the day.",
   "DOLMENWOOD.ItemDialog.Qualities.Label": "Qualities",
   "DOLMENWOOD.ItemDialog.Qualities.Placeholder": "e.g. 1d8, Melee, Two-handed",
-  "DOLMENWOOD.ItemDialog.Qualities.Hint": "Comma separated. A weapon needs its damage die (1d8) and Melee and/or Missile (10'/20'/30'). Anything else — Two-handed, Reach, Brace — is kept and shown, but left for the table to rule on."
+  "DOLMENWOOD.ItemDialog.Qualities.Hint": "Comma separated. A weapon needs its damage die (1d8) and Melee and/or Missile (10'/20'/30'). Anything else — Two-handed, Reach, Brace — is kept and shown, but left for the table to rule on.",
+
+  "DOLMENWOOD.Loot.Chat.Empty": "Empty",
+  "DOLMENWOOD.Loot.Chat.More": "…and {n} more",
+  "DOLMENWOOD.Loot.Chat.Open": "Open"
 }

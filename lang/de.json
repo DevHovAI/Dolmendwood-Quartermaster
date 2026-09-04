@@ -302,5 +302,9 @@
   "DOLMENWOOD.ItemDialog.Edible.Hint": "Gibt der Zeile einen Essen-Knopf, der den Charakter für den Tag sättigt.",
   "DOLMENWOOD.ItemDialog.Qualities.Label": "Qualitäten",
   "DOLMENWOOD.ItemDialog.Qualities.Placeholder": "z. B. 1d8, Melee, Two-handed",
-  "DOLMENWOOD.ItemDialog.Qualities.Hint": "Durch Kommas getrennt. Eine Waffe braucht ihren Schadenswürfel (1d8) und Melee und/oder Missile (10'/20'/30'). Alles andere — Two-handed, Reach, Brace — wird übernommen und angezeigt, aber der Tisch entscheidet darüber."
+  "DOLMENWOOD.ItemDialog.Qualities.Hint": "Durch Kommas getrennt. Eine Waffe braucht ihren Schadenswürfel (1d8) und Melee und/oder Missile (10'/20'/30'). Alles andere — Two-handed, Reach, Brace — wird übernommen und angezeigt, aber der Tisch entscheidet darüber.",
+
+  "DOLMENWOOD.Loot.Chat.Empty": "Leer",
+  "DOLMENWOOD.Loot.Chat.More": "…und {n} weitere",
+  "DOLMENWOOD.Loot.Chat.Open": "Öffnen"
 }
