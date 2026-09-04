@@ -617,5 +617,24 @@
   "DOLMENWOOD.Shop.Entry.Description.Placeholder": "Conditions, waiting time, what it actually does…",
   "DOLMENWOOD.Shop.Entry.Description.Hint": "A page reference like “Player's Book p132” becomes a link, on the shelf and on the chat card.",
   "DOLMENWOOD.Shop.Entry.Edible.Label": "Edible",
-  "DOLMENWOOD.Shop.Entry.Qualities.Label": "Qualities"
+  "DOLMENWOOD.Shop.Entry.Qualities.Label": "Qualities",
+
+  "DOLMENWOOD.Shop.Library.Title": "Add a Service",
+  "DOLMENWOOD.Shop.Library.Search": "Search the services…",
+  "DOLMENWOOD.Shop.Library.Expand.Hint": "Open or close every heading",
+  "DOLMENWOOD.Shop.Library.Note": "A copy goes on this shop shelf. Repricing it here leaves the library alone. The bin removes an entry you wrote; on one of the book own specialists it gives the printed price back. Shelves already stocked from it keep what they have.",
+  "DOLMENWOOD.Shop.Library.Prune.Restore.Hint": "Give the book own price back",
+  "DOLMENWOOD.Shop.Library.Prune.Remove.Hint": "Take this out of the library",
+  "DOLMENWOOD.Shop.Library.AlreadyOnShelf": "{n} of those were already on this shelf.",
+  "DOLMENWOOD.Shop.Library.Restore.Title": "Restore the book price",
+  "DOLMENWOOD.Shop.Library.Restore.Body": "<p>Give <strong>{name}</strong> the Player s Book own wording and price back?</p>",
+  "DOLMENWOOD.Shop.Library.Restore.Hint": "Your version is discarded. Shops already stocked with it keep their copy.",
+  "DOLMENWOOD.Shop.Library.Restore.Button": "Restore",
+  "DOLMENWOOD.Shop.Library.Remove.Title": "Remove from the library",
+  "DOLMENWOOD.Shop.Library.Remove.Body": "<p>Take <strong>{name}</strong> out of the service library?</p>",
+  "DOLMENWOOD.Shop.Library.Remove.Hint": "Shops already stocked with it keep their copy — this only tidies the library.",
+  "DOLMENWOOD.Shop.Library.Remove.Button": "Remove",
+  "DOLMENWOOD.Shop.Library.Missing": "{name} was not in the library.",
+  "DOLMENWOOD.Shop.Library.Reverted": "{name} is the book own again.",
+  "DOLMENWOOD.Shop.Library.Removed": "{name} is out of the library."
 }

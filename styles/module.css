@@ -1579,14 +1579,21 @@ body {
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
 }
 
+/* **The row wraps.** Seven buttons beside a search box fit in English and did
+   not in German, where the same labels are half again as long (Leander,
+   2026-09-05: "die spalte mit bezahlbar etc. ist zu lang"). Wrapping is the
+   fix rather than shorter words alone: the next language, or one more button,
+   would put it back. The search box keeps a floor so it cannot be squeezed to
+   nothing before the row gives way. */
 .shop-search {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--dw-space-4);
   align-items: center;
 }
 
 #shop-search {
-  flex: 1;
+  flex: 1 1 12rem;
   padding: var(--dw-space-4) var(--dw-space-5);
   border: 1px solid var(--dw-border-light);
   border-radius: 4px;

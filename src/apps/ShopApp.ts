@@ -1604,7 +1604,7 @@ class AddToShopDialog extends Dialog {
       `,
       buttons: {
         add: {
-          label: was ? "Save" : "Add to Shop",
+          label: t(was ? "DOLMENWOOD.Common.Save" : "DOLMENWOOD.Shop.AddToShop.Label"),
           callback: async (html: JQuery) => {
             const name = (html.find("#shop-item-name").val() as string).trim();
             if (!name) return;
@@ -1719,8 +1719,8 @@ class StockFromLibraryDialog extends Dialog {
                   ? `<button type="button" class="dw-stock-prune" data-prune="${escapeHTML(entry.id)}"
                              title="${
                                SPECIAL_SERVICES.some((s) => s.id === entry.id)
-                                 ? "Give the book's own price back"
-                                 : "Take this out of the library"
+                                 ? t("DOLMENWOOD.Shop.Library.Prune.Restore.Hint")
+                                 : t("DOLMENWOOD.Shop.Library.Prune.Remove.Hint")
                              }"><i class="fas fa-trash"></i></button>`
                   : ""
               }
@@ -1740,19 +1740,17 @@ class StockFromLibraryDialog extends Dialog {
       .join("");
 
     super({
-      title: "Add a Service",
+      title: t("DOLMENWOOD.Shop.Library.Title"),
       content: `<div class="dw-stock-picker">
           <div class="dw-stock-toolbar">
-            <input type="search" class="dw-stock-search" placeholder="Search the services…" autofocus />
-            <button type="button" class="dw-stock-expand" title="Open or close every heading">
+            <input type="search" class="dw-stock-search" placeholder="${escapeHTML(t("DOLMENWOOD.Shop.Library.Search"))}" autofocus />
+            <button type="button" class="dw-stock-expand" title="${escapeHTML(t("DOLMENWOOD.Shop.Library.Expand.Hint"))}">
               <i class="fas fa-angles-down"></i>
             </button>
             <span class="dw-stock-chosen">${t("DOLMENWOOD.Shop.Stock.NothingPicked")}</span>
           </div>
           <div class="dw-stock-list">${sections}</div>
-          <p class="qm-hint">A copy goes on this shop's shelf. Repricing it here leaves the library alone.
-            The bin removes an entry you wrote; on one of the book's own specialists it gives the printed
-            price back. Shelves already stocked from it keep what they have.</p>
+          <p class="qm-hint">${t("DOLMENWOOD.Shop.Library.Note")}</p>
         </div>`,
       buttons: {
         add: {
@@ -1767,7 +1765,7 @@ class StockFromLibraryDialog extends Dialog {
             const added = await addShopEntries(shopName, picked);
             if (added < picked.length) {
               ui.notifications?.info(
-                `${picked.length - added} of those were already on this shelf.`
+                t("DOLMENWOOD.Shop.Library.AlreadyOnShelf", { n: picked.length - added })
               );
             }
             onComplete();
@@ -1799,26 +1797,34 @@ class StockFromLibraryDialog extends Dialog {
         const name = btn.closest(".dw-stock-row")?.querySelector(".dw-stock-name")?.textContent ?? id;
         const isBuiltIn = SPECIAL_SERVICES.some((s) => s.id === id);
         new Dialog({
-          title: isBuiltIn ? "Restore the book's price" : "Remove from the library",
+          title: t(
+            isBuiltIn
+              ? "DOLMENWOOD.Shop.Library.Restore.Title"
+              : "DOLMENWOOD.Shop.Library.Remove.Title"
+          ),
           content: isBuiltIn
-            ? `<p>Give <strong>${escapeHTML(name)}</strong> the Player's Book's own wording and price back?</p>
-               <p class="qm-hint">Your version is discarded. Shops already stocked with it keep their copy.</p>`
-            : `<p>Take <strong>${escapeHTML(name)}</strong> out of the service library?</p>
-               <p class="qm-hint">Shops already stocked with it keep their copy — this only tidies the library.</p>`,
+            ? t("DOLMENWOOD.Shop.Library.Restore.Body", { name: escapeHTML(name) }) +
+              `<p class="qm-hint">${t("DOLMENWOOD.Shop.Library.Restore.Hint")}</p>`
+            : t("DOLMENWOOD.Shop.Library.Remove.Body", { name: escapeHTML(name) }) +
+              `<p class="qm-hint">${t("DOLMENWOOD.Shop.Library.Remove.Hint")}</p>`,
           buttons: {
             yes: {
-              label: isBuiltIn ? "Restore" : "Remove",
+              label: t(
+                isBuiltIn
+                  ? "DOLMENWOOD.Shop.Library.Restore.Button"
+                  : "DOLMENWOOD.Shop.Library.Remove.Button"
+              ),
               icon: `<i class="fas ${isBuiltIn ? "fa-rotate-left" : "fa-trash"}"></i>`,
               callback: async () => {
                 const what = await removeFromLibrary(id);
                 if (what === "missing") {
-                  ui.notifications?.warn(`${name} was not in the library.`);
+                  ui.notifications?.warn(t("DOLMENWOOD.Shop.Library.Missing", { name }));
                   return;
                 }
                 ui.notifications?.info(
                   what === "reverted"
-                    ? `${name} is the book's own again.`
-                    : `${name} is out of the library.`
+                    ? t("DOLMENWOOD.Shop.Library.Reverted", { name })
+                    : t("DOLMENWOOD.Shop.Library.Removed", { name })
                 );
                 // Reopen rather than patch the DOM: a restored built-in has to
                 // come back with the book's price, and the list was built from
