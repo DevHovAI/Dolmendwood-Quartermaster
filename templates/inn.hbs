@@ -11,12 +11,12 @@
       <i class="fas fa-beer-mug-empty"></i>
       {{#if isGM}}
       <input type="text" id="inn-name-input" class="inn-name-edit dw-title-input" value="{{innName}}"
-             placeholder="Unnamed inn" title="Name this inn — leave empty for none" />
+             placeholder="{{localize "DOLMENWOOD.Inn.Name.Placeholder"}}" title="{{localize "DOLMENWOOD.Inn.Name.Hint"}}" />
       {{else}}
       <h2 class="inn-name-static">{{displayName}}</h2>
       {{/if}}
       <span class="dw-window-head-extra">
-        {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="All prices adjusted to {{priceFactor}}%">{{priceFactor}}%</span>{{/if}}
+        {{#if (neq priceFactor 100)}}<span class="price-factor-badge" title="{{localize "DOLMENWOOD.Inn.PriceFactor.Hint" pct=priceFactor}}">{{priceFactor}}%</span>{{/if}}
         {{!-- Quality: switchable only for the toolbar inn. A placed inn's
               quality was decided when it was put on the map and does not
               change. --}}
@@ -28,7 +28,7 @@
           {{/each}}
         </div>
         {{else}}
-        <span class="inn-quality-label" title="Set when this inn was placed">{{qualityLabel}}</span>
+        <span class="inn-quality-label" title="{{localize "DOLMENWOOD.Inn.QualityFixed.Hint"}}">{{qualityLabel}}</span>
         {{/if}}
 
         {{!-- **Last in the head, because it is the last thing done here**: name
@@ -38,9 +38,9 @@
         {{#if canRelease}}
         <button type="button" class="dw-release-btn {{#if released}}is-released{{else}}is-staged{{/if}}"
                 data-action="toggleRelease"
-                title="{{#if released}}The party can reach this inn from the toolbar and the day bar. Click to close it to them again — anyone with it open will have it taken away.{{else}}Only you can reach this inn. Name it and set its quality first, then open it: the party is told in chat and the doors appear on their toolbar and day bar.{{/if}}">
+                title="{{#if released}}{{localize "DOLMENWOOD.Inn.Release.Open.Hint"}}{{else}}{{localize "DOLMENWOOD.Inn.Release.Closed.Hint"}}{{/if}}">
           <i class="fas {{#if released}}fa-door-open{{else}}fa-door-closed{{/if}}"></i>
-          {{#if released}}Open to the party{{else}}Closed{{/if}}
+          {{#if released}}{{localize "DOLMENWOOD.Inn.Release.Open.Label"}}{{else}}{{localize "DOLMENWOOD.Inn.Release.Closed.Label"}}{{/if}}
         </button>
         {{/if}}
       </span>
@@ -49,7 +49,7 @@
     {{!-- Paying character + wallet --}}
     <div class="inn-actor-row">
       {{#if (gt actors.length 1)}}
-      <select id="inn-actor-select" class="inn-actor-select" title="Who is paying">
+      <select id="inn-actor-select" class="inn-actor-select" title="{{localize "DOLMENWOOD.Inn.Payer.Hint"}}">
         {{#each actors}}
         <option value="{{this.id}}" {{#if (eq this.id ../selectedActorId)}}selected{{/if}}>{{this.name}}</option>
         {{/each}}
@@ -67,14 +67,14 @@
   {{!-- Who has eaten and slept today --}}
   <div class="inn-daybox">
     <div class="inn-daybox-header">
-      <span class="inn-day-label"><i class="fas fa-sun"></i> Today</span>
+      <span class="inn-day-label"><i class="fas fa-sun"></i> {{localize "DOLMENWOOD.Inn.Today"}}</span>
       {{#if isGM}}
       <span class="inn-daybox-tools">
-        <button type="button" class="icon-btn" data-action="rerollMenu" title="Roll today's menu again">
+        <button type="button" class="icon-btn" data-action="rerollMenu" title="{{localize "DOLMENWOOD.Inn.Reroll.Hint"}}">
           <i class="fas fa-dice"></i>
         </button>
-        <button type="button" class="btn-new-day" data-action="newDay" title="Start a new in-game day: clears this list and re-rolls every inn's menu">
-          <i class="fas fa-rotate"></i> New day
+        <button type="button" class="btn-new-day" data-action="newDay" title="{{localize "DOLMENWOOD.Inn.NewDay.Hint"}}">
+          <i class="fas fa-rotate"></i> {{localize "DOLMENWOOD.Inn.NewDay.Label"}}
         </button>
       </span>
       {{/if}}
@@ -82,7 +82,7 @@
     {{#if dayLog.length}}
     <table class="inn-daybox-table">
       <thead>
-        <tr><th>Character</th><th>Lodging</th><th>Food</th></tr>
+        <tr><th>{{localize "DOLMENWOOD.Inn.Col.Character"}}</th><th>{{localize "DOLMENWOOD.Inn.Col.Lodging"}}</th><th>{{localize "DOLMENWOOD.Inn.Col.Food"}}</th></tr>
       </thead>
       <tbody>
         {{#each dayLog}}
@@ -95,7 +95,7 @@
       </tbody>
     </table>
     {{else}}
-    <p class="inn-empty">No party members found.</p>
+    <p class="inn-empty">{{localize "DOLMENWOOD.Inn.NoParty"}}</p>
     {{/if}}
   </div>
 
@@ -105,18 +105,18 @@
     <details class="inn-section" data-sync="inn-section-{{this.key}}" open>
       <summary class="inn-section-header">
         <i class="fas {{this.icon}}"></i> {{this.label}}
-        {{#if this.showQuality}}<span class="inn-section-quality" title="This section differs from the house quality">{{this.qualityLabel}}</span>{{/if}}
+        {{#if this.showQuality}}<span class="inn-section-quality" title="{{localize "DOLMENWOOD.Inn.Section.Quality.Hint"}}">{{this.qualityLabel}}</span>{{/if}}
       </summary>
 
       {{#if this.canEdit}}
       <div class="inn-section-tools">
-        <button type="button" class="icon-btn" data-action="editSection" data-section="{{this.key}}" title="Section text, how many are served, quality">
+        <button type="button" class="icon-btn" data-action="editSection" data-section="{{this.key}}" title="{{localize "DOLMENWOOD.Inn.Section.Edit.Hint"}}">
           <i class="fas fa-sliders"></i>
         </button>
-        <button type="button" class="icon-btn" data-action="addEntry" data-section="{{this.key}}" title="Add a line to this section">
+        <button type="button" class="icon-btn" data-action="addEntry" data-section="{{this.key}}" title="{{localize "DOLMENWOOD.Inn.Section.Add.Hint"}}">
           <i class="fas fa-plus"></i>
         </button>
-        <button type="button" class="icon-btn" data-action="resetSection" data-section="{{this.key}}" title="Discard this section's changes and start over from the book">
+        <button type="button" class="icon-btn" data-action="resetSection" data-section="{{this.key}}" title="{{localize "DOLMENWOOD.Inn.Section.Reset.Hint"}}">
           <i class="fas fa-arrow-rotate-left"></i>
         </button>
       </div>
@@ -131,7 +131,7 @@
         <div class="inn-item {{#unless this.canAfford}}inn-item-unaffordable{{/unless}}">
           <div class="inn-item-info">
             <span class="inn-item-name">
-              {{#if this.fixed}}<i class="fas fa-star inn-fixed-marker" title="Always available"></i> {{/if}}{{this.name}}
+              {{#if this.fixed}}<i class="fas fa-star inn-fixed-marker" title="{{localize "DOLMENWOOD.Inn.Item.Fixed.Hint"}}"></i> {{/if}}{{this.name}}
               {{#if this.tag}}<span class="inn-item-tag">{{this.tag}}</span>{{/if}}
               {{!-- The pricing basis ("per person") lives beside the name, not
                     in the price column — there it either wrapped to a second
@@ -142,18 +142,18 @@
             {{#if this.description}}<span class="inn-item-desc">{{this.description}}</span>{{/if}}
           </div>
 
-          <span class="inn-item-cost">{{this.cost.amount}} {{this.cost.currency}}</span>
+          <span class="inn-item-cost">{{this.cost.amount}} {{this.cost.currencyLabel}}</span>
 
           {{!-- Everything after the price sits in one column so the rows line up,
                 whether a line has one button or four --}}
           <div class="inn-item-actions">
           {{#if this.canEdit}}
           <button type="button" class="icon-btn" data-action="editEntry"
-                  data-section="{{this.section}}" data-entry-id="{{this.id}}" title="Edit this line">
+                  data-section="{{this.section}}" data-entry-id="{{this.id}}" title="{{localize "DOLMENWOOD.Inn.Item.Edit.Hint"}}">
             <i class="fas fa-pen"></i>
           </button>
           <button type="button" class="icon-btn" data-action="deleteEntry"
-                  data-section="{{this.section}}" data-entry-id="{{this.id}}" title="Remove this line">
+                  data-section="{{this.section}}" data-entry-id="{{this.id}}" title="{{localize "DOLMENWOOD.Inn.Item.Delete.Hint"}}">
             <i class="fas fa-trash"></i>
           </button>
           {{/if}}
@@ -166,12 +166,12 @@
           {{#if this.consumable}}
           <button type="button" class="btn-inn-purchase" data-action="buyForSelf"
                   data-section="{{this.section}}" data-entry-id="{{this.id}}"
-                  {{#unless this.canAfford}}disabled title="Cannot afford"{{else}}title="{{this.buyLabel}}"{{/unless}}>
+                  {{#unless this.canAfford}}disabled title="{{localize "DOLMENWOOD.Inn.CannotAfford"}}"{{else}}title="{{this.buyLabel}}"{{/unless}}>
             <i class="fas fa-user"></i>
           </button>
           <button type="button" class="btn-inn-purchase btn-inn-treat" data-action="buyForOther"
                   data-section="{{this.section}}" data-entry-id="{{this.id}}"
-                  {{#unless this.canAfford}}disabled title="Cannot afford"{{else}}title="Buy for someone else — you pay"{{/unless}}>
+                  {{#unless this.canAfford}}disabled title="{{localize "DOLMENWOOD.Inn.CannotAfford"}}"{{else}}title="{{localize "DOLMENWOOD.Inn.BuyForOther.Hint"}}"{{/unless}}>
             <i class="fas fa-people-group"></i>
           </button>
           {{else}}
@@ -183,7 +183,7 @@
           {{#if this.takeAway}}
           <button type="button" class="btn-inn-purchase btn-inn-container" data-action="buyContainer"
                   data-section="{{this.section}}" data-entry-id="{{this.id}}"
-                  {{#unless this.takeAway.canAfford}}disabled title="Cannot afford"{{else}}title="{{this.takeAway.title}}"{{/unless}}>
+                  {{#unless this.takeAway.canAfford}}disabled title="{{localize "DOLMENWOOD.Inn.CannotAfford"}}"{{else}}title="{{this.takeAway.title}}"{{/unless}}>
             <i class="fas {{this.takeAway.icon}}"></i>
           </button>
           {{else}}
@@ -195,7 +195,7 @@
       </div>
       {{/each}}
 
-      {{#if this.isEmpty}}<p class="inn-empty">Nothing on offer here today.</p>{{/if}}
+      {{#if this.isEmpty}}<p class="inn-empty">{{localize "DOLMENWOOD.Inn.Empty"}}</p>{{/if}}
     </details>
     {{/each}}
   </div>

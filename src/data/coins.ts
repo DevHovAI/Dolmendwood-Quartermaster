@@ -7,9 +7,25 @@
  * kind of duplicate that only shows up as a rounding argument at the table.
  */
 
+import { t } from "../helpers/i18n";
+
 export type Currency = "cp" | "sp" | "gp" | "pp";
 
 export const CURRENCY_IN_CP: Record<Currency, number> = { cp: 1, sp: 10, gp: 100, pp: 500 };
+
+/**
+ * The unit a coin is written in, as the language file has it.
+ *
+ * **Here, because this is where the coins live.** It started in `lootStore` and
+ * was about to be written a second time for the inn's prices — which is the
+ * same mistake the exchange rate above was moved here to end.
+ *
+ * A function, not a table: a `Record` built at module scope cannot call `t()`,
+ * because `game.i18n` does not exist yet when this file is evaluated.
+ */
+export function coinLabel(currency: Currency): string {
+  return t(`DOLMENWOOD.Currency.${currency.toUpperCase()}`);
+}
 
 export interface Coin {
   amount: number;

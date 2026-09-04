@@ -15,6 +15,9 @@ import {
   costToCp,
   withPriceFactor,
   qualityLabel,
+  sectionLabel,
+  groupLabel,
+  containerLabel,
   resolveContainer,
   containerCost,
 } from "../data/innData";
@@ -45,6 +48,8 @@ import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { getEncumbranceMode, zonesAcceptingItems } from "../data/zoneGrants";
 import type { InnPurchasePayload, InventoryItem, ItemDefinition, CharacterInventory } from "../types";
 import { t } from "../helpers/i18n";
+// Aliased: in this file a "coin unit" is what a price is written in.
+import { coinLabel as coinUnit } from "../data/coins";
 
 interface InnState {
   name: string;
@@ -132,7 +137,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-inn",
     window: {
-      title: "Inn",
+      title: "DOLMENWOOD.Inn.Title",
       resizable: true,
     },
     position: {
@@ -224,7 +229,8 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       ? INN_SECTIONS.filter((s) => wanted.includes(s.key))
       : INN_SECTIONS;
 
-    const sections = visible.map(({ key: sectionKey, label, icon }) => {
+    const sections = visible.map(({ key: sectionKey, icon }) => {
+      const label = sectionLabel(sectionKey);
       const q = sectionQuality(config, sectionKey);
       const entries = dailyEntries(key, config, sectionKey, day);
 
@@ -248,11 +254,13 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
           description: entry.description ?? "",
           tag: entry.tag ?? "",
           unit: entry.unit ?? "",
-          cost,
+          cost: { ...cost, currencyLabel: t(`DOLMENWOOD.Currency.${cost.currency.toUpperCase()}`) },
           canAfford: walletCp >= costToCp(cost),
           fixed: !!entry.fixed,
           canEdit: isGM,
-          buyLabel: selectedActor ? `Buy for ${selectedActor.name}` : "Buy",
+          buyLabel: selectedActor
+            ? t("DOLMENWOOD.Inn.Buy.For", { who: selectedActor.name ?? "" })
+            : t("DOLMENWOOD.Inn.TakeAway.Buy"),
           takeAway,
           // Goods are bought, not consumed here, so the eat-and-drink-here
           // buttons would be meaningless on them.
@@ -266,7 +274,8 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
       const declared = groupsFor(sectionKey);
       const groups: { key: string; label: string; entries: unknown[] }[] = [];
-      for (const { key: gk, label: gLabel } of declared) {
+      for (const { key: gk } of declared) {
+        const gLabel = groupLabel(gk);
         const bucket = buckets.get(gk);
         if (bucket) {
           groups.push({ key: gk, label: gLabel, entries: bucket });
@@ -274,7 +283,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
         }
       }
       for (const [gk, bucket] of buckets) {
-        groups.push({ key: gk, label: gk === "" ? "" : gk, entries: bucket });
+        groups.push({ key: gk, label: gk === "" ? "" : groupLabel(gk), entries: bucket });
       }
 
       return {
@@ -318,7 +327,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       // and so the only one whose door this button is.
       canRelease: isGM && !this.isConfigured,
       released: this.released,
-      qualities: INN_QUALITIES.map((q) => ({ ...q, active: q.key === config.quality })),
+      qualities: INN_QUALITIES.map((q) => ({ ...q, label: qualityLabel(q.key), active: q.key === config.quality })),
       isGM,
       priceFactor: this.priceFactor,
       actors,
@@ -352,7 +361,16 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
         weight,
         cost,
         canAfford: walletCp >= costToCp(cost),
-        title: `${entry.name} — ${cost.amount} ${cost.currency}${weight ? `, ${weight} wt each` : ""}`,
+        title: weight
+          ? t("DOLMENWOOD.Inn.Buy.HintWeight", {
+              name: entry.name,
+              cost: `${cost.amount} ${coinUnit(cost.currency)}`,
+              weight,
+            })
+          : t("DOLMENWOOD.Inn.Buy.Hint", {
+              name: entry.name,
+              cost: `${cost.amount} ${coinUnit(cost.currency)}`,
+            }),
       };
     }
 
@@ -361,12 +379,17 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const spec = CONTAINER_SPECS[kind];
     const cost = withPriceFactor(containerCost(entry.cost, kind), this.priceFactor);
     return {
-      label: spec.label,
+      label: containerLabel(kind),
       icon: spec.icon,
       weight: spec.weight,
       cost,
       canAfford: walletCp >= costToCp(cost),
-      title: `${spec.label} — ${spec.portions} portions, ${cost.amount} ${cost.currency}, ${spec.weight} wt`,
+      title: t("DOLMENWOOD.Inn.Container.Hint", {
+        container: containerLabel(kind),
+        portions: spec.portions,
+        cost: `${cost.amount} ${coinUnit(cost.currency)}`,
+        weight: spec.weight,
+      }),
     };
   }
 
@@ -403,7 +426,10 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     }
 
     const spec = CONTAINER_SPECS[kind!];
-    const name = `${spec.label} of ${entry.name}`;
+    const name = t("DOLMENWOOD.Inn.TakeAway.Of", {
+      container: containerLabel(kind!),
+      name: entry.name,
+    });
     const definition: Partial<ItemDefinition> = {
       isCustom: true,
       name,
@@ -454,7 +480,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
     const payer = this.selectedActorId ? (game as Game).actors?.get(this.selectedActorId) ?? null : null;
     if (!payer) {
-      ui.notifications?.warn("No character selected.");
+      ui.notifications?.warn(t("DOLMENWOOD.Inn.NoCharacter"));
       return;
     }
 
@@ -561,7 +587,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       content: `
         <div class="dw-inn-message">
           <h3><i class="fas fa-beer-mug-empty"></i> ${escapeHTML(name)}</h3>
-          <p><em>${escapeHTML(qualityLabel(this.quality))}</em> — open for business.</p>
+          <p>${t("DOLMENWOOD.Inn.Chat.Open", { quality: escapeHTML(qualityLabel(this.quality)) })}</p>
         </div>`,
     } as Parameters<typeof ChatMessage.create>[0]);
   }
@@ -588,7 +614,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const g = game as Game;
     const payerId = this.selectedActorId;
     if (!payerId) {
-      ui.notifications?.warn("No character selected.");
+      ui.notifications?.warn(t("DOLMENWOOD.Inn.NoCharacter"));
       return;
     }
     const payer = g.actors?.get(payerId);
@@ -618,13 +644,15 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       inventory.coins.gp * 100 + inventory.coins.pp * 500;
 
     if (walletCp < costCp) {
-      ui.notifications?.warn(`${payer.name} cannot afford ${label}.`);
+      ui.notifications?.warn(
+        t("DOLMENWOOD.Inn.CannotAffordNamed", { payer: payer.name ?? "", what: label })
+      );
       return;
     }
 
     // The coins are deducted on the GM's client. Without one the message goes
     // nowhere and the guest would be told they paid while the purse stays full.
-    if (!requireActiveGM("paying at the inn needs a GM online")) return;
+    if (!requireActiveGM(t("DOLMENWOOD.Inn.NeedsGM"))) return;
 
     const forSomeoneElse = recipient.id !== payer.id;
 
@@ -633,10 +661,17 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     // again here would be a second confirmation of the same decision.
     if (!takeAway) {
       const confirmed = await Dialog.confirm({
-        title: `Pay for ${label}`,
-        content: `<p>Pay <strong>${cost.amount} ${cost.currency}</strong> for <em>${escapeHTML(label)}</em>${
-          forSomeoneElse ? ` — for <strong>${escapeHTML(recipient.name ?? "")}</strong>` : ""
-        }?</p>`,
+        title: t("DOLMENWOOD.Inn.Pay.Title", { what: label }),
+        content: forSomeoneElse
+          ? t("DOLMENWOOD.Inn.Pay.BodyFor", {
+              cost: `${cost.amount} ${coinUnit(cost.currency)}`,
+              what: escapeHTML(label),
+              who: escapeHTML(recipient.name ?? ""),
+            })
+          : t("DOLMENWOOD.Inn.Pay.Body", {
+              cost: `${cost.amount} ${coinUnit(cost.currency)}`,
+              what: escapeHTML(label),
+            }),
       });
       if (!confirmed) return;
     }
@@ -656,8 +691,15 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
     ui.notifications?.info(
       forSomeoneElse
-        ? `${payer.name} paid for ${recipient.name}'s ${label}.`
-        : `${payer.name} paid for ${label}.${takeAway ? "" : " Enjoy!"}`
+        ? t("DOLMENWOOD.Inn.Paid.ForSomeoneElse", {
+            payer: payer.name ?? "",
+            who: recipient.name ?? "",
+            what: label,
+          })
+        : t(takeAway ? "DOLMENWOOD.Inn.Paid.Self" : "DOLMENWOOD.Inn.Paid.SelfEnjoy", {
+            payer: payer.name ?? "",
+            what: label,
+          })
     );
     this.render(false);
   }
@@ -668,7 +710,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     target: HTMLElement
   ): Promise<void> {
     if (!this.selectedActorId) {
-      ui.notifications?.warn("No character selected.");
+      ui.notifications?.warn(t("DOLMENWOOD.Inn.NoCharacter"));
       return;
     }
     await this._purchase(
@@ -687,7 +729,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     const entryId = target.dataset.entryId!;
     const others = getPartyActors().filter((a) => a.id !== this.selectedActorId);
     if (others.length === 0) {
-      ui.notifications?.warn("There is nobody else to buy for.");
+      ui.notifications?.warn(t("DOLMENWOOD.Inn.NobodyElse"));
       return;
     }
 
@@ -697,22 +739,22 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
     const chosen = await new Promise<string | null>((resolve) => {
       new Dialog({
-        title: "Buy for someone else",
+        title: t("DOLMENWOOD.Inn.Treat.Title"),
         content: `
-          <form>
-            <p class="hint" style="margin:0 0 6px;">You pay — it goes on their tab.</p>
+          <form class="qm-form">
+            <p class="qm-hint">${t("DOLMENWOOD.Inn.Treat.Hint")}</p>
             <div class="form-group">
-              <label>Recipient</label>
+              <label>${t("DOLMENWOOD.Inn.Treat.Recipient")}</label>
               <select id="inn-recipient">${options}</select>
             </div>
           </form>`,
         buttons: {
           ok: {
-            label: "Continue",
+            label: t("DOLMENWOOD.Inn.Treat.Continue"),
             icon: '<i class="fas fa-people-group"></i>',
             callback: (html: JQuery) => resolve((html.find("#inn-recipient").val() as string) ?? null),
           },
-          cancel: { label: "Cancel", callback: () => resolve(null) },
+          cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => resolve(null) },
         },
         default: "ok",
       }).render(true);
@@ -726,9 +768,8 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
 
   private static async _onNewDay(this: InnApp): Promise<void> {
     const confirmed = await Dialog.confirm({
-      title: "Start a new day",
-      content:
-        "<p>Clear the day's lodging and food for everyone, and re-roll the menu at <em>every</em> inn?</p>",
+      title: t("DOLMENWOOD.Inn.NewDay.Title"),
+      content: t("DOLMENWOOD.Inn.NewDay.Body"),
     });
     if (!confirmed) return;
     await advanceInnDay();
@@ -780,8 +821,8 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     if (!entry) return;
 
     const confirmed = await Dialog.confirm({
-      title: "Remove line",
-      content: `<p>Remove <strong>${escapeHTML(entry.name)}</strong> from this inn?</p>`,
+      title: t("DOLMENWOOD.Inn.RemoveLine.Title"),
+      content: t("DOLMENWOOD.Inn.RemoveLine.Body", { name: escapeHTML(entry.name) }),
     });
     if (!confirmed) return;
 
@@ -827,8 +868,8 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
   ): Promise<void> {
     const section = target.dataset.section as InnSection;
     const confirmed = await Dialog.confirm({
-      title: "Reset section",
-      content: "<p>Discard every change to this section and rebuild it from the book?</p>",
+      title: t("DOLMENWOOD.Inn.ResetSection.Title"),
+      content: t("DOLMENWOOD.Inn.ResetSection.Body"),
     });
     if (!confirmed) return;
 
@@ -849,9 +890,8 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
     // same one — so switching cannot preserve edits made to the old one.
     if (hasStoredConfig(this.innKey)) {
       const confirmed = await Dialog.confirm({
-        title: "Change quality",
-        content:
-          "<p>This inn has its own edited tables. Changing the quality rebuilds every section from the book and discards those edits.</p><p>Continue?</p>",
+        title: t("DOLMENWOOD.Inn.ChangeQuality.Title"),
+        content: t("DOLMENWOOD.Inn.ChangeQuality.Body"),
       });
       if (!confirmed) return;
       await deleteInnConfig(this.innKey);
@@ -882,7 +922,9 @@ class BuyTakeAwayDialog extends Dialog {
   ) {
     const spec = kind ? CONTAINER_SPECS[kind] : null;
     const def = entry.grantsItem ? CatalogManager.getDefinition(entry.grantsItem) : undefined;
-    const title = spec ? `${spec.label} of ${entry.name}` : (def?.name ?? entry.name);
+    const title = spec
+      ? t("DOLMENWOOD.Inn.TakeAway.Of", { container: containerLabel(kind!), name: entry.name })
+      : (def?.name ?? entry.name);
     const unitWeight = spec ? spec.weight : (def?.weight ?? 0);
 
     // The payer first — buying one for yourself is the ordinary case.
@@ -891,12 +933,22 @@ class BuyTakeAwayDialog extends Dialog {
       .map((a) => `<option value="${a.id}">${escapeHTML(a.name ?? "")}</option>`)
       .join("");
 
+    const priceText = `${unitCost.amount} ${coinUnit(unitCost.currency)}`;
     const subtitle = spec
-      ? `${spec.portions} portions for the price of ${spec.pricePortions} — <strong>${unitCost.amount} ${unitCost.currency}</strong>, ${spec.weight} wt`
-      : `<strong>${unitCost.amount} ${unitCost.currency}</strong> each${unitWeight ? `, ${unitWeight} wt each` : ""}`;
+      ? t("DOLMENWOOD.Inn.TakeAway.SubContainer", {
+          portions: spec.portions,
+          price: spec.pricePortions,
+          cost: priceText,
+          weight: spec.weight,
+        })
+      : unitWeight
+        ? t("DOLMENWOOD.Inn.TakeAway.SubPlainWeight", { cost: priceText, weight: unitWeight })
+        : t("DOLMENWOOD.Inn.TakeAway.SubPlain", { cost: priceText });
 
     super({
-      title: spec ? `Buy a ${spec.label.toLowerCase()}` : "Buy",
+      title: spec
+        ? t("DOLMENWOOD.Inn.TakeAway.TitleContainer", { container: containerLabel(kind!) })
+        : t("DOLMENWOOD.Inn.TakeAway.TitlePlain"),
       content: `
         <form>
           <p style="margin:0 0 8px;">
@@ -904,39 +956,39 @@ class BuyTakeAwayDialog extends Dialog {
             <span style="opacity:0.8;">${subtitle}</span>
           </p>
           <div class="form-group">
-            <label>How many</label>
+            <label>${t("DOLMENWOOD.Common.HowMany")}</label>
             <input type="number" id="inn-takeaway-amount" value="1" min="1" step="1" style="flex:0 0 80px;" />
           </div>
           <div class="form-group">
-            <label>For</label>
+            <label>${t("DOLMENWOOD.Inn.TakeAway.For")}</label>
             <select id="inn-takeaway-recipient">${recipientOptions}</select>
           </div>
           <div class="form-group">
-            <label>Into</label>
+            <label>${t("DOLMENWOOD.Inn.TakeAway.Into")}</label>
             <select id="inn-takeaway-zone"></select>
           </div>
           <p id="inn-takeaway-total" style="margin:6px 0 0;font-weight:bold;"></p>
           <p id="inn-takeaway-warning" class="notification warning" style="display:none;margin:6px 0 0;padding:4px 6px;font-size:var(--dw-text-sm);"></p>
           <p class="hint" style="margin:6px 0 0;font-size:var(--dw-text-sm);color:#666;">
-            ${escapeHTML(payer.name ?? "")} pays either way.
+            ${t("DOLMENWOOD.Inn.TakeAway.Pays", { payer: escapeHTML(payer.name ?? "") })}
           </p>
         </form>`,
       buttons: {
         buy: {
-          label: "Buy",
+          label: t("DOLMENWOOD.Inn.TakeAway.Buy"),
           icon: `<i class="fas ${spec ? spec.icon : "fa-basket-shopping"}"></i>`,
           callback: (html: JQuery) => {
             const recipientId = html.find("#inn-takeaway-recipient").val() as string;
             const zone = html.find("#inn-takeaway-zone").val() as string;
             const amount = Math.max(1, parseInt(html.find("#inn-takeaway-amount").val() as string, 10) || 1);
             if (!recipientId || !zone) {
-              ui.notifications?.warn("Nowhere to put it.");
+              ui.notifications?.warn(t("DOLMENWOOD.Inn.TakeAway.Nowhere"));
               return;
             }
             onConfirm(recipientId, zone, amount);
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "buy",
     });
@@ -1012,8 +1064,10 @@ class BuyTakeAwayDialog extends Dialog {
         options
           .map((o) => {
             const label = o.warning
-              ? `⚠ ${escapeHTML(o.name)} — ${o.warning}`
-              : `${escapeHTML(o.name)}${o.detail ? ` — ${o.detail}` : ""}`;
+              ? t("DOLMENWOOD.Inn.Zone.Warning", { name: escapeHTML(o.name), warning: o.warning })
+              : o.detail
+                ? t("DOLMENWOOD.Inn.Zone.Detail", { name: escapeHTML(o.name), detail: o.detail })
+                : escapeHTML(o.name);
             return `<option value="${o.id}">${label}</option>`;
           })
           .join("")
@@ -1029,7 +1083,13 @@ class BuyTakeAwayDialog extends Dialog {
         const after = calculateEncumbrance(working, CatalogManager.getMap(), encMode).loadSpeed;
         if (after < before) {
           warning
-            .text(`Carrying this drops ${recipient.name} from ${before}ft to ${after}ft.`)
+            .text(
+              t("DOLMENWOOD.Inn.TakeAway.Drops", {
+                who: recipient.name ?? "",
+                before,
+                after,
+              })
+            )
             .show();
         } else {
           warning.hide();
@@ -1054,7 +1114,7 @@ class InnEntryDialog extends Dialog {
     onSave: (entry: InnEntry) => Promise<void>
   ) {
     const groups = groupsFor(section);
-    const groupOptions = [{ key: "", label: "— none —" }, ...groups]
+    const groupOptions = [{ key: "", label: t("DOLMENWOOD.Inn.Group.None") }, ...groups]
       .map(
         (g) =>
           `<option value="${g.key}" ${(entry?.group ?? "") === g.key ? "selected" : ""}>${escapeHTML(g.label)}</option>`
@@ -1073,7 +1133,7 @@ class InnEntryDialog extends Dialog {
     // Every catalog item, grouped by category — that is what lets an inn sell
     // anything at all, not just the rations that ship with it.
     const catalogOptions = [
-      `<option value="">— nothing, consumed on the spot —</option>`,
+      `<option value="">${t("DOLMENWOOD.Inn.Line.Grants.Nothing")}</option>`,
       ...CatalogManager.getCategories().map((category) => {
         const items = CatalogManager.getByCategory(category)
           .map(
@@ -1087,10 +1147,10 @@ class InnEntryDialog extends Dialog {
 
     const containerOptions = (
       [
-        ["auto", "Automatic"],
-        ["bottle", "Bottle — 5 portions, 30 wt"],
-        ["cask", "Cask — 10 portions, 80 wt"],
-        ["none", "Not sold to take away"],
+        ["auto", t("DOLMENWOOD.Inn.Line.Container.auto")],
+        ["bottle", t("DOLMENWOOD.Inn.Line.Container.bottle")],
+        ["cask", t("DOLMENWOOD.Inn.Line.Container.cask")],
+        ["none", t("DOLMENWOOD.Inn.Line.Container.none")],
       ] as [ContainerChoice, string][]
     )
       .map(
@@ -1100,81 +1160,76 @@ class InnEntryDialog extends Dialog {
       .join("");
 
     super({
-      title: entry ? "Edit line" : "Add line",
+      title: t(entry ? "DOLMENWOOD.Inn.Line.Edit" : "DOLMENWOOD.Inn.Line.Add"),
       content: `
         <form>
           <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="inn-entry-name" value="${escapeHTML(entry?.name ?? "")}" placeholder="e.g. Fishfop's, a jug" />
+            <label>${t("DOLMENWOOD.Inn.Line.Name.Label")}</label>
+            <input type="text" id="inn-entry-name" value="${escapeHTML(entry?.name ?? "")}" placeholder="${escapeHTML(t("DOLMENWOOD.Inn.Line.Name.Placeholder"))}" />
           </div>
           <div class="form-group" style="display:flex;gap:8px;">
             <div style="flex:1;">
-              <label>Price</label>
+              <label>${t("DOLMENWOOD.Inn.Line.Price")}</label>
               <input type="number" id="inn-entry-price" value="${entry?.cost.amount ?? 1}" min="0" />
             </div>
             <div style="flex:1;">
-              <label>Currency</label>
+              <label>${t("DOLMENWOOD.Inn.Line.Currency")}</label>
               <select id="inn-entry-currency">${currencyOptions}</select>
             </div>
           </div>
           ${
             groups.length > 0
               ? `<div class="form-group">
-                   <label>Group <small>(decides which daily draw it belongs to)</small></label>
+                   <label>${t("DOLMENWOOD.Inn.Line.Group.Label")} <small>${t("DOLMENWOOD.Inn.Line.Group.Note")}</small></label>
                    <select id="inn-entry-group">${groupOptions}</select>
                  </div>`
               : ""
           }
           <div class="form-group">
-            <label>Small label <small>(optional, e.g. "Beer / cider")</small></label>
+            <label>${t("DOLMENWOOD.Inn.Line.Tag.Label")} <small>${escapeHTML(t("DOLMENWOOD.Inn.Line.Tag.Note"))}</small></label>
             <input type="text" id="inn-entry-tag" value="${escapeHTML(entry?.tag ?? "")}" />
           </div>
           <div class="form-group">
-            <label>Price suffix <small>(optional, e.g. "per person")</small></label>
+            <label>${t("DOLMENWOOD.Inn.Line.Unit.Label")} <small>${escapeHTML(t("DOLMENWOOD.Inn.Line.Unit.Note"))}</small></label>
             <input type="text" id="inn-entry-unit" value="${escapeHTML(entry?.unit ?? "")}" />
           </div>
           ${
             section === "beverages"
               ? `<div class="form-group">
-                   <label>Sold to take away as</label>
+                   <label>${t("DOLMENWOOD.Inn.Line.Container.Label")}</label>
                    <select id="inn-entry-container">${containerOptions}</select>
                    <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-                     "Automatic" follows the house's switch and the type above — cask for beer
-                     and cider, bottle for wine, spirits and specialities, nothing for tea.
-                     A fixed choice overrides the house switch in both directions.
+                     ${escapeHTML(t("DOLMENWOOD.Inn.Line.Container.Hint"))}
                    </p>
                  </div>`
               : ""
           }
           <div class="form-group">
-            <label>Description</label>
+            <label>${t("DOLMENWOOD.Inn.Line.Description")}</label>
             <textarea id="inn-entry-desc" rows="2" style="width:100%;resize:vertical;">${escapeHTML(entry?.description ?? "")}</textarea>
           </div>
           <div class="form-group">
-            <label>Hands over</label>
+            <label>${t("DOLMENWOOD.Inn.Line.Grants.Label")}</label>
             <select id="inn-entry-grants">${catalogOptions}</select>
             <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-              Normally nothing — what is bought at an inn is consumed on the spot.
-              Pick a catalog item and this line becomes a purchase of goods instead:
-              it goes into a pack, with a target zone and an amount, and it stacks
-              with the same item bought in a shop. This is how rations work.
+              ${t("DOLMENWOOD.Inn.Line.Grants.Hint")}
             </p>
           </div>
           <div class="form-group">
-            <label><input type="checkbox" id="inn-entry-fixed" ${entry?.fixed ? "checked" : ""} /> Always available</label>
+            <label><input type="checkbox" id="inn-entry-fixed" ${entry?.fixed ? "checked" : ""} /> ${t("DOLMENWOOD.Inn.Line.Fixed.Label")}</label>
             <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-              The house's own brew or signature dish — never part of the daily roll.
+              ${t("DOLMENWOOD.Inn.Line.Fixed.Hint")}
             </p>
           </div>
         </form>`,
       buttons: {
         save: {
-          label: entry ? "Save" : "Add",
+          label: t(entry ? "DOLMENWOOD.Common.Save" : "DOLMENWOOD.Common.Add"),
           icon: '<i class="fas fa-check"></i>',
           callback: (html: JQuery) => {
             const name = (html.find("#inn-entry-name").val() as string).trim();
             if (!name) {
-              ui.notifications?.warn("A line needs a name.");
+              ui.notifications?.warn(t("DOLMENWOOD.Inn.Line.NeedsName"));
               return;
             }
             const amount = Math.max(0, parseInt(html.find("#inn-entry-price").val() as string, 10) || 0);
@@ -1206,7 +1261,7 @@ class InnEntryDialog extends Dialog {
             void onSave(next);
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "save",
     });
@@ -1231,7 +1286,10 @@ class InnSectionDialog extends Dialog {
     const groups = groupsFor(section);
 
     const qualityOptions = INN_QUALITIES.map(
-      (q) => `<option value="${q.key}" ${q.key === current ? "selected" : ""}>${q.label}</option>`
+      (q) =>
+        `<option value="${q.key}" ${q.key === current ? "selected" : ""}>${escapeHTML(
+          qualityLabel(q.key)
+        )}</option>`
     ).join("");
 
     // Only groups that actually have drawable lines are worth a control. A group
@@ -1241,29 +1299,29 @@ class InnSectionDialog extends Dialog {
       .map((g) => {
         const range = sectionConfig.draw[g.key];
         return `<div class="form-group" style="display:flex;gap:8px;align-items:center;">
-            <label style="flex:1;">${escapeHTML(g.label)}</label>
+            <label style="flex:1;">${escapeHTML(groupLabel(g.key))}</label>
             <input type="number" class="inn-draw-min" data-group="${g.key}" min="0"
-                   value="${range ? range[0] : ""}" placeholder="all" style="flex:0 0 64px;" />
+                   value="${range ? range[0] : ""}" placeholder="${escapeHTML(t("DOLMENWOOD.Inn.SectionDialog.Draw.All"))}" style="flex:0 0 64px;" />
             <span>–</span>
             <input type="number" class="inn-draw-max" data-group="${g.key}" min="0"
-                   value="${range ? range[1] : ""}" placeholder="all" style="flex:0 0 64px;" />
+                   value="${range ? range[1] : ""}" placeholder="${escapeHTML(t("DOLMENWOOD.Inn.SectionDialog.Draw.All"))}" style="flex:0 0 64px;" />
           </div>`;
       })
       .join("");
 
     super({
-      title: "Section settings",
+      title: t("DOLMENWOOD.Inn.SectionDialog.Title"),
       content: `
         <form>
           <div class="form-group">
-            <label>Quality for this section</label>
+            <label>${t("DOLMENWOOD.Inn.SectionDialog.Quality.Label")}</label>
             <select id="inn-section-quality">${qualityOptions}</select>
             <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-              Changing this rebuilds the section from the book — the three levels are separate tables.
+              ${t("DOLMENWOOD.Inn.SectionDialog.Quality.Hint")}
             </p>
           </div>
           <div class="form-group">
-            <label>Description</label>
+            <label>${t("DOLMENWOOD.Inn.SectionDialog.Description")}</label>
             <textarea id="inn-section-text" rows="3" style="width:100%;resize:vertical;">${escapeHTML(sectionConfig.text ?? "")}</textarea>
           </div>
           ${
@@ -1271,12 +1329,10 @@ class InnSectionDialog extends Dialog {
               ? `<div class="form-group">
                    <label>
                      <input type="checkbox" id="inn-section-containers" ${sectionConfig.sellsContainers !== false ? "checked" : ""} />
-                     Sells drink by the bottle and cask
+                     ${t("DOLMENWOOD.Inn.SectionDialog.Containers.Label")}
                    </label>
                    <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-                     The house default. A single drink can still be set to its own answer,
-                     which wins either way — so a house that sells nothing to take away can
-                     still let its own brew out by the cask.
+                     ${t("DOLMENWOOD.Inn.SectionDialog.Containers.Hint")}
                    </p>
                  </div>`
               : ""
@@ -1284,10 +1340,10 @@ class InnSectionDialog extends Dialog {
           ${
             drawRows
               ? `<fieldset style="border:1px solid #7a7971;border-radius:4px;padding:6px;">
-                   <legend style="padding:0 4px;">How many are served each day</legend>
+                   <legend style="padding:0 4px;">${t("DOLMENWOOD.Inn.SectionDialog.Draw.Legend")}</legend>
                    ${drawRows}
                    <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-                     Leave a pair empty to serve every line in that group.
+                     ${t("DOLMENWOOD.Inn.SectionDialog.Draw.Hint")}
                    </p>
                  </fieldset>`
               : ""
@@ -1295,7 +1351,7 @@ class InnSectionDialog extends Dialog {
         </form>`,
       buttons: {
         save: {
-          label: "Save",
+          label: t("DOLMENWOOD.Common.Save"),
           icon: '<i class="fas fa-check"></i>',
           callback: (html: JQuery) => {
             const text = (html.find("#inn-section-text").val() as string).trim();
@@ -1321,7 +1377,7 @@ class InnSectionDialog extends Dialog {
             void onSave({ text, draw, quality, sellsContainers: containers });
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "save",
     });

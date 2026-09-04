@@ -11,6 +11,7 @@
 
 import type { Currency } from "./coins";
 import { CURRENCY_IN_CP } from "./coins";
+import { t } from "../helpers/i18n";
 
 export type InnQuality = "poor" | "common" | "fancy";
 export type InnSection = "lodging" | "food" | "beverages" | "extras";
@@ -106,9 +107,11 @@ export const CONTAINER_SPECS: Record<
  * one by setting the entry's container explicitly.
  */
 export function containerForType(tag: string | undefined): ContainerKind | null {
-  const t = (tag ?? "").toLowerCase();
-  if (t.includes("beer") || t.includes("cider")) return "cask";
-  if (t.includes("wine") || t.includes("spirit") || t.includes("specialist")) return "bottle";
+  // Not `t`: that name now belongs to the translation function imported above,
+  // and shadowing it here would be a quiet trap for the next edit.
+  const type = (tag ?? "").toLowerCase();
+  if (type.includes("beer") || type.includes("cider")) return "cask";
+  if (type.includes("wine") || type.includes("spirit") || type.includes("specialist")) return "bottle";
   return null;
 }
 
@@ -382,6 +385,34 @@ export function costToCp(cost: InnCost): number {
 // familiar import.
 export { withPriceFactor } from "./coins";
 
+/**
+ * The words for the inn's own structure — its sections, its three grades, the
+ * groups a menu is drawn from, the two vessels drink leaves in.
+ *
+ * **Functions, not the `label` fields beside them.** Those tables are built when
+ * this module is evaluated, long before `game.i18n` exists, so a label read out
+ * of one would be English for the rest of the session — the same trap
+ * `coinLabel` and `qualitiesHint` are functions for. The tables keep their
+ * `label` as the English source of truth and as what a fallback lands on; only
+ * these are used for anything anyone reads.
+ *
+ * **The menu entries themselves are not here.** Dish names, lodging lines and
+ * their descriptions come out of the Campaign Book, and they belong to the
+ * book-content pass rather than to this one.
+ */
 export function qualityLabel(quality: InnQuality): string {
-  return INN_QUALITIES.find((q) => q.key === quality)?.label ?? quality;
+  return t(`DOLMENWOOD.Quality.${quality}`);
+}
+
+export function sectionLabel(section: InnSection): string {
+  return t(`DOLMENWOOD.Inn.Section.${section}`);
+}
+
+/** A food or beverage group. An empty key means "not grouped" and has no word. */
+export function groupLabel(key: string): string {
+  return key ? t(`DOLMENWOOD.Inn.Group.${key}`) : "";
+}
+
+export function containerLabel(kind: ContainerKind): string {
+  return t(`DOLMENWOOD.Inn.Container.${kind}`);
 }

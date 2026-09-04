@@ -333,20 +333,10 @@ export async function syncLootNoteVisibility(actor: Actor, released: boolean): P
 export const COIN_KEYS = ["pp", "gp", "sp", "cp"] as const;
 export type CoinKey = (typeof COIN_KEYS)[number];
 
-/**
- * The unit a coin is counted in, as the language file writes it.
- *
- * **A function, not the table it used to be.** `game.i18n` does not exist when
- * this module is evaluated, so a `Record` built at module scope would hold the
- * four raw key names for the rest of the session — the same trap `t()` guards
- * against, arrived at from the other side.
- *
- * Lower case, because that is what every coin readout in the module already
- * prints; the old table said "PP" and was the only place that did.
- */
-export function coinLabel(key: CoinKey): string {
-  return t(`DOLMENWOOD.Currency.${key.toUpperCase()}`);
-}
+// The coin unit now lives with the coins, in `coins.ts` — the inn needed the
+// same words for its prices, and a second copy of them is exactly the kind of
+// duplicate the exchange rate was moved there to end.
+export { coinLabel } from "./coins";
 
 export function emptyCoins(): ZoneCoins {
   return { cp: 0, sp: 0, gp: 0, pp: 0 };
