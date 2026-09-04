@@ -11,7 +11,7 @@ import { InnApp } from "./apps/InnApp";
 import { MarketApp } from "./apps/MarketApp";
 import { openLootBrowser, openLootFromNote, activateLootChatButtons } from "./apps/LootApp";
 import { openTrash } from "./apps/TrashApp";
-import { openXpAward } from "./apps/XpAwardApp";
+import { XpAwardApp, openXpAward } from "./apps/XpAwardApp";
 import { syncDayBar, toggleDayBar, refreshDayBar, travelBudgetNow } from "./apps/DayBarApp";
 import { getDayState, spendTravelPoints, syncDayToWorldTime } from "./data/dayDuties";
 import { activateEncounterChatButtons, ENCOUNTER_FOLDER } from "./data/dayRolls";
@@ -1123,6 +1123,11 @@ Hooks.on("updateActor", (actor: Actor, diff: Record<string, unknown>) => {
   // of the module has no interest in, and cannot sit behind the early return
   // below. Bounded by the number of open sheets, which is nought or one.
   CharacterSheetApp.refreshAll();
+
+  // The XP window reads the same system data — Class, XP, and the share that
+  // halves a retainer's cut — so it belongs on this side of the early return
+  // for the same reason the sheet does.
+  XpAwardApp.refresh();
 
   if (!flagDiff && !ownershipChanged) return;
 

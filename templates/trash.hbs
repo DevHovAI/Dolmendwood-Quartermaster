@@ -3,10 +3,10 @@
   {{#if isGM}}
   <div class="trash-toolbar">
     <i class="fas fa-trash"></i>
-    <span class="trash-count">{{total}} deleted item{{#unless (eq total 1)}}s{{/unless}}</span>
+    <span class="trash-count">{{localizeN "DOLMENWOOD.Trash.Count" total}}</span>
     {{#unless isEmpty}}
     <button type="button" class="trash-danger" data-action="emptyAll">
-      <i class="fas fa-dumpster"></i> Empty all
+      <i class="fas fa-dumpster"></i> {{localize "DOLMENWOOD.Trash.EmptyAll.Label"}}
     </button>
     {{/unless}}
   </div>
@@ -16,9 +16,9 @@
   <p class="trash-empty">
     <i class="fas fa-trash"></i>
     {{#if isGM}}
-    <em>Nothing has been deleted.</em>
+    <em>{{localize "DOLMENWOOD.Trash.Empty.GM"}}</em>
     {{else}}
-    <em>You have not deleted anything.</em>
+    <em>{{localize "DOLMENWOOD.Trash.Empty.Player"}}</em>
     {{/if}}
   </p>
   {{else}}
@@ -26,7 +26,7 @@
   {{#unless isGM}}
   <p class="trash-hint">
     <i class="fas fa-circle-info"></i>
-    These are the items you deleted. Ask your GM to put one back.
+    {{localize "DOLMENWOOD.Trash.PlayerHint"}}
   </p>
   {{/unless}}
 
@@ -37,7 +37,7 @@
         <span class="trash-group-name"><i class="fas {{this.icon}}"></i> {{this.actorName}}</span>
         {{#if ../isGM}}
         <button type="button" class="icon-btn trash-danger" data-action="emptyActor"
-                data-actor-id="{{this.actorId}}" title="Empty this trash for good">
+                data-actor-id="{{this.actorId}}" title="{{localize "DOLMENWOOD.Trash.Group.Empty.Hint"}}">
           <i class="fas fa-dumpster"></i>
         </button>
         {{/if}}
@@ -49,21 +49,25 @@
         <span class="trash-row-text">
           <span class="trash-row-name">
             {{this.name}}{{#unless (eq this.quantity 1)}} <span class="trash-row-qty">&times;{{this.quantity}}</span>{{/unless}}
-            {{#if this.isSecret}}<i class="fas fa-lock secret-icon" title="Was marked secret"></i>{{/if}}
+            {{#if this.isSecret}}<i class="fas fa-lock secret-icon" title="{{localize "DOLMENWOOD.Trash.Row.Secret.Hint"}}"></i>{{/if}}
           </span>
+          {{!-- One key, not three fragments joined by separators: German puts
+                "from", "ago" and "by" in its own order, and only a whole
+                sentence lets it. The key carries the &middot; itself, so it is
+                rendered raw. --}}
           <span class="trash-row-meta">
-            from {{this.zoneName}} &middot; {{this.ago}} &middot; by {{this.deletedBy}}
+            {{{localize "DOLMENWOOD.Trash.Row.Meta" zone=this.zoneName ago=this.ago who=this.deletedBy}}}
           </span>
         </span>
         {{#if ../../isGM}}
         <button type="button" class="icon-btn trash-restore" data-action="restore"
                 data-actor-id="{{../actorId}}" data-entry-id="{{this.entryId}}"
-                title="Put this back">
+                title="{{localize "DOLMENWOOD.Trash.Row.Restore.Hint"}}">
           <i class="fas fa-arrow-rotate-left"></i>
         </button>
         <button type="button" class="icon-btn trash-danger" data-action="deleteEntry"
                 data-actor-id="{{../actorId}}" data-entry-id="{{this.entryId}}"
-                title="Throw this one away for good, and leave the rest of the bin alone">
+                title="{{localize "DOLMENWOOD.Trash.Row.Delete.Hint"}}">
           <i class="fas fa-xmark"></i>
         </button>
         {{/if}}

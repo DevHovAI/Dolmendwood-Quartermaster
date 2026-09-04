@@ -6,6 +6,7 @@ import { awardFor, classFromText, readModifier, splitEvenly } from "../data/xpAw
 import type { AwardLine, ModifierSource } from "../data/xpAward";
 import { applyCap, thresholdFor, xpCapFor } from "../data/levelUp";
 import { escapeHTML } from "../helpers/handlebars";
+import { t, tn } from "../helpers/i18n";
 
 /**
  * The XP window: what the party earned, and what each character actually gets.
@@ -77,7 +78,9 @@ export class XpAwardApp extends foundry.applications.api.HandlebarsApplicationMi
 ) {
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-xp",
-    window: { title: "Experience", resizable: true },
+    // ApplicationV2 runs the window title through game.i18n itself, so this is
+    // a key rather than a t() call — the frame is drawn before _prepareContext.
+    window: { title: "DOLMENWOOD.Xp.Title", resizable: true },
     // **Wide enough that the seven lanes do not have to shrink to fit.** The
     // entry boxes and the two figure lanes come to about 520px between them, and
     // a name column squeezed into what is left is how the first two attempts at
@@ -166,18 +169,24 @@ export class XpAwardApp extends foundry.applications.api.HandlebarsApplicationMi
 
       return {
         actorId: id,
-        name: actor.name ?? "Unnamed",
+        name: actor.name ?? t("DOLMENWOOD.Xp.Unnamed"),
         included: isIn,
         className: sys.class,
         classLabel: mod.prime?.classLabel ?? "",
         primeLabel,
         primeTitle: mod.prime
           ? mod.source === "class"
-            ? `${mod.prime.classLabel}: Prime ${mod.prime.scores.map((s) => ABILITY_SHORT[s.key]).join(" and ")}. The lowest score decides it — ${mod.prime.lowest}.`
-            : `${mod.prime.classLabel}, but the modifier was set by hand on the attribute sheet and that is what counts here.`
+            ? t("DOLMENWOOD.Xp.Prime.FromClass", {
+                class: mod.prime.classLabel,
+                abilities: mod.prime.scores
+                  .map((s) => ABILITY_SHORT[s.key])
+                  .join(` ${t("DOLMENWOOD.Xp.Prime.And")} `),
+                lowest: mod.prime.lowest,
+              })
+            : t("DOLMENWOOD.Xp.Prime.ByHand", { class: mod.prime.classLabel })
           : sys.class
-            ? `"${sys.class}" is not a Class this module knows, so the modifier comes from the XP bonus field on the sheet.`
-            : "No Class on the sheet, so the modifier comes from the XP bonus field.",
+            ? t("DOLMENWOOD.Xp.Prime.UnknownClass", { class: sys.class })
+            : t("DOLMENWOOD.Xp.Prime.NoClass"),
         source: mod.source,
         percentEditable: mod.source !== "class",
         sharePct: sys.xp.share,
@@ -245,6 +254,32 @@ export class XpAwardApp extends foundry.applications.api.HandlebarsApplicationMi
    * following it.
    */
   private focused: { field: string; actorId: string } | null = null;
+
+  /**
+   * Take up a change made somewhere else — a Class typed on the attribute
+   * sheet, an XP total corrected, an XP Share set to 50.
+   *
+   * **The rows are read from the actors on every render**, so this window shows
+   * stale figures until something asks it to look again. Nothing did: the
+   * `updateActor` hook re-renders the inventories, the loot, the day bar and
+   * the attribute sheet, and every one of those sits behind an early return
+   * that only lets *flag* writes through. A share lives in the game system's
+   * data, so it never reached even that far (Leander, 2026-09-04: *"wenn ich 50
+   * eintrage passiert nix"*).
+   *
+   * **A window being worked in is left alone.** The Referee sits in here typing
+   * figures while play carries on around them, and every item a player picks up
+   * is an actor update. Re-rendering mid-edit would rebuild the rows from
+   * stored state and throw away the half-typed number — and
+   * `reRenderKeepingFocus` would then *select* what was left of it, so the next
+   * keystroke eats the rest. It catches up as soon as focus leaves.
+   */
+  static refresh(): void {
+    const app = foundry.applications?.instances?.get("dolmenwood-xp") as XpAwardApp | undefined;
+    if (!app?.element) return;
+    if (app.element.contains(document.activeElement)) return;
+    void app.render(false);
+  }
 
   private reRenderKeepingFocus(): void {
     window.setTimeout(() => {
@@ -348,11 +383,11 @@ export class XpAwardApp extends foundry.applications.api.HandlebarsApplicationMi
 
     const totalAwarded = rows.reduce((n, r) => n + r.award.award, 0);
     const confirmed = await Dialog.confirm({
-      title: "Award XP",
+      title: t("DOLMENWOOD.Xp.Award"),
       content:
-        `<p>Credit <strong>${totalAwarded.toLocaleString()} XP</strong> across ` +
-        `<strong>${rows.length}</strong> character${rows.length === 1 ? "" : "s"}?</p>` +
-        '<p class="qm-hint">Their XP totals are written straight to the sheet. There is no undo.</p>',
+        tn("DOLMENWOOD.Xp.Confirm.Body", rows.length, {
+          xp: totalAwarded.toLocaleString(),
+        }) + `<p class="qm-hint">${t("DOLMENWOOD.Xp.Confirm.NoUndo")}</p>`,
     });
     if (!confirmed) return;
 
@@ -366,8 +401,14 @@ export class XpAwardApp extends foundry.applications.api.HandlebarsApplicationMi
 
     const levelUps = rows.filter((r) => r.award.levelUp);
     ui.notifications?.info(
-      `Awarded ${totalAwarded.toLocaleString()} XP to ${rows.length} character${rows.length === 1 ? "" : "s"}.` +
-        (levelUps.length ? ` ${levelUps.map((r) => r.name).join(", ")} reached the next Level.` : "")
+      tn("DOLMENWOOD.Xp.Notify.Awarded", rows.length, {
+        xp: totalAwarded.toLocaleString(),
+      }) +
+        (levelUps.length
+          ? ` ${t("DOLMENWOOD.Xp.Notify.LevelUp", {
+              names: levelUps.map((r) => r.name).join(", "),
+            })}`
+          : "")
     );
 
     // Cleared on the way out, so the next press of the button cannot book the
@@ -391,18 +432,26 @@ function card(rows: XpRow[]): string {
   const lines = rows
     .map((r) => {
       const parts: string[] = [];
-      if (r.isHalfShare) parts.push(`half share of ${r.award.base}`);
-      if (r.percent !== 0) parts.push(`${r.percentText} Prime Ability`);
+      // The share is printed as the percentage it actually is. It was "half
+      // share of …" at any share other than 100, so 75% read as half (Leander,
+      // 2026-09-04: *"muss ja nicht die hälfte sein"*).
+      if (r.isHalfShare)
+        parts.push(t("DOLMENWOOD.Xp.Card.Share", { pct: r.sharePct, base: r.award.base }));
+      if (r.percent !== 0) parts.push(t("DOLMENWOOD.Xp.Card.Prime", { pct: r.percentText }));
       const detail = parts.length ? ` <span class="xp-card-detail">(${parts.join(", ")})</span>` : "";
-      const up = r.award.levelUp ? ' <span class="xp-card-up">— next Level!</span>' : "";
+      const up = r.award.levelUp
+        ? ` <span class="xp-card-up">${t("DOLMENWOOD.Xp.Card.NextLevel")}</span>`
+        : "";
       return `<li><strong>${escapeHTML(r.name)}</strong> +${r.award.award.toLocaleString()} XP${detail} → ${r.award.newTotal.toLocaleString()}${up}</li>`;
     })
     .join("");
 
   const total = rows.reduce((n, r) => n + r.award.award, 0);
   return `<div class="dw-day-roll">
-      <h3><i class="fas fa-star"></i> Experience</h3>
-      <p class="dw-day-roll-sub">${total.toLocaleString()} XP awarded across ${rows.length} character${rows.length === 1 ? "" : "s"}.</p>
+      <h3><i class="fas fa-star"></i> ${t("DOLMENWOOD.Xp.Title")}</h3>
+      <p class="dw-day-roll-sub">${tn("DOLMENWOOD.Xp.Card.Sub", rows.length, {
+        xp: total.toLocaleString(),
+      })}</p>
       <ul class="dw-camp-rows">${lines}</ul>
     </div>`;
 }

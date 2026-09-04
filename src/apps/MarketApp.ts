@@ -2,6 +2,7 @@ import { MODULE_ID, TEMPLATES } from "../constants";
 import { CatalogManager } from "../data/CatalogManager";
 import { buildIconPickerHTML, activateIconPicker, LOCATION_ICONS, escapeHTML } from "../helpers/handlebars";
 import type { MarketEntry, MarketFlag } from "../types";
+import { t } from "../helpers/i18n";
 
 type NoteDoc = {
   getFlag?: (moduleId: string, key: string) => unknown;
@@ -22,13 +23,13 @@ export class MarketApp extends foundry.applications.api.HandlebarsApplicationMix
   }
 
   override get title(): string {
-    return this.getFlag()?.name ?? "Market";
+    return this.getFlag()?.name ?? t("DOLMENWOOD.Market.Title");
   }
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-market",
     window: {
-      title: "Market",
+      title: "DOLMENWOOD.Market.Title",
       resizable: true,
     },
     position: {
@@ -55,8 +56,15 @@ export class MarketApp extends foundry.applications.api.HandlebarsApplicationMix
   ): Promise<Record<string, unknown>> {
     const flag = this.getFlag();
     return {
-      marketName: flag?.name ?? "Market",
-      entries: flag?.entries ?? [],
+      marketName: flag?.name ?? t("DOLMENWOOD.Market.Title"),
+      // The quality is stored as its key — "poor" / "common" / "fancy" — and
+      // the badge used to print that key straight out of the flag. The label
+      // belongs to the language file, so it is looked up here rather than in
+      // the template, where a lookup by a value is awkward.
+      entries: (flag?.entries ?? []).map((e) => ({
+        ...e,
+        qualityLabel: t(`DOLMENWOOD.Market.Quality.${e.quality ?? "common"}`),
+      })),
       isGM: (game as Game).user?.isGM ?? false,
     };
   }
@@ -132,8 +140,8 @@ export class MarketApp extends foundry.applications.api.HandlebarsApplicationMix
   ): Promise<void> {
     const entryId = target.dataset.entryId!;
     const confirmed = await Dialog.confirm({
-      title: "Remove Entry",
-      content: "<p>Remove this entry from the market?</p>",
+      title: t("DOLMENWOOD.Market.Remove.Title"),
+      content: t("DOLMENWOOD.Market.Remove.Body"),
     });
     if (!confirmed || !this.noteDoc) return;
     const flag = this.getFlag();
@@ -169,66 +177,74 @@ class MarketEntryDialog extends Dialog {
     };
     const categoryCheckboxes = isShop ? soldCats.map(catBox).join("") : "";
 
+    // The option's text used to be the stored key with its first letter raised,
+    // which is a way of writing English that only works in English.
     const qualityOptions = (["poor", "common", "fancy"] as const)
       .map(
         (q) =>
-          `<option value="${q}" ${(entry?.quality ?? "common") === q ? "selected" : ""}>${
-            q.charAt(0).toUpperCase() + q.slice(1)
-          }</option>`
+          `<option value="${q}" ${(entry?.quality ?? "common") === q ? "selected" : ""}>${escapeHTML(
+            t(`DOLMENWOOD.Market.Quality.${q}`)
+          )}</option>`
       )
       .join("");
 
     const content = `
       <form class="qm-form">
         <div class="form-group">
-          <label for="entry-name">Name</label>
+          <label for="entry-name">${t("DOLMENWOOD.Market.Dialog.Name.Label")}</label>
           <div class="qm-field">
             <input type="text" id="entry-name" value="${escapeHTML(entry?.name ?? "")}"
-              placeholder="${isShop ? "e.g. The Blacksmith" : "e.g. The Silver Stag"}" />
+              placeholder="${escapeHTML(
+                t(
+                  isShop
+                    ? "DOLMENWOOD.Market.Dialog.Name.ShopPlaceholder"
+                    : "DOLMENWOOD.Market.Dialog.Name.InnPlaceholder"
+                )
+              )}" />
           </div>
         </div>
         <div class="form-group qm-wide">
-          <label for="entry-desc">Description</label>
+          <label for="entry-desc">${t("DOLMENWOOD.Market.Dialog.Description")}</label>
           <div class="qm-field">
             <textarea id="entry-desc" rows="2">${escapeHTML(entry?.description ?? "")}</textarea>
           </div>
         </div>
         <div class="form-group qm-wide">
-          <label>Icon</label>
+          <label>${t("DOLMENWOOD.Market.Dialog.Icon")}</label>
           <div class="qm-field qm-field-icons">
             ${buildIconPickerHTML(entry?.icon ?? defaultIcon, LOCATION_ICONS)}
           </div>
         </div>
         <div class="form-group">
-          <label for="entry-price-factor">Price factor</label>
+          <label for="entry-price-factor">${t("DOLMENWOOD.Market.Dialog.PriceFactor.Label")}</label>
           <div class="qm-field">
             <input type="number" id="entry-price-factor" value="${entry?.priceFactor ?? 100}" min="1" max="10000" step="1" />
           </div>
-          <p class="qm-hint">Per cent of the book price. 100 is normal, 200 is double.</p>
+          <p class="qm-hint">${t("DOLMENWOOD.Market.Dialog.PriceFactor.Hint")}</p>
         </div>
         ${
           isShop
             ? `<div class="form-group">
-                <label for="entry-buy-back">Buys back at</label>
+                <label for="entry-buy-back">${t("DOLMENWOOD.Market.Dialog.BuyBack.Label")}</label>
                 <div class="qm-field">
                   <input type="number" id="entry-buy-back" value="${entry?.buyBackRate ?? 0}" min="0" max="200" step="5" />
                 </div>
-                <p class="qm-hint">Per cent of what a thing is worth, not of this stall's asking price. 50 for used gear, 80 for a jeweller's gems, 0 to buy nothing.</p>
+                <p class="qm-hint">${t("DOLMENWOOD.Market.Dialog.BuyBack.Hint")}</p>
                </div>
                <div class="form-group">
-                <label for="entry-own-stock">Sells only its own stock</label>
+                <label for="entry-own-stock">${t("DOLMENWOOD.Market.Dialog.OwnStock.Label")}</label>
                 <div class="qm-field">
                   <input type="checkbox" id="entry-own-stock" ${entry?.ownStockOnly ? "checked" : ""} />
                 </div>
-                <p class="qm-hint">Nothing from the catalogue, only what you put on this stall's shelf yourself. The categories below are then ignored.</p>
+                <p class="qm-hint">${t("DOLMENWOOD.Market.Dialog.OwnStock.Hint")}</p>
                </div>
                <div class="form-group qm-wide">
-                <label>Categories sold</label>
+                <label>${t("DOLMENWOOD.Market.Dialog.Categories.Label")}</label>
                 <div class="qm-field qm-field-cats">${categoryCheckboxes}</div>
-                <p class="qm-hint">Leave every box unticked to sell the whole catalogue. Treasures are never on a shelf by category — put one there with <strong>From Catalogue</strong> inside the shop.</p>
+                <p class="qm-hint">${t("DOLMENWOOD.Market.Dialog.Categories.Hint")}</p>
                </div>`
             : `<div class="form-group">
-                <label for="entry-quality">Quality</label>
+                <label for="entry-quality">${t("DOLMENWOOD.Market.Dialog.Quality")}</label>
                 <div class="qm-field">
                   <select id="entry-quality">${qualityOptions}</select>
                 </div>
@@ -237,11 +253,22 @@ class MarketEntryDialog extends Dialog {
       </form>`;
 
     super({
-      title: entry ? `Edit ${isShop ? "Shop" : "Inn"}` : `Add ${isShop ? "Shop" : "Inn"}`,
+      // Four whole titles rather than a verb glued to a noun: German inflects
+      // both halves, and "Edit" + "Shop" cannot be reassembled into
+      // "Laden bearbeiten" by a translator who only sees the pieces.
+      title: t(
+        entry
+          ? isShop
+            ? "DOLMENWOOD.Market.Dialog.EditShop"
+            : "DOLMENWOOD.Market.Dialog.EditInn"
+          : isShop
+            ? "DOLMENWOOD.Market.Dialog.AddShop"
+            : "DOLMENWOOD.Market.Dialog.AddInn"
+      ),
       content,
       buttons: {
         save: {
-          label: entry ? "Save" : "Add",
+          label: t(entry ? "DOLMENWOOD.Market.Dialog.Save" : "DOLMENWOOD.Market.Dialog.Add"),
           icon: `<i class="fas fa-check"></i>`,
           callback: (html: JQuery) => {
             const name = (html.find("#entry-name").val() as string).trim();
@@ -277,7 +304,7 @@ class MarketEntryDialog extends Dialog {
             this.app.saveEntry(newEntry);
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Market.Dialog.Cancel") },
       },
       default: "save",
     });

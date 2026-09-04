@@ -1,19 +1,25 @@
 <div class="xp-window-inner">
 
+  {{!-- **Every string in this file comes out of `lang/*.json`.** Foundry ships
+        `{{localize "KEY"}}`, and `{{localize "KEY" a=1}}` formats placeholders;
+        `{{localizeN "KEY" n}}` picks singular or plural — see `helpers/i18n.ts`.
+        A triple stache is used only where the key deliberately carries markup
+        (<kbd>, <strong>): those strings are authored here, never user input. --}}
+
   <div class="dw-window-head">
     <i class="fas fa-star"></i>
-    <h2>Experience</h2>
+    <h2>{{localize "DOLMENWOOD.Xp.Title"}}</h2>
     <div class="dw-window-head-extra">
       <div class="xp-mode">
         <button type="button" class="xp-mode-btn {{#if isSplit}}is-on{{/if}}"
                 data-action="setMode" data-mode="split"
-                title="One figure for the whole party, divided evenly — the book's own way (Player's Book p25)">
-          <i class="fas fa-divide"></i> Split a total
+                title="{{localize "DOLMENWOOD.Xp.Mode.Split.Hint"}}">
+          <i class="fas fa-divide"></i> {{localize "DOLMENWOOD.Xp.Mode.Split.Label"}}
         </button>
         <button type="button" class="xp-mode-btn {{#unless isSplit}}is-on{{/unless}}"
                 data-action="setMode" data-mode="each"
-                title="Type what each character earned, and let the window do the modifiers">
-          <i class="fas fa-user-pen"></i> Per character
+                title="{{localize "DOLMENWOOD.Xp.Mode.Each.Hint"}}">
+          <i class="fas fa-user-pen"></i> {{localize "DOLMENWOOD.Xp.Mode.Each.Label"}}
         </button>
       </div>
     </div>
@@ -24,29 +30,28 @@
         when you press it. --}}
   <div class="xp-total-band">
     {{#if isSplit}}
-    <label class="xp-total-label" for="xp-total">Party XP</label>
+    <label class="xp-total-label" for="xp-total">{{localize "DOLMENWOOD.Xp.Total.Label"}}</label>
     <input id="xp-total" class="xp-total-input" type="number" min="0" step="1"
            data-xp-field="total" value="{{total}}" autocomplete="off">
     <span class="xp-total-note">
-      Divided evenly between the {{countIn}} counted below, then each character's own
-      modifier. Press <kbd>Enter</kbd> or click away to reckon it.
+      {{localizeN "DOLMENWOOD.Xp.Total.Note" countIn}}
+      {{{localize "DOLMENWOOD.Xp.Total.Reckon"}}}
     </span>
     {{#if remainder}}
-    <span class="xp-remainder" title="What the division could not place, plus anything you took off a row by hand. The book does not say who gets the odd point, so nobody does until you say so.">
-      <i class="fas fa-circle-info"></i> {{remainder}} left over
+    <span class="xp-remainder" title="{{localize "DOLMENWOOD.Xp.Remainder.Hint"}}">
+      <i class="fas fa-circle-info"></i> {{localize "DOLMENWOOD.Xp.Remainder.Label" n=remainder}}
     </span>
     {{/if}}
     {{#if overspent}}
-    <span class="xp-remainder is-over" title="The shares below add up to more than the party earned, because a row was raised by hand. Nothing stops you — it is only worth knowing.">
-      <i class="fas fa-triangle-exclamation"></i> {{overspent}} over the total
+    <span class="xp-remainder is-over" title="{{localize "DOLMENWOOD.Xp.Overspent.Hint"}}">
+      <i class="fas fa-triangle-exclamation"></i> {{localize "DOLMENWOOD.Xp.Overspent.Label" n=overspent}}
     </span>
     {{/if}}
     {{else}}
-    <span class="xp-total-label">Per character</span>
+    <span class="xp-total-label">{{localize "DOLMENWOOD.Xp.Mode.Each.Label"}}</span>
     <span class="xp-hint">
       <i class="fas fa-circle-info"></i>
-      Type what each one earned in the Earned column. The half share and the Prime Ability
-      modifier are still applied on top — this only skips the dividing.
+      {{localize "DOLMENWOOD.Xp.Each.Hint"}}
     </span>
     {{/if}}
   </div>
@@ -56,11 +61,11 @@
 
     <div class="xp-row xp-row-head">
       <span class="xp-lane-tick"></span>
-      <span class="xp-lane-name">Character</span>
-      <span class="xp-lane-base">{{#if isSplit}}Share{{else}}Earned{{/if}}</span>
-      <span class="xp-lane-mod">Modifier</span>
-      <span class="xp-lane-award">Credited</span>
-      <span class="xp-lane-total">New total</span>
+      <span class="xp-lane-name">{{localize "DOLMENWOOD.Xp.Lane.Character"}}</span>
+      <span class="xp-lane-base">{{#if isSplit}}{{localize "DOLMENWOOD.Xp.Lane.Share"}}{{else}}{{localize "DOLMENWOOD.Xp.Lane.Earned"}}{{/if}}</span>
+      <span class="xp-lane-mod">{{localize "DOLMENWOOD.Xp.Lane.Modifier"}}</span>
+      <span class="xp-lane-award">{{localize "DOLMENWOOD.Xp.Lane.Credited"}}</span>
+      <span class="xp-lane-total">{{localize "DOLMENWOOD.Xp.Lane.NewTotal"}}</span>
       <span class="xp-lane-reset"></span>
     </div>
 
@@ -70,7 +75,7 @@
       <span class="xp-lane-tick">
         <input type="checkbox" data-xp-field="include" data-actor-id="{{this.actorId}}"
                {{#if this.included}}checked{{/if}}
-               title="Counted when the total is divided. Untick for anyone who was not there.">
+               title="{{localize "DOLMENWOOD.Xp.Row.Include.Hint"}}">
       </span>
 
       <span class="xp-lane-name">
@@ -79,12 +84,12 @@
           {{#if this.classLabel}}
             {{this.classLabel}} &middot; {{this.primeLabel}}
           {{else if this.className}}
-            <em>{{this.className}}</em> &middot; not a Class I know
+            <em>{{this.className}}</em> &middot; {{localize "DOLMENWOOD.Xp.Row.UnknownClass"}}
           {{else}}
-            <em>no Class on the sheet</em>
+            <em>{{localize "DOLMENWOOD.Xp.Row.NoClass"}}</em>
           {{/if}}
           {{#if this.isHalfShare}}
-          <span class="xp-half" title="This character's share is set to {{this.sharePct}}% on the sheet — the book's rule for an adventurer retainer (Player's Book p25).">
+          <span class="xp-half" title="{{localize "DOLMENWOOD.Xp.Row.Share.Hint" pct=this.sharePct}}">
             <i class="fas fa-scale-unbalanced"></i> {{this.sharePct}}%
           </span>
           {{/if}}
@@ -101,7 +106,7 @@
         {{#if this.percentEditable}}
         <input type="number" step="1" class="xp-percent-input" data-xp-field="percent"
                data-actor-id="{{this.actorId}}" value="{{this.percent}}" autocomplete="off"
-               title="No Class to read it from, so this is the XP bonus field on the sheet. Typing here writes it there — set it once and it stays.">
+               title="{{localize "DOLMENWOOD.Xp.Row.Percent.Hint"}}">
         <span class="xp-percent-sign">%</span>
         {{else}}
         <span class="xp-percent-chip {{#if (lt this.percent 0)}}is-bad{{/if}} {{#if (gt this.percent 0)}}is-good{{/if}}"
@@ -126,13 +131,13 @@
         {{#if this.award.levelUp}}
         {{!-- "May", not "does": by the house rules a Level is trained for, paid
               for and takes time. This card only says the threshold is passed. --}}
-        <span class="xp-levelup" title="Passes {{this.next}} XP, the threshold on the attribute sheet. Taking the Level is a separate step on the sheet — it costs time and coins.">
-          <i class="fas fa-angles-up"></i> May level
+        <span class="xp-levelup" title="{{localize "DOLMENWOOD.Xp.Row.LevelUp.Hint" next=this.next}}">
+          <i class="fas fa-angles-up"></i> {{localize "DOLMENWOOD.Xp.Row.LevelUp.Label"}}
         </span>
         {{/if}}
         {{#if this.capLost}}
-        <span class="xp-capped" title="The house cap stops a character at the threshold two Levels above them ({{this.capAt}} XP). {{this.capLost}} XP had nowhere to go and were not credited.">
-          <i class="fas fa-hand"></i> capped, {{this.capLost}} lost
+        <span class="xp-capped" title="{{localize "DOLMENWOOD.Xp.Row.Capped.Hint" at=this.capAt lost=this.capLost}}">
+          <i class="fas fa-hand"></i> {{localize "DOLMENWOOD.Xp.Row.Capped.Label" lost=this.capLost}}
         </span>
         {{/if}}
       </span>
@@ -140,7 +145,7 @@
       <span class="xp-lane-reset">
         {{#if this.overridden}}
         <button type="button" class="icon-btn" data-action="resetRow" data-actor-id="{{this.actorId}}"
-                title="Put this row back on the even share">
+                title="{{localize "DOLMENWOOD.Xp.Row.Reset.Hint"}}">
           <i class="fas fa-rotate-left"></i>
         </button>
         {{/if}}
@@ -152,35 +157,34 @@
   {{else}}
   <p class="xp-empty">
     <i class="fas fa-star"></i>
-    <em>No party characters this module can read. XP is kept by the game system, so a
-      character needs Ability Scores before it can be credited any.</em>
+    <em>{{localize "DOLMENWOOD.Xp.Empty"}}</em>
   </p>
   {{/if}}
 
   <footer class="xp-footer">
     <label class="xp-chat">
       <input type="checkbox" data-xp-field="toChat" {{#if toChat}}checked{{/if}}>
-      Announce in chat
+      {{localize "DOLMENWOOD.Xp.Announce"}}
     </label>
 
     <span class="xp-footer-sum">
       {{#if canAward}}
-      <strong>{{awarded}}</strong> XP to {{countIn}} character{{#unless (eq countIn 1)}}s{{/unless}}
+      {{{localizeN "DOLMENWOOD.Xp.Footer.Sum" countIn awarded=awarded}}}
       {{#if levelUps}}
       <span class="xp-levelup-note" title="{{levelUpNames}}">
-        <i class="fas fa-angles-up"></i> {{levelUps}} level up
+        <i class="fas fa-angles-up"></i> {{localize "DOLMENWOOD.Xp.Footer.LevelUps" n=levelUps}}
       </span>
       {{/if}}
       {{else}}
-      <span class="xp-none">Nothing to award yet</span>
+      <span class="xp-none">{{localize "DOLMENWOOD.Xp.Footer.Nothing"}}</span>
       {{/if}}
     </span>
 
-    <button type="button" class="btn-toolbar" data-action="clearAll" title="Empty every field and count everyone again">
-      <i class="fas fa-eraser"></i> Clear
+    <button type="button" class="btn-toolbar" data-action="clearAll" title="{{localize "DOLMENWOOD.Xp.Clear.Hint"}}">
+      <i class="fas fa-eraser"></i> {{localize "DOLMENWOOD.Xp.Clear.Label"}}
     </button>
     <button type="button" class="btn-toolbar xp-award-btn" data-action="award" {{#unless canAward}}disabled{{/unless}}>
-      <i class="fas fa-star"></i> Award XP
+      <i class="fas fa-star"></i> {{localize "DOLMENWOOD.Xp.Award"}}
     </button>
   </footer>
 

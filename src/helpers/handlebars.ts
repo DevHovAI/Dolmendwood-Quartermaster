@@ -2,6 +2,7 @@ import { TEMPLATES } from "../constants";
 import { speedColorClass } from "../data/EncumbranceCalculator";
 import { QUALITIES_HINT, describeQualities, parseQualities } from "../data/weapons";
 import type { PartyConvoyMember } from "../types";
+import { tn } from "./i18n";
 
 /** Map Animals & Vehicles subcategory to a Font Awesome icon class. */
 export function subcategoryToIcon(subcategory?: string): string {
@@ -279,6 +280,22 @@ export function activateIconPicker(html: JQuery, id = "custom-icon-value"): void
 }
 
 export function registerHandlebarsHelpers(): void {
+  /**
+   * One string, singular or plural: `{{localizeN "DOLMENWOOD.Xp.Counted" n}}`.
+   *
+   * Foundry already ships `{{localize "KEY" a=1}}`, which covers every string
+   * that does not count something. This covers the ones that do — see `tn()` in
+   * `helpers/i18n.ts` for why the choice cannot be left in the markup.
+   *
+   * Extra placeholders ride along as hash arguments:
+   * `{{localizeN "KEY" n awarded=total}}`.
+   */
+  Handlebars.registerHelper(
+    "localizeN",
+    (key: string, count: number, options?: { hash?: Record<string, string | number> }) =>
+      tn(key, Number(count) || 0, options?.hash)
+  );
+
   // Equality check — used in templates: {{#if (eq a b)}}
   Handlebars.registerHelper("eq", (a: unknown, b: unknown) => a === b);
 

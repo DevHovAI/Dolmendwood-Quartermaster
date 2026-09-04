@@ -640,6 +640,22 @@
           <input type="number" class="is-wide" data-field="xpNext" value="{{xp.next}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
         {{/if}}
+
+        {{!-- **The share of a divided award this character takes.** It is OSE's
+              own field, and it happens to be exactly the book's retainer rule,
+              which is why the XP window gets that rule by reading it instead of
+              inventing a flag of its own (Player's Book p25).
+
+              It is editable *here* because OSE only offers it in its Tweaks
+              dialog — two windows away from the sheet where the number means
+              something, and far enough that the XP window could show a badge
+              for a setting with no visible way to reach it (Leander,
+              2026-09-04). Last in the grid so the odd cell falls at the end of
+              the block rather than tearing a hole in the middle of it. --}}
+        <label class="dw-field" title="The share of a divided XP award this character takes. 100 for a full member of the party; 50 for an adventuring retainer, which is the book's own rule (Player's Book p25). The XP window marks anyone who is not on 100.">
+          <span>XP Share %</span>
+          <input type="number" class="is-number" data-field="xpShare" value="{{xp.share}}" {{#unless canEdit}}disabled{{/unless}}>
+        </label>
       </div>
 
       {{!-- Levelling up, by the Dolmendudes house rules (docs/Hausregeln.pdf).

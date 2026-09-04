@@ -7,6 +7,7 @@ import { getTrash, restoreTrashEntry, emptyTrash, deleteTrashEntry } from "../da
 import { escapeHTML } from "../helpers/handlebars";
 import { iconForItemCategory } from "../helpers/handlebars";
 import { SocketHandler } from "../socket/SocketHandler";
+import { t, tn } from "../helpers/i18n";
 import type { TrashedItem } from "../types";
 
 /**
@@ -45,12 +46,14 @@ interface TrashGroup {
  */
 function timeAgo(ts: number): string {
   const mins = Math.floor((Date.now() - ts) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 1) return t("DOLMENWOOD.Trash.Ago.JustNow");
+  if (mins < 60) return t("DOLMENWOOD.Trash.Ago.Minutes", { n: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
+  if (hrs < 24) return tn("DOLMENWOOD.Trash.Ago.Hours", hrs);
   const days = Math.floor(hrs / 24);
-  return days === 1 ? "yesterday" : `${days} days ago`;
+  return days === 1
+    ? t("DOLMENWOOD.Trash.Ago.Yesterday")
+    : t("DOLMENWOOD.Trash.Ago.Days", { n: days });
 }
 
 function toRow(entry: TrashedItem): TrashRow {
@@ -88,7 +91,7 @@ export class TrashApp extends foundry.applications.api.HandlebarsApplicationMixi
 ) {
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-trash",
-    window: { title: "Trash", resizable: true },
+    window: { title: "DOLMENWOOD.Trash.Title", resizable: true },
     position: { width: 460, height: 520 },
     classes: ["dolmenwood-party-inventory", "trash-window"],
     actions: {
@@ -112,7 +115,7 @@ export class TrashApp extends foundry.applications.api.HandlebarsApplicationMixi
       if (entries.length === 0) continue;
       groups.push({
         actorId: actor.id ?? "",
-        actorName: actor.name ?? "Unnamed",
+        actorName: actor.name ?? t("DOLMENWOOD.Trash.Unnamed"),
         icon: getLootActors().some((l) => l.id === actor.id) ? getLootIcon(actor) : "fa-user",
         // Newest first — the mis-click you are looking for is the last one.
         rows: [...entries].reverse().map(toRow),
@@ -135,13 +138,18 @@ export class TrashApp extends foundry.applications.api.HandlebarsApplicationMixi
 
     const result = await restoreTrashEntry(actor, entryId);
     if (!result.ok) {
-      ui.notifications?.warn("That item could not be restored — nowhere to put it.");
+      ui.notifications?.warn(t("DOLMENWOOD.Trash.Restore.Failed"));
     } else if (result.fellBack) {
+      // `zoneName` is optional on the result. The old message interpolated it
+      // straight into a template literal, so a missing one read "Restored to
+      // undefined." — the typed t() is what turned that up.
       ui.notifications?.info(
-        `Restored to ${result.zoneName} — the zone it came from is gone or full.`
+        t("DOLMENWOOD.Trash.Restore.Fallback", { zone: result.zoneName ?? "" })
       );
     } else {
-      ui.notifications?.info(`Restored to ${result.zoneName}.`);
+      ui.notifications?.info(
+        t("DOLMENWOOD.Trash.Restore.Done", { zone: result.zoneName ?? "" })
+      );
     }
 
     SocketHandler.emit(SOCKET_EVENTS.REQUEST_REFRESH, {});
@@ -165,12 +173,11 @@ export class TrashApp extends foundry.applications.api.HandlebarsApplicationMixi
     if (!actor) return;
     const entry = getTrash(actor).find((t) => t.entryId === entryId);
     const confirmed = await Dialog.confirm({
-      title: "Throw Away",
+      title: t("DOLMENWOOD.Trash.Discard.Title"),
       content:
-        "<p>Throw <strong>" +
-        escapeHTML(entry?.item?.name ?? "this row") +
-        "</strong> away for good?</p>" +
-        '<p class="qm-hint">It cannot be restored afterwards. The rest of the bin is untouched.</p>'
+        t("DOLMENWOOD.Trash.Discard.Body", {
+          name: escapeHTML(entry?.item?.name ?? t("DOLMENWOOD.Trash.Discard.ThisRow")),
+        }) + `<p class="qm-hint">${t("DOLMENWOOD.Trash.Discard.Hint")}</p>`
     });
     if (!confirmed) return;
     await deleteTrashEntry(actor, entryId);
@@ -188,8 +195,10 @@ export class TrashApp extends foundry.applications.api.HandlebarsApplicationMixi
 
     const count = getTrash(actor).length;
     const confirmed = await Dialog.confirm({
-      title: "Empty Trash",
-      content: `<p>Throw away <strong>${count}</strong> deleted item${count === 1 ? "" : "s"} from <strong>${actor.name}</strong>'s trash? This cannot be undone.</p>`,
+      title: t("DOLMENWOOD.Trash.EmptyActor.Title"),
+      content: tn("DOLMENWOOD.Trash.EmptyActor.Body", count, {
+        name: escapeHTML(actor.name ?? ""),
+      }),
     });
     if (!confirmed) return;
 
@@ -206,8 +215,14 @@ export class TrashApp extends foundry.applications.api.HandlebarsApplicationMixi
     if (count === 0) return;
 
     const confirmed = await Dialog.confirm({
-      title: "Empty All Trash",
-      content: `<p>Throw away <strong>${count}</strong> deleted item${count === 1 ? "" : "s"} across <strong>${actors.length}</strong> inventor${actors.length === 1 ? "y" : "ies"}? This cannot be undone.</p>`,
+      title: t("DOLMENWOOD.Trash.EmptyAll.Title"),
+      // Two numbers, two plurals, one sentence. `tn` chooses on the item count;
+      // the inventories are a noun phrase of their own, localised whole and
+      // handed in — so the sentence around it stays one key and German keeps
+      // its word order, which joining fragments would have taken away.
+      content: tn("DOLMENWOOD.Trash.EmptyAll.Body", count, {
+        where: tn("DOLMENWOOD.Trash.EmptyAll.Where", actors.length),
+      }),
     });
     if (!confirmed) return;
 
