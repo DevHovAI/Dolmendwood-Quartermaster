@@ -348,5 +348,8 @@
   "DOLMENWOOD.Party.Summary.NoItems": "No items in party inventory.",
 
   "DOLMENWOOD.Party.Log.Title": "Transaction Log",
-  "DOLMENWOOD.Party.Log.Empty": "No transactions yet."
+  "DOLMENWOOD.Party.Log.Empty": "No transactions yet.",
+
+  "DOLMENWOOD.Common.Unknown": "Unknown",
+  "DOLMENWOOD.Party.Summary.CustomCategory": "Custom"
 }

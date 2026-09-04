@@ -52,7 +52,7 @@ export function buildPartyConvoy(
   for (const actor of partyActors) {
     const inv = FlagManager.getInventory(actor);
     const enc = calculateEncumbrance(inv, CatalogManager.getMap(), encMode);
-    const name = actor.name ?? "Unknown";
+    const name = actor.name ?? t("DOLMENWOOD.Common.Unknown");
 
     // The shared store is a container, not a marcher — only the animals and
     // vehicles parked in it affect the pace, never its own carried weight.
@@ -135,8 +135,8 @@ export function buildPartySummary(
         // Bundles are counted in loose units, or the summary would disagree
         // with the number shown in the inventory
         quantity: displayQuantity(item, def),
-        category: def?.category ?? "Custom",
-        ownerName: actor.name ?? "Unknown",
+        category: def?.category ?? t("DOLMENWOOD.Party.Summary.CustomCategory"),
+        ownerName: actor.name ?? t("DOLMENWOOD.Common.Unknown"),
         isSecret: item.isSecret,
       });
     }

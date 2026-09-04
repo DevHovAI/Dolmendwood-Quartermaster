@@ -349,6 +349,24 @@ body {
   gap: var(--dw-space-4);
 }
 
+/* **Section headings stay in the text face** — the type-role block says so, and
+   until now only `h2` actually named a face. Core defines `--font-h4` as
+   `var(--font-h1)`, which is Modesto Condensed, and redefines it again as
+   "Bruno Ace" in another theme; `--font-h3` happens to be Signika in the
+   default theme and something else elsewhere. So a section heading was wearing
+   the *title* face at section size, and changing face with the Foundry theme —
+   the same fault `h2` was given a rule for on 2026-08-31, one level down
+   (Leander, 2026-09-05: *"'vorgangsprotokoll' ist nicht in der richtigen
+   Schrift"*).
+
+   Named on the headings themselves rather than inherited: core names `h3` and
+   `h4` directly, and core outranks a class on anything core names. */
+.dolmenwood-party-inventory h3,
+.dolmenwood-party-inventory h4 {
+  font-family: var(--dw-font-body);
+  font-weight: 700;
+}
+
 .dolmenwood-party-inventory h3 {
   color: var(--dw-secondary);
   font-size: var(--dw-text-sm);

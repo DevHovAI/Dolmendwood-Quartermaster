@@ -348,5 +348,8 @@
   "DOLMENWOOD.Party.Summary.NoItems": "Keine Gegenstände im Gruppeninventar.",
 
   "DOLMENWOOD.Party.Log.Title": "Vorgangsprotokoll",
-  "DOLMENWOOD.Party.Log.Empty": "Noch keine Vorgänge."
+  "DOLMENWOOD.Party.Log.Empty": "Noch keine Vorgänge.",
+
+  "DOLMENWOOD.Common.Unknown": "Unbekannt",
+  "DOLMENWOOD.Party.Summary.CustomCategory": "Eigene"
 }
