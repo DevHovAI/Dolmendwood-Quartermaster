@@ -2629,19 +2629,19 @@ class GrantCoinsDialog extends Dialog {
       content: `
         <form>
           <div class="form-group">
-            <label>PP</label>
+            <label>${t("DOLMENWOOD.Currency.PP")}</label>
             <input type="number" id="grant-pp" value="0" min="0" />
           </div>
           <div class="form-group">
-            <label>GP</label>
+            <label>${t("DOLMENWOOD.Currency.GP")}</label>
             <input type="number" id="grant-gp" value="0" min="0" />
           </div>
           <div class="form-group">
-            <label>SP</label>
+            <label>${t("DOLMENWOOD.Currency.SP")}</label>
             <input type="number" id="grant-sp" value="0" min="0" />
           </div>
           <div class="form-group">
-            <label>CP</label>
+            <label>${t("DOLMENWOOD.Currency.CP")}</label>
             <input type="number" id="grant-cp" value="0" min="0" />
           </div>
         </form>
@@ -2738,26 +2738,30 @@ class MoveCoinsBetweenZonesDialog extends Dialog {
       content: `
         <form>
           <p style="margin:0 0 8px;opacity:0.8;">
-            Available: ${fromCoins.pp}pp &nbsp; ${fromCoins.gp}gp &nbsp; ${fromCoins.sp}sp &nbsp; ${fromCoins.cp}cp
+            Available: ${fromCoins.pp}${t("DOLMENWOOD.Currency.PP")} &nbsp; ${fromCoins.gp}${t(
+              "DOLMENWOOD.Currency.GP"
+            )} &nbsp; ${fromCoins.sp}${t("DOLMENWOOD.Currency.SP")} &nbsp; ${fromCoins.cp}${t(
+              "DOLMENWOOD.Currency.CP"
+            )}
           </p>
           <div class="form-group">
             <label>Move to</label>
             <select id="move-coins-to">${toOptions}</select>
           </div>
           <div class="form-group">
-            <label>PP</label>
+            <label>${t("DOLMENWOOD.Currency.PP")}</label>
             <input type="number" id="move-pp" value="0" min="0" max="${fromCoins.pp}" />
           </div>
           <div class="form-group">
-            <label>GP</label>
+            <label>${t("DOLMENWOOD.Currency.GP")}</label>
             <input type="number" id="move-gp" value="0" min="0" max="${fromCoins.gp}" />
           </div>
           <div class="form-group">
-            <label>SP</label>
+            <label>${t("DOLMENWOOD.Currency.SP")}</label>
             <input type="number" id="move-sp" value="0" min="0" max="${fromCoins.sp}" />
           </div>
           <div class="form-group">
-            <label>CP</label>
+            <label>${t("DOLMENWOOD.Currency.CP")}</label>
             <input type="number" id="move-cp" value="0" min="0" max="${fromCoins.cp}" />
           </div>
         </form>

@@ -44,6 +44,7 @@ import { CatalogManager } from "../data/CatalogManager";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
 import { getEncumbranceMode, zonesAcceptingItems } from "../data/zoneGrants";
 import type { InnPurchasePayload, InventoryItem, ItemDefinition, CharacterInventory } from "../types";
+import { t } from "../helpers/i18n";
 
 interface InnState {
   name: string;
@@ -1063,7 +1064,9 @@ class InnEntryDialog extends Dialog {
     const currencyOptions = (["cp", "sp", "gp", "pp"] as Currency[])
       .map(
         (c) =>
-          `<option value="${c}" ${(entry?.cost.currency ?? "sp") === c ? "selected" : ""}>${c}</option>`
+          `<option value="${c}" ${(entry?.cost.currency ?? "sp") === c ? "selected" : ""}>${t(
+            `DOLMENWOOD.Currency.${c.toUpperCase()}`
+          )}</option>`
       )
       .join("");
 

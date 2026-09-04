@@ -34,6 +34,7 @@ import { MOON_SIGNS, moonSignLabel, moonSignLine, moonSignsByMoon } from "../dat
 import { CLASSES, classFromText, readModifier, xpModifierForScore } from "../data/xpAward";
 import { levelChange, routesFor, thresholdFor, xpCapFor } from "../data/levelUp";
 import { escapeHTML } from "../helpers/handlebars";
+import { t } from "../helpers/i18n";
 import { applyLevelUp, capLine } from "../data/levelUpApply";
 import { castOne, markOne, unmarkOne, chargeLabel, creditLine } from "../data/spellCharges";
 import { promptBlock } from "./BlockDialog";
@@ -1053,7 +1054,10 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     if (!change) return;
 
     const bill: string[] = [];
-    if (offer.costGp > 0) bill.push(`<li><strong>${offer.costGp} gp</strong> — ${offer.costNote}</li>`);
+    if (offer.costGp > 0)
+      bill.push(
+        `<li><strong>${offer.costGp} ${t("DOLMENWOOD.Currency.GP")}</strong> — ${offer.costNote}</li>`
+      );
     if (offer.costXp > 0)
       bill.push(
         `<li><strong>${offer.costXp.toLocaleString()} XP</strong> — ${sys.xp.value.toLocaleString()} becomes ${(

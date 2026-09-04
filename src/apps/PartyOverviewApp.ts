@@ -10,6 +10,7 @@ import { openXpAward } from "./XpAwardApp";
 import { getPartyActors, getSharedActor, isSharedActor } from "../data/sharedStore";
 import { displayQuantity } from "../data/consumables";
 import type { PartyConvoy, PartyConvoyMember } from "../types";
+import { t } from "../helpers/i18n";
 
 export interface PartySummaryCoin {
   pp: number; gp: number; sp: number; cp: number;
@@ -158,9 +159,9 @@ export function buildPartySummary(
   const spRem = Math.floor((totalCp % 100) / 10);
   const cpRem = totalCp % 10;
   const parts: string[] = [];
-  if (gpWhole) parts.push(`${gpWhole} gp`);
-  if (spRem) parts.push(`${spRem} sp`);
-  if (cpRem || parts.length === 0) parts.push(`${cpRem} cp`);
+  if (gpWhole) parts.push(`${gpWhole} ${t("DOLMENWOOD.Currency.GP")}`);
+  if (spRem) parts.push(`${spRem} ${t("DOLMENWOOD.Currency.SP")}`);
+  if (cpRem || parts.length === 0) parts.push(`${cpRem} ${t("DOLMENWOOD.Currency.CP")}`);
   const totalGpStr = parts.join(" ");
 
   return {
