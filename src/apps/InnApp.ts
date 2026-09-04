@@ -950,26 +950,28 @@ class BuyTakeAwayDialog extends Dialog {
         ? t("DOLMENWOOD.Inn.TakeAway.TitleContainer", { container: containerLabel(kind!) })
         : t("DOLMENWOOD.Inn.TakeAway.TitlePlain"),
       content: `
-        <form>
-          <p style="margin:0 0 8px;">
+        <form class="qm-form">
+          <p class="qm-lead">
             <strong>${escapeHTML(title)}</strong><br />
-            <span style="opacity:0.8;">${subtitle}</span>
+            <span class="qm-lead-sub">${subtitle}</span>
           </p>
           <div class="form-group">
             <label>${t("DOLMENWOOD.Common.HowMany")}</label>
-            <input type="number" id="inn-takeaway-amount" value="1" min="1" step="1" style="flex:0 0 80px;" />
+            <div class="qm-field">
+              <input type="number" id="inn-takeaway-amount" value="1" min="1" step="1" />
+            </div>
           </div>
           <div class="form-group">
             <label>${t("DOLMENWOOD.Inn.TakeAway.For")}</label>
-            <select id="inn-takeaway-recipient">${recipientOptions}</select>
+            <div class="qm-field"><select id="inn-takeaway-recipient">${recipientOptions}</select></div>
           </div>
           <div class="form-group">
             <label>${t("DOLMENWOOD.Inn.TakeAway.Into")}</label>
-            <select id="inn-takeaway-zone"></select>
+            <div class="qm-field"><select id="inn-takeaway-zone"></select></div>
           </div>
-          <p id="inn-takeaway-total" style="margin:6px 0 0;font-weight:bold;"></p>
-          <p id="inn-takeaway-warning" class="notification warning" style="display:none;margin:6px 0 0;padding:4px 6px;font-size:var(--dw-text-sm);"></p>
-          <p class="hint" style="margin:6px 0 0;font-size:var(--dw-text-sm);color:#666;">
+          <p id="inn-takeaway-total" class="qm-total"></p>
+          <p id="inn-takeaway-warning" class="notification warning qm-warning" hidden></p>
+          <p class="qm-hint">
             ${t("DOLMENWOOD.Inn.TakeAway.Pays", { payer: escapeHTML(payer.name ?? "") })}
           </p>
         </form>`,
@@ -1162,64 +1164,71 @@ class InnEntryDialog extends Dialog {
     super({
       title: t(entry ? "DOLMENWOOD.Inn.Line.Edit" : "DOLMENWOOD.Inn.Line.Add"),
       content: `
-        <form>
+        <form class="qm-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Inn.Line.Name.Label")}</label>
-            <input type="text" id="inn-entry-name" value="${escapeHTML(entry?.name ?? "")}" placeholder="${escapeHTML(t("DOLMENWOOD.Inn.Line.Name.Placeholder"))}" />
-          </div>
-          <div class="form-group" style="display:flex;gap:8px;">
-            <div style="flex:1;">
-              <label>${t("DOLMENWOOD.Inn.Line.Price")}</label>
-              <input type="number" id="inn-entry-price" value="${entry?.cost.amount ?? 1}" min="0" />
+            <div class="qm-field">
+              <input type="text" id="inn-entry-name" value="${escapeHTML(entry?.name ?? "")}" placeholder="${escapeHTML(t("DOLMENWOOD.Inn.Line.Name.Placeholder"))}" />
             </div>
-            <div style="flex:1;">
-              <label>${t("DOLMENWOOD.Inn.Line.Currency")}</label>
-              <select id="inn-entry-currency">${currencyOptions}</select>
+          </div>
+          ${/* One row: a price is a figure and the coin it is counted in. */ ""}
+          <div class="form-group">
+            <label>${t("DOLMENWOOD.Inn.Line.Price")}</label>
+            <div class="qm-field">
+              <input type="number" id="inn-entry-price" value="${entry?.cost.amount ?? 1}" min="0" />
+              <select id="inn-entry-currency" title="${escapeHTML(t("DOLMENWOOD.Inn.Line.Currency"))}"
+                      aria-label="${escapeHTML(t("DOLMENWOOD.Inn.Line.Currency"))}">${currencyOptions}</select>
             </div>
           </div>
           ${
             groups.length > 0
               ? `<div class="form-group">
-                   <label>${t("DOLMENWOOD.Inn.Line.Group.Label")} <small>${t("DOLMENWOOD.Inn.Line.Group.Note")}</small></label>
-                   <select id="inn-entry-group">${groupOptions}</select>
+                   <label>${t("DOLMENWOOD.Inn.Line.Group.Label")}</label>
+                   <div class="qm-field"><select id="inn-entry-group">${groupOptions}</select></div>
+                   <p class="qm-hint">${t("DOLMENWOOD.Inn.Line.Group.Note")}</p>
                  </div>`
               : ""
           }
           <div class="form-group">
-            <label>${t("DOLMENWOOD.Inn.Line.Tag.Label")} <small>${escapeHTML(t("DOLMENWOOD.Inn.Line.Tag.Note"))}</small></label>
-            <input type="text" id="inn-entry-tag" value="${escapeHTML(entry?.tag ?? "")}" />
+            <label>${t("DOLMENWOOD.Inn.Line.Tag.Label")}</label>
+            <div class="qm-field">
+              <input type="text" id="inn-entry-tag" value="${escapeHTML(entry?.tag ?? "")}" />
+            </div>
+            <p class="qm-hint">${escapeHTML(t("DOLMENWOOD.Inn.Line.Tag.Note"))}</p>
           </div>
           <div class="form-group">
-            <label>${t("DOLMENWOOD.Inn.Line.Unit.Label")} <small>${escapeHTML(t("DOLMENWOOD.Inn.Line.Unit.Note"))}</small></label>
-            <input type="text" id="inn-entry-unit" value="${escapeHTML(entry?.unit ?? "")}" />
+            <label>${t("DOLMENWOOD.Inn.Line.Unit.Label")}</label>
+            <div class="qm-field">
+              <input type="text" id="inn-entry-unit" value="${escapeHTML(entry?.unit ?? "")}" />
+            </div>
+            <p class="qm-hint">${escapeHTML(t("DOLMENWOOD.Inn.Line.Unit.Note"))}</p>
           </div>
           ${
             section === "beverages"
               ? `<div class="form-group">
                    <label>${t("DOLMENWOOD.Inn.Line.Container.Label")}</label>
-                   <select id="inn-entry-container">${containerOptions}</select>
-                   <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-                     ${escapeHTML(t("DOLMENWOOD.Inn.Line.Container.Hint"))}
-                   </p>
+                   <div class="qm-field"><select id="inn-entry-container">${containerOptions}</select></div>
+                   <p class="qm-hint">${escapeHTML(t("DOLMENWOOD.Inn.Line.Container.Hint"))}</p>
                  </div>`
               : ""
           }
-          <div class="form-group">
+          <div class="form-group qm-wide">
             <label>${t("DOLMENWOOD.Inn.Line.Description")}</label>
-            <textarea id="inn-entry-desc" rows="2" style="width:100%;resize:vertical;">${escapeHTML(entry?.description ?? "")}</textarea>
+            <div class="qm-field">
+              <textarea id="inn-entry-desc" rows="2">${escapeHTML(entry?.description ?? "")}</textarea>
+            </div>
           </div>
           <div class="form-group">
             <label>${t("DOLMENWOOD.Inn.Line.Grants.Label")}</label>
-            <select id="inn-entry-grants">${catalogOptions}</select>
-            <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-              ${t("DOLMENWOOD.Inn.Line.Grants.Hint")}
-            </p>
+            <div class="qm-field"><select id="inn-entry-grants">${catalogOptions}</select></div>
+            <p class="qm-hint">${t("DOLMENWOOD.Inn.Line.Grants.Hint")}</p>
           </div>
           <div class="form-group">
-            <label><input type="checkbox" id="inn-entry-fixed" ${entry?.fixed ? "checked" : ""} /> ${t("DOLMENWOOD.Inn.Line.Fixed.Label")}</label>
-            <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-              ${t("DOLMENWOOD.Inn.Line.Fixed.Hint")}
-            </p>
+            <label>${t("DOLMENWOOD.Inn.Line.Fixed.Label")}</label>
+            <div class="qm-field">
+              <input type="checkbox" id="inn-entry-fixed" ${entry?.fixed ? "checked" : ""} />
+            </div>
+            <p class="qm-hint">${t("DOLMENWOOD.Inn.Line.Fixed.Hint")}</p>
           </div>
         </form>`,
       buttons: {
@@ -1298,13 +1307,15 @@ class InnSectionDialog extends Dialog {
       .filter((g) => sectionConfig.entries.some((e) => !e.fixed && (e.group ?? "") === g.key))
       .map((g) => {
         const range = sectionConfig.draw[g.key];
-        return `<div class="form-group" style="display:flex;gap:8px;align-items:center;">
-            <label style="flex:1;">${escapeHTML(groupLabel(g.key))}</label>
-            <input type="number" class="inn-draw-min" data-group="${g.key}" min="0"
-                   value="${range ? range[0] : ""}" placeholder="${escapeHTML(t("DOLMENWOOD.Inn.SectionDialog.Draw.All"))}" style="flex:0 0 64px;" />
-            <span>–</span>
-            <input type="number" class="inn-draw-max" data-group="${g.key}" min="0"
-                   value="${range ? range[1] : ""}" placeholder="${escapeHTML(t("DOLMENWOOD.Inn.SectionDialog.Draw.All"))}" style="flex:0 0 64px;" />
+        return `<div class="form-group">
+            <label>${escapeHTML(groupLabel(g.key))}</label>
+            <div class="qm-field qm-range">
+              <input type="number" class="inn-draw-min" data-group="${g.key}" min="0"
+                     value="${range ? range[0] : ""}" placeholder="${escapeHTML(t("DOLMENWOOD.Inn.SectionDialog.Draw.All"))}" />
+              <span>–</span>
+              <input type="number" class="inn-draw-max" data-group="${g.key}" min="0"
+                     value="${range ? range[1] : ""}" placeholder="${escapeHTML(t("DOLMENWOOD.Inn.SectionDialog.Draw.All"))}" />
+            </div>
           </div>`;
       })
       .join("");
@@ -1312,39 +1323,35 @@ class InnSectionDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Inn.SectionDialog.Title"),
       content: `
-        <form>
+        <form class="qm-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Inn.SectionDialog.Quality.Label")}</label>
-            <select id="inn-section-quality">${qualityOptions}</select>
-            <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-              ${t("DOLMENWOOD.Inn.SectionDialog.Quality.Hint")}
-            </p>
+            <div class="qm-field"><select id="inn-section-quality">${qualityOptions}</select></div>
+            <p class="qm-hint">${t("DOLMENWOOD.Inn.SectionDialog.Quality.Hint")}</p>
           </div>
-          <div class="form-group">
+          <div class="form-group qm-wide">
             <label>${t("DOLMENWOOD.Inn.SectionDialog.Description")}</label>
-            <textarea id="inn-section-text" rows="3" style="width:100%;resize:vertical;">${escapeHTML(sectionConfig.text ?? "")}</textarea>
+            <div class="qm-field">
+              <textarea id="inn-section-text" rows="3">${escapeHTML(sectionConfig.text ?? "")}</textarea>
+            </div>
           </div>
           ${
             section === "beverages"
               ? `<div class="form-group">
-                   <label>
+                   <label>${t("DOLMENWOOD.Inn.SectionDialog.Containers.Label")}</label>
+                   <div class="qm-field">
                      <input type="checkbox" id="inn-section-containers" ${sectionConfig.sellsContainers !== false ? "checked" : ""} />
-                     ${t("DOLMENWOOD.Inn.SectionDialog.Containers.Label")}
-                   </label>
-                   <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-                     ${t("DOLMENWOOD.Inn.SectionDialog.Containers.Hint")}
-                   </p>
+                   </div>
+                   <p class="qm-hint">${t("DOLMENWOOD.Inn.SectionDialog.Containers.Hint")}</p>
                  </div>`
               : ""
           }
           ${
             drawRows
-              ? `<fieldset style="border:1px solid #7a7971;border-radius:4px;padding:6px;">
-                   <legend style="padding:0 4px;">${t("DOLMENWOOD.Inn.SectionDialog.Draw.Legend")}</legend>
+              ? `<fieldset>
+                   <legend>${t("DOLMENWOOD.Inn.SectionDialog.Draw.Legend")}</legend>
                    ${drawRows}
-                   <p class="hint" style="margin:2px 0 0;font-size:var(--dw-text-sm);color:#666;">
-                     ${t("DOLMENWOOD.Inn.SectionDialog.Draw.Hint")}
-                   </p>
+                   <p class="qm-hint">${t("DOLMENWOOD.Inn.SectionDialog.Draw.Hint")}</p>
                  </fieldset>`
               : ""
           }

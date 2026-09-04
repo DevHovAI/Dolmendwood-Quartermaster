@@ -5986,6 +5986,65 @@ span.day-bar-panel-tick {
   opacity: 0.75;
 }
 
+/* ── Pieces a dialog needs beside its rows ──────────────────────────────────
+   All three were written as inline `style=` attributes on the elements
+   themselves, which is the same answer put where the next person cannot find
+   it — and where it cannot be corrected once for every dialog at a time
+   (Leander, 2026-09-05: the add-line dialog's "texte etwas unschön
+   formatiert"). */
+
+/* The opening line: what is being bought, and on what terms. */
+.qm-form .qm-lead {
+  margin: 0 0 var(--dw-space-4);
+}
+
+.qm-form .qm-lead-sub {
+  opacity: 0.8;
+}
+
+/* A figure the dialog keeps updating as the fields change. */
+.qm-form .qm-total {
+  margin: var(--dw-space-4) 0 0;
+  font-weight: 700;
+}
+
+/* A note that belongs to the whole form rather than to one control. */
+.qm-form > .qm-hint {
+  margin: var(--dw-space-3) 0 0;
+  font-size: var(--dw-text-xs);
+  line-height: 1.35;
+  opacity: 0.75;
+}
+
+.qm-form .qm-warning {
+  margin: var(--dw-space-4) 0 0;
+  padding: var(--dw-space-2) var(--dw-space-3);
+  font-size: var(--dw-text-sm);
+}
+
+/* A group of rows that answer one question together. */
+.qm-form fieldset {
+  border: 1px solid var(--dw-border);
+  border-radius: 4px;
+  padding: var(--dw-space-3) var(--dw-space-4) var(--dw-space-4);
+  margin: 0 0 var(--dw-space-4);
+}
+
+.qm-form fieldset > legend {
+  padding: 0 var(--dw-space-3);
+  font-size: var(--dw-text-sm);
+  font-weight: 700;
+}
+
+/* A pair of number boxes reading "from – to". */
+.qm-form .qm-range {
+  gap: var(--dw-space-3);
+}
+
+.qm-form .qm-range > input[type="number"] {
+  flex: 0 0 4rem;
+}
+
 /* A textarea earns the full width, label above it. */
 .qm-form .form-group.qm-wide {
   grid-template-columns: minmax(0, 1fr);
