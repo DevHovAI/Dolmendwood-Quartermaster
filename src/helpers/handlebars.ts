@@ -2,7 +2,7 @@ import { TEMPLATES } from "../constants";
 import { speedColorClass } from "../data/EncumbranceCalculator";
 import { QUALITIES_HINT, describeQualities, parseQualities } from "../data/weapons";
 import type { PartyConvoyMember } from "../types";
-import { tn } from "./i18n";
+import { t, tn } from "./i18n";
 
 /** Map Animals & Vehicles subcategory to a Font Awesome icon class. */
 export function subcategoryToIcon(subcategory?: string): string {
@@ -447,12 +447,13 @@ export function registerHandlebarsHelpers(): void {
     }
   );
 
-  // Size label
+  // Size label. The three keys have been in `lang/*.json` since v1.x with
+  // nothing reading them.
   Handlebars.registerHelper("sizeLabel", (size: string) => {
     switch (size) {
-      case "tiny": return "Tiny";
-      case "normal": return "Normal";
-      case "large": return "Large";
+      case "tiny": return t("DOLMENWOOD.Item.Size.Tiny");
+      case "normal": return t("DOLMENWOOD.Item.Size.Normal");
+      case "large": return t("DOLMENWOOD.Item.Size.Large");
       default: return size;
     }
   });

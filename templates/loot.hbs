@@ -4,22 +4,22 @@
   <div class="loot-status {{#if released}}is-released{{else}}is-staged{{/if}}">
     {{#if released}}
     <i class="fas fa-lock-open"></i>
-    <span>Released — the whole party can see and take from this.</span>
+    <span>{{localize "DOLMENWOOD.Loot.Status.Released"}}</span>
     {{else}}
     <i class="fas fa-eye-slash"></i>
-    <span>Staged — only you can see this. Fill it, then release it.</span>
+    <span>{{localize "DOLMENWOOD.Loot.Status.Staged"}}</span>
     {{/if}}
     <button type="button" data-action="toggleRelease" class="loot-release-btn">
-      {{#if released}}<i class="fas fa-lock"></i> Take back{{else}}<i class="fas fa-gift"></i> Release to party{{/if}}
+      {{#if released}}<i class="fas fa-lock"></i> {{localize "DOLMENWOOD.Loot.Status.TakeBack"}}{{else}}<i class="fas fa-gift"></i> {{localize "DOLMENWOOD.Loot.Status.Release"}}{{/if}}
     </button>
   </div>
   {{/if}}
 
   {{#if isGM}}
   <div class="loot-toolbar">
-    <button type="button" data-action="addItem"><i class="fas fa-plus"></i> Add item</button>
-    <button type="button" data-action="addCustomItem"><i class="fas fa-wand-magic-sparkles"></i> Custom</button>
-    <button type="button" data-action="editCoins"><i class="fas fa-coins"></i> Coins</button>
+    <button type="button" data-action="addItem"><i class="fas fa-plus"></i> {{localize "DOLMENWOOD.Loot.Toolbar.AddItem"}}</button>
+    <button type="button" data-action="addCustomItem"><i class="fas fa-wand-magic-sparkles"></i> {{localize "DOLMENWOOD.Loot.Toolbar.Custom"}}</button>
+    <button type="button" data-action="editCoins"><i class="fas fa-coins"></i> {{localize "DOLMENWOOD.Loot.Toolbar.Coins"}}</button>
     <span class="loot-toolbar-spacer"></span>
     {{!-- The pin can always be moved. It used to be a label once the box was
           placed, which meant a body left on the battle map could never come
@@ -28,24 +28,24 @@
           Pinned elsewhere: the badge *and* the button, which takes it up and
           drops it here. --}}
     {{#if pinnedSceneName}}
-    <span class="loot-pinned-note" title="Placed in “{{pinnedSceneName}}”">
+    <span class="loot-pinned-note" title="{{localize "DOLMENWOOD.Loot.Toolbar.Pinned.Hint" scene=pinnedSceneName}}">
       <i class="fas fa-map-pin"></i> {{pinnedSceneName}}
     </span>
     {{/if}}
     {{#unless pinnedHere}}
     <button type="button" data-action="placeOnMap" class="icon-btn"
-            title="{{#if pinnedSceneName}}Bring the pin over to this scene — it is taken off “{{pinnedSceneName}}”{{else}}Place this box on the current scene{{/if}}">
+            title="{{#if pinnedSceneName}}{{localize "DOLMENWOOD.Loot.Toolbar.Place.Move" scene=pinnedSceneName}}{{else}}{{localize "DOLMENWOOD.Loot.Toolbar.Place.Here"}}{{/if}}">
       <i class="fas {{#if pinnedSceneName}}fa-truck-arrow-right{{else}}fa-map-location-dot{{/if}}"></i>
     </button>
     {{/unless}}
-    <button type="button" data-action="renameBox" class="icon-btn" title="Edit name and icon"><i class="fas fa-pen"></i></button>
-    <button type="button" data-action="deleteBox" class="icon-btn loot-danger" title="Delete this box"><i class="fas fa-trash"></i></button>
+    <button type="button" data-action="renameBox" class="icon-btn" title="{{localize "DOLMENWOOD.Loot.Toolbar.Rename.Hint"}}"><i class="fas fa-pen"></i></button>
+    <button type="button" data-action="deleteBox" class="icon-btn loot-danger" title="{{localize "DOLMENWOOD.Loot.Toolbar.Delete.Hint"}}"><i class="fas fa-trash"></i></button>
   </div>
   {{/if}}
 
   <div class="loot-body">
     {{#if isEmpty}}
-    <p class="loot-empty"><em>Picked clean.</em></p>
+    <p class="loot-empty"><em>{{localize "DOLMENWOOD.Loot.Empty"}}</em></p>
     {{/if}}
 
     {{#each items}}
@@ -55,7 +55,7 @@
         {{this.name}}
         {{#if (gt this.count 1)}}<span class="loot-row-count">×{{this.count}}</span>{{/if}}
         {{#if (eq ../encMode "weight")}}
-        <span class="item-size-badge item-weight-badge" title="Weight per unit">{{this.weight}} wt</span>
+        <span class="item-size-badge item-weight-badge" title="{{localize "DOLMENWOOD.Loot.Row.Weight.Hint"}}">{{this.weight}} wt</span>
         {{else}}
         {{#if this.size}}<span class="item-size-badge size-{{this.size}}">{{sizeLabel this.size}}</span>{{/if}}
         {{/if}}
@@ -63,12 +63,12 @@
       </span>
       {{#if ../canTake}}
       <button type="button" data-action="takeItem" data-item-id="{{this.id}}" class="loot-take-btn">
-        <i class="fas fa-hand"></i> Take
+        <i class="fas fa-hand"></i> {{localize "DOLMENWOOD.Loot.Row.Take"}}
       </button>
       {{/if}}
       {{#if ../isGM}}
       <button type="button" data-action="deleteItem" data-item-id="{{this.id}}"
-              class="icon-btn loot-danger" title="Remove from box">
+              class="icon-btn loot-danger" title="{{localize "DOLMENWOOD.Loot.Row.Remove.Hint"}}">
         <i class="fas fa-trash"></i>
       </button>
       {{/if}}
@@ -86,13 +86,13 @@
       {{#if coins.cp}}<span class="coin coin-cp">{{coins.cp}} {{localize "DOLMENWOOD.Currency.CP"}}</span>{{/if}}
     </span>
     {{#if canSplit}}
-    <button type="button" data-action="splitCoins" class="loot-take-btn" title="Divide evenly among the party">
-      <i class="fas fa-scale-balanced"></i> Split
+    <button type="button" data-action="splitCoins" class="loot-take-btn" title="{{localize "DOLMENWOOD.Loot.Purse.Split.Hint"}}">
+      <i class="fas fa-scale-balanced"></i> {{localize "DOLMENWOOD.Loot.Purse.Split.Label"}}
     </button>
     {{/if}}
     {{#if canTake}}
     <button type="button" data-action="takeCoins" class="loot-take-btn">
-      <i class="fas fa-hand"></i> Take
+      <i class="fas fa-hand"></i> {{localize "DOLMENWOOD.Loot.Purse.Take"}}
     </button>
     {{/if}}
   </div>

@@ -38,7 +38,6 @@
 
   "DOLMENWOOD.Zone.Purse.Hint": "Coins in this zone",
   "DOLMENWOOD.Zone.Purse.Move.Hint": "Move coins to another zone",
-  "DOLMENWOOD.Currency.OfAvailable": "(of {n})",
 
   "DOLMENWOOD.Shop.BuyingFor": "Buying for",
   "DOLMENWOOD.Shop.Purchase": "Purchase",
@@ -208,7 +207,75 @@
   "DOLMENWOOD.Market.Dialog.Categories.Label": "Categories sold",
   "DOLMENWOOD.Market.Dialog.Categories.Hint": "Leave every box unticked to sell the whole catalogue. Treasures are never on a shelf by category — put one there with <strong>From Catalogue</strong> inside the shop.",
   "DOLMENWOOD.Market.Dialog.Quality": "Quality",
-  "DOLMENWOOD.Market.Dialog.Save": "Save",
-  "DOLMENWOOD.Market.Dialog.Add": "Add",
-  "DOLMENWOOD.Market.Dialog.Cancel": "Cancel"
+
+  "DOLMENWOOD.Common.Cancel": "Cancel",
+  "DOLMENWOOD.Common.Save": "Save",
+  "DOLMENWOOD.Common.Add": "Add",
+  "DOLMENWOOD.Common.HowMany": "How many",
+  "DOLMENWOOD.Common.OfAvailable": "(of {n})",
+
+  "DOLMENWOOD.Loot.Title": "Loot",
+  "DOLMENWOOD.Loot.Browser.New": "New loot box",
+  "DOLMENWOOD.Loot.Browser.Empty.GM": "No loot boxes yet.",
+  "DOLMENWOOD.Loot.Browser.Empty.Player": "Nothing has been handed out yet.",
+  "DOLMENWOOD.Loot.Browser.Meta.One": "{count} item",
+  "DOLMENWOOD.Loot.Browser.Meta.Other": "{count} items",
+  "DOLMENWOOD.Loot.Browser.Coins": "{n} coins",
+  "DOLMENWOOD.Loot.Browser.Staged.Label": "Staged",
+  "DOLMENWOOD.Loot.Browser.Staged.Hint": "Not released to the party yet",
+
+  "DOLMENWOOD.Loot.Status.Released": "Released — the whole party can see and take from this.",
+  "DOLMENWOOD.Loot.Status.Staged": "Staged — only you can see this. Fill it, then release it.",
+  "DOLMENWOOD.Loot.Status.TakeBack": "Take back",
+  "DOLMENWOOD.Loot.Status.Release": "Release to party",
+
+  "DOLMENWOOD.Loot.Toolbar.AddItem": "Add item",
+  "DOLMENWOOD.Loot.Toolbar.Custom": "Custom",
+  "DOLMENWOOD.Loot.Toolbar.Coins": "Coins",
+  "DOLMENWOOD.Loot.Toolbar.Pinned.Hint": "Placed in \u201C{scene}\u201D",
+  "DOLMENWOOD.Loot.Toolbar.Place.Here": "Place this box on the current scene",
+  "DOLMENWOOD.Loot.Toolbar.Place.Move": "Bring the pin over to this scene — it is taken off \u201C{scene}\u201D",
+  "DOLMENWOOD.Loot.Toolbar.Rename.Hint": "Edit name and icon",
+  "DOLMENWOOD.Loot.Toolbar.Delete.Hint": "Delete this box",
+
+  "DOLMENWOOD.Loot.Empty": "Picked clean.",
+  "DOLMENWOOD.Loot.Row.Weight.Hint": "Weight per unit",
+  "DOLMENWOOD.Loot.Row.Take": "Take",
+  "DOLMENWOOD.Loot.Row.Remove.Hint": "Remove from box",
+
+  "DOLMENWOOD.Loot.Purse.Split.Label": "Split",
+  "DOLMENWOOD.Loot.Purse.Split.Hint": "Divide evenly among the party",
+  "DOLMENWOOD.Loot.Purse.Take": "Take",
+
+  "DOLMENWOOD.Loot.Delete.Title": "Delete Loot Box",
+  "DOLMENWOOD.Loot.Delete.NotEmpty": "<p><strong>This box is not empty.</strong> Everything still in it is destroyed.</p>",
+  "DOLMENWOOD.Loot.Delete.Body": "<p>Delete \u201C{name}\u201D for good?</p>",
+  "DOLMENWOOD.Loot.Delete.PinNote": "<p>Its map pin in \u201C{scene}\u201D is removed too.</p>",
+
+  "DOLMENWOOD.Loot.NoCharacter.Item": "You have no character to put this into.",
+  "DOLMENWOOD.Loot.NoCharacter.Coins": "You have no character to put coins into.",
+  "DOLMENWOOD.Loot.NotOnMap": "\u201C{name}\u201D is not on any map, so there is nothing to walk up to.",
+  "DOLMENWOOD.Loot.OutOfReach": "\u201C{name}\u201D is out of reach. {reason}",
+  "DOLMENWOOD.Loot.NothingHere": "There is nothing here yet.",
+
+  "DOLMENWOOD.Loot.New.Title": "New Loot Box",
+  "DOLMENWOOD.Loot.New.Name": "Name",
+  "DOLMENWOOD.Loot.New.Placeholder": "e.g. Barrow Hoard",
+  "DOLMENWOOD.Loot.New.Icon": "Icon",
+  "DOLMENWOOD.Loot.New.Create": "Create",
+  "DOLMENWOOD.Loot.Edit.Title": "Edit Loot Box",
+  "DOLMENWOOD.Loot.Coins.Title": "Coins in the Hoard",
+
+  "DOLMENWOOD.Loot.Take.Title": "Take {name}",
+  "DOLMENWOOD.Loot.Take.To": "To",
+  "DOLMENWOOD.Loot.Take.Into": "Into",
+  "DOLMENWOOD.Loot.Take.Label": "Take",
+  "DOLMENWOOD.Loot.TakeCoins.Title": "Take Coins",
+  "DOLMENWOOD.Loot.TakeCoins.Gone": "Those coins are no longer in the box.",
+
+  "DOLMENWOOD.Loot.Split.Title": "Split the Hoard",
+  "DOLMENWOOD.Loot.Split.Label": "Split",
+  "DOLMENWOOD.Loot.Split.InBox": "In the box: <strong>{coins}</strong>",
+  "DOLMENWOOD.Loot.Split.Remainder": "Stays in the box: <strong>{coins}</strong> — coins cannot be broken down without a money changer.",
+  "DOLMENWOOD.Loot.Split.Even": "Divides evenly, nothing left over."
 }

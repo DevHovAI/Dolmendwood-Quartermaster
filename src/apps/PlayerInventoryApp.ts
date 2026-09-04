@@ -2163,7 +2163,10 @@ class GiveItemDialog extends Dialog {
             <select id="give-item-target">${memberOptions}</select>
           </div>
           <div class="form-group">
-            <label>How many <span style="opacity:0.7;">(of ${available})</span></label>
+            <label>${t("DOLMENWOOD.Common.HowMany")} <span style="opacity:0.7;">${t(
+        "DOLMENWOOD.Common.OfAvailable",
+        { n: available }
+      )}</span></label>
             <input type="number" id="give-item-qty" value="${available}" min="1" max="${available}" />
           </div>
           <div class="form-group">
@@ -2288,7 +2291,10 @@ export function amountFieldHTML(available: number, id: string): string {
   if (available === 0) return "";
   return `
     <div class="form-group">
-      <label>How many <span style="opacity:0.7;">(of ${available})</span></label>
+      <label>${t("DOLMENWOOD.Common.HowMany")} <span style="opacity:0.7;">${t(
+        "DOLMENWOOD.Common.OfAvailable",
+        { n: available }
+      )}</span></label>
       <input type="number" id="${id}" value="${available}" min="1" max="${available}" />
     </div>`;
 }

@@ -268,7 +268,7 @@ class MarketEntryDialog extends Dialog {
       content,
       buttons: {
         save: {
-          label: t(entry ? "DOLMENWOOD.Market.Dialog.Save" : "DOLMENWOOD.Market.Dialog.Add"),
+          label: t(entry ? "DOLMENWOOD.Common.Save" : "DOLMENWOOD.Common.Add"),
           icon: `<i class="fas fa-check"></i>`,
           callback: (html: JQuery) => {
             const name = (html.find("#entry-name").val() as string).trim();
@@ -304,7 +304,7 @@ class MarketEntryDialog extends Dialog {
             this.app.saveEntry(newEntry);
           },
         },
-        cancel: { label: t("DOLMENWOOD.Market.Dialog.Cancel") },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "save",
     });

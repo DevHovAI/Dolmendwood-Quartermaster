@@ -78,7 +78,7 @@ export class LootApp extends foundry.applications.api.HandlebarsApplicationMixin
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-loot",
-    window: { title: "Loot", resizable: true },
+    window: { title: "DOLMENWOOD.Loot.Title", resizable: true },
     position: { width: 560, height: 620 },
     classes: ["dolmenwood-party-inventory", "loot"],
     actions: {
@@ -221,16 +221,17 @@ export class LootApp extends foundry.applications.api.HandlebarsApplicationMixin
     if (!(game as Game).user?.isGM) return;
     const remaining = FlagManager.getInventory(this.actor);
     const contents = remaining.items.length + coinCount(remaining.coins);
-    const warning = contents > 0
-      ? "<p><strong>This box is not empty.</strong> Everything still in it is destroyed.</p>"
-      : "";
+    const warning = contents > 0 ? t("DOLMENWOOD.Loot.Delete.NotEmpty") : "";
     const pinned = lootNoteScene(this.actor);
     const pinNote = pinned
-      ? `<p>Its map pin in “${escapeHTML(pinned.sceneName)}” is removed too.</p>`
+      ? t("DOLMENWOOD.Loot.Delete.PinNote", { scene: escapeHTML(pinned.sceneName) })
       : "";
     const confirmed = await Dialog.confirm({
-      title: "Delete Loot Box",
-      content: `${warning}<p>Delete “${escapeHTML(this.actor.name ?? "")}” for good?</p>${pinNote}`,
+      title: t("DOLMENWOOD.Loot.Delete.Title"),
+      content:
+        warning +
+        t("DOLMENWOOD.Loot.Delete.Body", { name: escapeHTML(this.actor.name ?? "") }) +
+        pinNote,
     });
     if (!confirmed) return;
     // The pin is cleaned up by the deleteActor hook, which also catches a box
@@ -254,7 +255,7 @@ export class LootApp extends foundry.applications.api.HandlebarsApplicationMixin
 
     const targets = this.takeTargets();
     if (targets.length === 0) {
-      ui.notifications?.warn("You have no character to put this into.");
+      ui.notifications?.warn(t("DOLMENWOOD.Loot.NoCharacter.Item"));
       return;
     }
 
@@ -264,7 +265,7 @@ export class LootApp extends foundry.applications.api.HandlebarsApplicationMixin
   private static _onTakeCoins(this: LootApp): void {
     const targets = this.takeTargets();
     if (targets.length === 0) {
-      ui.notifications?.warn("You have no character to put coins into.");
+      ui.notifications?.warn(t("DOLMENWOOD.Loot.NoCharacter.Coins"));
       return;
     }
     new TakeLootCoinsDialog(this.actor, targets, () => this.rerender()).render(true);
@@ -283,7 +284,7 @@ export class LootBrowserApp extends foundry.applications.api.HandlebarsApplicati
 ) {
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-loot-browser",
-    window: { title: "Loot", resizable: true },
+    window: { title: "DOLMENWOOD.Loot.Title", resizable: true },
     position: { width: 420, height: 480 },
     classes: ["dolmenwood-party-inventory", "loot-browser"],
     actions: {
@@ -353,12 +354,14 @@ export function openLootBox(actor: Actor): void {
   const note = lootNoteScene(actor)?.note;
   if (!(game as Game).user?.isGM) {
     if (!note) {
-      ui.notifications?.warn(`“${actor.name}” is not on any map, so there is nothing to walk up to.`);
+      ui.notifications?.warn(t("DOLMENWOOD.Loot.NotOnMap", { name: actor.name ?? "" }));
       return;
     }
     const verdict = canReachLoot(note as Parameters<typeof canReachLoot>[0]);
     if (!verdict.ok) {
-      ui.notifications?.warn(`“${actor.name}” is out of reach. ${verdict.reason}`);
+      ui.notifications?.warn(
+        t("DOLMENWOOD.Loot.OutOfReach", { name: actor.name ?? "", reason: verdict.reason ?? "" })
+      );
       return;
     }
   }
@@ -400,7 +403,7 @@ export async function openLootFromNote(note: {
 
   if (!(game as Game).user?.isGM) {
     // Either nothing has been staged here, or it is staged and not yet released
-    ui.notifications?.info("There is nothing here yet.");
+    ui.notifications?.info(t("DOLMENWOOD.Loot.NothingHere"));
     return;
   }
 
@@ -448,28 +451,30 @@ export function coinSummary(coins: ZoneCoins): string {
 class NewLootBoxDialog extends Dialog {
   constructor(onPick: (name: string, icon: string) => void | Promise<void>) {
     super({
-      title: "New Loot Box",
+      title: t("DOLMENWOOD.Loot.New.Title"),
       content: `
         <form>
           <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="loot-box-name" placeholder="e.g. Barrow Hoard" />
+            <label>${t("DOLMENWOOD.Loot.New.Name")}</label>
+            <input type="text" id="loot-box-name" placeholder="${escapeHTML(
+              t("DOLMENWOOD.Loot.New.Placeholder")
+            )}" />
           </div>
           <div class="form-group">
-            <label>Icon</label>
+            <label>${t("DOLMENWOOD.Loot.New.Icon")}</label>
             ${buildIconPickerHTML(DEFAULT_LOOT_ICON, LOOT_ICONS)}
           </div>
         </form>`,
       buttons: {
         create: {
-          label: "Create",
+          label: t("DOLMENWOOD.Loot.New.Create"),
           callback: (html: JQuery) => {
             const name = (html.find("#loot-box-name").val() as string).trim() || "Loot";
             const icon = (html.find("#custom-icon-value").val() as string) || DEFAULT_LOOT_ICON;
             void onPick(name, icon);
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "create",
     });
@@ -485,21 +490,21 @@ class NewLootBoxDialog extends Dialog {
 class RenameLootDialog extends Dialog {
   constructor(actor: Actor, onComplete: () => void) {
     super({
-      title: "Edit Loot Box",
+      title: t("DOLMENWOOD.Loot.Edit.Title"),
       content: `
         <form>
           <div class="form-group">
-            <label>Name</label>
+            <label>${t("DOLMENWOOD.Loot.New.Name")}</label>
             <input type="text" id="loot-rename" value="${escapeHTML(actor.name ?? "")}" />
           </div>
           <div class="form-group">
-            <label>Icon</label>
+            <label>${t("DOLMENWOOD.Loot.New.Icon")}</label>
             ${buildIconPickerHTML(getLootIcon(actor), LOOT_ICONS)}
           </div>
         </form>`,
       buttons: {
         save: {
-          label: "Save",
+          label: t("DOLMENWOOD.Common.Save"),
           callback: async (html: JQuery) => {
             const name = (html.find("#loot-rename").val() as string).trim();
             const icon = (html.find("#custom-icon-value").val() as string) || DEFAULT_LOOT_ICON;
@@ -512,7 +517,7 @@ class RenameLootDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "save",
     });
@@ -537,11 +542,11 @@ class SetLootCoinsDialog extends Dialog {
     ).join("");
 
     super({
-      title: "Coins in the Hoard",
+      title: t("DOLMENWOOD.Loot.Coins.Title"),
       content: `<form>${fields}</form>`,
       buttons: {
         save: {
-          label: "Save",
+          label: t("DOLMENWOOD.Common.Save"),
           callback: async (html: JQuery) => {
             const next = emptyCoins();
             for (const key of COIN_KEYS) {
@@ -556,7 +561,7 @@ class SetLootCoinsDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "save",
     });
@@ -578,22 +583,22 @@ class TakeLootItemDialog extends Dialog {
       .join("");
 
     super({
-      title: `Take ${item.name}`,
+      title: t("DOLMENWOOD.Loot.Take.Title", { name: item.name }),
       content: `
         <form>
           <div class="form-group">
-            <label>To</label>
+            <label>${t("DOLMENWOOD.Loot.Take.To")}</label>
             <select id="take-target">${targetOptions}</select>
           </div>
           <div class="form-group">
-            <label>Into</label>
+            <label>${t("DOLMENWOOD.Loot.Take.Into")}</label>
             <select id="take-zone"></select>
           </div>
           ${amountFieldHTML(available > 1 ? available : 0, "take-qty")}
         </form>`,
       buttons: {
         take: {
-          label: "Take",
+          label: t("DOLMENWOOD.Loot.Take.Label"),
           callback: async (html: JQuery) => {
             const toActor = (game as Game).actors?.get(html.find("#take-target").val() as string);
             const zoneId = html.find("#take-zone").val() as string;
@@ -605,7 +610,7 @@ class TakeLootItemDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "take",
     });
@@ -680,7 +685,7 @@ class TakeLootCoinsDialog extends Dialog {
       .map(
         (key) => `
         <div class="form-group">
-          <label>${coinLabel(key)} <span style="opacity:0.7;">${t("DOLMENWOOD.Currency.OfAvailable", {
+          <label>${coinLabel(key)} <span style="opacity:0.7;">${t("DOLMENWOOD.Common.OfAvailable", {
             n: coins[key],
           })}</span></label>
           <input type="number" class="loot-take-coin" data-coin="${key}" id="take-coin-${key}"
@@ -690,11 +695,11 @@ class TakeLootCoinsDialog extends Dialog {
       .join("");
 
     super({
-      title: "Take Coins",
+      title: t("DOLMENWOOD.Loot.TakeCoins.Title"),
       content: `
         <form>
           <div class="form-group">
-            <label>To</label>
+            <label>${t("DOLMENWOOD.Loot.Take.To")}</label>
             <select id="take-coin-target">${targetOptions}</select>
           </div>
           ${fields}
@@ -702,18 +707,18 @@ class TakeLootCoinsDialog extends Dialog {
         </form>`,
       buttons: {
         take: {
-          label: "Take",
+          label: t("DOLMENWOOD.Loot.Take.Label"),
           callback: async (html: JQuery) => {
             const toActor = (game as Game).actors?.get(html.find("#take-coin-target").val() as string);
             if (!toActor) return;
             const wanted = readCoinInputs(html, ".loot-take-coin");
             if (coinCount(wanted) === 0) return;
             const ok = await takeLootCoins(lootActor, toActor, wanted);
-            if (!ok) ui.notifications?.warn("Those coins are no longer in the box.");
+            if (!ok) ui.notifications?.warn(t("DOLMENWOOD.Loot.TakeCoins.Gone"));
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "take",
     });
@@ -759,16 +764,18 @@ class SplitLootCoinsDialog extends Dialog {
 
     super(
       {
-        title: "Split the Hoard",
+        title: t("DOLMENWOOD.Loot.Split.Title"),
         content: `
           <form>
-            <p class="loot-split-total">In the box: <strong>${coinSummary(lootCoins(lootActor))}</strong></p>
+            <p class="loot-split-total">${t("DOLMENWOOD.Loot.Split.InBox", {
+              coins: coinSummary(lootCoins(lootActor)),
+            })}</p>
             <div class="loot-split-list">${rows}</div>
             <p class="loot-split-remainder" id="loot-split-remainder"></p>
           </form>`,
         buttons: {
           split: {
-            label: "Split",
+            label: t("DOLMENWOOD.Loot.Split.Label"),
             callback: async (html: JQuery) => {
               const recipients = actorsByIds(selectedMemberIds(html));
               if (recipients.length === 0) return;
@@ -781,7 +788,7 @@ class SplitLootCoinsDialog extends Dialog {
               onComplete();
             },
           },
-          cancel: { label: "Cancel" },
+          cancel: { label: t("DOLMENWOOD.Common.Cancel") },
         },
         default: "split",
       },
@@ -805,9 +812,10 @@ class SplitLootCoinsDialog extends Dialog {
           .html(`${coinSummary(share.coins)} ${loadPreviewHTML(actor, share.coins)}`);
       }
 
-      const rest = coinCount(split.remainder) > 0
-        ? `Stays in the box: <strong>${coinSummary(split.remainder)}</strong> — coins cannot be broken down without a money changer.`
-        : "Divides evenly, nothing left over.";
+      const rest =
+        coinCount(split.remainder) > 0
+          ? t("DOLMENWOOD.Loot.Split.Remainder", { coins: coinSummary(split.remainder) })
+          : t("DOLMENWOOD.Loot.Split.Even");
       html.find("#loot-split-remainder").html(rest);
     };
     refresh();

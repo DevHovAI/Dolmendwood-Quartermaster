@@ -2,13 +2,13 @@
 
   {{#if isGM}}
   <div class="loot-toolbar">
-    <button type="button" data-action="newBox"><i class="fas fa-plus"></i> New loot box</button>
+    <button type="button" data-action="newBox"><i class="fas fa-plus"></i> {{localize "DOLMENWOOD.Loot.Browser.New"}}</button>
   </div>
   {{/if}}
 
   {{#if isEmpty}}
   <p class="loot-empty">
-    {{#if isGM}}<em>No loot boxes yet.</em>{{else}}<em>Nothing has been handed out yet.</em>{{/if}}
+    {{#if isGM}}<em>{{localize "DOLMENWOOD.Loot.Browser.Empty.GM"}}</em>{{else}}<em>{{localize "DOLMENWOOD.Loot.Browser.Empty.Player"}}</em>{{/if}}
   </p>
   {{/if}}
 
@@ -20,12 +20,12 @@
       <span class="loot-browser-text">
         <span class="loot-browser-name">{{this.name}}</span>
         <span class="loot-browser-meta">
-          {{this.itemCount}} item{{#unless (eq this.itemCount 1)}}s{{/unless}}{{#if this.coinCount}} · {{this.coinCount}} coins{{/if}}
+          {{localizeN "DOLMENWOOD.Loot.Browser.Meta" this.itemCount}}{{#if this.coinCount}} &middot; {{localize "DOLMENWOOD.Loot.Browser.Coins" n=this.coinCount}}{{/if}}
         </span>
       </span>
       {{#unless this.released}}
-      <span class="loot-browser-badge" title="Not released to the party yet">
-        <i class="fas fa-eye-slash"></i> Staged
+      <span class="loot-browser-badge" title="{{localize "DOLMENWOOD.Loot.Browser.Staged.Hint"}}">
+        <i class="fas fa-eye-slash"></i> {{localize "DOLMENWOOD.Loot.Browser.Staged.Label"}}
       </span>
       {{/unless}}
     </button>

@@ -38,7 +38,6 @@
 
   "DOLMENWOOD.Zone.Purse.Hint": "Münzen in dieser Zone",
   "DOLMENWOOD.Zone.Purse.Move.Hint": "Münzen in eine andere Zone verschieben",
-  "DOLMENWOOD.Currency.OfAvailable": "(von {n})",
 
   "DOLMENWOOD.Shop.BuyingFor": "Kauft für",
   "DOLMENWOOD.Shop.Purchase": "Kaufen",
@@ -208,7 +207,75 @@
   "DOLMENWOOD.Market.Dialog.Categories.Label": "Verkaufte Kategorien",
   "DOLMENWOOD.Market.Dialog.Categories.Hint": "Lass alle Kästchen leer, um den ganzen Katalog zu verkaufen. Schätze liegen nie nach Kategorie im Regal — leg einen mit <strong>From Catalogue</strong> im Laden hinein.",
   "DOLMENWOOD.Market.Dialog.Quality": "Qualität",
-  "DOLMENWOOD.Market.Dialog.Save": "Speichern",
-  "DOLMENWOOD.Market.Dialog.Add": "Hinzufügen",
-  "DOLMENWOOD.Market.Dialog.Cancel": "Abbrechen"
+
+  "DOLMENWOOD.Common.Cancel": "Abbrechen",
+  "DOLMENWOOD.Common.Save": "Speichern",
+  "DOLMENWOOD.Common.Add": "Hinzufügen",
+  "DOLMENWOOD.Common.HowMany": "Wie viele",
+  "DOLMENWOOD.Common.OfAvailable": "(von {n})",
+
+  "DOLMENWOOD.Loot.Title": "Beute",
+  "DOLMENWOOD.Loot.Browser.New": "Neue Beutekiste",
+  "DOLMENWOOD.Loot.Browser.Empty.GM": "Noch keine Beutekisten.",
+  "DOLMENWOOD.Loot.Browser.Empty.Player": "Es wurde noch nichts ausgegeben.",
+  "DOLMENWOOD.Loot.Browser.Meta.One": "{count} Gegenstand",
+  "DOLMENWOOD.Loot.Browser.Meta.Other": "{count} Gegenstände",
+  "DOLMENWOOD.Loot.Browser.Coins": "{n} Münzen",
+  "DOLMENWOOD.Loot.Browser.Staged.Label": "Vorbereitet",
+  "DOLMENWOOD.Loot.Browser.Staged.Hint": "Noch nicht für die Gruppe freigegeben",
+
+  "DOLMENWOOD.Loot.Status.Released": "Freigegeben — die ganze Gruppe sieht das und darf sich bedienen.",
+  "DOLMENWOOD.Loot.Status.Staged": "Vorbereitet — nur du siehst das. Füll es und gib es dann frei.",
+  "DOLMENWOOD.Loot.Status.TakeBack": "Zurücknehmen",
+  "DOLMENWOOD.Loot.Status.Release": "Für die Gruppe freigeben",
+
+  "DOLMENWOOD.Loot.Toolbar.AddItem": "Gegenstand hinzufügen",
+  "DOLMENWOOD.Loot.Toolbar.Custom": "Eigener",
+  "DOLMENWOOD.Loot.Toolbar.Coins": "Münzen",
+  "DOLMENWOOD.Loot.Toolbar.Pinned.Hint": "Platziert in \u201E{scene}\u201C",
+  "DOLMENWOOD.Loot.Toolbar.Place.Here": "Diese Kiste auf der aktuellen Szene platzieren",
+  "DOLMENWOOD.Loot.Toolbar.Place.Move": "Die Markierung auf diese Szene holen — sie wird von \u201E{scene}\u201C genommen",
+  "DOLMENWOOD.Loot.Toolbar.Rename.Hint": "Name und Symbol bearbeiten",
+  "DOLMENWOOD.Loot.Toolbar.Delete.Hint": "Diese Kiste löschen",
+
+  "DOLMENWOOD.Loot.Empty": "Leergeräumt.",
+  "DOLMENWOOD.Loot.Row.Weight.Hint": "Gewicht pro Stück",
+  "DOLMENWOOD.Loot.Row.Take": "Nehmen",
+  "DOLMENWOOD.Loot.Row.Remove.Hint": "Aus der Kiste entfernen",
+
+  "DOLMENWOOD.Loot.Purse.Split.Label": "Aufteilen",
+  "DOLMENWOOD.Loot.Purse.Split.Hint": "Gleichmäßig unter der Gruppe aufteilen",
+  "DOLMENWOOD.Loot.Purse.Take": "Nehmen",
+
+  "DOLMENWOOD.Loot.Delete.Title": "Beutekiste löschen",
+  "DOLMENWOOD.Loot.Delete.NotEmpty": "<p><strong>Diese Kiste ist nicht leer.</strong> Alles, was noch darin liegt, wird vernichtet.</p>",
+  "DOLMENWOOD.Loot.Delete.Body": "<p>\u201E{name}\u201C endgültig löschen?</p>",
+  "DOLMENWOOD.Loot.Delete.PinNote": "<p>Die Kartenmarkierung in \u201E{scene}\u201C wird ebenfalls entfernt.</p>",
+
+  "DOLMENWOOD.Loot.NoCharacter.Item": "Du hast keinen Charakter, in den das hineinpasst.",
+  "DOLMENWOOD.Loot.NoCharacter.Coins": "Du hast keinen Charakter, in den die Münzen hineinpassen.",
+  "DOLMENWOOD.Loot.NotOnMap": "\u201E{name}\u201C liegt auf keiner Karte — da ist nichts, wohin man gehen könnte.",
+  "DOLMENWOOD.Loot.OutOfReach": "\u201E{name}\u201C ist außer Reichweite. {reason}",
+  "DOLMENWOOD.Loot.NothingHere": "Hier ist noch nichts.",
+
+  "DOLMENWOOD.Loot.New.Title": "Neue Beutekiste",
+  "DOLMENWOOD.Loot.New.Name": "Name",
+  "DOLMENWOOD.Loot.New.Placeholder": "z. B. Hügelgrab-Hort",
+  "DOLMENWOOD.Loot.New.Icon": "Symbol",
+  "DOLMENWOOD.Loot.New.Create": "Anlegen",
+  "DOLMENWOOD.Loot.Edit.Title": "Beutekiste bearbeiten",
+  "DOLMENWOOD.Loot.Coins.Title": "Münzen im Hort",
+
+  "DOLMENWOOD.Loot.Take.Title": "{name} nehmen",
+  "DOLMENWOOD.Loot.Take.To": "An",
+  "DOLMENWOOD.Loot.Take.Into": "In",
+  "DOLMENWOOD.Loot.Take.Label": "Nehmen",
+  "DOLMENWOOD.Loot.TakeCoins.Title": "Münzen nehmen",
+  "DOLMENWOOD.Loot.TakeCoins.Gone": "Diese Münzen liegen nicht mehr in der Kiste.",
+
+  "DOLMENWOOD.Loot.Split.Title": "Den Hort aufteilen",
+  "DOLMENWOOD.Loot.Split.Label": "Aufteilen",
+  "DOLMENWOOD.Loot.Split.InBox": "In der Kiste: <strong>{coins}</strong>",
+  "DOLMENWOOD.Loot.Split.Remainder": "Bleibt in der Kiste: <strong>{coins}</strong> — Münzen lassen sich ohne Geldwechsler nicht kleiner machen.",
+  "DOLMENWOOD.Loot.Split.Even": "Geht glatt auf, nichts bleibt übrig."
 }
