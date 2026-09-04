@@ -1,5 +1,14 @@
 <div class="transaction-log">
+  {{!-- **The heading belongs to the partial, except where the caller already
+        wrote one.** The party overview folds this into a `<details>`, whose
+        `<summary>` says "Recent Transactions" with the same scroll icon — so
+        the heading said the same thing twice, two lines apart (Leander,
+        2026-09-05: *"braucht es überhaupt die überschrift… direkt darüber steht
+        ja Letzte Vorgänge"*). The inventory and the shop embed it bare and have
+        no other heading, so it stays theirs. --}}
+  {{#unless hideHeading}}
   <h4><i class="fas fa-scroll"></i> {{localize "DOLMENWOOD.Party.Log.Title"}}</h4>
+  {{/unless}}
   {{#if transactions.length}}
   <div class="transaction-entries">
     {{#each transactions}}

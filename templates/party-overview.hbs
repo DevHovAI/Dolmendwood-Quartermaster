@@ -186,7 +186,7 @@
   {{#if transactions.length}}
   <details class="party-transactions">
     <summary><i class="fas fa-scroll"></i> {{localize "DOLMENWOOD.Party.Transactions"}}</summary>
-    {{> transaction-log transactions=transactions}}
+    {{> transaction-log transactions=transactions hideHeading=true}}
   </details>
   {{/if}}
 </div>
