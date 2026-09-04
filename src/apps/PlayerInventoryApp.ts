@@ -1,5 +1,5 @@
 import { TEMPLATES, SOCKET_EVENTS, SETTINGS, MODULE_ID } from "../constants";
-import { QUALITIES_HINT, parseQualities } from "../data/weapons";
+import { qualitiesHint, parseQualities } from "../data/weapons";
 import { activateQualitiesPreview } from "../helpers/handlebars";
 import { ShopApp } from "./ShopApp";
 import { CharacterSheetApp } from "./CharacterSheetApp";
@@ -1859,74 +1859,100 @@ export class AddItemDialog extends Dialog {
 
     const customSizeOrWeightField = encMode === "weight"
       ? `<div class="form-group">
-              <label>Custom Weight (coin wt)</label>
-              <input type="number" id="add-custom-weight" value="10" min="0" />
+              <label>${t("DOLMENWOOD.ItemDialog.CustomWeight")}</label>
+              <div class="qm-field">
+                <input type="number" id="add-custom-weight" value="10" min="0" />
+              </div>
             </div>`
       : `<div class="form-group">
-              <label>Custom Size</label>
-              <select id="add-custom-size">
-                <option value="tiny">Tiny (0 slots)</option>
-                <option value="normal" selected>Normal (1 slot)</option>
-                <option value="large">Large (2 slots)</option>
-              </select>
+              <label>${t("DOLMENWOOD.ItemDialog.CustomSize")}</label>
+              <div class="qm-field">
+                <select id="add-custom-size">
+                  <option value="tiny">${t("DOLMENWOOD.ItemDialog.Slots.Tiny")}</option>
+                  <option value="normal" selected>${t("DOLMENWOOD.ItemDialog.Slots.Normal")}</option>
+                  <option value="large">${t("DOLMENWOOD.ItemDialog.Slots.Large")}</option>
+                </select>
+              </div>
             </div>`;
 
     // A hidden input rather than nothing, so the read below stays one code path
     const zoneField = dialogOptions.fixedZone
       ? `<input type="hidden" id="add-item-zone" value="${zone}" />`
       : `<div class="form-group">
-            <label>Zone</label>
-            <select id="add-item-zone">
-              ${buildZoneOptionsHTML(FlagManager.getInventory(actor).extraZones ?? [], encMode, zone)}
-            </select>
+            <label>${t("DOLMENWOOD.Item.Zone")}</label>
+            <div class="qm-field">
+              <select id="add-item-zone">
+                ${buildZoneOptionsHTML(FlagManager.getInventory(actor).extraZones ?? [], encMode, zone)}
+              </select>
+            </div>
           </div>`;
 
     super({
-      title: "Add Item to Inventory",
+      title: t("DOLMENWOOD.ItemDialog.Add.Title"),
+      // `qm-form` is what gives the rows their grid. Without it a v1 Dialog gets
+      // no `.form-group` layout from core at all — core's rules are scoped to
+      // `.standard-form`, which only V2 sheets carry — so the labels, the boxes
+      // and the hints all ran at their own widths and the hint text ignored the
+      // room it had (Leander, 2026-09-05: *"der text bei den qualities ist nicht
+      // gut formatiert, er nutzt nicht den platz des kastens"*). The controls go
+      // in `.qm-field` and the notes in `.qm-hint` for the same reason: those are
+      // the class names the grid places.
       content: `
-        <form>
+        <form class="qm-form">
           <div class="form-group">
-            <label>Item</label>
-            <select id="add-item-select">${selectContent}</select>
+            <label>${t("DOLMENWOOD.ItemDialog.Item")}</label>
+            <div class="qm-field"><select id="add-item-select">${selectContent}</select></div>
           </div>
           <div class="form-group">
-            <label>Quantity</label>
-            <input type="number" id="add-item-qty" value="1" min="1" />
+            <label>${t("DOLMENWOOD.Item.Quantity")}</label>
+            <div class="qm-field"><input type="number" id="add-item-qty" value="1" min="1" /></div>
           </div>
           ${zoneField}
           <hr/>
           <details>
-            <summary>Add Custom Item Instead</summary>
+            <summary>${t("DOLMENWOOD.ItemDialog.CustomSummary")}</summary>
             <div class="form-group">
-              <label>Custom Name</label>
-              <input type="text" id="add-custom-name" placeholder="Custom item name" />
+              <label>${t("DOLMENWOOD.ItemDialog.CustomName.Label")}</label>
+              <div class="qm-field">
+                <input type="text" id="add-custom-name" placeholder="${escapeHTML(
+                  t("DOLMENWOOD.ItemDialog.CustomName.Placeholder")
+                )}" />
+              </div>
             </div>
             ${customSizeOrWeightField}
             <div class="form-group">
-              <label>Icon</label>
-              ${buildIconPickerHTML()}
+              <label>${t("DOLMENWOOD.ItemDialog.Icon")}</label>
+              <div class="qm-field qm-field-icons">${buildIconPickerHTML()}</div>
+            </div>
+            <div class="form-group qm-wide">
+              <label>${t("DOLMENWOOD.ItemDialog.Description.Label")}</label>
+              <div class="qm-field">
+                <textarea id="add-custom-desc" placeholder="${escapeHTML(
+                  t("DOLMENWOOD.ItemDialog.Description.Placeholder")
+                )}" rows="2"></textarea>
+              </div>
             </div>
             <div class="form-group">
-              <label>Description</label>
-              <textarea id="add-custom-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+              <label>${t("DOLMENWOOD.ItemDialog.Edible.Label")}</label>
+              <div class="qm-field"><input type="checkbox" id="add-custom-edible" /></div>
+              <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edible.Hint")}</p>
             </div>
             <div class="form-group">
-              <label>Edible</label>
-              <input type="checkbox" id="add-custom-edible" />
-              <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
-            </div>
-            <div class="form-group">
-              <label>Qualities</label>
-              <input type="text" id="add-custom-qualities" placeholder="e.g. 1d8, Melee, Two-handed" style="width:100%;" />
-              <span class="qm-hint">${escapeHTML(QUALITIES_HINT)}</span>
-              <span class="qm-hint" data-read-for="add-custom-qualities"></span>
+              <label>${t("DOLMENWOOD.ItemDialog.Qualities.Label")}</label>
+              <div class="qm-field">
+                <input type="text" id="add-custom-qualities" placeholder="${escapeHTML(
+                  t("DOLMENWOOD.ItemDialog.Qualities.Placeholder")
+                )}" />
+              </div>
+              <p class="qm-hint">${escapeHTML(qualitiesHint())}</p>
+              <p class="qm-hint" data-read-for="add-custom-qualities"></p>
             </div>
           </details>
         </form>
       `,
       buttons: {
         add: {
-          label: "Add",
+          label: t("DOLMENWOOD.Common.Add"),
           callback: async (html: JQuery) => {
             const customName = (html.find("#add-custom-name").val() as string).trim();
             const qty = Math.max(1, parseInt(html.find("#add-item-qty").val() as string, 10) || 1);
@@ -2023,66 +2049,86 @@ export class AddCustomItemDialog extends Dialog {
   ) {
     const sizeOrWeightField = encMode === "weight"
       ? `<div class="form-group">
-            <label>Weight (coin wt)</label>
-            <input type="number" id="custom-weight" value="10" min="0" />
+            <label>${t("DOLMENWOOD.ItemDialog.Weight")}</label>
+            <div class="qm-field">
+              <input type="number" id="custom-weight" value="10" min="0" />
+            </div>
           </div>`
       : `<div class="form-group">
-            <label>Size</label>
-            <select id="custom-size">
-              <option value="tiny">Tiny (0 slots)</option>
-              <option value="normal" selected>Normal (1 slot)</option>
-              <option value="large">Large (2 slots)</option>
-            </select>
+            <label>${t("DOLMENWOOD.ItemDialog.Size")}</label>
+            <div class="qm-field">
+              <select id="custom-size">
+                <option value="tiny">${t("DOLMENWOOD.ItemDialog.Slots.Tiny")}</option>
+                <option value="normal" selected>${t("DOLMENWOOD.ItemDialog.Slots.Normal")}</option>
+                <option value="large">${t("DOLMENWOOD.ItemDialog.Slots.Large")}</option>
+              </select>
+            </div>
           </div>`;
     const zoneField = dialogOptions.fixedZone
       ? `<input type="hidden" id="custom-zone" value="${zone}" />`
       : `<div class="form-group">
-            <label>Zone</label>
-            <select id="custom-zone">
-              ${buildZoneOptionsHTML(FlagManager.getInventory(actor).extraZones ?? [], encMode, zone)}
-            </select>
+            <label>${t("DOLMENWOOD.Item.Zone")}</label>
+            <div class="qm-field">
+              <select id="custom-zone">
+                ${buildZoneOptionsHTML(FlagManager.getInventory(actor).extraZones ?? [], encMode, zone)}
+              </select>
+            </div>
           </div>`;
     super({
-      title: "Add Custom Item",
+      title: t("DOLMENWOOD.ItemDialog.Custom.Title"),
+      // See the note on AddItemDialog: `qm-form`, `.qm-field`, `.qm-hint` are
+      // what the dialog grid places. Without them nothing lines up.
       content: `
-        <form>
+        <form class="qm-form">
           <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="custom-name" placeholder="Item name" />
+            <label>${t("DOLMENWOOD.ItemDialog.Name.Label")}</label>
+            <div class="qm-field">
+              <input type="text" id="custom-name" placeholder="${escapeHTML(
+                t("DOLMENWOOD.ItemDialog.Name.Placeholder")
+              )}" />
+            </div>
           </div>
           ${sizeOrWeightField}
           ${zoneField}
           <div class="form-group">
-            <label>Quantity</label>
-            <input type="number" id="custom-qty" value="1" min="1" />
+            <label>${t("DOLMENWOOD.Item.Quantity")}</label>
+            <div class="qm-field"><input type="number" id="custom-qty" value="1" min="1" /></div>
           </div>
           <div class="form-group">
-            <label>Icon</label>
-            ${buildIconPickerHTML()}
+            <label>${t("DOLMENWOOD.ItemDialog.Icon")}</label>
+            <div class="qm-field qm-field-icons">${buildIconPickerHTML()}</div>
+          </div>
+          <div class="form-group qm-wide">
+            <label>${t("DOLMENWOOD.ItemDialog.Description.Label")}</label>
+            <div class="qm-field">
+              <textarea id="custom-desc" placeholder="${escapeHTML(
+                t("DOLMENWOOD.ItemDialog.Description.Placeholder")
+              )}" rows="2"></textarea>
+            </div>
           </div>
           <div class="form-group">
-            <label>Description</label>
-            <textarea id="custom-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;"></textarea>
+            <label>${t("DOLMENWOOD.ItemDialog.Edible.Label")}</label>
+            <div class="qm-field"><input type="checkbox" id="custom-edible" /></div>
+            <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edible.Hint")}</p>
           </div>
           <div class="form-group">
-            <label>Edible</label>
-            <input type="checkbox" id="custom-edible" />
-            <span class="qm-hint">Gives the row an Eat button that feeds the character for the day.</span>
-          </div>
-          <div class="form-group">
-            <label>Qualities</label>
-            <input type="text" id="custom-qualities" placeholder="e.g. 1d8, Melee, Two-handed" style="width:100%;" />
-            <span class="qm-hint">${escapeHTML(QUALITIES_HINT)}</span>
-            <span class="qm-hint" data-read-for="custom-qualities"></span>
+            <label>${t("DOLMENWOOD.ItemDialog.Qualities.Label")}</label>
+            <div class="qm-field">
+              <input type="text" id="custom-qualities" placeholder="${escapeHTML(
+                t("DOLMENWOOD.ItemDialog.Qualities.Placeholder")
+              )}" />
+            </div>
+            <p class="qm-hint">${escapeHTML(qualitiesHint())}</p>
+            <p class="qm-hint" data-read-for="custom-qualities"></p>
           </div>
         </form>
       `,
       buttons: {
         add: {
-          label: "Add",
+          label: t("DOLMENWOOD.Common.Add"),
           callback: async (html: JQuery) => {
             const name = (html.find("#custom-name").val() as string).trim();
-            if (!name) { ui.notifications?.warn("Item name is required."); return; }
+            if (!name) { ui.notifications?.warn(t("DOLMENWOOD.ItemDialog.NameRequired")); return; }
             const selectedZone = html.find("#custom-zone").val() as InventoryItem["zone"];
             const qty = Math.max(1, parseInt(html.find("#custom-qty").val() as string, 10) || 1);
             const icon = (html.find("#custom-icon-value").val() as string) || "fa-sack";
@@ -3176,7 +3222,7 @@ class EditItemDialog extends Dialog {
           <div class="qm-field">
             <input type="text" id="edit-qualities" value="${escapeHTML((def?.qualities ?? []).join(", "))}" placeholder="e.g. 1d8, Melee, Two-handed" />
           </div>
-          <p class="qm-hint">${escapeHTML(QUALITIES_HINT)}</p>
+          <p class="qm-hint">${escapeHTML(qualitiesHint())}</p>
           <p class="qm-hint" data-read-for="edit-qualities"></p>
         </div>`;
 
@@ -3227,7 +3273,7 @@ class EditItemDialog extends Dialog {
           label: "Save",
           callback: async (html: JQuery) => {
             const name = (html.find("#edit-name").val() as string).trim();
-            if (!name) { ui.notifications?.warn("Item name is required."); return; }
+            if (!name) { ui.notifications?.warn(t("DOLMENWOOD.ItemDialog.NameRequired")); return; }
 
             // Read whole out of the form and reduced afterwards to what actually
             // differs. Reading it back rather than tracking which boxes were

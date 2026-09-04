@@ -22,7 +22,7 @@ import {
   shopBuys,
 } from "../data/shopStock";
 import { inStock, shopVisit, bumpShopVisit } from "../data/shopAvailability";
-import { QUALITIES_HINT, parseQualities, describeQualities } from "../data/weapons";
+import { qualitiesHint, parseQualities, describeQualities } from "../data/weapons";
 import { saleValue } from "../data/shopSale";
 import { definitionFor } from "../data/itemDefs";
 import { linkBookReferences, activateBookLinks } from "../data/dayRolls";
@@ -1126,7 +1126,7 @@ class AddCustomShopItemDialog extends Dialog {
           <div class="form-group">
             <label>Qualities</label>
             <input type="text" id="custom-qualities" placeholder="e.g. 1d8, Melee, Two-handed" style="width:100%;" />
-            <span class="qm-hint">${escapeHTML(QUALITIES_HINT)}</span>
+            <span class="qm-hint">${escapeHTML(qualitiesHint())}</span>
             <span class="qm-hint" data-read-for="custom-qualities"></span>
           </div>
           <div class="form-group">
@@ -1514,7 +1514,7 @@ class AddToShopDialog extends Dialog {
               <input type="text" id="shop-item-qualities" value="${escapeHTML((was?.qualities ?? []).join(", "))}"
                      placeholder="e.g. 1d8, Melee, Two-handed" />
             </div>
-            <p class="qm-hint">${escapeHTML(QUALITIES_HINT)}</p>
+            <p class="qm-hint">${escapeHTML(qualitiesHint())}</p>
             <p class="qm-hint" data-read-for="shop-item-qualities"></p>
           </div>
         </form>

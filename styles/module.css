@@ -5940,6 +5940,15 @@ span.day-bar-panel-tick {
   min-width: 0;
 }
 
+/* A textarea fills its cell like the other controls. It used to carry
+   `style="width:100%"` inline, which is the same answer written where it cannot
+   be found again. */
+.qm-form .form-group > .qm-field > textarea {
+  flex: 1;
+  min-width: 0;
+  resize: vertical;
+}
+
 /* Number boxes stay narrow — a price is four digits, not a paragraph. */
 .qm-form .form-group > .qm-field > input[type="number"] {
   flex: 0 0 6rem;

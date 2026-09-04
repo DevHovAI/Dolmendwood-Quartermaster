@@ -1,6 +1,6 @@
 import { TEMPLATES } from "../constants";
 import { speedColorClass } from "../data/EncumbranceCalculator";
-import { QUALITIES_HINT, describeQualities, parseQualities } from "../data/weapons";
+import { qualitiesHint, describeQualities, parseQualities } from "../data/weapons";
 import type { PartyConvoyMember } from "../types";
 import { t, tn } from "./i18n";
 
@@ -514,7 +514,7 @@ export function buildQualitiesFieldHTML(current: string[] = [], id = "item-quali
         <input type="text" id="${id}" value="${escapeHTML(current.join(", "))}"
                placeholder="e.g. 1d8, Melee, Two-handed" />
       </div>
-      <p class="hint qm-qualities-hint" data-for="${id}">${escapeHTML(QUALITIES_HINT)}</p>
+      <p class="hint qm-qualities-hint" data-for="${id}">${escapeHTML(qualitiesHint())}</p>
       <p class="hint qm-qualities-read" data-read-for="${id}"></p>
     </div>`;
 }

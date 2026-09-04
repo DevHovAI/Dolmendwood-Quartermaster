@@ -1,6 +1,7 @@
 import { definitionFor } from "./itemDefs";
 import { FlagManager } from "./FlagManager";
 import type { InventoryItem, ItemDefinition } from "../types";
+import { t } from "../helpers/i18n";
 
 /**
  * What the party is actually holding, read off the weapons already in their
@@ -251,7 +252,17 @@ export function describeQualities(qualities: string[]): string {
  * Deliberately the catalogue's own wording, so a hand-written weapon and a
  * printed one are spelled the same and nobody has to learn a second format.
  */
-export const QUALITIES_HINT =
-  "Comma separated. A weapon needs its damage die (1d8) and Melee " +
-  "and/or Missile (10'/20'/30'). Anything else — Two-handed, Reach, Brace — is " +
-  "kept and shown, but left for the table to rule on.";
+/**
+ * What the Qualities box will accept, in words.
+ *
+ * **A function, not the constant it used to be** — the same reason `coinLabel`
+ * is one. `game.i18n` does not exist when this module is evaluated, so a string
+ * built at module scope would be the raw key for the rest of the session.
+ *
+ * The quality names themselves stay English in both languages, because
+ * `parseQualities` matches on them: a German "Zweihändig" would be kept and
+ * shown but would never make a weapon roll.
+ */
+export function qualitiesHint(): string {
+  return t("DOLMENWOOD.ItemDialog.Qualities.Hint");
+}
