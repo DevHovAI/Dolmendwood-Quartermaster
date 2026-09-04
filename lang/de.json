@@ -306,5 +306,47 @@
 
   "DOLMENWOOD.Loot.Chat.Empty": "Leer",
   "DOLMENWOOD.Loot.Chat.More": "…und {n} weitere",
-  "DOLMENWOOD.Loot.Chat.Open": "Öffnen"
+  "DOLMENWOOD.Loot.Chat.Open": "Öffnen",
+
+"DOLMENWOOD.Zone.BeltPouch": "Gürteltasche",
+  "DOLMENWOOD.Zone.Unassigned": "Nicht zugeordnet",
+
+  "DOLMENWOOD.Encumbrance.BottleneckShort.Equipped": "Ausgerüstet",
+  "DOLMENWOOD.Encumbrance.BottleneckShort.Stowed": "Verstaut",
+  "DOLMENWOOD.Encumbrance.BottleneckShort.Both": "Beide",
+
+  "DOLMENWOOD.Party.Heading": "Gruppeninventar",
+  "DOLMENWOOD.Party.Convoy.Label": "Gruppe: {speed}",
+  "DOLMENWOOD.Party.Convoy.Pace": "Vom langsamsten Teil der Gruppe bestimmt: {who}",
+  "DOLMENWOOD.Party.Convoy.PaceTied": "Vom langsamsten Teil der Gruppe bestimmt — und {count} davon sind gleich langsam, es bringt also nichts, nur einen davon zu entlasten: {who}",
+  "DOLMENWOOD.Party.Xp.Hint": "Die Erfahrung der Sitzung vergeben, mit dem eigenen Modifikator jedes Charakters",
+  "DOLMENWOOD.Party.Sheet.Hint": "{name}: Attribute, Rettungswürfe und Merkmale",
+  "DOLMENWOOD.Party.Bottleneck": "Engpass: {what}",
+  "DOLMENWOOD.Party.Hidden": "Verborgen",
+  "DOLMENWOOD.Party.Empty": "Keine Gruppenmitglieder gefunden. Lege Charakter-Akteure an und weise sie Spielern zu.",
+  "DOLMENWOOD.Party.Transactions": "Letzte Vorgänge",
+
+  "DOLMENWOOD.Party.Unsorted.Count.One": "<strong>{count} unsortierter Gegenstand</strong>",
+  "DOLMENWOOD.Party.Unsorted.Count.Other": "<strong>{count} unsortierte Gegenstände</strong>",
+  "DOLMENWOOD.Party.Unsorted.Who.One": "{who} trägt Ausrüstung, die in nichts eingepackt ist.",
+  "DOLMENWOOD.Party.Unsorted.Who.Other": "{who} tragen Ausrüstung, die in nichts eingepackt ist.",
+  "DOLMENWOOD.Party.Unsorted.Advice": "Sortiere sie in einen Behälter, bevor die Gruppe weiterzieht.",
+  "DOLMENWOOD.Party.Unsorted.Someone": "Jemand",
+
+  "DOLMENWOOD.Party.Bar.Weight": "Gew",
+  "DOLMENWOOD.Party.Bar.Equipped": "Aus",
+  "DOLMENWOOD.Party.Bar.Stowed": "Ver",
+  "DOLMENWOOD.Party.Bar.TotalWeight": "Gesamtgewicht: {n} / 1.600",
+  "DOLMENWOOD.Party.Bar.EquippedSlots": "Ausgerüstet: {n} Felder",
+  "DOLMENWOOD.Party.Bar.StowedSlots": "Verstaut: {n} Felder",
+  "DOLMENWOOD.Party.Bar.ThresholdWeight": "{from}ft → {to}ft ({at})",
+  "DOLMENWOOD.Party.Bar.ThresholdSlots": "{ft}ft ({n} Felder)",
+
+  "DOLMENWOOD.Party.Summary.Title": "Ausrüstung & Vermögen der Gruppe",
+  "DOLMENWOOD.Party.Summary.NoCoins": "Keine Münzen",
+  "DOLMENWOOD.Party.Summary.Secret.Hint": "Geheimer Gegenstand",
+  "DOLMENWOOD.Party.Summary.NoItems": "Keine Gegenstände im Gruppeninventar.",
+
+  "DOLMENWOOD.Party.Log.Title": "Vorgangsprotokoll",
+  "DOLMENWOOD.Party.Log.Empty": "Noch keine Vorgänge."
 }

@@ -424,14 +424,35 @@ export function registerHandlebarsHelpers(): void {
     Math.min(100, (weight / 1600) * 100).toFixed(1) + "%"
   );
 
-  // Bottleneck label
+  // Bottleneck label — the short word for the tooltip, not the full sentence
+  // `Encumbrance.Bottleneck.*` carries.
   Handlebars.registerHelper("bottleneckLabel", (bottleneck: string) => {
     switch (bottleneck) {
-      case "equipped": return "Equipped";
-      case "stowed": return "Stowed";
-      case "both": return "Both";
+      case "equipped": return t("DOLMENWOOD.Encumbrance.BottleneckShort.Equipped");
+      case "stowed": return t("DOLMENWOOD.Encumbrance.BottleneckShort.Stowed");
+      case "both": return t("DOLMENWOOD.Encumbrance.BottleneckShort.Both");
       default: return "";
     }
+  });
+
+  /**
+   * A transaction's kind, in words: `{{txTypeLabel this.type}}`.
+   *
+   * The log used to print the stored key — "purchase", "gmGrant" — straight
+   * into the row. The four `DOLMENWOOD.Transaction.Type.*` keys for this have
+   * shipped since v1.x with nothing reading them.
+   */
+  Handlebars.registerHelper("txTypeLabel", (type: string) => {
+    // Spelled out rather than computed from the stored key: the keys are
+    // `GMGrant` and `GMRemove`, which no capitalisation rule produces from
+    // `gmGrant`. An unknown type falls back to itself rather than to a key.
+    const KEYS: Record<string, string> = {
+      purchase: "DOLMENWOOD.Transaction.Type.Purchase",
+      trade: "DOLMENWOOD.Transaction.Type.Trade",
+      gmGrant: "DOLMENWOOD.Transaction.Type.GMGrant",
+      gmRemove: "DOLMENWOOD.Transaction.Type.GMRemove",
+    };
+    return KEYS[type] ? t(KEYS[type]) : type;
   });
 
   // Total coins converted to a human-readable string

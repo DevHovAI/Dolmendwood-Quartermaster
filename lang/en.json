@@ -306,5 +306,47 @@
 
   "DOLMENWOOD.Loot.Chat.Empty": "Empty",
   "DOLMENWOOD.Loot.Chat.More": "…and {n} more",
-  "DOLMENWOOD.Loot.Chat.Open": "Open"
+  "DOLMENWOOD.Loot.Chat.Open": "Open",
+
+"DOLMENWOOD.Zone.BeltPouch": "Belt Pouch",
+  "DOLMENWOOD.Zone.Unassigned": "Unassigned",
+
+  "DOLMENWOOD.Encumbrance.BottleneckShort.Equipped": "Equipped",
+  "DOLMENWOOD.Encumbrance.BottleneckShort.Stowed": "Stowed",
+  "DOLMENWOOD.Encumbrance.BottleneckShort.Both": "Both",
+
+  "DOLMENWOOD.Party.Heading": "Party Inventory",
+  "DOLMENWOOD.Party.Convoy.Label": "Party: {speed}",
+  "DOLMENWOOD.Party.Convoy.Pace": "Set by the slowest part of the party: {who}",
+  "DOLMENWOOD.Party.Convoy.PaceTied": "Set by the slowest part of the party — and {count} of them are tied at this pace, so unloading any one alone changes nothing: {who}",
+  "DOLMENWOOD.Party.Xp.Hint": "Award the session's experience, with each character's own modifier",
+  "DOLMENWOOD.Party.Sheet.Hint": "{name}: attributes, saves and traits",
+  "DOLMENWOOD.Party.Bottleneck": "Bottleneck: {what}",
+  "DOLMENWOOD.Party.Hidden": "Hidden",
+  "DOLMENWOOD.Party.Empty": "No party members found. Create character actors and assign them to players.",
+  "DOLMENWOOD.Party.Transactions": "Recent Transactions",
+
+  "DOLMENWOOD.Party.Unsorted.Count.One": "<strong>{count} unsorted item</strong>",
+  "DOLMENWOOD.Party.Unsorted.Count.Other": "<strong>{count} unsorted items</strong>",
+  "DOLMENWOOD.Party.Unsorted.Who.One": "{who} has gear that is carried but packed into nothing.",
+  "DOLMENWOOD.Party.Unsorted.Who.Other": "{who} have gear that is carried but packed into nothing.",
+  "DOLMENWOOD.Party.Unsorted.Advice": "Sort it into a container before the party moves on.",
+  "DOLMENWOOD.Party.Unsorted.Someone": "Someone",
+
+  "DOLMENWOOD.Party.Bar.Weight": "Wt",
+  "DOLMENWOOD.Party.Bar.Equipped": "Eq",
+  "DOLMENWOOD.Party.Bar.Stowed": "St",
+  "DOLMENWOOD.Party.Bar.TotalWeight": "Total weight: {n} / 1,600",
+  "DOLMENWOOD.Party.Bar.EquippedSlots": "Equipped: {n} slots",
+  "DOLMENWOOD.Party.Bar.StowedSlots": "Stowed: {n} slots",
+  "DOLMENWOOD.Party.Bar.ThresholdWeight": "{from}ft → {to}ft ({at})",
+  "DOLMENWOOD.Party.Bar.ThresholdSlots": "{ft}ft ({n} slots)",
+
+  "DOLMENWOOD.Party.Summary.Title": "Party Gear & Wealth",
+  "DOLMENWOOD.Party.Summary.NoCoins": "No coins",
+  "DOLMENWOOD.Party.Summary.Secret.Hint": "Secret item",
+  "DOLMENWOOD.Party.Summary.NoItems": "No items in party inventory.",
+
+  "DOLMENWOOD.Party.Log.Title": "Transaction Log",
+  "DOLMENWOOD.Party.Log.Empty": "No transactions yet."
 }

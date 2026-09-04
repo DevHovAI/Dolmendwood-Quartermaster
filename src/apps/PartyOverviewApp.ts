@@ -179,7 +179,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-party-overview",
     window: {
-      title: "Party Inventory Overview",
+      title: "DOLMENWOOD.PartyOverview.Title",
       resizable: true,
     },
     position: {
@@ -233,11 +233,11 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
         // Build zone sections for the compact column
         const extraZones = inventory.extraZones ?? [];
         const standardZones = encMode === "weight"
-          ? [{ id: "equipped", name: "Equipped" }]
+          ? [{ id: "equipped", name: t("DOLMENWOOD.Zone.Equipped") }]
           : [
-              { id: "equipped", name: "Equipped" },
-              { id: "stowed",   name: "Stowed" },
-              { id: "tiny",     name: "Belt Pouch" },
+              { id: "equipped", name: t("DOLMENWOOD.Zone.Equipped") },
+              { id: "stowed",   name: t("DOLMENWOOD.Zone.Stowed") },
+              { id: "tiny",     name: t("DOLMENWOOD.Zone.BeltPouch") },
             ];
         const allZoneDefs = [
           ...standardZones,
@@ -256,7 +256,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
         // Items whose zone doesn't match any known zone (orphaned / unassigned)
         const unassignedItems = visibleItems.filter((i) => !knownZoneIds.has(i.zone));
         if (unassignedItems.length > 0) {
-          zoneSections.push({ id: "_unassigned", name: "Unassigned", items: unassignedItems });
+          zoneSections.push({ id: "_unassigned", name: t("DOLMENWOOD.Zone.Unassigned"), items: unassignedItems });
         }
 
         // **Unsorted gear is a question, not a state.** In weight mode the
@@ -310,7 +310,10 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     const unsorted = unsortedMembers.length
       ? {
           items: unsortedMembers.reduce((sum, m) => sum + (m.unsortedCount ?? 0), 0),
-          who: unsortedMembers.map((m) => m.actor.name ?? "Someone").join(", "),
+          who: unsortedMembers.map((m) => m.actor.name ?? t("DOLMENWOOD.Party.Unsorted.Someone")).join(", "),
+          // The verb agrees with how many people carry it, not with how many
+          // items there are, so the template needs both counts.
+          memberCount: unsortedMembers.length,
           several: unsortedMembers.length > 1,
         }
       : undefined;

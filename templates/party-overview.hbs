@@ -2,12 +2,12 @@
   {{!-- Toolbar --}}
   <div class="party-toolbar dw-window-head">
     <i class="fas fa-people-group"></i>
-    <h2>Party Inventory</h2>
+    <h2>{{localize "DOLMENWOOD.Party.Heading"}}</h2>
     {{!-- Marching pace of the whole group, set by its slowest part --}}
     {{#if partyConvoy}}
     <span class="convoy-final {{speedColor partyConvoy.speed}}"
-          title="Set by the slowest part of the party{{#if (gt partyConvoy.slowest.length 1)}} — and {{partyConvoy.slowest.length}} of them are tied at this pace, so unloading any one alone changes nothing{{/if}}: {{convoySlowest partyConvoy.slowest true}}">
-      <i class="fas fa-route"></i> Party: {{speedLabel partyConvoy.speed}}
+          title="{{#if (gt partyConvoy.slowest.length 1)}}{{localize "DOLMENWOOD.Party.Convoy.PaceTied" count=partyConvoy.slowest.length who=(convoySlowest partyConvoy.slowest true)}}{{else}}{{localize "DOLMENWOOD.Party.Convoy.Pace" who=(convoySlowest partyConvoy.slowest true)}}{{/if}}">
+      <i class="fas fa-route"></i> {{localize "DOLMENWOOD.Party.Convoy.Label" speed=(speedLabel partyConvoy.speed)}}
       <span class="convoy-slowest">— {{convoySlowest partyConvoy.slowest}}</span>
     </span>
     {{/if}}
@@ -17,12 +17,12 @@
             bar-only setting folding the toolbar away. This is the window that
             already shows every character at once, which is the same thought. --}}
       <button type="button" data-action="openXp" class="btn-toolbar"
-              title="Award the session's experience, with each character's own modifier">
+              title="{{localize "DOLMENWOOD.Party.Xp.Hint"}}">
         <i class="fas fa-star"></i> XP
       </button>
       {{/if}}
       <button type="button" data-action="openShop" class="btn-toolbar btn-shop">
-        <i class="fas fa-store"></i> Open Shop
+        <i class="fas fa-store"></i> {{localize "DOLMENWOOD.Party.OpenShop"}}
       </button>
     </div>
   </div>
@@ -34,9 +34,12 @@
   <div class="party-unsorted">
     <i class="fas fa-exclamation-triangle"></i>
     <span>
-      <strong>{{unsorted.items}} unsorted {{#if (eq unsorted.items 1)}}item{{else}}items{{/if}}</strong>
-      — {{unsorted.who}} {{#if unsorted.several}}have{{else}}has{{/if}} gear that is carried but
-      packed into nothing. Sort it into a container before the party moves on.
+      {{!-- Two counts, two plurals: how many items, and how many people carry
+            them. English happened to inflect both with the same letter; German
+            does not, so each is its own key. --}}
+      {{{localizeN "DOLMENWOOD.Party.Unsorted.Count" unsorted.items}}}
+      — {{localizeN "DOLMENWOOD.Party.Unsorted.Who" unsorted.memberCount who=unsorted.who}}
+      {{localize "DOLMENWOOD.Party.Unsorted.Advice"}}
     </span>
   </div>
   {{/if}}
@@ -55,14 +58,14 @@
               its own. A button, because the column's own handler steps aside for
               one. --}}
         <button type="button" class="player-sheet-btn" data-action="openSheet"
-                data-actor-id="{{this.actorId}}" title="{{this.actor.name}}'s attributes, saves and traits">
+                data-actor-id="{{this.actorId}}" title="{{localize "DOLMENWOOD.Party.Sheet.Hint" name=this.actor.name}}">
           <i class="fas fa-scroll"></i>
         </button>
         <span class="player-speed {{speedColor this.encumbrance.finalSpeed}}">
           {{speedLabel this.encumbrance.finalSpeed}}
           {{#if (eq ../encMode "slots")}}
           {{#if (neq this.encumbrance.bottleneck "none")}}
-          <i class="fas fa-exclamation-triangle" title="Bottleneck: {{bottleneckLabel this.encumbrance.bottleneck}}"></i>
+          <i class="fas fa-exclamation-triangle" title="{{localize "DOLMENWOOD.Party.Bottleneck" what=(bottleneckLabel this.encumbrance.bottleneck)}}"></i>
           {{/if}}
           {{/if}}
         </span>
@@ -72,39 +75,39 @@
       <div class="player-bars">
         {{#if (eq ../encMode "weight")}}
         <div class="bar-row">
-          <span class="bar-label">Wt</span>
+          <span class="bar-label">{{localize "DOLMENWOOD.Party.Bar.Weight"}}</span>
           <div class="bar-track">
             <div class="bar-fill {{speedColor this.encumbrance.finalSpeed}}"
                  style="width: {{weightBarWidth this.encumbrance.totalWeight}}"
-                 title="Total weight: {{this.encumbrance.totalWeight}} / 1,600"></div>
-            <div class="bar-threshold" style="left: 25%"   title="40ft → 30ft (400)"></div>
-            <div class="bar-threshold" style="left: 37.5%" title="30ft → 20ft (600)"></div>
-            <div class="bar-threshold" style="left: 50%"   title="20ft → 10ft (800)"></div>
+                 title="{{localize "DOLMENWOOD.Party.Bar.TotalWeight" n=this.encumbrance.totalWeight}}"></div>
+            <div class="bar-threshold" style="left: 25%"   title="{{localize "DOLMENWOOD.Party.Bar.ThresholdWeight" from=40 to=30 at=400}}"></div>
+            <div class="bar-threshold" style="left: 37.5%" title="{{localize "DOLMENWOOD.Party.Bar.ThresholdWeight" from=30 to=20 at=600}}"></div>
+            <div class="bar-threshold" style="left: 50%"   title="{{localize "DOLMENWOOD.Party.Bar.ThresholdWeight" from=20 to=10 at=800}}"></div>
           </div>
           <span class="bar-val">{{this.encumbrance.totalWeight}}</span>
         </div>
         {{else}}
         <div class="bar-row">
-          <span class="bar-label">Eq</span>
+          <span class="bar-label">{{localize "DOLMENWOOD.Party.Bar.Equipped"}}</span>
           <div class="bar-track">
             <div class="bar-fill {{speedColor this.encumbrance.equippedSpeed}}"
                  style="width: {{equippedBarWidth this.encumbrance.equippedSlots}}"
-                 title="Equipped: {{this.encumbrance.equippedSlots}} slots"></div>
-            <div class="bar-threshold" style="left: 40%" title="30ft (4 slots)"></div>
-            <div class="bar-threshold" style="left: 60%" title="20ft (6 slots)"></div>
-            <div class="bar-threshold" style="left: 80%" title="10ft (8 slots)"></div>
+                 title="{{localize "DOLMENWOOD.Party.Bar.EquippedSlots" n=this.encumbrance.equippedSlots}}"></div>
+            <div class="bar-threshold" style="left: 40%" title="{{localize "DOLMENWOOD.Party.Bar.ThresholdSlots" ft=30 n=4}}"></div>
+            <div class="bar-threshold" style="left: 60%" title="{{localize "DOLMENWOOD.Party.Bar.ThresholdSlots" ft=20 n=6}}"></div>
+            <div class="bar-threshold" style="left: 80%" title="{{localize "DOLMENWOOD.Party.Bar.ThresholdSlots" ft=10 n=8}}"></div>
           </div>
           <span class="bar-val">{{this.encumbrance.equippedSlots}}</span>
         </div>
         <div class="bar-row">
-          <span class="bar-label">St</span>
+          <span class="bar-label">{{localize "DOLMENWOOD.Party.Bar.Stowed"}}</span>
           <div class="bar-track">
             <div class="bar-fill {{speedColor this.encumbrance.stowedSpeed}}"
                  style="width: {{stowedBarWidth this.encumbrance.stowedSlots}}"
-                 title="Stowed: {{this.encumbrance.stowedSlots}} slots"></div>
-            <div class="bar-threshold" style="left: 68.75%" title="30ft (11 slots)"></div>
-            <div class="bar-threshold" style="left: 81.25%" title="20ft (13 slots)"></div>
-            <div class="bar-threshold" style="left: 93.75%" title="10ft (15 slots)"></div>
+                 title="{{localize "DOLMENWOOD.Party.Bar.StowedSlots" n=this.encumbrance.stowedSlots}}"></div>
+            <div class="bar-threshold" style="left: 68.75%" title="{{localize "DOLMENWOOD.Party.Bar.ThresholdSlots" ft=30 n=11}}"></div>
+            <div class="bar-threshold" style="left: 81.25%" title="{{localize "DOLMENWOOD.Party.Bar.ThresholdSlots" ft=20 n=13}}"></div>
+            <div class="bar-threshold" style="left: 93.75%" title="{{localize "DOLMENWOOD.Party.Bar.ThresholdSlots" ft=10 n=15}}"></div>
           </div>
           <span class="bar-val">{{this.encumbrance.stowedSlots}}</span>
         </div>
@@ -125,7 +128,7 @@
           {{#each this.items}}
           {{#if this.isSecret}}
           <div class="item-compact secret-item">
-            <i class="fas fa-lock"></i> <em>Hidden</em>
+            <i class="fas fa-lock"></i> <em>{{localize "DOLMENWOOD.Party.Hidden"}}</em>
           </div>
           {{else}}
           <div class="item-compact">
@@ -175,14 +178,14 @@
 
   {{else}}
   <div class="party-empty">
-    <p>No party members found. Create character actors and assign them to players.</p>
+    <p>{{localize "DOLMENWOOD.Party.Empty"}}</p>
   </div>
   {{/if}}
 
   {{!-- Recent Transactions --}}
   {{#if transactions.length}}
   <details class="party-transactions">
-    <summary><i class="fas fa-scroll"></i> Recent Transactions</summary>
+    <summary><i class="fas fa-scroll"></i> {{localize "DOLMENWOOD.Party.Transactions"}}</summary>
     {{> transaction-log transactions=transactions}}
   </details>
   {{/if}}

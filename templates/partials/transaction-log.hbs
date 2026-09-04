@@ -1,5 +1,5 @@
 <div class="transaction-log">
-  <h4><i class="fas fa-scroll"></i> Transaction Log</h4>
+  <h4><i class="fas fa-scroll"></i> {{localize "DOLMENWOOD.Party.Log.Title"}}</h4>
   {{#if transactions.length}}
   <div class="transaction-entries">
     {{#each transactions}}
@@ -7,7 +7,7 @@
       <span class="tx-time" title="{{this.timestamp}}">
         {{!-- Display relative or formatted time --}}
       </span>
-      <span class="tx-type">{{this.type}}</span>
+      <span class="tx-type">{{txTypeLabel this.type}}</span>
       <span class="tx-details">
         {{#each this.items}}
           {{this.quantity}}× {{this.name}}
@@ -17,6 +17,6 @@
     {{/each}}
   </div>
   {{else}}
-  <p class="tx-empty"><em>No transactions yet.</em></p>
+  <p class="tx-empty"><em>{{localize "DOLMENWOOD.Party.Log.Empty"}}</em></p>
   {{/if}}
 </div>
