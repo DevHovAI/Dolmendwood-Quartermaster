@@ -227,7 +227,12 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     },
     position: {
       width: 700,
-      height: 640,
+      // A third taller than it was (Leander, 2026-09-05). The shelves are the
+      // one list in this module that is always longer than its window, and the
+      // toolbar now takes two rows. Capped against the viewport the way the
+      // party overview caps its width — a window taller than the screen cannot
+      // be dragged back into reach.
+      height: Math.min(832, window.innerHeight - 80),
     },
     classes: ["dolmenwood-party-inventory", "shop"],
     actions: {
