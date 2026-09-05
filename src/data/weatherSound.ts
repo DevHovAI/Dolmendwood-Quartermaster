@@ -123,7 +123,12 @@ export function soundsFor(weather: { text: string; effects: unknown[] } | undefi
 
   if (sky.falls === "rain") out.push(HEAVY_RAIN.test(text) ? "heavyRain" : "rain");
   else if (sky.falls === "snow") out.push("snow");
-  else if (sky.falls === "snowstorm") out.push("blizzard");
+  // **A blizzard is snow as well as wind** (Dolmenmaster, 2026-09-05). The blizzard
+  // loop is the gale; without the snow under it the ear hears a storm on a
+  // bare hillside. Snow carries its own ceiling of fifteen, so laying it in
+  // costs nothing at the top end — it sits under the wind rather than beside
+  // it.
+  else if (sky.falls === "snowstorm") out.push("blizzard", "snow");
   else if (sky.falls === "hail") out.push("hail");
 
   if (sky.lightning) out.push("thunder");
