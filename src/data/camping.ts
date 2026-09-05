@@ -1,4 +1,5 @@
 import { ABILITY_CHECK_TARGET } from "./checks";
+import { t } from "../helpers/i18n";
 
 /**
  * The camp's own rules — the arithmetic behind the Camping procedure
@@ -26,11 +27,11 @@ import { ABILITY_CHECK_TARGET } from "./checks";
  * The day's weather can say which one applies: a wet-conditions letter on the
  * weather roll is exactly the case the book is describing.
  */
-export const FIREWOOD_CONDITIONS: { modifier: number; label: string }[] = [
-  { modifier: 0, label: "Dry conditions" },
-  { modifier: -1, label: "Damp" },
-  { modifier: -2, label: "Snow" },
-  { modifier: -4, label: "Heavy rain" },
+export const FIREWOOD_CONDITIONS: { modifier: number; labelKey: string }[] = [
+  { modifier: 0, labelKey: "DOLMENWOOD.Camp.Wood.Cond.Dry" },
+  { modifier: -1, labelKey: "DOLMENWOOD.Camp.Wood.Cond.Damp" },
+  { modifier: -2, labelKey: "DOLMENWOOD.Camp.Wood.Cond.Snow" },
+  { modifier: -4, labelKey: "DOLMENWOOD.Camp.Wood.Cond.Rain" },
 ];
 
 /**
@@ -162,13 +163,13 @@ export function firePenaltyFor(
  */
 export const FIRE_AUTOMATIC = 6;
 
-export const FIRE_CHANCES: { chance: number; label: string }[] = [
-  { chance: FIRE_AUTOMATIC, label: "Normal conditions — no roll" },
-  { chance: 5, label: "5-in-6 — a little damp" },
-  { chance: 4, label: "4-in-6 — troublesome (the book's example)" },
-  { chance: 3, label: "3-in-6 — wet wood, gusting wind" },
-  { chance: 2, label: "2-in-6 — barely possible" },
-  { chance: 1, label: "1-in-6 — a miracle would be needed" },
+export const FIRE_CHANCES: { chance: number; labelKey: string }[] = [
+  { chance: FIRE_AUTOMATIC, labelKey: "DOLMENWOOD.Camp.Fire.Chance.Auto" },
+  { chance: 5, labelKey: "DOLMENWOOD.Camp.Fire.Chance.C5" },
+  { chance: 4, labelKey: "DOLMENWOOD.Camp.Fire.Chance.C4" },
+  { chance: 3, labelKey: "DOLMENWOOD.Camp.Fire.Chance.C3" },
+  { chance: 2, labelKey: "DOLMENWOOD.Camp.Fire.Chance.C2" },
+  { chance: 1, labelKey: "DOLMENWOOD.Camp.Fire.Chance.C1" },
 ];
 
 /** A chance roll: at or under lights the fire. No natural rules — it is not a check. */
@@ -193,38 +194,37 @@ export const CAMP_ACTIVITIES: Record<
   CampActivity,
   {
     dutyId: string;
-    label: string;
+    labelKey: string;
     icon: string;
     /** The ability whose modifier is added — Wisdom cooks, Charisma entertains. */
     ability: "wis" | "cha";
     /** What a success is worth to the night's rest. */
     bonus: number;
-    success: string;
-    failure: string;
+    successKey: string;
+    failureKey: string;
     /** What a natural 1 threatens, if the Save Versus Doom then fails. */
-    doom: string;
+    doomKey: string;
   }
 > = {
   cooking: {
     dutyId: "cooking",
-    label: "Cooking",
+    labelKey: "DOLMENWOOD.Camp.Activity.Cooking.Label",
     icon: "fa-utensils",
     ability: "wis",
     bonus: 1,
-    success:
-      "An especially tasty dish. Everyone who eats it gains +1 on any Constitution Check to rest.",
-    failure: "Palatable, but not exemplary. No bonus to the night's rest.",
-    doom: "The meal is ruined and utterly inedible — burned, spilled — and the ingredients used are wasted.",
+    successKey: "DOLMENWOOD.Camp.Activity.Cooking.Success",
+    failureKey: "DOLMENWOOD.Camp.Activity.Cooking.Failure",
+    doomKey: "DOLMENWOOD.Camp.Activity.Cooking.Doom",
   },
   camaraderie: {
     dutyId: "entertainment",
-    label: "Camaraderie",
+    labelKey: "DOLMENWOOD.Camp.Activity.Camaraderie.Label",
     icon: "fa-guitar",
     ability: "cha",
     bonus: 1,
-    success: "Spirits lift. Everyone gains +1 on any Constitution Check to rest.",
-    failure: "The attempt falls flat. No bonus to the night's rest.",
-    doom: "Ridicule and discord: -1 on any Constitution Check to rest.",
+    successKey: "DOLMENWOOD.Camp.Activity.Camaraderie.Success",
+    failureKey: "DOLMENWOOD.Camp.Activity.Camaraderie.Failure",
+    doomKey: "DOLMENWOOD.Camp.Activity.Camaraderie.Doom",
   },
 };
 
@@ -270,11 +270,15 @@ export function restModifierParts(
   camaraderie: EveningOutcome | undefined
 ): RollPart[] {
   const parts: RollPart[] = [];
-  if (cooking?.succeeded) parts.push({ label: "a hot supper", amount: CAMP_ACTIVITIES.cooking.bonus });
+  // The reasons are keys: a RollPart is printed on a card, and the card is
+  // read in whatever language the reader has set.
+  if (cooking?.succeeded)
+    parts.push({ label: t("DOLMENWOOD.Camp.Rest.HotSupper"), amount: CAMP_ACTIVITIES.cooking.bonus });
   if (camaraderie?.succeeded) {
-    parts.push({ label: "songs round the fire", amount: CAMP_ACTIVITIES.camaraderie.bonus });
+    parts.push({ label: t("DOLMENWOOD.Camp.Rest.Songs"), amount: CAMP_ACTIVITIES.camaraderie.bonus });
   }
-  if (camaraderie?.doomed) parts.push({ label: "discord in the camp", amount: DISCORD_PENALTY });
+  if (camaraderie?.doomed)
+    parts.push({ label: t("DOLMENWOOD.Camp.Rest.Discord"), amount: DISCORD_PENALTY });
   return parts;
 }
 
@@ -393,10 +397,10 @@ export type Bedding = "none" | "some" | "both";
 export type HostSeason = "winter" | "spring" | "summer" | "autumn";
 export type SleepDifficulty = "easy" | "moderate" | "difficult" | "impossible";
 
-export const BEDDING: { id: Bedding; label: string }[] = [
-  { id: "none", label: "No bedding" },
-  { id: "some", label: "Bedroll or tent" },
-  { id: "both", label: "Bedroll and tent" },
+export const BEDDING: { id: Bedding; labelKey: string }[] = [
+  { id: "none", labelKey: "DOLMENWOOD.Camp.Bedding.None" },
+  { id: "some", labelKey: "DOLMENWOOD.Camp.Bedding.Some" },
+  { id: "both", labelKey: "DOLMENWOOD.Camp.Bedding.Both" },
 ];
 
 /** The catalogue ids that answer "what is this character sleeping on?". */
@@ -411,26 +415,26 @@ export function beddingFrom(hasBedroll: boolean, hasTent: boolean): Bedding {
 
 export const SLEEP_DIFFICULTIES: Record<
   SleepDifficulty,
-  { label: string; hint: string; icon: string }
+  { labelKey: string; hintKey: string; icon: string }
 > = {
   easy: {
-    label: "Easy",
-    hint: "The character gets a good night's rest, no roll needed.",
+    labelKey: "DOLMENWOOD.Camp.Sleep.Difficulty.Easy.Label",
+    hintKey: "DOLMENWOOD.Camp.Sleep.Difficulty.Easy.Hint",
     icon: "fa-bed",
   },
   moderate: {
-    label: "Moderate",
-    hint: "A Constitution Check to get a good night's rest.",
+    labelKey: "DOLMENWOOD.Camp.Sleep.Difficulty.Moderate.Label",
+    hintKey: "DOLMENWOOD.Camp.Sleep.Difficulty.Moderate.Hint",
     icon: "fa-dice-d6",
   },
   difficult: {
-    label: "Difficult",
-    hint: "A Constitution Check at -2 to get a good night's rest.",
+    labelKey: "DOLMENWOOD.Camp.Sleep.Difficulty.Difficult.Label",
+    hintKey: "DOLMENWOOD.Camp.Sleep.Difficulty.Difficult.Hint",
     icon: "fa-cloud-moon",
   },
   impossible: {
-    label: "Impossible",
-    hint: "The character fails to get a good night's rest, whatever they roll.",
+    labelKey: "DOLMENWOOD.Camp.Sleep.Difficulty.Impossible.Label",
+    hintKey: "DOLMENWOOD.Camp.Sleep.Difficulty.Impossible.Hint",
     icon: "fa-face-tired",
   },
 };

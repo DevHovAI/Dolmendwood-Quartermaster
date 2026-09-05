@@ -28,6 +28,7 @@
  */
 
 import { FlagManager } from "./FlagManager";
+import { t, tn } from "../helpers/i18n";
 import { getConvoyActors } from "./sharedStore";
 
 /**
@@ -73,7 +74,11 @@ export function partyStock(definitionId: string): Stock {
       .reduce((n, i) => n + (i.quantity ?? 0), 0);
     if (quantity <= 0) continue;
     units += quantity;
-    carriers.push({ actorId: actor.id ?? "", name: actor.name ?? "Someone", quantity });
+    carriers.push({
+      actorId: actor.id ?? "",
+      name: actor.name ?? t("DOLMENWOOD.Party.Unsorted.Someone"),
+      quantity,
+    });
   }
 
   return { units, spaces: units * coversPerUnit(definitionId), carriers };
@@ -124,13 +129,24 @@ export function allocate(spaces: number, carriers: string[], everyone: string[])
   return everyone.filter((id) => chosen.has(id));
 }
 
-/** "3 tents — 6 places, 2 left" or "None in the party". */
+/**
+ * **`noun` is a translation key, not a word.** The sentence used to be built
+ * around a bare English plural — "No bedrolls anywhere in the party" — which
+ * cannot be assembled that way in a language that inflects what it counts.
+ * The caller passes the key for the thing; this picks the sentence.
+ */
 export function stockLine(stock: Stock, noun: string, claimed = 0): string {
-  if (stock.units === 0) return `No ${noun} anywhere in the party`;
+  const thing = t(noun);
+  if (stock.units === 0) return t("DOLMENWOOD.Camp.Stock.None", { noun: thing });
   const left = spacesLeft(stock, claimed);
   const places =
     stock.spaces === stock.units
       ? ""
-      : ` — ${stock.spaces} place${stock.spaces === 1 ? "" : "s"}`;
-  return `${stock.units} ${noun}${places}, ${left} left`;
+      : tn("DOLMENWOOD.Camp.Stock.Places", stock.spaces);
+  return t("DOLMENWOOD.Camp.Stock.Line", {
+    units: stock.units,
+    noun: thing,
+    places,
+    left,
+  });
 }

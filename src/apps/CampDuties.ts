@@ -1,6 +1,7 @@
 import { escapeHTML } from "../helpers/handlebars";
 import { weatherText } from "../data/weather";
-import { t } from "../helpers/i18n";
+import { t, tn } from "../helpers/i18n";
+import { ABILITY_CHECK_TARGET } from "../data/checks";
 import { stepper, wireSteppers } from "../helpers/steppers";
 import { FlagManager } from "../data/FlagManager";
 import { getConvoyActors, getPartyActors } from "../data/sharedStore";
@@ -179,13 +180,13 @@ function statLabel(member: Member, ability: "con" | "wis" | "cha"): string {
  * would face, rather than finding out afterwards.
  */
 function doomLabel(member: Member): string {
-  return member.doom > 0 ? ` · Doom ${member.doom}+` : " · no Doom target";
+  return member.doom > 0
+    ? t("DOLMENWOOD.Camp.Doom.Target", { n: member.doom })
+    : t("DOLMENWOOD.Camp.Doom.None");
 }
 
 function noParty(): void {
-  ui.notifications?.warn(
-    "No party characters found. A character counts as party when a player owns it."
-  );
+  ui.notifications?.warn(t("DOLMENWOOD.Camp.NoParty"));
 }
 
 /** The one shape every dialog here resolves through. */
@@ -208,11 +209,11 @@ function ask<T>(
         content,
         buttons: {
           ok: {
-            label: options.label ?? "Roll",
+            label: options.label ?? t("DOLMENWOOD.Common.Roll"),
             icon: '<i class="fas fa-dice-d20"></i>',
             callback: (html: JQuery) => done(read(html)),
           },
-          cancel: { label: "Cancel", callback: () => done(null) },
+          cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => done(null) },
         },
         default: "ok",
         render: (html: JQuery) => options.render?.(html),
@@ -276,18 +277,17 @@ export async function promptFirewood(): Promise<FirewoodChoice | null> {
   const conditions = FIREWOOD_CONDITIONS.map(
     (c) =>
       `<option value="${c.modifier}" ${c.modifier === suggested ? "selected" : ""}>${escapeHTML(
-        c.label
+        t(c.labelKey)
       )}${c.modifier ? ` (${c.modifier})` : ""}</option>`
   ).join("");
 
   return ask<FirewoodChoice>(
-    "Fetching firewood",
+    t("DOLMENWOOD.Camp.Wood.Title"),
     `<form class="dw-camp-form">
-      <p class="hint">Each character who goes brings back enough wood for <strong>1d6 hours</strong>
-        of campfire, less whatever the weather costs. A night is eight hours.</p>
+      <p class="hint">${t("DOLMENWOOD.Camp.Wood.Hint", { night: NIGHT_HOURS })}</p>
       <div class="dw-camp-members">${rows}</div>
       <div class="form-group">
-        <label for="dw-wood-conditions">Conditions</label>
+        <label for="dw-wood-conditions">${t("DOLMENWOOD.Camp.Wood.Conditions")}</label>
         <select id="dw-wood-conditions">${conditions}</select>
       </div>
       <p class="hint">${
@@ -304,12 +304,15 @@ export async function promptFirewood(): Promise<FirewoodChoice | null> {
     (html) => {
       const ids = checked(html, "dw-wood-who");
       if (!ids.length) {
-        ui.notifications?.warn("Nobody was sent for wood.");
+        ui.notifications?.warn(t("DOLMENWOOD.Camp.Wood.Nobody"));
         return null;
       }
       const byId = new Map(members.map((m) => [m.actorId, m]));
       return {
-        gatherers: ids.map((id) => ({ actorId: id, name: byId.get(id)?.name ?? "Someone" })),
+        gatherers: ids.map((id) => ({
+          actorId: id,
+          name: byId.get(id)?.name ?? t("DOLMENWOOD.Party.Unsorted.Someone"),
+        })),
         modifier: Number(html.find("#dw-wood-conditions").val()) || 0,
       };
     }
@@ -339,21 +342,20 @@ export async function promptFire(): Promise<FireChoice | null> {
   const options = FIRE_CHANCES.map(
     (c) =>
       `<option value="${c.chance}" ${c.chance === preferred ? "selected" : ""}>${escapeHTML(
-        c.label
+        t(c.labelKey)
       )}</option>`
   ).join("");
 
   return ask<FireChoice>(
-    "Building a fire",
+    t("DOLMENWOOD.Camp.Fire.Title"),
     `<form class="dw-camp-form">
-      <p class="hint">Given a tinder box and a stash of wood, fire building succeeds by itself.
-        In troublesome circumstances the Referee may put a chance on it.</p>
+      <p class="hint">${t("DOLMENWOOD.Camp.Fire.Hint")}</p>
       <div class="form-group">
-        <label for="dw-fire-chance">Chance</label>
+        <label for="dw-fire-chance">${t("DOLMENWOOD.Camp.Fire.ChanceLabel")}</label>
         <select id="dw-fire-chance">${options}</select>
       </div>
       ${woodSection(stack, carried)}
-      ${wet ? `<p class="hint">Today's weather was wet, so the book's 4-in-6 is pre-picked.</p>` : ""}
+      ${wet ? `<p class="hint">${t("DOLMENWOOD.Camp.Fire.WetHint")}</p>` : ""}
     </form>`,
     (html) => ({
       chance: Number(html.find("#dw-fire-chance").val()) || FIRE_AUTOMATIC,
@@ -386,9 +388,7 @@ export async function promptFire(): Promise<FireChoice | null> {
  */
 function woodSection(stack: WoodRow[], carried: number): string {
   if (!stack.length) {
-    return `<hr><p class="hint dw-meal-empty">Nobody is carrying firewood. Light it anyway if the wood
-      came from somewhere the module cannot see — nothing will leave the packs, and the Sleep
-      Difficulty table will be rolled from its no-fire rows.</p>`;
+    return `<hr><p class="hint dw-meal-empty">${t("DOLMENWOOD.Camp.Wood.Empty")}</p>`;
   }
   const rows = stack
     .map(
@@ -397,17 +397,17 @@ function woodSection(stack: WoodRow[], carried: number): string {
         row.holderId
       )}" data-carried="${row.hours}">
         <span class="dw-camp-member-name">${escapeHTML(row.holderName)}</span>
-        <span class="dw-camp-member-stat">${row.hours}h carried · <span class="dw-wood-left">${
-          row.hours
-        }h left</span></span>
+        <span class="dw-camp-member-stat">${t("DOLMENWOOD.Camp.Wood.Carried", {
+          n: row.hours,
+        })} · <span class="dw-wood-left">${t("DOLMENWOOD.Camp.Wood.Left", {
+          n: row.hours,
+        })}</span></span>
         ${stepper(`class="dw-wood-take" min="0" max="${row.hours}" value="0"`)}
       </div>`
     )
     .join("");
   return `<hr>
-    <p class="hint"><strong>Wood on the fire.</strong> ${carried} hour${carried === 1 ? "" : "s"} in
-      the packs, and a rest period is ${NIGHT_HOURS}. What is put on is burned whether the fire
-      catches or not.</p>
+    <p class="hint">${tn("DOLMENWOOD.Camp.Wood.OnFire", carried, { night: NIGHT_HOURS })}</p>
     <div class="dw-meal-rows">${rows}</div>
     <p class="dw-wood-count"></p>`;
 }
@@ -426,7 +426,10 @@ function paintFireHours(html: JQuery): void {
     const left = row.querySelector(".dw-wood-left");
     if (!left) continue;
     const rest = Math.max(0, carried - take);
-    left.textContent = rest === 0 ? "nothing left" : `${rest}h left`;
+    left.textContent =
+      rest === 0
+        ? t("DOLMENWOOD.Camp.Wood.NothingLeft")
+        : t("DOLMENWOOD.Camp.Wood.Left", { n: rest });
     left.classList.toggle("is-short", rest === 0 && carried > 0);
   }
 
@@ -435,12 +438,12 @@ function paintFireHours(html: JQuery): void {
   const short = NIGHT_HOURS - hours;
   out.text(
     hours === 0
-      ? "Nothing on the fire — the night is rolled cold."
+      ? t("DOLMENWOOD.Camp.Wood.Count.None")
       : hours < FIRE_MINIMUM_HOURS
-        ? `${hours} hour${hours === 1 ? "" : "s"} — under ${FIRE_MINIMUM_HOURS}, so not a night's fire at all.`
+        ? tn("DOLMENWOOD.Camp.Wood.Count.Under", hours, { minimum: FIRE_MINIMUM_HOURS })
         : short > 0
-          ? `${hours} hour${hours === 1 ? "" : "s"} — ${short} short of the night, so −1 on the sleep check.`
-          : `${hours} hour${hours === 1 ? "" : "s"} — enough for the whole night.`
+          ? tn("DOLMENWOOD.Camp.Wood.Count.Short", hours, { short })
+          : tn("DOLMENWOOD.Camp.Wood.Count.Full", hours)
   );
   out.toggleClass("is-short", hours < NIGHT_HOURS);
 }
@@ -513,19 +516,21 @@ export async function promptCampActivity(
   const mealSection = cooking ? foodSection(larder) : "";
 
   return ask<{ actorId: string; meal?: MealChoice; doomTarget?: number }>(
-    spec.label,
+    t(spec.labelKey),
     `<form class="dw-camp-form">
-      <p class="hint">1d6 plus the modifier, meeting or exceeding <strong>4</strong>.
-        ${escapeHTML(spec.success)}</p>
+      <p class="hint">${t("DOLMENWOOD.Camp.Activity.Hint", {
+        target: ABILITY_CHECK_TARGET,
+        success: escapeHTML(t(spec.successKey)),
+      })}</p>
       <div class="dw-camp-members">${rows}</div>
       <div class="form-group">
-        <label for="dw-activity-doom">Save Versus Doom target</label>
+        <label for="dw-activity-doom">${t("DOLMENWOOD.Camp.Activity.DoomLabel")}</label>
         <input type="number" id="dw-activity-doom" min="0" max="20" value="${best.doom || ""}"
-               placeholder="none on the sheet">
+               placeholder="${t("DOLMENWOOD.Camp.Activity.DoomPlaceholder")}">
       </div>
-      <p class="hint">Only ever rolled on a natural 1: ${escapeHTML(spec.doom)}
-        The number follows the character where their sheet carries one — type one here for a
-        character whose saves have not been filled in.</p>
+      <p class="hint">${t("DOLMENWOOD.Camp.Activity.DoomHint", {
+        doom: escapeHTML(t(spec.doomKey)),
+      })}</p>
       ${mealSection}
     </form>`,
     (html) => {
@@ -583,11 +588,9 @@ export async function promptEaters(portions: number): Promise<{ eaterIds: string
     .join("");
 
   return ask<{ eaterIds: string[] }>(
-    "Who eats?",
+    t("DOLMENWOOD.Camp.Eat.Title"),
     `<form class="dw-camp-form">
-      <p class="hint">The pot holds <strong>${portions} portion${
-        portions === 1 ? "" : "s"
-      }</strong> — one a head. Eating settles today's hunger.</p>
+      <p class="hint">${tn("DOLMENWOOD.Camp.Eat.Hint", portions)}</p>
       <div class="dw-camp-members">${rows}</div>
       <p class="dw-meal-count"></p>
     </form>`,
@@ -599,17 +602,19 @@ export async function promptEaters(portions: number): Promise<{ eaterIds: string
       return eaterIds.length ? { eaterIds } : null;
     },
     {
-      label: "Serve",
+      label: t("DOLMENWOOD.Camp.Eat.Serve"),
       render: (html) => {
         const paint = () => {
           const ticked = html.find(".dw-meal-eater:checked").length;
           const out = html.find(".dw-meal-count");
           out.text(
             ticked > portions
-              ? `${ticked} named for ${portions} portions — the last ${ticked - portions} go hungry.`
-              : `${ticked} eating, ${portions - ticked} portion${
-                  portions - ticked === 1 ? "" : "s"
-                } left over.`
+              ? t("DOLMENWOOD.Camp.Eat.Over", {
+                  ticked,
+                  portions,
+                  hungry: ticked - portions,
+                })
+              : tn("DOLMENWOOD.Camp.Eat.Left", portions - ticked, { eating: ticked })
           );
           out.toggleClass("is-short", ticked > portions);
         };
@@ -648,7 +653,7 @@ function partyFood(): FoodRow[] {
       if (available <= 0) continue;
       rows.push({
         holderId: holder.id ?? "",
-        holderName: holder.name ?? "Someone",
+        holderName: holder.name ?? t("DOLMENWOOD.Party.Unsorted.Someone"),
         itemId: item.id,
         itemName: item.name,
         available,
@@ -673,8 +678,7 @@ function partyFood(): FoodRow[] {
  */
 function foodSection(larder: FoodRow[]): string {
   if (!larder.length) {
-    return `<hr><p class="hint dw-meal-empty">The party is carrying nothing edible. Cook anyway if the
-      ingredients came from somewhere the module cannot see — nothing will be taken from the packs.</p>`;
+    return `<hr><p class="hint dw-meal-empty">${t("DOLMENWOOD.Camp.Meal.Empty")}</p>`;
   }
 
   const ingredients = larder
@@ -685,16 +689,16 @@ function foodSection(larder: FoodRow[]): string {
       )}" data-available="${row.available}">
         <span class="dw-camp-member-name">${escapeHTML(row.itemName)}</span>
         <span class="dw-camp-member-stat">${escapeHTML(row.holderName)} · <span
-          class="dw-meal-left">${row.available} left</span></span>
+          class="dw-meal-left">${t("DOLMENWOOD.Camp.Meal.Left", {
+            n: row.available,
+          })}</span></span>
         ${stepper(`class="dw-meal-take" min="0" max="${row.available}" value="0"`)}
       </div>`
     )
     .join("");
 
   return `<hr>
-    <p class="hint"><strong>Ingredients.</strong> One portion feeds one character. What is taken
-      leaves the packs when the roll is made, whether the dish turns out well or not — who eats it
-      is asked afterwards.</p>
+    <p class="hint">${t("DOLMENWOOD.Camp.Meal.Hint")}</p>
     <div class="dw-meal-rows">${ingredients}</div>
     <p class="dw-meal-count"></p>`;
 }
@@ -717,7 +721,10 @@ function paintPortions(html: JQuery, partySize: number): void {
     const left = row.querySelector(".dw-meal-left");
     if (!left) continue;
     const rest = Math.max(0, available - take);
-    left.textContent = rest === 0 ? "none left" : `${rest} left`;
+    left.textContent =
+      rest === 0
+        ? t("DOLMENWOOD.Camp.Meal.NoneLeft")
+        : t("DOLMENWOOD.Camp.Meal.Left", { n: rest });
     left.classList.toggle("is-short", rest === 0 && available > 0);
   }
 
@@ -725,15 +732,15 @@ function paintPortions(html: JQuery, partySize: number): void {
   if (!out.length) return;
 
   if (portions === 0) {
-    out.text("Nothing in the pot yet.");
+    out.text(t("DOLMENWOOD.Camp.Meal.CountNone"));
     out.removeClass("is-short");
     return;
   }
   out.text(
-    `${portions} portion${portions === 1 ? "" : "s"} — enough for ${Math.min(
-      portions,
-      partySize
-    )} of the ${partySize} in the party.`
+    tn("DOLMENWOOD.Camp.Meal.Count", portions, {
+      fed: Math.min(portions, partySize),
+      party: partySize,
+    })
   );
   out.toggleClass("is-short", portions < partySize);
 }
@@ -806,24 +813,27 @@ export async function promptWatches(): Promise<WatchChoice | null> {
       const faces = fallAsleepFaces(con);
       return `
       <div class="dw-watch-row" draggable="true" data-actor-id="${escapeHTML(m.actorId)}">
-        <i class="fas fa-grip-vertical dw-watch-grip" title="Drag to reorder the watches"></i>
+        <i class="fas fa-grip-vertical dw-watch-grip" title="${t(
+          "DOLMENWOOD.Camp.Watch.Drag"
+        )}"></i>
         <span class="dw-watch-number"></span>
         <input type="checkbox" name="dw-watch-who" value="${escapeHTML(m.actorId)}">
         <span class="dw-camp-member-name">${escapeHTML(m.name)}</span>
-        <span class="dw-camp-member-stat">(${escapeHTML(statLabel(m, "con"))} — 1-in-${faces})</span>
+        <span class="dw-camp-member-stat">(${escapeHTML(statLabel(m, "con"))} — ${t(
+          "DOLMENWOOD.Camp.Watch.Chance",
+          { faces }
+        )})</span>
       </div>`;
     })
     .join("");
 
   return ask<WatchChoice>(
-    "Watches through the night",
+    t("DOLMENWOOD.Camp.Watch.Title"),
     `<form class="dw-camp-form">
-      <p class="hint">Tick who stands watch and <strong>drag the rows</strong> into the order they
-        take them. The optional rule: a 1-in-10 chance of nodding off, 1-in-20 at Constitution 15 or
-        higher, 1-in-6 at 6 or lower.</p>
+      <p class="hint">${t("DOLMENWOOD.Camp.Watch.Hint")}</p>
       <div class="dw-watch-rows">${rows}</div>
       <div class="form-group">
-        <label for="dw-watch-hours">The night is</label>
+        <label for="dw-watch-hours">${t("DOLMENWOOD.Camp.Watch.NightIs")}</label>
         <input type="number" id="dw-watch-hours" min="1" max="16" step="1" value="${NIGHT_HOURS}">
       </div>
       <p class="dw-watch-count"></p>
@@ -844,14 +854,14 @@ export async function promptWatches(): Promise<WatchChoice | null> {
           const member = members.find((m) => m.actorId === actorId);
           return {
             actorId,
-            name: member?.name ?? "Someone",
+            name: member?.name ?? t("DOLMENWOOD.Party.Unsorted.Someone"),
             constitution: member?.scores?.con ?? 0,
             order: index + 1,
           };
         });
 
       if (!keepers.length) {
-        ui.notifications?.warn("Nobody was put on watch.");
+        ui.notifications?.warn(t("DOLMENWOOD.Camp.Watch.Nobody"));
         return null;
       }
       return {
@@ -882,17 +892,18 @@ export async function promptWatches(): Promise<WatchChoice | null> {
           const hours = Number(html.find("#dw-watch-hours").val()) || NIGHT_HOURS;
           const out = html.find(".dw-watch-count");
           if (!n) {
-            out.text("Nobody on watch — everyone sleeps the night through.");
+            out.text(t("DOLMENWOOD.Camp.Watch.CountNone"));
             out.removeClass("is-short");
             return;
           }
           const share = watchShares(n, hours);
           out.text(
-            `${n} watch${n === 1 ? "" : "es"} of ${hoursLabel(
-              share.hoursOnWatch
-            )} — each watcher sleeps ${hoursLabel(share.hoursAsleep)}` +
+            tn("DOLMENWOOD.Camp.Watch.Count", n, {
+              onWatch: hoursLabel(share.hoursOnWatch),
+              asleep: hoursLabel(share.hoursAsleep),
+            }) +
               (share.shortNight
-                ? `, under the ${MIN_SLEEP_HOURS} hours a good night's rest takes.`
+                ? t("DOLMENWOOD.Camp.Watch.CountShort", { hours: MIN_SLEEP_HOURS })
                 : ".")
           );
           out.toggleClass("is-short", share.shortNight);
@@ -963,7 +974,7 @@ export async function promptSleep(): Promise<SleepChoice | null> {
   const members = partyMembers("party");
   if (!members.length) return noParty(), null;
   if (!members.some((m) => m.mine)) {
-    ui.notifications?.warn("None of these characters are yours to bed down.");
+    ui.notifications?.warn(t("DOLMENWOOD.Camp.Sleep.NotYours"));
     return null;
   }
 
@@ -1030,29 +1041,34 @@ export async function promptSleep(): Promise<SleepChoice | null> {
       const bedroll = done ? done.bedding === "both" : withBedroll.has(m.actorId);
       const tent = done ? done.bedding === "both" : withTent.has(m.actorId);
       const short = done ? done.shortNight : shortFromWatch.has(m.actorId);
-      const bedding = BEDDING.find((b) => b.id === done?.bedding)?.label ?? "";
+      const beddingKey = BEDDING.find((b) => b.id === done?.bedding)?.labelKey;
+      const bedding = beddingKey ? t(beddingKey) : "";
       const note = done
-        ? ` — already bedded down · ${bedding.toLowerCase()}`
+        ? t("DOLMENWOOD.Camp.Sleep.Already", { bedding: bedding.toLowerCase() })
         : m.mine
           ? ""
-          : " — somebody else's to roll";
+          : t("DOLMENWOOD.Camp.Sleep.NotYourRow");
       return `
       <div class="dw-sleep-row${locked ? " is-locked" : ""}" data-actor-id="${escapeHTML(m.actorId)}"
            data-mine="${m.mine && !done}">
         <input type="checkbox" class="dw-sleep-in" checked${off}
-               title="Sleeping in this camp tonight. Unticked, nothing is written to this character at all.">
+               title="${t("DOLMENWOOD.Camp.Sleep.InTitle")}">
         <span class="dw-camp-member-name">${escapeHTML(m.name)}</span>
         <span class="dw-camp-member-stat">(${escapeHTML(statLabel(m, "con"))})${escapeHTML(note)}</span>
-        <label class="dw-sleep-gear" title="A bedroll of their own.">
+        <label class="dw-sleep-gear" title="${t("DOLMENWOOD.Camp.Sleep.BedrollTitle")}">
           <input type="checkbox" class="dw-sleep-bedroll" ${bedroll ? "checked" : ""}${off}>
-          bedroll
+          ${t("DOLMENWOOD.Camp.Sleep.Bedroll")}
         </label>
-        <label class="dw-sleep-gear" title="A place under a tent. One tent holds two.">
+        <label class="dw-sleep-gear" title="${t("DOLMENWOOD.Camp.Sleep.TentTitle")}">
           <input type="checkbox" class="dw-sleep-tent" ${tent ? "checked" : ""}${off}>
-          tent
+          ${t("DOLMENWOOD.Camp.Sleep.Tent")}
         </label>
-        <label class="dw-sleep-short" title="Under ${MIN_SLEEP_HOURS} hours asleep is not a good night's rest, whatever the conditions.">
-          <input type="checkbox" class="dw-sleep-short-box" ${short ? "checked" : ""}${off}> short night
+        <label class="dw-sleep-short" title="${t("DOLMENWOOD.Camp.Sleep.ShortBoxTitle", {
+          hours: MIN_SLEEP_HOURS,
+        })}">
+          <input type="checkbox" class="dw-sleep-short-box" ${short ? "checked" : ""}${off}> ${t(
+            "DOLMENWOOD.Camp.Sleep.Short"
+          )}
         </label>
         <span class="dw-sleep-difficulty"></span>
       </div>`;
@@ -1062,27 +1078,39 @@ export async function promptSleep(): Promise<SleepChoice | null> {
   const fireHours = camp.firewood?.hours;
   const woodWarning =
     fireHours !== undefined && fireHours > 0 && fireHours < 8
-      ? `<p class="hint">Only ${fireHours} hour${fireHours === 1 ? "" : "s"} of wood were gathered — enough for part of the night. Whether the fire is still burning at bedtime is the Referee's call.</p>`
+      ? `<p class="hint">${tn("DOLMENWOOD.Camp.Sleep.WoodWarning", fireHours)}</p>`
       : "";
 
   return ask<SleepChoice>(
-    "Sleep",
+    t("DOLMENWOOD.Duty.Sleep.Label"),
     `<form class="dw-camp-form dw-sleep-form">
       <label class="dw-sleep-fire">
         <input type="checkbox" id="dw-sleep-fire" ${campfire ? "checked" : ""}${
           isGM() ? "" : " disabled"
         }>
-        A campfire is burning${
+        ${t("DOLMENWOOD.Camp.Sleep.Fire")}${
           isGM()
             ? ""
-            : ` — ${campfire ? "the camp has one" : "there is none"}, as the fire step left it`
+            : t("DOLMENWOOD.Camp.Sleep.FireLocked", {
+                state: t(
+                  campfire
+                    ? "DOLMENWOOD.Camp.Sleep.FireHas"
+                    : "DOLMENWOOD.Camp.Sleep.FireNone"
+                ),
+              })
         }
       </label>
-      <p class="hint">${escapeHTML(t(season.labelKey))}${
-        host === (season.id as string) ? "" : ` (an unseason falling in ${host})`
-      }${
-        bonus ? `, ${bonus > 0 ? "+" : ""}${bonus} from the evening's cooking and company` : ""
-      }. Easy sleeps without a roll, impossible fails without one; the rest is a Constitution Check against 4.</p>
+      <p class="hint">${t("DOLMENWOOD.Camp.Sleep.SeasonHint", {
+        season: escapeHTML(t(season.labelKey)),
+        unseason:
+          host === (season.id as string)
+            ? ""
+            : t("DOLMENWOOD.Camp.Sleep.Unseason", { host }),
+        bonus: bonus
+          ? t("DOLMENWOOD.Camp.Sleep.Bonus", { n: `${bonus > 0 ? "+" : ""}${bonus}` })
+          : "",
+        target: ABILITY_CHECK_TARGET,
+      })}</p>
       <p class="dw-sleep-stock hint">
         <i class="fas fa-box-open"></i>
         <span data-stock="bedroll"></span> &middot; <span data-stock="tent"></span>
@@ -1090,7 +1118,10 @@ export async function promptSleep(): Promise<SleepChoice | null> {
       <div class="dw-sleep-rows">${rows}</div>
       ${
         shortFromWatch.size
-          ? `<p class="hint">The watch left ${shortFromWatch.size} of them under ${MIN_SLEEP_HOURS} hours' sleep, so their nights are already ticked short.</p>`
+          ? `<p class="hint">${t("DOLMENWOOD.Camp.Sleep.WatchShort", {
+              n: shortFromWatch.size,
+              hours: MIN_SLEEP_HOURS,
+            })}</p>`
           : ""
       }
       ${woodWarning}
@@ -1121,7 +1152,7 @@ export async function promptSleep(): Promise<SleepChoice | null> {
         })
         .filter((s) => s.actorId);
       if (!sleepers.length) {
-        ui.notifications?.warn("Nobody is sleeping in this camp.");
+        ui.notifications?.warn(t("DOLMENWOOD.Camp.Sleep.NobodySleeping"));
         return null;
       }
       return { sleepers, campfire: fire };
@@ -1144,6 +1175,8 @@ export async function promptSleep(): Promise<SleepChoice | null> {
          * already-ticked are never disabled, or a full list would freeze itself
          * and the Referee could not free a place by moving one.
          */
+        // `noun` is a key now, not a word: German inflects the thing that is
+        // counted, so the sentence cannot be assembled around a bare noun.
         const limit = (cls: string, stock: { spaces: number }, noun: string) => {
           const rows = rowEls();
           const claimed = rows.filter((r) => isHere(r) && box(r, cls)?.checked).length;
@@ -1160,9 +1193,9 @@ export async function promptSleep(): Promise<SleepChoice | null> {
             if (label) {
               label.classList.toggle("is-spent", blocked && left === 0);
               if (blocked && left === 0) {
-                label.title = `The party has ${stock.spaces} ${noun} place${
-                  stock.spaces === 1 ? "" : "s"
-                } and they are all taken. Untick somebody to free one.`;
+                label.title = tn("DOLMENWOOD.Camp.Sleep.AllTaken", stock.spaces, {
+                  noun: t(noun),
+                });
               }
             }
           }
@@ -1172,14 +1205,15 @@ export async function promptSleep(): Promise<SleepChoice | null> {
         const paint = () => {
           const fire = !!html.find("#dw-sleep-fire").prop("checked");
 
-          const bed = limit(".dw-sleep-bedroll", bedrolls, "bedroll");
-          const tent = limit(".dw-sleep-tent", tents, "tent");
+          // The plural, because the sentence it lands in counts places.
+          const bed = limit(".dw-sleep-bedroll", bedrolls, "DOLMENWOOD.Camp.Stock.Bedrolls");
+          const tent = limit(".dw-sleep-tent", tents, "DOLMENWOOD.Camp.Stock.Tents");
           const stockOut = (key: string, text: string) => {
             const el = html.find(`[data-stock="${key}"]`)[0] as HTMLElement | undefined;
             if (el) el.textContent = text;
           };
-          stockOut("bedroll", stockLine(bedrolls, "bedrolls", bed.claimed));
-          stockOut("tent", stockLine(tents, "tents", tent.claimed));
+          stockOut("bedroll", stockLine(bedrolls, "DOLMENWOOD.Camp.Stock.Bedrolls", bed.claimed));
+          stockOut("tent", stockLine(tents, "DOLMENWOOD.Camp.Stock.Tents", tent.claimed));
 
           rowEls().forEach((row) => {
               const here = isHere(row);
@@ -1195,15 +1229,18 @@ export async function promptSleep(): Promise<SleepChoice | null> {
               const out = row.querySelector(".dw-sleep-difficulty") as HTMLElement | null;
               if (!out) return;
               if (!here) {
-                out.textContent = "not here";
-                out.title = "Nothing is rolled or written for this character tonight.";
+                out.textContent = t("DOLMENWOOD.Camp.Sleep.NotHere");
+                out.title = t("DOLMENWOOD.Camp.Sleep.NotHereTitle");
                 out.className = "dw-sleep-difficulty is-away";
                 return;
               }
-              out.textContent = short ? `${info.label} — but a short night` : info.label;
+              const label = t(info.labelKey);
+              out.textContent = short
+                ? t("DOLMENWOOD.Camp.Sleep.ShortAfter", { difficulty: label })
+                : label;
               out.title = short
-                ? `Under ${MIN_SLEEP_HOURS} hours asleep: no good night's rest, whatever the table says.`
-                : info.hint;
+                ? t("DOLMENWOOD.Camp.Sleep.ShortTitle", { hours: MIN_SLEEP_HOURS })
+                : t(info.hintKey);
               out.className = `dw-sleep-difficulty is-${short ? "impossible" : difficulty}`;
             });
         };
@@ -1253,7 +1290,6 @@ export async function runCampDuty(dutyId: string): Promise<void> {
       const diners = await promptEaters(meal.portions);
       if (diners) await serveMeal(diners.eaterIds);
     }
-    return;
     return;
   }
   if (dutyId === "watches") {

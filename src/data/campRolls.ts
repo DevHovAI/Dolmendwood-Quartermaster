@@ -1,4 +1,5 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { t } from "../helpers/i18n";
 import { announce, isGM, rollDice, total, whisperToGMs } from "./rollCard";
 import { abilityCheck } from "./checks";
 import { bookRef } from "./books";
@@ -461,11 +462,11 @@ export async function rollCampActivity(
       const saved = saveRoll === 20 ? true : saveRoll === 1 ? false : saveRoll >= target;
       result.doom = { roll: saveRoll, target, saved };
       doomLine = `<p class="dw-day-roll-consequence"><strong>Save Versus Doom:</strong> 1d20 = ${saveRoll} against ${target}+ — ${
-        saved ? "saved." : escapeHTML(spec.doom)
+        saved ? "saved." : escapeHTML(t(spec.doomKey))
       }</p>`;
     } else {
       doomLine = `<p class="dw-day-roll-consequence"><strong>Save Versus Doom</strong> is called for, and this sheet carries no Doom target — the Referee rules it. On a failure: ${escapeHTML(
-        spec.doom
+        t(spec.doomKey)
       )}</p>`;
     }
   }
@@ -515,7 +516,7 @@ export async function rollCampActivity(
   await announce(
     card(
       spec.icon,
-      spec.label,
+      t(spec.labelKey),
       `<p class="dw-day-roll-headline${outcome.success ? "" : " is-bad"}">${escapeHTML(
         nameOf(actor)
       )} — ${outcome.success ? "success" : "failure"}</p>
@@ -523,7 +524,7 @@ export async function rollCampActivity(
          outcome.explain
        )}</p>
        <p class="dw-day-roll-consequence">${escapeHTML(
-         outcome.success ? spec.success : spec.failure
+         t(outcome.success ? spec.successKey : spec.failureKey)
        )}</p>
        ${doomLine}
        ${mealLine}
@@ -803,7 +804,7 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
                 ? " — natural 6, always succeeds"
                 : ""
           }`;
-    return `<strong>${escapeHTML(r.name)}</strong> — ${escapeHTML(d.label)}${
+    return `<strong>${escapeHTML(r.name)}</strong> — ${escapeHTML(t(d.labelKey))}${
       r.shortNight ? ", short night" : ""
     }: ${how} → ${r.sleptWell ? "<em>rests well</em>" : "<em>no rest</em>"}`;
   });
