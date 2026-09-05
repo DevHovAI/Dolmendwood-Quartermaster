@@ -151,7 +151,7 @@ export function soundsFor(weather: { text: string; effects: unknown[] } | undefi
   } else if (sky.falls === "snowstorm") {
     // **A blizzard is snow as well as wind.** The blizzard file is the gale;
     // without the snow beneath it the ear hears a storm on a bare hillside.
-    out.push({ id: "blizzard", pct: 30 }, { id: "snow", pct: 10 });
+    out.push({ id: "blizzard", pct: 35 }, { id: "snow", pct: 10 });
   } else if (sky.falls === "hail") {
     out.push({ id: "hail", pct: 25 });
   }
@@ -162,10 +162,10 @@ export function soundsFor(weather: { text: string; effects: unknown[] } | undefi
   // rather than weather.
   if (sky.falls !== "snowstorm") {
     const wind = WIND.find(([re]) => re.test(text));
-    // Raised from 30 on his ear (2026-09-05). Both wind loops move together:
-    // they were set equal, and heavy wind quieter than ordinary wind would be
-    // the wrong way round.
-    if (wind) out.push({ id: wind[1], pct: 40 });
+    // 30, then 40, then back a notch to 35 (Dolmenmaster, 2026-09-05, three rolls
+    // apart). Both wind loops move together: they were set equal, and heavy
+    // wind quieter than ordinary wind would be the wrong way round.
+    if (wind) out.push({ id: wind[1], pct: 35 });
   }
 
   return out;
