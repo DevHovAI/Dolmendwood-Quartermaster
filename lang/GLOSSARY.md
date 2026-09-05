@@ -41,6 +41,22 @@ Dolmenwood-Eigenbegriff, und `"X" ist keine Class, die dieses Modul kennt` liest
 sich auf Deutsch schlecht. Gemischte Komposita werden durchgekoppelt:
 `Prime-Ability-Modifikator`, `XP-Bonusfeld`.
 
+## Würfel
+
+**Dolmenmasters Entscheidung, 2026-09-05.** Eine Chance von x in sechs heißt
+auf Deutsch **`x-von-6`**, nie ~~`x-auf-6`~~. Das gilt überall gleich, auch
+bei mehreren Zahlen: `1/2/3-von-6`.
+
+| Englisch | Deutsch |
+|---|---|
+| 1-in-6 | 1-von-6 |
+| 2-in-6 to lose the way | 2-von-6, den Weg zu verlieren |
+| chance in six | Chance von sechs |
+
+Die Würfelschreibweise selbst bleibt, wie das Buch sie setzt: `1d6`, `2d10`,
+`1d3` — nicht `W6`. Sie steht so auf jedem Blatt, aus dem am Tisch gelesen
+wird, und ist damit ein Regelbegriff wie `STR`.
+
 ## Regeln für die Schlüssel selbst
 
 - **Kein Schlüssel ist gleichzeitig Text und Zweig.** `Xp.Clear` als Text *und*
