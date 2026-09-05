@@ -497,7 +497,12 @@ Hooks.once("init", () => {
       config: swHere,
       type: Number,
       range: { min: 0, max: 50, step: 5 },
-      default: 25,
+      // **The top of the range, because each loop now carries its own figure.**
+      // The slider is a ceiling over all of them rather than a level: at 50
+      // every tuned number plays exactly as it was set by ear, and pulling it
+      // down pulls the whole weather under it. Starting it halfway would have
+      // quietly clipped the rain, which is tuned to 35.
+      default: 50,
       onChange: () => void syncWeatherSound(),
     } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
   }

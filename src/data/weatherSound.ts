@@ -51,20 +51,30 @@ const SOUND_PATH = `modules/${SW_MODULE}/sounds`;
  * playlist calls the sound; it is also the handle everything here looks it up
  * by, so it must not change once a world has the playlist.
  */
-const SOUNDS: Record<string, { name: string; file: string; maxPct?: number }> = {
+const SOUNDS: Record<string, { name: string; file: string }> = {
   rain: { name: "Rain", file: "rain.ogg" },
   heavyRain: { name: "Heavy rain", file: "heavyRain.ogg" },
-  // **Snow has a ceiling of its own** (Dolmenmaster, 2026-09-05). Falling snow is
-  // the quietest weather there is; the loop is not, and at the volume that
-  // suits rain it sounds like static. Whatever the setting says, snow plays
-  // at ten — or at the setting, if that is lower still.
-  snow: { name: "Snow", file: "snow.ogg", maxPct: 10 },
+  snow: { name: "Snow", file: "snow.ogg" },
   blizzard: { name: "Blizzard", file: "blizzard.ogg" },
   hail: { name: "Hail", file: "hail.ogg" },
   thunder: { name: "Thunder", file: "thunder.ogg" },
   wind: { name: "Wind", file: "wind.ogg" },
   heavyWind: { name: "Heavy wind", file: "heavyWind.ogg" },
 };
+
+/**
+ * One loop and how loud it is, as a percentage.
+ *
+ * **The number belongs to the layer, not to the sound.** Rain is the case that
+ * forced it: a drizzle wants the rain loop at 20 and a downpour wants the same
+ * file at 35, under a heavy-rain loop at 25. A ceiling stored on the sound
+ * could only ever hold one of those, so it holds none of them.
+ *
+ * Every figure below was set by ear at the table (Dolmenmaster, 2026-09-05), one
+ * roll at a time. They are not derived from each other and must not be
+ * re-derived — the same rule the FXMaster measurements carry.
+ */
+export type Layer = { id: SoundId; pct: number };
 
 type SoundId =
   | "rain"
@@ -103,7 +113,7 @@ const FADE = 4000;
  * Dolmenwood tables describe, and a module that always plays *something* would
  * make the six rows that matter unremarkable.
  */
-export function soundsForToday(): SoundId[] {
+export function soundsForToday(): Layer[] {
   return soundsFor(getDayState().weather);
 }
 
@@ -114,30 +124,36 @@ export function soundsForToday(): SoundId[] {
  * the six tables without a Foundry to hold the day — the way every branch of
  * the encounter roll was checked before the map ever saw it.
  */
-export function soundsFor(weather: { text: string; effects: unknown[] } | undefined): SoundId[] {
+export function soundsFor(weather: { text: string; effects: unknown[] } | undefined): Layer[] {
   const sky = weatherSky(weather as never);
   if (!weather || !sky) return [];
 
   const text = weather.text.toLowerCase();
-  const out: SoundId[] = [];
+  const out: Layer[] = [];
 
-  if (sky.falls === "rain") out.push(HEAVY_RAIN.test(text) ? "heavyRain" : "rain");
-  else if (sky.falls === "snow") out.push("snow");
-  // **A blizzard is snow as well as wind** (Dolmenmaster, 2026-09-05). The blizzard
-  // loop is the gale; without the snow under it the ear hears a storm on a
-  // bare hillside. Snow carries its own ceiling of fifteen, so laying it in
-  // costs nothing at the top end — it sits under the wind rather than beside
-  // it.
-  else if (sky.falls === "snowstorm") out.push("blizzard", "snow");
-  else if (sky.falls === "hail") out.push("hail");
+  if (sky.falls === "rain") {
+    // **A downpour is two loops, not a louder one.** The rain carries the body
+    // of it and the heavy-rain loop sits on top for the weight; the heavy loop
+    // alone is a hiss with no rain in it.
+    if (HEAVY_RAIN.test(text)) out.push({ id: "rain", pct: 35 }, { id: "heavyRain", pct: 25 });
+    else out.push({ id: "rain", pct: 20 });
+  } else if (sky.falls === "snow") {
+    out.push({ id: "snow", pct: 10 });
+  } else if (sky.falls === "snowstorm") {
+    // **A blizzard is snow as well as wind.** The blizzard file is the gale;
+    // without the snow beneath it the ear hears a storm on a bare hillside.
+    out.push({ id: "blizzard", pct: 30 }, { id: "snow", pct: 10 });
+  } else if (sky.falls === "hail") {
+    out.push({ id: "hail", pct: 25 });
+  }
 
-  if (sky.lightning) out.push("thunder");
+  if (sky.lightning) out.push({ id: "thunder", pct: 30 });
 
   // A blizzard is already a wind loop; laying another over it makes noise
   // rather than weather.
   if (sky.falls !== "snowstorm") {
     const wind = WIND.find(([re]) => re.test(text));
-    if (wind) out.push(wind[1]);
+    if (wind) out.push({ id: wind[1], pct: 30 });
   }
 
   return out;
@@ -238,18 +254,18 @@ function settingPct(): number {
   return Math.max(0, Math.min(50, Number(raw ?? 25)));
 }
 
-/** What one loop plays at, as gain, after its own ceiling is applied. */
-function volumeFor(id: SoundId): number {
-  const pct = Math.min(settingPct(), SOUNDS[id].maxPct ?? 50) / 100;
+/**
+ * A layer's percentage as gain, with the setting as the ceiling over all of it.
+ *
+ * The slider is a master limit rather than a level: each layer plays at its own
+ * figure, and pulling the slider down pulls everything under it. At the top of
+ * its range every figure above is exact, which is where they were tuned.
+ */
+function gainFor(pct: number): number {
+  const wanted = Math.min(settingPct(), pct) / 100;
   const helper = (foundry as unknown as { audio?: { AudioHelper?: { inputToVolume?: (v: number) => number } } })
     .audio?.AudioHelper;
-  return helper?.inputToVolume ? helper.inputToVolume(pct) : pct;
-}
-
-/** The same, looked up by the playlist name a sound carries. */
-function volumeForName(name: string): number {
-  const id = (Object.keys(SOUNDS) as SoundId[]).find((k) => SOUNDS[k].name === name);
-  return id ? volumeFor(id) : volumeFor("rain");
+  return helper?.inputToVolume ? helper.inputToVolume(wanted) : wanted;
 }
 
 function findPlaylist(): PlaylistDoc | undefined {
@@ -321,7 +337,9 @@ async function ensureSounds(playlist: PlaylistDoc): Promise<void> {
       name: SOUNDS[id].name,
       path: `${SOUND_PATH}/${SOUNDS[id].file}`,
       repeat: true,
-      volume: volumeFor(id),
+      // A placeholder: the first roll that wants this loop sets its real
+      // figure before it is ever heard.
+      volume: gainFor(25),
       fade: FADE,
       // The environment channel, so the listener's own ambient slider still
       // governs it and weather never drowns out a voice.
@@ -373,17 +391,18 @@ async function syncInner(): Promise<void> {
   }
   if (on) await ensureSounds(playlist);
 
-  const names = new Set<string>(wanted.map((id) => SOUNDS[id].name));
+  const byName = new Map<string, number>(wanted.map((l) => [SOUNDS[l.id].name, l.pct]));
   for (const sound of playlist.sounds) {
     const name = sound.name ?? "";
-    const shouldPlay = names.has(name);
+    const pct = byName.get(name);
+    const shouldPlay = pct !== undefined;
     if (shouldPlay && sound.playing) {
       // Already going. Only the volume can have moved under it.
-      await sound.update({ volume: volumeForName(name) });
+      await sound.update({ volume: gainFor(pct) });
       continue;
     }
     if (shouldPlay) {
-      await sound.update({ volume: volumeForName(name), fade: FADE });
+      await sound.update({ volume: gainFor(pct), fade: FADE });
       await playlist.playSound(sound);
     } else if (sound.playing) {
       await playlist.stopSound(sound);
@@ -431,14 +450,15 @@ export async function weatherSoundReport(): Promise<Record<string, unknown>> {
     /* keep the string above */
   }
 
-  const ids = weather ? soundsFor(weather as never) : [];
+  const layers = weather ? soundsFor(weather as never) : [];
+  const spelt = layers.map((l) => `${l.id} ${Math.min(settingPct(), l.pct)}%`);
   const report: Record<string, unknown> = {
     isGM: !!g.user?.isGM,
     simpleWeatherInstalled: simpleWeatherPresent(),
     settingOn: setting,
     volumePercent: settingPct(),
     weatherRolled: weather?.text ?? null,
-    soundsForToday: ids,
+    soundsForToday: spelt,
     playlistFound: !!findPlaylist(),
     lastSyncAt,
     lastError,
@@ -455,7 +475,10 @@ export async function weatherSoundReport(): Promise<Record<string, unknown>> {
     ["Setting switched on", yes(report.settingOn)],
     ["Volume", `${report.volumePercent}%`],
     ["Weather rolled today", weather ? escapeHTML(weather.text) : "<strong>none yet</strong>"],
-    ["Loops it maps to", ids.length ? ids.join(", ") : "<strong>none — a silent day</strong>"],
+    [
+      "Loops it maps to",
+      spelt.length ? escapeHTML(spelt.join(", ")) : "<strong>none — a silent day</strong>",
+    ],
     ["Playlist exists", yes(report.playlistFound)],
     ["Last checked at", lastSyncAt ? escapeHTML(lastSyncAt) : "<strong>never ran</strong>"],
     ["Last error", lastError ? `<strong>${escapeHTML(lastError)}</strong>` : "none"],
