@@ -49,18 +49,30 @@ const SOUND_PATH = `modules/${SW_MODULE}/sounds`;
  * playlist calls the sound; it is also the handle everything here looks it up
  * by, so it must not change once a world has the playlist.
  */
-const SOUNDS = {
+const SOUNDS: Record<string, { name: string; file: string; maxPct?: number }> = {
   rain: { name: "Rain", file: "rain.ogg" },
   heavyRain: { name: "Heavy rain", file: "heavyRain.ogg" },
-  snow: { name: "Snow", file: "snow.ogg" },
+  // **Snow has a ceiling of its own** (Dolmenmaster, 2026-09-05). Falling snow is
+  // the quietest weather there is; the loop is not, and at the volume that
+  // suits rain it sounds like static. Whatever the setting says, snow plays
+  // at fifteen — or at the setting, if that is lower still.
+  snow: { name: "Snow", file: "snow.ogg", maxPct: 15 },
   blizzard: { name: "Blizzard", file: "blizzard.ogg" },
   hail: { name: "Hail", file: "hail.ogg" },
   thunder: { name: "Thunder", file: "thunder.ogg" },
   wind: { name: "Wind", file: "wind.ogg" },
   heavyWind: { name: "Heavy wind", file: "heavyWind.ogg" },
-} as const;
+};
 
-type SoundId = keyof typeof SOUNDS;
+type SoundId =
+  | "rain"
+  | "heavyRain"
+  | "snow"
+  | "blizzard"
+  | "hail"
+  | "thunder"
+  | "wind"
+  | "heavyWind";
 
 /**
  * Wind is the one thing the sky does not already say.
@@ -164,12 +176,23 @@ function soundOn(): boolean {
  * volume sliders use, so 25 on this setting is as loud as 25 on the ambient
  * slider rather than four times it.
  */
-function volume(): number {
-  const pct = Number((game as Game).settings?.get(MODULE_ID, SETTINGS.WEATHER_SOUND_VOLUME) ?? 25);
-  const clamped = Math.max(0, Math.min(50, pct)) / 100;
+function settingPct(): number {
+  const raw = (game as Game).settings?.get(MODULE_ID, SETTINGS.WEATHER_SOUND_VOLUME);
+  return Math.max(0, Math.min(50, Number(raw ?? 25)));
+}
+
+/** What one loop plays at, as gain, after its own ceiling is applied. */
+function volumeFor(id: SoundId): number {
+  const pct = Math.min(settingPct(), SOUNDS[id].maxPct ?? 50) / 100;
   const helper = (foundry as unknown as { audio?: { AudioHelper?: { inputToVolume?: (v: number) => number } } })
     .audio?.AudioHelper;
-  return helper?.inputToVolume ? helper.inputToVolume(clamped) : clamped;
+  return helper?.inputToVolume ? helper.inputToVolume(pct) : pct;
+}
+
+/** The same, looked up by the playlist name a sound carries. */
+function volumeForName(name: string): number {
+  const id = (Object.keys(SOUNDS) as SoundId[]).find((k) => SOUNDS[k].name === name);
+  return id ? volumeFor(id) : volumeFor("rain");
 }
 
 function findPlaylist(): PlaylistDoc | undefined {
@@ -191,7 +214,12 @@ async function ensurePlaylist(): Promise<PlaylistDoc | undefined> {
   const existing = findPlaylist();
   if (existing) return existing;
 
-  const cls = (foundry as unknown as { documents?: { Playlist?: unknown } }).documents?.Playlist ??
+  // **CONFIG first, the global second.** CONFIG.Playlist.documentClass is the
+  // class this world actually uses — a module that subclasses Playlist puts it
+  // there — and it is the only one guaranteed to create a *world* document.
+  // The global is the fallback for a core that has not set it up yet.
+  const cls =
+    (CONFIG as unknown as { Playlist?: { documentClass?: unknown } }).Playlist?.documentClass ??
     (globalThis as unknown as { Playlist?: unknown }).Playlist;
   const create = (cls as { create?: (d: Record<string, unknown>) => Promise<PlaylistDoc | undefined> })
     ?.create;
@@ -221,7 +249,7 @@ async function ensureSounds(playlist: PlaylistDoc): Promise<void> {
       name: SOUNDS[id].name,
       path: `${SOUND_PATH}/${SOUNDS[id].file}`,
       repeat: true,
-      volume: volume(),
+      volume: volumeFor(id),
       fade: FADE,
       // The environment channel, so the listener's own ambient slider still
       // governs it and weather never drowns out a voice.
@@ -241,26 +269,32 @@ export async function syncWeatherSound(): Promise<void> {
   const g = game as Game;
   if (!g.user?.isGM) return;
 
-  const wanted = soundOn() && simpleWeatherPresent() ? soundsForToday() : [];
+  const on = soundOn() && simpleWeatherPresent();
+  const wanted = on ? soundsForToday() : [];
 
-  // Nothing to play and no playlist yet: the common case in a world that has
-  // never switched this on, and it should cost nothing at all.
-  const playlist = wanted.length ? await ensurePlaylist() : findPlaylist();
-  if (!playlist) return;
-  if (wanted.length) await ensureSounds(playlist);
+  // **The playlist appears when the switch goes on, not when a sound is first
+  // wanted.** The lazy version was tidier and unusable: switch it on, roll a
+  // clear day, and there is nothing anywhere to say the module heard you. Now
+  // it is there, named, with its eight loops in it, and a silent day is
+  // visibly a silent day rather than a broken setting.
+  const playlist = on ? await ensurePlaylist() : findPlaylist();
+  if (!playlist) {
+    if (on) console.warn(`${MODULE_ID} | weather sound: no playlist could be made`);
+    return;
+  }
+  if (on) await ensureSounds(playlist);
 
-  const vol = volume();
-  const names: Set<string> = new Set(wanted.map((id) => SOUNDS[id].name));
+  const names = new Set<string>(wanted.map((id) => SOUNDS[id].name));
   for (const sound of playlist.sounds) {
     const name = sound.name ?? "";
     const shouldPlay = names.has(name);
     if (shouldPlay && sound.playing) {
       // Already going. Only the volume can have moved under it.
-      await sound.update({ volume: vol });
+      await sound.update({ volume: volumeForName(name) });
       continue;
     }
     if (shouldPlay) {
-      await sound.update({ volume: vol, fade: FADE });
+      await sound.update({ volume: volumeForName(name), fade: FADE });
       await playlist.playSound(sound);
     } else if (sound.playing) {
       await playlist.stopSound(sound);
@@ -274,4 +308,39 @@ export async function stopWeatherSound(): Promise<void> {
   const playlist = findPlaylist();
   if (!playlist) return;
   for (const sound of playlist.sounds) if (sound.playing) await playlist.stopSound(sound);
+}
+
+
+/**
+ * Why there is no sound, answered gate by gate.
+ *
+ * Reachable as a macro:
+ *
+ *   game.modules.get("dolmenwood-party-inventory").api.weatherSound()
+ *
+ * Every condition in `syncWeatherSound` is a silent one — a missing module, a
+ * switch that is off, a fair day — and silence is the correct output of three
+ * of them. That makes the failure and the success look identical from the
+ * outside, which is exactly the shape of bug that eats an evening.
+ */
+export function weatherSoundReport(): Record<string, unknown> {
+  const g = game as Game;
+  const weather = getDayState().weather;
+  let setting: unknown = "not registered";
+  try {
+    setting = g.settings?.get(MODULE_ID, SETTINGS.WEATHER_SOUND);
+  } catch {
+    /* left as "not registered", which is itself the answer */
+  }
+  const report = {
+    isGM: !!g.user?.isGM,
+    simpleWeatherInstalled: simpleWeatherPresent(),
+    settingOn: setting,
+    volumePercent: settingPct(),
+    weatherRolled: weather?.text ?? null,
+    soundsForToday: weather ? soundsFor(weather as never) : [],
+    playlistFound: !!findPlaylist(),
+  };
+  console.log(`${MODULE_ID} | weather sound`, report);
+  return report;
 }

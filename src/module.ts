@@ -24,7 +24,7 @@ import { hexOf, isPartyToken, tokenPoint, refusePlaceIfAway, canReachLoot } from
 import { bookHexAt, followsToken } from "./data/hexGrid";
 import { moveAccount, type MovedToken } from "./data/hexTravel";
 import { syncWeatherFx } from "./data/weatherFx";
-import { syncWeatherSound, simpleWeatherPresent } from "./data/weatherSound";
+import { syncWeatherSound, simpleWeatherPresent, weatherSoundReport } from "./data/weatherSound";
 import { installTravelRuler } from "./apps/TravelRuler";
 import { hexInfo } from "./data/hexes";
 import { whisperToGMs } from "./data/rollCard";
@@ -472,12 +472,19 @@ Hooks.once("init", () => {
   // does nothing — which is exactly why the FXMaster sound switch was taken out
   // again. Registered all the same, so a world that installs it later keeps
   // whatever it had set; it is simply not drawn.
-  if (simpleWeatherPresent()) {
+  // **Registered whether or not the module is there, and only *shown* when it
+  // is.** The first cut registered them conditionally, which looks equivalent
+  // and is not: an unregistered setting makes `game.settings.get` throw, so a
+  // world without Simple Weather threw on every weather write instead of
+  // quietly playing nothing. Registration is free; the config flag is what
+  // decides whether a table is offered a switch it cannot use.
+  const swHere = simpleWeatherPresent();
+  {
     game.settings!.register(MODULE_ID, SETTINGS.WEATHER_SOUND, {
       name: "DOLMENWOOD.Settings.WeatherSound.Name",
       hint: "DOLMENWOOD.Settings.WeatherSound.Hint",
       scope: "world",
-      config: true,
+      config: swHere,
       type: Boolean,
       default: false,
       onChange: () => void syncWeatherSound(),
@@ -487,7 +494,7 @@ Hooks.once("init", () => {
       name: "DOLMENWOOD.Settings.WeatherSoundVolume.Name",
       hint: "DOLMENWOOD.Settings.WeatherSoundVolume.Hint",
       scope: "world",
-      config: true,
+      config: swHere,
       type: Number,
       range: { min: 0, max: 50, step: 5 },
       default: 25,
@@ -633,11 +640,18 @@ Hooks.once("ready", async () => {
       // Every page reference the module prints is a click, and this is the same
       // door for anything outside it: a journal button, a macro, another module.
       openBook: (book: BookId, page: number) => BookApp.open(book, page),
+      // Says why the weather is silent. Every gate that produces silence is a
+      // legitimate one, so the only way to tell a fair day from a broken
+      // setting is to ask.
+      weatherSound: () => weatherSoundReport(),
     };
   }
 
   // A GM who left the bar on last session gets it back straight away.
   syncDayBar();
+
+  // And the weather that was already rolled keeps sounding across a reload.
+  void syncWeatherSound();
 
   // Adopt the world clock's current day without advancing anything, so the
   // first midnight after this is a real change rather than a false one.
