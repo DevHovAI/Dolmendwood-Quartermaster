@@ -57,7 +57,7 @@ import {
 /**
  * What the camp asks before it rolls.
  *
- * **The rule the whole file is built on is Leander's:** *"Wenn ein Würfelwurf
+ * **The rule the whole file is built on is Dolmenmaster's:** *"Wenn ein Würfelwurf
  * einen Spielerstat braucht, dann mach am besten beim Würfeln eine Abfrage, um
  * welchen Spieler es sich für die Aktion handelt (in Klammern oder so dann auch
  * seinen entsprechenden Stat angeben)."* So no camp roll ever guesses whose
@@ -87,7 +87,7 @@ interface Member {
    * True for every actor on the Referee's screen. On a player's it marks the
    * rows they may fill in, and the rest are drawn greyed rather than dropped —
    * a camp is a thing the whole party does, and *"man sollte auch sehen können,
-   * was die anderen ausgewählt haben"* (Leander, 2026-09-03).
+   * was die anderen ausgewählt haben"* (Dolmenmaster, 2026-09-03).
    */
   mine: boolean;
   /** Undefined where this actor carries no scores this module can read. */
@@ -110,7 +110,7 @@ interface Member {
 /**
  * **Whose names a dialog may offer, and it is not always the whole party.**
  *
- * Leander's job 3, 2026-09-03: *"a player may only enter their own character"*.
+ * Dolmenmaster's job 3, 2026-09-03: *"a player may only enter their own character"*.
  * The split follows the rights model rather than the dialog:
  *
  * - **"mine"** where the answer is *which of my characters did this* — who went
@@ -172,7 +172,7 @@ function statLabel(member: Member, ability: "con" | "wis" | "cha"): string {
  * " · Doom 12+", where the sheet has one.
  *
  * Shown beside the ability because the Save Versus Doom is **already decided by
- * the character being picked** — Leander's observation. It is only rolled on a
+ * the character being picked** — Dolmenmaster's observation. It is only rolled on a
  * natural 1, but a Referee choosing between two cooks can see what each of them
  * would face, rather than finding out afterwards.
  */
@@ -242,7 +242,7 @@ export interface FirewoodChoice {
  * No stat is involved — it is 1d6 a head — so this asks for names only, and
  * **the conditions are read off the morning's weather roll** rather than asked
  * for: the day's weather already knows whether it is snowing, and `firewoodPenalty`
- * turns that into the book's -1, -2 or -4. Leander's point, and the right one —
+ * turns that into the book's -1, -2 or -4. Dolmenmaster's point, and the right one —
  * the answer was on a card an hour ago.
  *
  * Still a select, still overridable: "damp" against "heavy rain" is a judgement
@@ -256,7 +256,7 @@ export async function promptFirewood(): Promise<FirewoodChoice | null> {
   const suggested = firewoodPenalty(weather);
   // **A player who opened this is going for wood.** Anything else would be a
   // form that asks them to tick themselves before they may do the thing they
-  // just pressed (Leander, 2026-09-04). The Referee's list is the whole party
+  // just pressed (Dolmenmaster, 2026-09-04). The Referee's list is the whole party
   // and stays empty: who goes is the question they are being asked.
   const mineByDefault = !isGM();
   const rows = members
@@ -325,7 +325,7 @@ export async function promptFire(): Promise<FireChoice | null> {
   const preferred = wet ? 4 : FIRE_AUTOMATIC;
   // **The wood comes out of the packs, exactly the way the pot's ingredients
   // do** — and that now means the whole shape of the form, not just where the
-  // wood comes from (Leander, 2026-09-03: *"mach feuer machen am besten wie das
+  // wood comes from (Dolmenmaster, 2026-09-03: *"mach feuer machen am besten wie das
   // kochen"*). Every stepper starts at **0** rather than full, which reverses
   // the 2026-08-28 ruling: what goes on the fire is a decision to be made
   // rather than one to be taken back, and starting full meant an evening's
@@ -460,7 +460,7 @@ function readFuel(html: JQuery, stack: WoodRow[]): FireChoice["fuel"] {
 // ─── Cooking and camaraderie ──────────────────────────────────────────────────
 
 /**
- * Whose check it is — the dialog Leander asked for — and, for the cook, what
+ * Whose check it is — the dialog Dolmenmaster asked for — and, for the cook, what
  * goes in the pot.
  *
  * One radio per character with the governing score printed beside the name, and
@@ -664,7 +664,7 @@ function partyFood(): FoodRow[] {
  * keeps the row honest about its maximum.
  *
  * **And each row says what that pack still has, while the stepper moves**
- * (Leander, 2026-09-03, pulling the pot level with the fire). Standing text
+ * (Dolmenmaster, 2026-09-03, pulling the pot level with the fire). Standing text
  * saying "3 left" beside a stepper that has taken all three is the one thing on
  * either form that can be read as a fact and be wrong.
  */
@@ -766,7 +766,7 @@ export interface WatchChoice {
 /**
  * Who stands watch, **in what order**, and how long the night is.
  *
- * The order was Leander's question and the book does not answer it: it is the
+ * The order was Dolmenmaster's question and the book does not answer it: it is the
  * table's, so it is asked for. Each ticked character gets a number, defaulting
  * to the order the party is listed in, and the roll sorts by it. Constitution
  * decides the falling-asleep die, so Constitution is printed.
@@ -782,7 +782,7 @@ export interface WatchChoice {
  * The order is the table's — the book does not decide it — so the list is
  * **dragged into shape** rather than numbered by hand: pick the row up by its
  * grip and drop it where it belongs, and the watch numbers renumber themselves.
- * Typing 1..4 into four boxes was the first cut and Leander was right that it
+ * Typing 1..4 into four boxes was the first cut and Dolmenmaster was right that it
  * is the wrong verb for the job.
  *
  * A dragged row has to be a real element, which is why this list is flexbox
@@ -953,7 +953,7 @@ export interface SleepChoice {
  */
 export async function promptSleep(): Promise<SleepChoice | null> {
   // **The whole camp is listed; only your own rows are yours to fill in.**
-  // Leander, 2026-09-03. The night is one thing the party does together, and a
+  // Dolmenmaster, 2026-09-03. The night is one thing the party does together, and a
   // player who sees only their own row cannot tell whether anybody else has
   // bedded down yet — so the others are drawn greyed, showing whatever they
   // have already rolled tonight.
@@ -991,7 +991,7 @@ export async function promptSleep(): Promise<SleepChoice | null> {
   // Before this the bedding was read out of each character's own bag alone, so
   // a tent Alice carried sheltered Alice and one in the shared store sheltered
   // nobody — and nothing stopped the dropdown offering bedding to a party that
-  // owned none (Leander, 2026-09-03).
+  // owned none (Dolmenmaster, 2026-09-03).
   const bedrolls = partyStock(BEDROLL_ID);
   const tents = partyStock(TENT_ID);
   const everyone = members.map((m) => m.actorId);
@@ -1222,7 +1222,7 @@ export async function promptSleep(): Promise<SleepChoice | null> {
  * exactly as it was.
  */
 export async function runCampDuty(dutyId: string): Promise<void> {
-  // The camp is the Referee's, on Leander's instruction, and the guard is here
+  // The camp is the Referee's, on Dolmenmaster's instruction, and the guard is here
   // as well as inside every roll: without it a player who reached one of these
   // buttons would be walked through a dialog that then quietly did nothing.
   // The duty strip is already GM-only, so this is the second door, not the only

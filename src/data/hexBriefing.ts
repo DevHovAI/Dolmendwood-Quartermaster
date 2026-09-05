@@ -8,7 +8,7 @@ import { REGIONS, TERRAINS, TERRAIN_BANDS } from "./dayContext";
 /**
  * What the Referee ought to know the moment the party walks into a hex.
  *
- * Leander, 2026-08-28: *"Ich hätte gerne, dass für den DM automatisch eine
+ * Dolmenmaster, 2026-08-28: *"Ich hätte gerne, dass für den DM automatisch eine
  * kurze Beschreibung des Hexfeldes generiert wird... etwas, womit man sofort
  * einen Eindruck davon bekommt, was die Spieler alles mitbekommen, wie das Hex
  * so ist."*
@@ -57,7 +57,7 @@ export async function briefHex(hex: string | undefined): Promise<void> {
 }
 
 /**
- * **Four things, and nothing else** — Leander's edit, 2026-08-28: *"ich finde
+ * **Four things, and nothing else** — Dolmenmaster's edit, 2026-08-28: *"ich finde
  * die TP-Info und was alles mitkommen kann gut. Der Rest ist eigentlich
  * überflüssig, am ehesten noch Ley line und besondere Begegnungen und Link."*
  *
@@ -69,7 +69,7 @@ function briefingCard(here: HexInfo): string {
   const terrain = TERRAINS.find((t) => t.id === here.terrain);
   const band = terrain ? TERRAIN_BANDS[terrain.band] : undefined;
 
-  // **Travel first** — Leander's order, 2026-08-28. It is the one line that
+  // **Travel first** — Dolmenmaster's order, 2026-08-28. It is the one line that
   // decides anything before the party has done a thing.
   const travel = `<p class="dw-day-roll-yield"><i class="fas fa-person-hiking"></i>
     <strong>${here.cost} Travel Point${here.cost === 1 ? "" : "s"}</strong> to cross${

@@ -9,7 +9,7 @@
  * | Dauer  | bis Tagesende    | 5 Wochen              | 2 Wochen                 | sofort              |
  * | Kosten | 100 Gold / Level | 10 Gold / Woche / Level | 10 Gold / Woche / Level | 50 % der extra XP |
  *
- * The table says everything except three things, and Leander settled all three
+ * The table says everything except three things, and Dolmenmaster settled all three
  * on 2026-09-02:
  *
  * 1. **"/ Level" is the Level the character still has**, not the one being
@@ -27,7 +27,7 @@
  * threshold for the one after that — that ceiling is the cap. Reaching it opens
  * the fourth route.
  *
- * **What the cap route buys is time, not a second Level** (Leander's
+ * **What the cap route buys is time, not a second Level** (Dolmenmaster's
  * correction, 2026-09-02: *"lvl2 spieler erreicht cap (lvl4) und steigt für 50%
  * der XP zwischen lvl3 und lvl4 auf lvl 3 auf"*). All four routes gain exactly
  * one Level. The difference is what each one costs to get there: a trainer and
@@ -35,7 +35,7 @@
  * at the cap — nothing but the wait, paid for in XP on the spot.
  *
  * Everything here is pure. `check-levelup.js` in the scratchpad walks it
- * against Leander's own worked example and the nine advancement tables.
+ * against Dolmenmaster's own worked example and the nine advancement tables.
  */
 
 import { ADVANCEMENT } from "./advancement";
@@ -91,7 +91,7 @@ export interface RouteOffer {
    *
    * **Always one apart, on all four routes.** The cap route buys *time*, not a
    * second Level: a Level 2 character standing at the cap goes to Level 3 like
-   * everybody else — immediately, and for XP instead of weeks (Leander's
+   * everybody else — immediately, and for XP instead of weeks (Dolmenmaster's
    * correction, 2026-09-02).
    */
   fromLevel: number;

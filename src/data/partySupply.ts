@@ -1,7 +1,7 @@
 /**
  * What the party can actually supply, counted across every pack it owns.
  *
- * **Leander's ask, 2026-09-03:** *"kannst du aus den inventaren der party die
+ * **Dolmenmaster's ask, 2026-09-03:** *"kannst du aus den inventaren der party die
  * hilfsmittel auslesen, sodass niemand etwas nutzen kann, was die party nicht
  * auch wirklich hat? Bedenke, dass ein zelt zum beispiel von mehreren
  * characters genutzt werden kann."*

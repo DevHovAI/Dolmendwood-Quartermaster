@@ -14,7 +14,7 @@ import {
  *
  * **One dialog for all of them**, because the module ships no class list, no
  * kindred list and no spell list — it ships a block that can be any of them and
- * the table writes what it plays (Leander, 2026-08-25). So the form asks what a
+ * the table writes what it plays (Dolmenmaster, 2026-08-25). So the form asks what a
  * block is rather than what kind of thing it is: a heading to file it under, a
  * name, what it says, and — optionally — a number it stands for, a number of
  * uses, and one of six ways to roll it.

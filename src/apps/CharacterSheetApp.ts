@@ -44,7 +44,7 @@ import { PlayerInventoryApp } from "./PlayerInventoryApp";
  * The attribute sheet: page one of the printed Dolmenwood sheet, and nothing of
  * page two.
  *
- * **Scope is Leander's and it is narrower than "a character sheet"** — *"Im
+ * **Scope is Dolmenmaster's and it is narrower than "a character sheet"** — *"Im
  * Prinzip keinen vollständigen Character Sheet sondern eher einen
  * Attributsbogen (denn ein Inventar haben wir ja schon mega ausgearbeitet)."*
  * So there is no equipment tab here. The Inventory button in the header opens
@@ -193,7 +193,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       };
     });
 
-    // **Two columns of three** (Leander, 2026-08-28): the book's three on the
+    // **Two columns of three** (Dolmenmaster, 2026-08-28): the book's three on the
     // left, the table's own on the right, and an empty lane on the right is the
     // button that fills it. *"Mehr als 6 wird niemand haben"* — so the section
     // has a height that never moves, which is the whole point: it can be pinned
@@ -265,7 +265,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       ac: sys.ac,
       attack: sys.attack,
       attackSigned: signed(sys.attack),
-      // **Movement is not on this sheet**, Leander's call, 2026-08-27. The
+      // **Movement is not on this sheet**, Dolmenmaster's call, 2026-08-27. The
       // printed page has Speed, Exploring and Travel Points on it; the module
       // works all three out from what the character is carrying and shows them
       // in the inventory, on the party window and on the day bar. A fourth
@@ -345,7 +345,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
           label: f.key === "body" ? (tables?.bodyLabel ?? f.label) : f.label,
           // **The two wide ones are textareas, and no browser puts a datalist
           // on one** — so where the other six get suggestions in the box,
-          // Desires and Beliefs get a panel under it (Leander, 2026-09-03).
+          // Desires and Beliefs get a panel under it (Dolmenmaster, 2026-09-03).
           // Same table either way; only the way it is offered differs.
           options: f.wide ? [] : rows,
           picks: f.wide
@@ -401,7 +401,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
         await setSystemField(this.actor, field, value);
 
         // **Typing a score fills in what the book says it is worth** (p22) —
-        // Leander's ask, and it saves looking the table up six times per
+        // Dolmenmaster's ask, and it saves looking the table up six times per
         // character. The modifier stays editable afterwards, because a ring or
         // a curse moves it without moving the score; the sheet only offers the
         // book's answer, it does not insist on it.
@@ -526,7 +526,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
    * What the portrait file actually is, said out loud.
    *
    * *"Die Portraits in den Attributes sind noch relativ niedrigauflösend"*
-   * (Leander, 2026-08-28) has two possible causes, and the window is the only
+   * (Dolmenmaster, 2026-08-28) has two possible causes, and the window is the only
    * thing here that can tell them apart. The box is at least {@link
    * PORTRAIT_BOX} CSS pixels and usually more — `#squarePortrait` sizes it from
    * the identity block — which is twice that in real ones on most screens; a
@@ -697,7 +697,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     const block = getExtras(this.actor).blocks.find((b) => b.id === target.dataset.blockId);
     if (!block?.roll) return;
 
-    // **Casting a spell spends one of its charges** (Leander, 2026-09-02).
+    // **Casting a spell spends one of its charges** (Dolmenmaster, 2026-09-02).
     // Taken before the roll, not after: a die that lands and then finds there
     // was nothing to cast has already been seen by the table.
     if (block.spell) {
@@ -775,7 +775,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
    * A moon sign chosen, and its effect put where the character's other rules
    * live.
    *
-   * **The field alone was never enough** (Leander, 2026-09-03: *"kannst du den
+   * **The field alone was never enough** (Dolmenmaster, 2026-09-03: *"kannst du den
    * effekt des ausgewählten moon signs direkt in traits, abilities und spells
    * einfügen?"*). A sign is a permanent rule — "+1 Attack bonus against undead
    * monsters" is read in the middle of a fight — and a line of prose in the
@@ -1205,7 +1205,7 @@ function advanceView(actor: Actor): Record<string, unknown> | null {
 
   return {
     classLabel: cls.label,
-    // **Both figures come out of the book, not out of a box.** Leander's ask,
+    // **Both figures come out of the book, not out of a box.** Dolmenmaster's ask,
     // 2026-09-02 — the next threshold and the cap are printed facts about a
     // Class and a Level, so a sheet that asks somebody to type them is asking
     // them to make a mistake. The stored `xp.next` is still written when a

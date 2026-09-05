@@ -504,7 +504,7 @@ export interface FoodResult {
    *
    * The kill is a combat, so the meat is butchered minutes later through a
    * button on the card, and that second dialog used to start from the top of an
-   * alphabetical list and quietly overrule the answer already given (Leander,
+   * alphabetical list and quietly overrule the answer already given (Dolmenmaster,
    * 2026-08-27). Remembering the id is the whole fix; the dialog still lets it
    * be changed, because forty rations of red deer do not fit in the pack the
    * hunter set out with.

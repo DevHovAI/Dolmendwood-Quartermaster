@@ -73,7 +73,7 @@ function enrichItems(items: InventoryItem[]) {
     // Bundles show one running total of loose units instead of a bundle count
     // next to a uses counter
     const bundle = isBundle(item, def);
-    // **What the row is worth, for the Referee** (Leander, 2026-08-28).
+    // **What the row is worth, for the Referee** (Dolmenmaster, 2026-08-28).
     // Through `saleValue`, which is already the module's one answer to "what is
     // this worth": so the number in the inventory and the number a shop offers
     // can never drift apart, and a half-empty quiver is half a quiver here too.
@@ -250,7 +250,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       resizable: true,
     },
     position: {
-      // A quarter narrower than it was (Leander, 2026-08-31: the window "könnte
+      // A quarter narrower than it was (Dolmenmaster, 2026-08-31: the window "könnte
       // standardmäßig etwa 1/4 schmaler"). 1040 was set when the three summary
       // blocks each took a full line of their own; folding them into one row
       // took that width back. Still capped to the viewport on small screens.
@@ -1328,7 +1328,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
    * button was pressed — an animal or vehicle has a backing row carrying its
    * type, qualities and description, and a plain storage container does not.
    * There used to be two buttons, and the rename one wrote only the zone half,
-   * so a renamed animal kept its old name on the row it came from (Leander,
+   * so a renamed animal kept its old name on the row it came from (Dolmenmaster,
    * 2026-08-30: *"gerne umleiten bzw. zusammenlegen"*).
    *
    * The two dialogs share the icon and colour pickers and the same `ZONE_ICONS`,
@@ -1893,7 +1893,7 @@ export class AddItemDialog extends Dialog {
       // no `.form-group` layout from core at all — core's rules are scoped to
       // `.standard-form`, which only V2 sheets carry — so the labels, the boxes
       // and the hints all ran at their own widths and the hint text ignored the
-      // room it had (Leander, 2026-09-05: *"der text bei den qualities ist nicht
+      // room it had (Dolmenmaster, 2026-09-05: *"der text bei den qualities ist nicht
       // gut formatiert, er nutzt nicht den platz des kastens"*). The controls go
       // in `.qm-field` and the notes in `.qm-hint` for the same reason: those are
       // the class names the grid places.
@@ -2897,7 +2897,7 @@ interface AnimalTarget {
 /**
  * One form, two doors: adding an animal and editing one ask exactly the same
  * eight questions, and the day they stop asking the same ones is the day a
- * field can be set but never corrected. Leander, 2026-08-30: *"die animals und
+ * field can be set but never corrected. Dolmenmaster, 2026-08-30: *"die animals und
  * vehicles sollten sich auch komplett editieren lassen."*
  */
 class CustomAnimalDialog extends Dialog {
@@ -3104,7 +3104,7 @@ const ICON_BOX = "edit-icon-value";
  * It used to ask for a name and nothing else, so a find could be *called* a
  * Longsword while still weighing whatever the thing it came from weighed, and
  * a Referee correcting a price had to delete the row and invent a new one.
- * Leander, 2026-08-28: *"Es wäre super, wenn man beim Bearbeiten von Objekten
+ * Dolmenmaster, 2026-08-28: *"Es wäre super, wenn man beim Bearbeiten von Objekten
  * im Inventar nicht nur den Namen sondern alles anpassen könnte."*
  *
  * **What is stored is the difference, not the whole thing.** A row that came

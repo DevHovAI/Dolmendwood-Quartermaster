@@ -55,7 +55,7 @@ export function rationsFromKill(hitPoints: number, size: "small" | "medium" | "l
 /**
  * What was actually found, where the tables named it.
  *
- * Leander's point, and it changes the shape of the row: *"schließlich haben die
+ * Dolmenmaster's point, and it changes the shape of the row: *"schließlich haben die
  * Dinge manchmal auch Effekte beim Essen, es sollten also nicht einfach 'fresh
  * rations' sein."* A cap of bogbell and a brace of hare are both "1 day's fresh
  * food" to the encumbrance rules and nothing alike on the plate — and the
@@ -66,7 +66,7 @@ export interface FoundFood {
   name: string;
   /**
    * The book's own line about it. It becomes the row's **description** and
-   * nothing else — Leander's point, and it is right: writing it into `notes`
+   * nothing else — Dolmenmaster's point, and it is right: writing it into `notes`
    * as well printed the same sentence twice on one row. The notes are the
    * players' own space and they start empty.
    */
@@ -106,7 +106,7 @@ function catalogEntry(name: string): ItemDefinition | undefined {
 /**
  * What a hex grows on top of the foraging table, on its way into a pack.
  *
- * **Common is named, rare is covered** — Leander's ruling, 2026-08-27, and it
+ * **Common is named, rare is covered** — Dolmenmaster's ruling, 2026-08-27, and it
  * settles a question the first cut got backwards. A forager who comes back with
  * an armful of Bosun's Balm knows it is Bosun's Balm; the table is in the book
  * they are holding. What they cannot name is the appendix's treasure, and that
@@ -132,7 +132,7 @@ export function hexFind(name: string, where: string): FoundFood {
  * A rare herb or fungus a hex grows, packed away before anyone knows what it is.
  *
  * **The players must not be told and the Referee must not have to remember** —
- * Leander's requirement, and the two halves pull in opposite directions, which
+ * Dolmenmaster's requirement, and the two halves pull in opposite directions, which
  * is why the row carries a public name and a private one. The cover comes from
  * the catalogue's own shelf: "Rare herb" for one appendix list, "Rare fungus"
  * for the other. Anything the catalogue has never heard of is a "Rare find",
@@ -268,7 +268,7 @@ export async function storeRations(
     isSecret: false,
     // **Empty on purpose.** The book's line about the find is the item's
     // description and is printed a line above this; repeating it here said the
-    // same thing twice and cost the row a line for nothing (Leander, 2026-08-27).
+    // same thing twice and cost the row a line for nothing (Dolmenmaster, 2026-08-27).
     // The notes are the players' space, for what they learn afterwards.
     notes: "",
     ...(found?.gmNote ? { gmNote: found.gmNote } : {}),

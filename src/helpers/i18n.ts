@@ -1,7 +1,7 @@
 /**
  * The one door to Foundry's translation table.
  *
- * **Leander's ask, 2026-09-04:** the module should speak German — the interface
+ * **Dolmenmaster's ask, 2026-09-04:** the module should speak German — the interface
  * first, the book's own text after. Every string in this module was written
  * inline in English, and `lang/de.json` has shipped since v1.x without a single
  * caller, so the wiring is what has to come first.

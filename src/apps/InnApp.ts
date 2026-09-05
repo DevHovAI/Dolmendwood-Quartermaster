@@ -60,7 +60,7 @@ interface InnState {
    * **A placed inn is not governed by this.** Its note on the map is its own
    * door, and Foundry already decides who can see a note. This is for the inn
    * that has no place: the Referee names it, sets its quality, and only then is
-   * it a thing the players can walk into (Leander, 2026-08-31).
+   * it a thing the players can walk into (Dolmenmaster, 2026-08-31).
    */
   released?: boolean;
 }

@@ -166,7 +166,7 @@ export interface ShopState {
    *
    * `toolbarOwnStock` is what makes it **start empty**: a shop the Referee
    * stocks, named and opened when it is ready, rather than the whole catalogue
-   * standing permanently open (Leander, 2026-09-01). Absent counts as true, so
+   * standing permanently open (Dolmenmaster, 2026-09-01). Absent counts as true, so
    * a world that has never touched it gets the shelf and not the catalogue —
    * and the button in its head puts the catalogue back.
    */
@@ -291,7 +291,7 @@ export interface PartyConvoy {
    * marching at 30 ft usually has several members sitting exactly on 30, and
    * naming one of them made the other equally-guilty ones invisible — the
    * player unloads the mule that was blamed and the pace does not budge
-   * (Leander, 2026-08-31). Never empty when the convoy exists.
+   * (Dolmenmaster, 2026-08-31). Never empty when the convoy exists.
    */
   slowest: PartyConvoyMember[];
   slowestName: string;                 // the first of them, for anything wanting one name

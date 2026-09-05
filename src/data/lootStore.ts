@@ -199,7 +199,7 @@ export async function placeLootNote(actor: Actor): Promise<boolean> {
     return false;
   }
 
-  // **A pin can be moved to another map** (Leander, 2026-08-28): *"wenn zuerst
+  // **A pin can be moved to another map** (Dolmenmaster, 2026-08-28): *"wenn zuerst
   // auf der Battlemap platziert und wir wechseln wieder zur Weltkarte, dann
   // möchte ich das Icon gerne auf die große Karte mitnehmen."* A fight happens
   // on the battle map and the body stays where it fell — until the party walks

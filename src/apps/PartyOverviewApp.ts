@@ -40,7 +40,7 @@ export interface PartySummary {
  * ties are the normal case rather than a curiosity: three characters on 30 ft
  * and a mule on 30 ft are all setting the pace, and unloading any one of them
  * changes nothing. Reporting only the first one found made the rest invisible
- * and the fix look broken (Leander, 2026-08-31).
+ * and the fix look broken (Dolmenmaster, 2026-08-31).
  */
 export function buildPartyConvoy(
   partyActors: Actor[],
@@ -260,7 +260,7 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
         // **Unsorted gear is a question, not a state.** In weight mode the
         // stowed pile is what a character has picked up and not yet put into a
         // container: it counts against them, it has no home, and the table
-        // should settle it before the day moves on. Leander's ask, and the
+        // should settle it before the day moves on. Dolmenmaster's ask, and the
         // right place for it is the party window, where the whole party is
         // visible at once rather than one sheet at a time.
         const unsortedCount =

@@ -7,7 +7,7 @@ import { t } from "../helpers/i18n";
  * What the party is actually holding, read off the weapons already in their
  * inventory.
  *
- * Leander's ask, 2026-08-25: *"ist es möglich, dass die Waffen, die die
+ * Dolmenmaster's ask, 2026-08-25: *"ist es möglich, dass die Waffen, die die
  * Charaktere in equipped haben, direkt vorgeben, wie Attack und Damage Roll
  * ausfallen? Im Inventar an den Waffen finden sich ja alle Infos."*
  *
@@ -152,7 +152,7 @@ export interface AttackOptions {
   /**
    * Whatever the table decides the situation is worth.
    *
-   * Leander, and he is right: *"Es muss auch die Möglichkeit geben, selbst
+   * Dolmenmaster, and he is right: *"Es muss auch die Möglichkeit geben, selbst
    * Modifier einzustellen, da auch die Distanz und andere Dinge sich auf
    * Fernkampf auswirken. Das können wir unmöglich noch reinprogrammieren."*
    * Cover, footing, firing into a melee, a Referee's ruling — none of it is

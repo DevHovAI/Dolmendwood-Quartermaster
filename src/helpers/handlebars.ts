@@ -248,7 +248,7 @@ export function buildZoneOptionsHTML(
  * **The id is a parameter because it used to be a constant**, and a dialog that
  * read its icon out of any other box got "fa-sack" back for ever — silently,
  * because a jQuery `.val()` on nothing is `undefined` and the fallback looked
- * deliberate. That was the item editor's icon on the day it shipped (Leander:
+ * deliberate. That was the item editor's icon on the day it shipped (Dolmenmaster:
  * *"das icon ließ sich beim bearbeiten nicht ändern"*). The default keeps every
  * older caller as it was; a new one passes its own id to **both** functions,
  * and `render-inventory.js` checks the two agree.
@@ -361,7 +361,7 @@ export function registerHandlebarsHelpers(): void {
    * `{{convoySlowest members}}` is the badge's line and **names as many as fit
    * a fixed budget of characters, then counts the rest**: `Alaric, Mule +2`.
    * Listing all of them was the honest thing and the unreadable thing at once
-   * (Leander, 2026-08-31: *"wenn wirklich alle drin stehen ist das schon
+   * (Dolmenmaster, 2026-08-31: *"wenn wirklich alle drin stehen ist das schon
    * doof"*), and a flat cap of two names is no better — three short names fit
    * where one long one does not.
    *

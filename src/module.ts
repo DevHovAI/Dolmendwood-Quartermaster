@@ -326,7 +326,7 @@ Hooks.once("init", () => {
     onChange: () => (ui as unknown as { controls?: { render: () => void } }).controls?.render(),
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
-  // **The players' own rolls**, Leander's ask of 2026-09-02. Off by default: it
+  // **The players' own rolls**, Dolmenmaster's ask of 2026-09-02. Off by default: it
   // hands three of the day's duties and the camp's group steps to the table,
   // and a Referee should switch that on deliberately rather than discover it.
   game.settings!.register(MODULE_ID, SETTINGS.PLAYER_DAY_ROLLS, {
@@ -340,7 +340,7 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   // **Who rolls the camp's group steps**, when more than one player could.
-  // Empty means anybody, which is Leander's own resolution: name a leader and
+  // Empty means anybody, which is Dolmenmaster's own resolution: name a leader and
   // it is theirs, name nobody and whoever gets there first does it.
   game.settings!.register(MODULE_ID, SETTINGS.CAMP_LEADER, {
     name: "Party leader",
@@ -1344,7 +1344,7 @@ onUntypedHook("preMoveToken", (tokenDoc: unknown, move: unknown): boolean | void
   }
 
   // Only said where it says something. When not even the first hex is
-  // affordable there is no "this far" to name, and Leander found a sentence
+  // affordable there is no "this far" to name, and Dolmenmaster found a sentence
   // about it more confusing than the silence: the two numbers above have
   // already answered the question.
   const asFar = reached.length
@@ -1465,7 +1465,7 @@ onUntypedHook("getSceneControlButtons", (controls: Record<string, SceneControl>)
     !!g.settings.get(MODULE_ID, SETTINGS.BAR_ONLY_ACCESS) &&
     (isGM || !!g.settings.get(MODULE_ID, SETTINGS.PLAYER_DAY_BAR));
 
-  // Leander's order, 2026-08-25: inventory, trash, shop, inn, loot — the two
+  // Dolmenmaster's order, 2026-08-25: inventory, trash, shop, inn, loot — the two
   // you reach for constantly first, then the three places. The day bar's own
   // toggle stays last of all, since it is the way back rather than a window.
   if (!barOnly) {

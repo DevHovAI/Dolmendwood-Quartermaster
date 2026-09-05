@@ -1,7 +1,7 @@
 /**
  * Spell credits, and the charges they buy.
  *
- * **Leander's design, 2026-09-02:** *"Wenn jemand erfolgreich spells prepared,
+ * **Dolmenmaster's design, 2026-09-02:** *"Wenn jemand erfolgreich spells prepared,
  * gib dem character eine entsprechende anzahl 'credits'. mit denen er seinen
  * Spells im character sheet markieren kann. ein spell sollte dabei mehrfach
  * wählbar sein. ein roll auf den spell soll dann den spell bzw. eine Ladung

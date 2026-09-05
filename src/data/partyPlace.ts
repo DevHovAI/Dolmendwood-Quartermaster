@@ -76,7 +76,7 @@ type NoteLike = { x?: number; y?: number; parent?: SceneLike };
  * centre** — and on a hex grid that corner belongs to a *different hex* than
  * the token does, because a hexagon's bounding box pokes into its neighbours.
  * Asking the grid which hex that corner falls in therefore answers with the
- * wrong hex most of the time, which is exactly what refused Leander entry to a
+ * wrong hex most of the time, which is exactly what refused Dolmenmaster entry to a
  * shop he was standing on.
  *
  * `getCenterPoint()` is the right question and knows about hexagonal token
@@ -135,7 +135,7 @@ export function isPartyToken(
 /**
  * The tokens that stand for the party on one scene.
  *
- * A named marker wins where the world has one — Leander's table travels as a
+ * A named marker wins where the world has one — Dolmenmaster's table travels as a
  * single "Dolmendudes" token, which belongs to no player and so is invisible to
  * `getPartyActors()` (that helper requires a *non-GM* owner, by design). The
  * setting takes a name or an id, since a name is what a Referee knows.
@@ -180,7 +180,7 @@ export interface Reachability {
  *
  * On a **scene with no hex grid** — a village map, a dungeon — being there is
  * the whole test. Once you are in the village you are in the village, and
- * making players walk a token to each stall would be busywork. (Leander's call,
+ * making players walk a token to each stall would be busywork. (Dolmenmaster's call,
  * 2026-08-25.) Note the consequence: a village scene with no party token on it
  * at all counts as "the party is not there", so its shops stay shut.
  */
@@ -223,7 +223,7 @@ type GridLike = {
  * village is the whole test there. **Loot needs the other answer**, and finding
  * that out cost a live test: a character opened a body from clear across the battle
  * map, because a battle map is a *square* grid, `hexOf` returned nothing, and
- * the rule fell open (Leander, 2026-08-28).
+ * the rule fell open (Dolmenmaster, 2026-08-28).
  *
  * Gridless scenes still answer `undefined`. Every point on one is its own cell,
  * so "next to" has no meaning and being on the scene is all that can be asked.
@@ -282,7 +282,7 @@ export function ownedTokensOn(scene: SceneLike | undefined): TokenLike[] {
 /**
  * Whether a player may open the body or hoard this note marks.
  *
- * **Two scenarios, two distances** — Leander, 2026-08-28: *"nur wenn party
+ * **Two scenarios, two distances** — Dolmenmaster, 2026-08-28: *"nur wenn party
  * token drauf (Kartenszenario) oder player token adjacent (Battlemap
  * szenario)."* Which one applies is decided by *whose* token answers, not by
  * guessing what kind of scene this is:

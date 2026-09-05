@@ -69,7 +69,7 @@ export function sleptBadly(): Actor[] {
  *
  * Three ways to be passed over, and the card says which: a bad night, a full
  * Hit Point track, or having already been paid this morning. **Never past the
- * maximum** — Leander's instruction and the obvious rule; a sheet with no
+ * maximum** — Dolmenmaster's instruction and the obvious rule; a sheet with no
  * maximum on it gets nothing at all, because "full" and "unknown" must not look
  * the same.
  *
@@ -303,14 +303,14 @@ export function morningResultLine(dutyId: string): string | undefined {
  * The line a duty shows *before* it is rolled, when the day already knows
  * something worth saying.
  *
- * Leander's ask, and the one place in the strip where a warning earns its
+ * Dolmenmaster's ask, and the one place in the strip where a warning earns its
  * space: a caster who slept badly is the only reason the spell duty needs dice
  * at all, and nobody would think to check.
  */
 export function morningWarningLine(dutyId: string): string | undefined {
   const morning = getMorningState();
 
-  // Healing: who it would pay, before it pays them. Leander asked for this
+  // Healing: who it would pay, before it pays them. Dolmenmaster asked for this
   // outright — the duty used to say nothing until it was pressed, which is a
   // poor way to find out that nobody in the party had slept.
   if (dutyId === "healing") {

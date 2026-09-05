@@ -45,7 +45,7 @@ export function coinToCp(cost: Coin): number {
  *
  * **`largest` caps the coin it may answer in.** Pellucidium is worth five gold,
  * so a pile shown in it is a pile the table has to multiply by five in their
- * heads; everything from gold down is decimal and adds up on sight. Leander,
+ * heads; everything from gold down is decimal and adds up on sight. Dolmenmaster,
  * 2026-08-28: *"lass in der Wertanzeige bitte die Währung pp aus... ist leichter
  * umzurechnen mit den 10er Schritten."* The default keeps every older caller —
  * a shop's price, a hoard's cash — answering as it always did.

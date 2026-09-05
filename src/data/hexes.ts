@@ -44,7 +44,7 @@ export interface HexInfo {
    * is** — and for the same reason. The Campaign Book opens every hex with a
    * paragraph of Necrotic Gnome's prose, and that paragraph stays in the
    * reader's own copy; what a place *is* is a fact, and these are those facts
-   * said again in ordinary English. Leander asked for it on 2026-08-28: *"Kannst
+   * said again in ordinary English. Dolmenmaster asked for it on 2026-08-28: *"Kannst
    * du genau wie bei den Monstern den Inhalt umschreiben?"*
    *
    * Absent until a hex has been written up. A hex without it still shows its
@@ -146,7 +146,7 @@ export interface HexEncounter {
    * A condition the module cannot check — "by the lakeside", "in the swamp",
    * "in the eastern part of the hex", "on sunny days".
    *
-   * Leander's call (2026-08-29): these still roll, and the condition is printed
+   * Dolmenmaster's call (2026-08-29): these still roll, and the condition is printed
    * on the card in bold so the Referee can wave it off. The card's "the
    * ordinary table instead" button is the other half of that.
    */
@@ -4593,7 +4593,7 @@ export function hexInfo(input: string | undefined): HexInfo | undefined {
  * and the module knows all three, so they are checked rather than merely
  * printed. What it cannot know ("by the lakeside", "in the eastern part of the
  * hex") is carried on `where` and printed on the card for the Referee to
- * overrule; that was Leander's call on 2026-08-29, against the alternative of
+ * overrule; that was Dolmenmaster's call on 2026-08-29, against the alternative of
  * not rolling them at all.
  */
 export function hexRules(

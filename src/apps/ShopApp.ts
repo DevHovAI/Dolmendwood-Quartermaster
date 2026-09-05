@@ -181,7 +181,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
    *
    * The same door the inn has, for the same reason: the Referee names it and
    * stocks it first, and until then it is not a place anybody can walk into
-   * (Leander, 2026-09-01). Shutting it takes the window off anyone holding it
+   * (Dolmenmaster, 2026-09-01). Shutting it takes the window off anyone holding it
    * open — see `_onRender`.
    */
   private static async _onToggleRelease(this: ShopApp): Promise<void> {
@@ -227,7 +227,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
     },
     position: {
       width: 700,
-      // A third taller than it was (Leander, 2026-09-05). The shelves are the
+      // A third taller than it was (Dolmenmaster, 2026-09-05). The shelves are the
       // one list in this module that is always longer than its window, and the
       // toolbar now takes two rows. Capped against the viewport the way the
       // party overview caps its width — a window taller than the screen cannot

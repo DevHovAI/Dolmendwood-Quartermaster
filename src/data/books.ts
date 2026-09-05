@@ -77,7 +77,7 @@ export const SPREAD_MODE_EVEN = 2;
 /**
  * The mode that makes the book fall open the way a book does.
  *
- * *"gerade Seitenzahl links und ungerade rechts"* (Leander, 2026-08-28), which
+ * *"gerade Seitenzahl links und ungerade rechts"* (Dolmenmaster, 2026-08-28), which
  * is simply how a printed book is bound: the even page is the verso, on the
  * left, and the odd page facing it is the recto. The viewer had been pairing
  * them the other way round — p157 on the left of p158 — so every spread

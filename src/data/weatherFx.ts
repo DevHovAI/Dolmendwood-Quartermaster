@@ -18,7 +18,7 @@ import { weatherSky, type Falling, type WeatherSky } from "./weather";
  * FXMaster's own, and the table can move the whole lot up or down with one
  * setting.
  *
- * **Everything is drawn over the tokens** (Leander, 2026-09-01). `belowTokens`
+ * **Everything is drawn over the tokens** (Dolmenmaster, 2026-09-01). `belowTokens`
  * is not a layer but a cutout: switched on, FXMaster stamps a token-shaped hole
  * in the weather, and a party standing in a snowstorm inside a clean oval of
  * still air is a worse picture than a party you can see a little snow across.
@@ -84,7 +84,7 @@ const OLD_HAZE_FILTER_ID = "apiMacro_dolmenwoodWeatherHaze_f";
  *     if (!plusActive) return false;
  *
  * — so the setting was a switch a table could turn on and hear nothing from.
- * Better no option than an option that lies (Leander, 2026-09-01). If weather
+ * Better no option than an option that lies (Dolmenmaster, 2026-09-01). If weather
  * is ever to be heard here it will be through Foundry's own playlists, which
  * is a different job with its own audio files.
  */
@@ -123,7 +123,7 @@ const HAZE_GREY = "#b9c0c6";
  * be small enough to survive that multiplication.
  *
  * **Three of the four are measured**, tuned by hand against the Dolmenwood
- * world map (Leander, 2026-09-01), and the interesting thing about them is how
+ * world map (Dolmenmaster, 2026-09-01), and the interesting thing about them is how
  * badly both attempts to guess the rest went.
  *
  * Guessing by eye said a snowflake reads larger than a raindrop. It does not:
@@ -211,7 +211,7 @@ const LIGHTNING = { frequency: 8300, spark_duration: 220, brightness: 1.4 };
  * "how much of my map may this cover" actually asks about is quantity — how
  * many drops, how thick the air — so that is all this moves.
  *
- * Ordinary is Leander's own measured setting. Subtle halves it; strong is what
+ * Ordinary is Dolmenmaster's own measured setting. Subtle halves it; strong is what
  * a table that wants the day unmistakable can reach for.
  */
 const STRENGTH: Record<string, number> = { subtle: 0.5, normal: 1, strong: 1.7 };
@@ -267,7 +267,7 @@ const clamp = (n: number, low: number, high: number) => Math.min(high, Math.max(
  * read anything, because Fairy is not weather.
  *
  * **What never changes is not drawn here at all.** Crows were offered and
- * turned down on exactly that test (Leander, 2026-09-01): a flight of crows
+ * turned down on exactly that test (Dolmenmaster, 2026-09-01): a flight of crows
  * looks the same on every one of these sixty-six rows, so a Referee who wants
  * them can set them once in FXMaster and keep them, and this module has nothing
  * to add. It draws what the roll changes.

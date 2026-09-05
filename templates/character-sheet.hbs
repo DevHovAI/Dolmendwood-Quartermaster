@@ -1,5 +1,5 @@
 {{!-- Page one of the printed Dolmenwood sheet, laid out for a window rather
-      than for paper (Leander, 2026-08-28):
+      than for paper (Dolmenmaster, 2026-08-28):
 
         who they are  ·  who they are when not rolling dice (folded)
         the six scores
@@ -120,10 +120,10 @@
         </label>
         {{!-- Languages sit up here with the other one-word facts. OSE keeps them
               as an array; the sheet asks for one line and splits on commas.
-              **No example in the box** — Leander, 2026-08-28: a greyed-out
+              **No example in the box** — Dolmenmaster, 2026-08-28: a greyed-out
               "Woldish, Sylvan" reads as though it were already filled in. --}}
         {{!-- **The picker lives in the field's own cell**, under the box rather
-              than under the row (Leander, 2026-09-03): a panel that writes into
+              than under the row (Dolmenmaster, 2026-09-03): a panel that writes into
               one field belongs against that field, and a full-width strip below
               three columns reads as though it belonged to all of them.
               The <label> is nested so that clicking the word still focuses the
@@ -136,7 +136,7 @@
                    title="Separated by commas. Extra languages come from Intelligence."
                    {{#unless canEdit}}disabled{{/unless}}>
           </label>
-          {{!-- **Ticked rather than listed** (Leander, 2026-09-03). A datalist
+          {{!-- **Ticked rather than listed** (Dolmenmaster, 2026-09-03). A datalist
                 is no use here: the field holds a comma-separated line, and a
                 browser matches its suggestions against the whole box, so it
                 would help with the first language and never again. So the
@@ -217,16 +217,16 @@
   {{!-- ── Who this person is when they are not rolling dice ────────────── --}}
   {{!-- A <details>, and no script behind it. It sits with the other things that
         say who this is — up by the portrait and the kindred — and **starts
-        folded whether or not there is anything in it** (Leander, 2026-08-28).
+        folded whether or not there is anything in it** (Dolmenmaster, 2026-08-28).
         It used to open itself when filled, which was right at the foot of the
         page and wrong above the scores: it would push every number down the
         window on exactly the sheets that had most written on them. --}}
   {{!-- **It starts folded and stays as it was put.** Folded on a fresh window
-        is Leander's ruling above; what it must not do is fold itself while
+        is Dolmenmaster's ruling above; what it must not do is fold itself while
         somebody is working in it. Picking a suggestion writes the actor, that
         re-draws the whole sheet, and a <details> with no `open` on it comes
         back shut — which read as "man kann die eingaben nicht wieder ändern"
-        (Leander, 2026-09-03). Same fix as the two pickers: the state rides on
+        (Dolmenmaster, 2026-09-03). Same fix as the two pickers: the state rides on
         the window. --}}
   <details class="dw-sheet-section dw-sheet-persona" {{#if personaOpen}}open{{/if}}>
     <summary><i class="fas fa-chevron-right dw-sheet-persona-caret"></i>Appearance and bearing</summary>
@@ -303,7 +303,7 @@
   </section>
 
   {{!-- ── The five ─────────────────────────────────────────────────────── --}}
-  {{!-- A row of its own under the scores (Leander, 2026-08-28), which is what
+  {{!-- A row of its own under the scores (Dolmenmaster, 2026-08-28), which is what
         gives the weapons and the fighting numbers their width back. **Across
         rather than down**: five stacked rows in a full-width section would be a
         tall stripe of empty paper, and the saves read like the scores above
@@ -482,7 +482,7 @@
                 it, so Roll is in one place down the whole list. Without the two
                 slots below, a spell's book button widened a right-aligned group
                 and shoved Roll leftwards on exactly the rows that had one
-                (Leander, 2026-08-31). --}}
+                (Dolmenmaster, 2026-08-31). --}}
           <span class="dw-block-actions">
             {{#if this.rollable}}
             <button type="button" class="dw-roll-btn" data-action="rollBlock" data-block-id="{{this.id}}"
@@ -547,7 +547,7 @@
     <section class="dw-sheet-section">
       <h3>Skill Targets</h3>
       <p class="dw-sheet-hint">Six is everybody's, and Kindred or Class only ever lowers it.</p>
-      {{!-- **Two columns of three** (Leander, 2026-08-28): the book's three on
+      {{!-- **Two columns of three** (Dolmenmaster, 2026-08-28): the book's three on
             the left, the table's own on the right, and **an empty lane is the
             button that fills it** — no Add in the heading, because the place
             the new row will appear is a better door than a button somewhere
@@ -594,7 +594,7 @@
       <div class="dw-fields dw-fields-2">
         {{!-- Level lives here, not among the fighting numbers: it is what
               experience buys, and the box beside it is the one that says how
-              much more is needed (Leander, 2026-08-27). --}}
+              much more is needed (Dolmenmaster, 2026-08-27). --}}
         <label class="dw-field">
           <span>Level</span>
           <input type="number" class="is-number" data-field="level" value="{{level}}" {{#unless canEdit}}disabled{{/unless}}>
@@ -622,7 +622,7 @@
 
         {{#if advance}}
         {{!-- Read out of the Class's advancement table rather than typed: both
-              are printed facts about a Class and a Level (Leander, 2026-09-02).
+              are printed facts about a Class and a Level (Dolmenmaster, 2026-09-02).
               Italic, which in this module means "this was not typed here". --}}
         <div class="dw-field dw-field-derived" title="The XP the next Level asks for, from the {{advance.classLabel}} advancement table.">
           <span>Next level at</span>
@@ -649,7 +649,7 @@
               It is editable *here* because OSE only offers it in its Tweaks
               dialog — two windows away from the sheet where the number means
               something, and far enough that the XP window could show a badge
-              for a setting with no visible way to reach it (Leander,
+              for a setting with no visible way to reach it (Dolmenmaster,
               2026-09-04). Last in the grid so the odd cell falls at the end of
               the block rather than tearing a hole in the middle of it. --}}
         <label class="dw-field" title="The share of a divided XP award this character takes. 100 for a full member of the party; 50 for an adventuring retainer, which is the book's own rule (Player's Book p25). The XP window marks anyone who is not on 100.">
@@ -674,7 +674,7 @@
         {{!-- One line per route: the name, the time it takes, and nothing else
               on the page. The price lives in the tooltip — it is what you want
               to know before pressing and never while scanning the list
-              (Leander, 2026-09-02: *"den text für kosten weglassen und
+              (Dolmenmaster, 2026-09-02: *"den text für kosten weglassen und
               stattdessen nur im mouseover"*). The confirmation dialog spells it
               out again before anything is paid, so nothing is hidden. --}}
         <div class="dw-levelup-routes">

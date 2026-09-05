@@ -339,7 +339,7 @@ async function carryOut({ dutyId, choice }: DayRollPayload, userId: string): Pro
     case "sleep": {
       // **The fire is a fact of the camp, not an answer on the form.** It eases
       // the Sleep Difficulty for everyone with bedding, so a player who could
-      // tick it would be rolling a different table (Leander, 2026-09-03:
+      // tick it would be rolling a different table (Dolmenmaster, 2026-09-03:
       // *"sonst kann man ja cheaten"*). The Referee's own tick still stands —
       // a fire the module never saw lit is a ruling they are entitled to make.
       const campfire = fromGM ? choice.campfire : (getCampState().fire?.lit ?? true);

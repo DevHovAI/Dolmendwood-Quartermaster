@@ -1,7 +1,7 @@
 /**
  * Who may roll what, on whose behalf, and how often.
  *
- * **Leander's ask, 2026-09-02:** a setting that lets the players make the day's
+ * **Dolmenmaster's ask, 2026-09-02:** a setting that lets the players make the day's
  * rolls from their own bar instead of asking across the table. What they get is
  * deliberately not the Referee's strip: three duties are their own character's
  * business, the camp's group steps are the party's, and everything else — the
@@ -27,7 +27,7 @@
  * 2. **The party's duties** — finding food, and the rest of making camp. One
  *    roll for everyone, once per day, and the answer to "which player" is the
  *    party leader if the table has named one and anybody at all if it has not
- *    (Leander's own resolution: *"2 bauen und wenn keiner benannt ist, dann
+ *    (Dolmenmaster's own resolution: *"2 bauen und wenn keiner benannt ist, dann
  *    wirkt 1"*).
  * 3. **The Referee's** — everything not named above. Unchanged, and never
  *    gated by a key: the keys exist to open things to players, not to lock the
@@ -49,7 +49,7 @@ import { MODULE_ID, SETTINGS } from "../constants";
  * making camp, and both are personal: the wood goes into the gatherer's own
  * pack, and a bad night's sleep is carried by that character alone — into the
  * next day, as exhaustion. Sleeping was already a Constitution Check per
- * sleeper inside one dialog; this only moves whose finger is on it (Leander,
+ * sleeper inside one dialog; this only moves whose finger is on it (Dolmenmaster,
  * 2026-09-03).
  *
  * **Both of these accumulate**, which is what makes them different from a group
@@ -68,7 +68,7 @@ export const OWN_DUTIES = new Set(["prepare-spells", "firewood", "sleep"]);
  * roll more often is a real option — and it costs each smaller group its own
  * chance of getting lost and its own wandering-monster check, neither of which
  * this module models. So one roll a day for the party, and a Referee who wants
- * the party split rolls it by hand (Leander, 2026-09-03: *"falls die gruppe
+ * the party split rolls it by hand (Dolmenmaster, 2026-09-03: *"falls die gruppe
  * sich aufteilen will, kann ich als DM das ja steuern und durchwürfeln"*).
  *
  * **Two steps of making camp are NOT here** — fetching firewood and bedding

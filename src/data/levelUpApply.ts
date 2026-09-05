@@ -19,7 +19,7 @@ import { escapeHTML } from "../helpers/handlebars";
  * and a character left half-advanced because the fourth of ten updates failed
  * is worse than one that did not advance at all.
  *
- * **The card is the record.** Leander's ask, 2026-09-02: *"mach das 2. aber mit
+ * **The card is the record.** Dolmenmaster's ask, 2026-09-02: *"mach das 2. aber mit
  * dem klaren hinweis, was du genau gemacht hast."* So the card names every
  * figure that moved and every one that deliberately did not — the die rolled
  * for each Level, the Constitution Modifier applied to it, the Attack and Save

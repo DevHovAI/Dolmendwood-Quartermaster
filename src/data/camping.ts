@@ -56,7 +56,7 @@ export const NIGHT_HOURS = 8;
 /**
  * Firewood, as a thing in a pack rather than a number on a card.
  *
- * Leander, 2026-08-28: *"Das gesammelte Holz bei der Camp activity sollte auch
+ * Dolmenmaster, 2026-08-28: *"Das gesammelte Holz bei der Camp activity sollte auch
  * im Inventar landen."* The book agrees with him — building a fire wants "a
  * stash of wood (either gathered from the forest **or carried in packs**)"
  * (p158) — and it is the only reading under which the firewood roll matters
@@ -91,7 +91,7 @@ export function fireLastsTheNight(hours: number | undefined): boolean {
 /**
  * What a night's fire is actually worth, by how much wood went on it.
  *
- * Three steps, Leander's own (2026-08-29): **under five hours is no campfire at
+ * Three steps, Dolmenmaster's own (2026-08-29): **under five hours is no campfire at
  * all**, five to seven is a campfire that went out before morning and costs
  * **−1**, eight or more is a fire that lasted. The first cut had only the cliff
  * — seven hours and eight a whole row of the Sleep Difficulty table apart — and
@@ -124,7 +124,7 @@ export function gradeFire(lit: boolean, hours: number | undefined): FireGrade {
 }
 
 /**
- * The guard Leander asked for: *"Hauptsache, es wird mit dem Malus dann nicht
+ * The guard Dolmenmaster asked for: *"Hauptsache, es wird mit dem Malus dann nicht
  * schlechter, als wenn man gar kein Feuer hätte."*
  *
  * **And it is a real case, not a theoretical one.** Read the table's own rows: a
@@ -249,7 +249,7 @@ export interface EveningOutcome {
  *
  * The card used to print the sum and nothing else, and a Constitution of −2
  * cancelled by a hot supper and an evening of songs came out as "+0" — which
- * reads exactly like a modifier nobody applied. Leander, 2026-08-28, on a
+ * reads exactly like a modifier nobody applied. Dolmenmaster, 2026-08-28, on a
  * character with a −2: *"beim Schlafen wurde nicht der Constitution Modifier
  * berücksichtigt"*. It had been; it just could not be seen.
  */

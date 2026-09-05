@@ -32,7 +32,7 @@ export async function promptHuntSpoils(
   }
 
   // **Two of the three questions are already answered**, and asking them again
-  // was the complaint (Leander, 2026-08-27): the quarry's size is in its stat
+  // was the complaint (Dolmenmaster, 2026-08-27): the quarry's size is in its stat
   // block, and whose pack the food goes into was settled when the hunt was
   // rolled. Both come in pre-set and both stay changeable — the size because a
   // Referee may be butchering something they named themselves, the pack because

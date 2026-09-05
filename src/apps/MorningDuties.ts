@@ -60,12 +60,12 @@ function ask<T>(
 export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[] } | null> {
   // **Only the ones who cast.** A fighter has never had a spell to lose, and a
   // dialog that listed the whole party and asked the Referee to untick five of
-  // them every morning was asking them to do the module's work (Leander,
+  // them every morning was asking them to do the module's work (Dolmenmaster,
   // 2026-09-03). The Class decides it, and the sheet's own spell count
   // overrules — see `preparesSpells`.
   //
   // **Two questions, and they are not the same one** — which is what the first
-  // cut of the player's side got wrong (Leander, 2026-09-03: *"prepare spells
+  // cut of the player's side got wrong (Dolmenmaster, 2026-09-03: *"prepare spells
   // lässt sich vom spieler gerade nicht würfeln"*). Whether the duty needs dice
   // at all is a question about **the whole party**; which names to put on the
   // form is a question about **the person pressing**. Asking only the second
@@ -80,7 +80,7 @@ export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[
     return { casters: [] };
   }
 
-  // Leander's job 3: a player is only ever asked about their own characters.
+  // Dolmenmaster's job 3: a player is only ever asked about their own characters.
   // The Referee owns every actor, so their form is the party's.
   const badly = partyBadly.filter((actor) => (actor as { isOwner?: boolean }).isOwner);
   if (!badly.length) {

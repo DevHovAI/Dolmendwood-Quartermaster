@@ -16,7 +16,7 @@ import { gridOffsetOf } from "./partyPlace";
  * whose number you know, type that number on the bar, and press the crosshairs:
  * the difference between the grid's own coordinates and the book's is a
  * constant for that map, and every later position can be read straight off.
- * Leander's idea, 2026-08-29.
+ * Dolmenmaster's idea, 2026-08-29.
  *
  * **Stored per scene id**, because it is a property of a *map*: the world map
  * has the book's numbering, a battle map has none at all, and one calibration
@@ -28,7 +28,7 @@ import { gridOffsetOf } from "./partyPlace";
  * What one scene's calibration remembers: **two** known hexes.
  *
  * **One is not enough, and the first cut of this shipped believing it was.**
- * Leander calibrated on 1508 and every hex in a neighbouring column came out
+ * Dolmenmaster calibrated on 1508 and every hex in a neighbouring column came out
  * one row too far south: 1408 read as 1409, 1407 as 1408, 1607 as 1608. The
  * column was right every time.
  *
@@ -102,7 +102,7 @@ const rowOf = (hex: string) => Number(hex.slice(2));
  * The half-step between neighbouring columns, measured rather than assumed.
  *
  * Zero when the two numberings agree about which way a column's stagger leans,
- * ±1 when they do not — which is the case on Leander's map. Undefined until the
+ * ±1 when they do not — which is the case on Dolmenmaster's map. Undefined until the
  * second point has been taken, and that is deliberate: a calibration that
  * cannot say is one that must not answer.
  */

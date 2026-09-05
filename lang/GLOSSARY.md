@@ -1,6 +1,6 @@
 # Glossar — Deutsch
 
-**Leanders Entscheidung, 2026-09-04.** Die Regel in einem Satz: **deutsche Prosa,
+**Dolmenmasters Entscheidung, 2026-09-04.** Die Regel in einem Satz: **deutsche Prosa,
 englische Regelbegriffe.** Die Gruppe spielt aus den englischen Büchern, also
 soll ein Begriff, den man am Tisch nachschlägt, im Modul so heißen wie im Buch —
 alles andere ist deutsch.

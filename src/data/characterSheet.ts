@@ -2,7 +2,7 @@
  * The attribute sheet: the character's numbers, and the blocks a table invents
  * on top of them.
  *
- * **Not a full character sheet, on Leander's instruction (2026-08-25):** *"Im
+ * **Not a full character sheet, on Dolmenmaster's instruction (2026-08-25):** *"Im
  * Prinzip keinen vollständigen Character Sheet sondern eher einen
  * Attributsbogen (denn ein Inventar haben wir ja schon mega ausgearbeitet)."*
  * The inventory stays where it is and is not folded in here.
@@ -124,7 +124,7 @@ const ABILITY_MODIFIER_TABLE: { upTo: number; mod: number }[] = [
 /**
  * What the book says a score is worth.
  *
- * **The sheet fills the modifier in when a score is typed** — Leander's ask,
+ * **The sheet fills the modifier in when a score is typed** — Dolmenmaster's ask,
  * and the arithmetic is the book's, not a house rule. The field stays editable
  * afterwards, because a ring or a curse can move a modifier without moving the
  * score, and the sheet says so when the two have come apart.
@@ -247,7 +247,7 @@ export interface CharacterExtras {
   /** The three every adventurer has, printed on the paper sheet. */
   skills: { listen: number; search: number; survival: number };
   /**
-   * Skill targets the table added — Leander's ask, 2026-08-27.
+   * Skill targets the table added — Dolmenmaster's ask, 2026-08-27.
    *
    * The printed sheet has three lines and a Class hands out more than three, so
    * the list has to grow. Kept beside the three rather than folded into
@@ -259,7 +259,7 @@ export interface CharacterExtras {
   /** Feet per turn while exploring — printed beside Speed on the paper sheet. */
   exploring: string;
   /**
-   * Who this person is when they are not rolling dice — Leander's ask,
+   * Who this person is when they are not rolling dice — Dolmenmaster's ask,
    * 2026-08-27.
    *
    * All free text and none of it mechanical, which is the point: the module
@@ -293,7 +293,7 @@ export interface CharacterExtras {
    *
    * The flag exists because "take it from the Class" and "let me overrule it"
    * cannot both be true of one number without somewhere to record which was
-   * meant (Leander, 2026-09-02: *"direkt übernehmen (aber überschreibbar
+   * meant (Dolmenmaster, 2026-09-02: *"direkt übernehmen (aber überschreibbar
    * lassen, falls nötig)"*). Typing in the box sets it; the reset beside the
    * box clears it and hands the number back to the Class.
    */
@@ -314,7 +314,7 @@ export interface CharacterExtras {
 /**
  * A trait, a class ability, a spell, a skill of its own — one model for all.
  *
- * Leander's call, and the right one: *"Für alles detaillierte (Zauber, Traits,
+ * Dolmenmaster's call, and the right one: *"Für alles detaillierte (Zauber, Traits,
  * usw.) würde ich wirklich am liebsten mit Bausteinen und viel Flexibilität
  * beim Anlegen arbeiten. Es sollte ansteuerbar sein für Bezüge und sich alles
  * würfeln lassen, je nachdem, wie es definiert ist."*
@@ -347,7 +347,7 @@ export interface CharacterBlock {
   /** For a per-day ability or a memorised spell. Absent means neither. */
   uses?: { value: number; max: number };
   /**
-   * Is this block a spell, and of which kind — Leander's ask, 2026-08-27.
+   * Is this block a spell, and of which kind — Dolmenmaster's ask, 2026-08-27.
    *
    * **Absent means it is not a spell at all**, which is the common case: a
    * trait, a class ability, a knack. Only a spell gets the prepared/bestowed
@@ -368,7 +368,7 @@ export interface CharacterBlock {
   /**
    * How many charges of this spell are ready today.
    *
-   * **A number, not a tick** — Leander's ask, 2026-09-02: *"ein spell sollte
+   * **A number, not a tick** — Dolmenmaster's ask, 2026-09-02: *"ein spell sollte
    * dabei mehrfach wählbar sein. ein roll auf den spell soll dann den spell bzw.
    * eine Ladung davon aufbrauchen."* A magician who memorised *magic missile*
    * twice has two of it, and casting spends one. Absent or nought means the

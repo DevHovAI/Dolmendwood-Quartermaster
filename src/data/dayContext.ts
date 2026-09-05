@@ -363,7 +363,7 @@ export async function setDayContext(patch: Partial<DayContext>): Promise<void> {
   if (answered) delete next.moved;
   await g.settings.set(MODULE_ID, SETTINGS.DAY_CONTEXT, next);
 
-  // **A new hex briefs itself** (Leander, 2026-08-28). Here rather than at the
+  // **A new hex briefs itself** (Dolmenmaster, 2026-08-28). Here rather than at the
   // bar's two call sites, so every way of setting a hex brings the card with
   // it; and only on a *change*, or confirming a context would re-post it.
   if (patch.hex !== undefined && next.hex && next.hex !== before.hex) {

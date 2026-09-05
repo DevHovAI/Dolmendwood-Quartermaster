@@ -348,7 +348,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       // The sticky context: two fixed lines, four columns, nothing folded.
       //
       // It used to be a chevron, a summary reading "Autumn · Track · Tangled
-      // forest · High Wold", and the fields hidden behind it. Leander had all
+      // forest · High Wold", and the fields hidden behind it. Dolmenmaster had all
       // three out (2026-08-29): the summary said what the fields said, and the
       // fold hid the hex — the one field that changes every time the party
       // moves. The hex's name and foraging line went too; the briefing card
@@ -438,7 +438,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       // the toolbar may not open it from here either.
       mayOpenLoot: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT),
       mayOpenTrash: isGM || !!(game as Game).settings.get(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH),
-      // **A shut door is drawn, not hidden** (Leander, 2026-09-01: *"dass wenn
+      // **A shut door is drawn, not hidden** (Dolmenmaster, 2026-09-01: *"dass wenn
       // closed ist, die spieler trotzdem das icon in ihrer bar haben,
       // allerdings ausgegraut"*). Removing the icon says the place does not
       // exist; greying it says it is not open yet, which is the truth and is
@@ -591,7 +591,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
    * The Referee's alone, and deliberately per duty rather than per phase: the
    * afternoon's foraging opens hours before the camp's steps do, and a switch
    * that opened a whole phase at once would hand out the evening in one go
-   * (Leander, 2026-09-02).
+   * (Dolmenmaster, 2026-09-02).
    */
   private static async _onToggleDutyOpen(
     this: DayBarApp,
@@ -1033,7 +1033,7 @@ function withNote(hint: string, note: string | undefined): string {
  * its own and the "Making camp" window builds its seven steps separately, and
  * the first version of this added the key to only the first of them — so the
  * very steps the players were meant to be given, the fire and the watches and
- * the cooking, were the ones with no way to open them. Leander found it from
+ * the cooking, were the ones with no way to open them. Dolmenmaster found it from
  * the other end: a lock on Sleep and none inside the camp window.
  *
  * No key at all where a key could not mean anything: a duty no player may ever
@@ -1105,7 +1105,7 @@ function rollChip(
   // **The die says what will happen to the answer.** The old text promised
   // every result to the GMs alone, which was true of four duties and false of
   // the other nine — and reading it on Prepare spells is what made that roll
-  // look like a secret one (Leander, 2026-09-04).
+  // look like a secret one (Dolmenmaster, 2026-09-04).
   const roll = SECRET_DUTIES.has(dutyId)
     ? "Roll it. Real dice, and the result is whispered to the Referee alone."
     : "Roll it. Real dice, and the result is announced to the table.";

@@ -35,7 +35,7 @@
     {{/if}}{{/if}}
   </div>
 
-  {{!-- The party's pace, on a line of its own with nothing else in it (Leander,
+  {{!-- The party's pace, on a line of its own with nothing else in it (Dolmenmaster,
         2026-08-31: *"ich hätte gerne, dass in der reihe mit dem convoy speed
         nichts anderes mehr ist"*). It answers a different question from the two
         boxes below it — what the whole party marches at, not what this one
@@ -47,7 +47,7 @@
     {{!-- Everything tied at that pace, not one example of it. The line is held
           to one line by the CSS, which cuts it with an ellipsis where the window
           is too narrow — the tooltip always has the full list, with the owner of
-          each animal (Leander, 2026-08-31). --}}
+          each animal (Dolmenmaster, 2026-08-31). --}}
     {{#if partyConvoy}}
     <span class="convoy-final {{speedColor partyConvoy.speed}}"
           title="The whole party moves at its slowest part{{#if (gt partyConvoy.slowest.length 1)}} — and {{partyConvoy.slowest.length}} of them are tied at this pace, so unloading any one alone changes nothing{{/if}}: {{convoySlowest partyConvoy.slowest true}}. Each animal's own pace is on its zone header below.">
@@ -65,7 +65,7 @@
 
   {{!-- Load and purse side by side, in that order of appetite: the load bars
         need a track to draw, the coins need least of all. Two boxes of the same
-        make and the same height, so the pair reads as one band (Leander,
+        make and the same height, so the pair reads as one band (Dolmenmaster,
         2026-08-31). They were three full-width blocks stacked up, which is most
         of what made the window so wide. --}}
   <div class="inv-summary">

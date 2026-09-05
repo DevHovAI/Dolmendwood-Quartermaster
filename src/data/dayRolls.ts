@@ -760,7 +760,7 @@ export async function rollEncounter(period: "day" | "night"): Promise<EncounterR
   const uuid = result.name ? await findCreatureUuid(result.name) : undefined;
   if (uuid) result.uuid = uuid;
 
-  // **The lair check comes with the encounter** (Leander, 2026-08-28). It used
+  // **The lair check comes with the encounter** (Dolmenmaster, 2026-08-28). It used
   // to wait for a button, which left the card's own number provisional until
   // somebody pressed it — and the number is the first thing a Referee reads
   // out. The button is still there and is a re-roll now, like Reaction's.
@@ -1035,7 +1035,7 @@ async function hexForageLine(
     offers.push({ formula: hit[1], name: hit[2].trim(), source: hit[3] });
   }
 
-  // **"or" means one of them, not both** (Leander, 2026-08-28). Five of the
+  // **"or" means one of them, not both** (Dolmenmaster, 2026-08-28). Five of the
   // fifty hexes word their line that way — *"1d3 portions of Hogscap (DPB) or
   // Prancing Mandrake (p430)"* — and the party was being handed the lot, with
   // only the word "or" on the card to say otherwise.
@@ -1216,7 +1216,7 @@ function creatureButtons(
           <i class="fas fa-skull"></i> Hoard
          </button>`
       : "",
-    // **One click, one creature** (Leander, 2026-08-28). Six goblins fall in six
+    // **One click, one creature** (Dolmenmaster, 2026-08-28). Six goblins fall in six
     // places on the battle map, and one box holding all six cannot be dropped in
     // six of them — so this rolls one body at a time, numbered, each its own.
     possessions: parsePossessions(book?.possessions)
@@ -2111,7 +2111,7 @@ async function rollNameFromTable(creature: string, tableId: string, page?: numbe
  * The lair check itself, without a card around it.
  *
  * Rolled from two places since 2026-08-28 — **with the encounter**, which is
- * where Leander wanted it (*"in its lair sollte am besten beim encounter gleich
+ * where Dolmenmaster wanted it (*"in its lair sollte am besten beim encounter gleich
  * mitgerollt werden"*), and again by the button, which is a re-roll now rather
  * than the only way to get an answer. One function, so the two can never come
  * to different rules; the caller decides what to say about it.
@@ -2406,7 +2406,7 @@ export function dutyResultLine(dutyId: string): string | undefined {
  * What a duty knows *before* anybody rolls it — for its tooltip, not for the
  * strip.
  *
- * It was a line under the label for a day, and Leander was right that it cost
+ * It was a line under the label for a day, and Dolmenmaster was right that it cost
  * too much room: two duties naming three characters each pushed the whole strip
  * out of shape for something a Referee reads once. **The strip is a checklist,
  * not a report.** So the answer now hangs off the hover, and the full account

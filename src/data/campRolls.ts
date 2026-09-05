@@ -53,14 +53,14 @@ import {
  * resolved by one person with the book open, but what comes of it is something
  * the characters live through — how much wood came back, whether the fire took,
  * how supper turned out, who slept — so those cards are **announced to
- * everyone** (Leander's ruling, 2026-08-27).
+ * everyone** (Dolmenmaster's ruling, 2026-08-27).
  *
  * **The watch is the exception and stays whispered.** Falling asleep on watch is
  * the one camp result the characters would not know: a watcher who nodded off
  * did not notice doing it, and the table finding out from a chat card would rob
  * the Referee of the only interesting thing about the rule.
  *
- * **Who rolled it is asked, never guessed.** Leander's instruction, and it is
+ * **Who rolled it is asked, never guessed.** Dolmenmaster's instruction, and it is
  * the right one: a Wisdom Check has to be *somebody's* Wisdom Check, so the
  * dialog names the character and prints the score it is about to use. The
  * module will not pick a cook for the party.
@@ -250,7 +250,7 @@ export async function rollFirewood(
   const hours = gathered.reduce((sum, r) => sum + r.hours, 0);
   await setCampResult("firewood", { firewood: { modifier, hours, gatherers: gathered } });
 
-  // **Into the pack of whoever carried it back** (Leander, 2026-08-28). One row
+  // **Into the pack of whoever carried it back** (Dolmenmaster, 2026-08-28). One row
   // per gatherer rather than one pile for the party: they are the ones under
   // the weight of it, and the fire will take it out of their packs by name.
   // `results` is built in step with `gatherers`, so the index is the pairing —
@@ -477,7 +477,7 @@ export async function rollCampActivity(
   // Doom then fails.
   //
   // **Nobody eats here.** Who sits down to the meal is asked *after* the dice,
-  // on Leander's instruction and for a good reason: until the die is thrown
+  // on Dolmenmaster's instruction and for a good reason: until the die is thrown
   // there may be nothing to eat, and asking who wants a share of a ruined
   // supper is a question with no answer. `serveMeal` is the second half.
   let mealLine = "";
@@ -701,7 +701,7 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
   const season = seasonInfo(getDayContext().season).host;
   // Itemised, not merely summed: the card prints the reasons beside the number,
   // so a Constitution penalty cancelled by the evening's bonuses can still be
-  // seen to have been applied (Leander, 2026-08-28).
+  // seen to have been applied (Dolmenmaster, 2026-08-28).
   const restParts = restModifierParts(
     camp.cooking ? { succeeded: camp.cooking.success, doomed: camp.cooking.doom?.saved === false } : undefined,
     camp.camaraderie

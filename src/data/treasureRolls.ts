@@ -29,7 +29,7 @@ import type { InventoryItem, ItemDefinition, ZoneCoins } from "../types";
 /**
  * Rolling a creature's hoard, and laying it out as a body to be found.
  *
- * Leander asked for it on 2026-08-28: *"An den Kreaturen steht ja deren Hoard.
+ * Dolmenmaster asked for it on 2026-08-28: *"An den Kreaturen steht ja deren Hoard.
  * Daraus müsstest du eigentlich den Loot erwürfeln können. Kannst du dann auch
  * direkt eine entsprechende Leiche in dem Lootmodul erstellen, die ich dann nur
  * noch freigeben muss?"* So the button rolls the Campaign Book's three treasure
@@ -71,7 +71,7 @@ interface HoardLine {
  * person", *Hoard* is "items and treasures found in the creature's **lair**".
  * The module's own lair card has been saying "Treasure is kept in lairs, not
  * carried" since it was built — and the Loot button shipped ignoring it
- * (Leander's catch, 2026-08-28).
+ * (Dolmenmaster's catch, 2026-08-28).
  *
  * So the answer to "does the amount change in a lair" is stronger than a
  * multiplier: **outside a lair there is no hoard at all**, and what the party
@@ -116,7 +116,7 @@ export async function rollCreatureHoard(
   const { codes, rest } = parseHoard(hoardLine);
   const carried = parsePossessions(lair.possessions);
 
-  // **One click, one creature, one body** (Leander, 2026-08-28): *"damit man
+  // **One click, one creature, one body** (Dolmenmaster, 2026-08-28): *"damit man
   // die auch einzeln auf der Karte platzieren kann. Das passiert ja vermutlich
   // auf der Battlemap."* Six goblins are six corpses in six places, and a
   // single box holding all of them cannot be dropped in six of them. So this

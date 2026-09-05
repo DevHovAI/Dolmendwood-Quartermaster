@@ -426,7 +426,7 @@ async function advanceWorldClock(seconds: number): Promise<void> {
  * How long the party is actually on the road: **twelve hours in a normal day,
  * sixteen on a forced march** — breaks included in both.
  *
- * Twelve is the figure on Leander's own travel sheet. Sixteen is the Player's
+ * Twelve is the figure on Dolmenmaster's own travel sheet. Sixteen is the Player's
  * Book's (p156), and it is what the bar's forced-march tooltip has always
  * promised; asked which should win, he said the book (2026-08-27).
  *
@@ -650,7 +650,7 @@ export async function resetDuties(): Promise<void> {
  * is derived from the convoy's speed, which this module deliberately does not
  * reach for.
  *
- * **The clock follows the points**, Leander's ask and the travel sheet's own
+ * **The clock follows the points**, Dolmenmaster's ask and the travel sheet's own
  * arithmetic: a party of Speed 30 has eight points in a twelve-hour day, so
  * each one walked is an hour and a half off the afternoon. Three things about
  * that are deliberate:

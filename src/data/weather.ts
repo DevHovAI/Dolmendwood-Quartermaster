@@ -176,7 +176,7 @@ export function travelPointPenalty(result: WeatherResult | undefined): number {
  * The Player's Book gives the Referee three examples and no table: "-1 for damp
  * conditions, -2 in snow, -4 in heavy rain" (p158). The day's weather already
  * says which of the three the party is standing in, so the module reads it
- * rather than asking — Leander's point, and it is right: the roll was made an
+ * rather than asking — Dolmenmaster's point, and it is right: the roll was made an
  * hour ago and the answer is on the card.
  *
  * **The wet-conditions letter decides whether there is a penalty at all**, and
@@ -288,7 +288,7 @@ const ICE = "#cfe6ff";
 /**
  * The densities are anchored on a figure measured rather than guessed.
  *
- * Leander tuned FXMaster by hand against the Dolmenwood world map (2026-09-01)
+ * Dolmenmaster tuned FXMaster by hand against the Dolmenwood world map (2026-09-01)
  * and arrived at 0.51 for fog, 0.5 for rain, 0.27 for sleet, 0.21 for snow and
  * 0.13 for a snowstorm. Those five are what the plain rows are set to here,
  * and every other row of that kind is placed around its own anchor — a drizzle at two fifths of the rain,
@@ -347,7 +347,7 @@ const SKIES: [RegExp, WeatherSky][] = [
  * nothing and so should cost the map nothing either. That is right about the
  * rules and wrong about the sky: cloud is simply *there*, nearly always, and a
  * map with a clear blue sky over a gloomy, cool day is drawing a fact that is
- * not true (Leander, 2026-09-01: "wolken sind halt immer da").
+ * not true (Dolmenmaster, 2026-09-01: "wolken sind halt immer da").
  *
  * So the letters still gate what *falls* and how thick the air is — those are
  * events, and the book says which days have them — and cloud is drawn on every

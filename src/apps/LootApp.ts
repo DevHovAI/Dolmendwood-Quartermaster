@@ -343,7 +343,7 @@ function getAppInstance(id: string): { render: (force?: boolean) => void } | nul
  *
  * **The check lives here and not on each door**, because there are three of
  * them: the pin on the map, the browser, and the card in chat. A rule enforced
- * at one door is a rule with two ways round it (Leander, 2026-08-28).
+ * at one door is a rule with two ways round it (Dolmenmaster, 2026-08-28).
  *
  * Being *released* is still what lets a player read the box at all — that is
  * Foundry's own ownership and no module can talk its way past it. Standing
@@ -905,7 +905,7 @@ export function activateLootChatButtons(html: HTMLElement): void {
     // would otherwise make one click do its work twice over.
     if (button.dataset.dwWired === "1") return;
     button.dataset.dwWired = "1";
-    // **The chat is not a door, for anybody** — Leander, 2026-08-28: *"Loot am
+    // **The chat is not a door, for anybody** — Dolmenmaster, 2026-08-28: *"Loot am
     // besten auch nicht mehr aus dem Chat öffnen... kann ganz raus."* A card is
     // the record of something that happened; a body is a place on a map, and it
     // is reached by going there.

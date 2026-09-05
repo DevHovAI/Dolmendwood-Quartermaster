@@ -19,7 +19,7 @@ import {
  * the duty asks before it rolls.
  *
  * **Whose check it is, is asked** — the same rule the camp's rolls follow, and
- * this dialog was the odd one out until Leander said so. Picking a character
+ * this dialog was the odd one out until Dolmenmaster said so. Picking a character
  * fills the target in from their own Survival skill and prints it beside the
  * name.
  *
@@ -80,7 +80,7 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
   // module's own extras rather than the system: OSE has no Dolmenwood skills,
   // and this is one of the fields the attribute sheet exists to hold.
   //
-  // **A player is offered their own characters only** (Leander's job 3,
+  // **A player is offered their own characters only** (Dolmenmaster's job 3,
   // 2026-09-03): finding food is one roll for the travelling group, and the
   // question this list answers is *whose* Survival is used — which is a
   // character the person pressing actually plays. The Referee owns every actor,

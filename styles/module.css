@@ -67,7 +67,7 @@
      Derived readings, flavour text, an item description, the type a zone gets
      from its row. It never means emphasis; bold does that. */
   /* **Signika, because it is already on every machine that runs Foundry.**
-     Leander asked for a face without serifs (2026-08-31). The choice was not
+     Dolmenmaster asked for a face without serifs (2026-08-31). The choice was not
      which sans is prettiest but which one is certainly there: a webfont means a
      fetch the table waits on and a blocked CDN nobody can debug mid-session,
      and a bare `sans-serif` means the module looks different on every player's
@@ -84,7 +84,7 @@
      — so a title costs no fetch either. A condensed display face against a
      grotesque text face is the ordinary pairing, and it gives back the bit of
      character the module lost with Georgia without falling out of the
-     application again (Leander, 2026-08-31).
+     application again (Dolmenmaster, 2026-08-31).
 
      Titles only. It is narrow and its capitals are tall, which reads well large
      and poorly small, so section headings stay in the text face. */
@@ -102,7 +102,7 @@
   /* A mark at the head of a row: a tick, a category icon, a die. Fixed,
      because Font Awesome glyphs are not one width and a row whose mark is
      content-sized moves everything after it the moment the mark changes —
-     which is what ticking a step does (Leander, 2026-09-01: the camp steps
+     which is what ticking a step does (Dolmenmaster, 2026-09-01: the camp steps
      *"shiften die icons und texte etwas hin und her"*). */
   --dw-mark-lane: 14px;
   --dw-control-h: 24px;   /* input, select, and anything that sits beside */
@@ -110,7 +110,7 @@
      whatever it counts. A plain quantity is "3" and a fill level is "7/20",
      and while their lanes were 20px and 28px the two buttons landed in
      different columns on neighbouring rows -- which is exactly what reads as
-     "not aligned" when you look down a list (Leander, 2026-08-31). */
+     "not aligned" when you look down a list (Dolmenmaster, 2026-08-31). */
   --dw-count-lane: 34px;
   /* minus + number + plus, with the two 2px gaps between them. Derived rather
      than typed, because the two lanes that hold this were 62px and 74px --
@@ -122,7 +122,7 @@
      Level 15 magician is 1,220,000. These three lanes are what the XP ledger
      stands on, and they are named here rather than typed into its own rules so
      that the head and every row keep agreeing — the same reason the count lane
-     above exists (Leander, 2026-09-02: *"die Eingabefelder sind zu klein"*). */
+     above exists (Dolmenmaster, 2026-09-02: *"die Eingabefelder sind zu klein"*). */
   --dw-xp-entry-lane:  150px; /* a box somebody types six figures into         */
   --dw-xp-figure-lane:  96px; /* a six-figure reading, signed, in tabular digits */
   --dw-xp-mod-lane:     84px; /* a percentage box and its sign                  */
@@ -168,7 +168,7 @@
 
   /* The gap between the lanes of a list row -- the text on the left, the count
      controls and notes, and the value and buttons on the right. One number, so
-     the three read as evenly spaced (Leander, 2026-08-31). Named through the
+     the three read as evenly spaced (Dolmenmaster, 2026-08-31). Named through the
      ladder, because a row's lanes are controls standing in a row. */
   --dw-row-gap: var(--dw-space-4);
   --dw-roll-lane: 68px;   /* a d20 and the word "Roll"                    */
@@ -291,7 +291,7 @@ body {
    `font-family` of its own an h2 falls through to core's own `h2` rule, which
    is Amiri in one theme, Bruno Ace in another and the grotesque in a third — so
    the module's headings changed face with the Foundry theme and nobody had
-   decided anything (Leander, 2026-08-31: *"die Überschrift der einzelnen
+   decided anything (Dolmenmaster, 2026-08-31: *"die Überschrift der einzelnen
    fenster ist eine andere schriftart?"*). */
 .dolmenwood-party-inventory h2 {
   margin: 0;
@@ -312,7 +312,7 @@ body {
    lot. They were four different arrangements before — the shop had an icon and
    a title, the inventory had a bare name, the market drew its own second line
    under the first, and the inn had no title at all for the Referee but an
-   input, a percentage and four quality buttons on one row (Leander,
+   input, a percentage and four quality buttons on one row (Dolmenmaster,
    2026-08-31: *"bei der Überschrift bzw. dem ganzen oberen bereich fängt es
    an"*).
 
@@ -356,7 +356,7 @@ body {
    default theme and something else elsewhere. So a section heading was wearing
    the *title* face at section size, and changing face with the Foundry theme —
    the same fault `h2` was given a rule for on 2026-08-31, one level down
-   (Leander, 2026-09-05: *"'vorgangsprotokoll' ist nicht in der richtigen
+   (Dolmenmaster, 2026-09-05: *"'vorgangsprotokoll' ist nicht in der richtigen
    Schrift"*).
 
    Named on the headings themselves rather than inherited: core names `h3` and
@@ -460,7 +460,7 @@ body {
 
 /* ─── The speed readout ─────────────────────────────────────────────────────
    Under the load bars, because it is what the load bars come to: the pace this
-   character marches at, and the arithmetic that produced it (Leander,
+   character marches at, and the arithmetic that produced it (Dolmenmaster,
    2026-08-31: *"es muss halt übersichtlich und verständlich sein, die
    Ausgangsweight vor mali muss gut erkennbar sein und dann natürlich das
    endresultat"*).
@@ -639,13 +639,13 @@ body {
   gap: var(--dw-space-5);
   /* The break between the summary and the list of zones. It hangs off the
      summary rather than off the zones, so it falls above the first zone and
-     nowhere else — the zones stay evenly spaced among themselves (Leander,
+     nowhere else — the zones stay evenly spaced among themselves (Dolmenmaster,
      2026-08-31: *"nicht zwischen den einzelnen Zones sondern nur über der
      ersten zone"*). */
   margin-bottom: var(--dw-space-5);
 }
 
-/* **One box, drawn here and only here** (Leander, 2026-08-31: *"der Weight block
+/* **One box, drawn here and only here** (Dolmenmaster, 2026-08-31: *"der Weight block
    und die Coins teilen sich dann die gleiche reihe, sollten gleich hoch sein und
    beide von einem Kasten (gleichfarbig hinterlegt) umgeben sein"*).
 
@@ -688,7 +688,7 @@ body {
   background: none;
 }
 
-/* **The convoy has the row to itself** — nothing else stands in it (Leander,
+/* **The convoy has the row to itself** — nothing else stands in it (Dolmenmaster,
    2026-08-31). It answers a different question from the two boxes below: what
    the whole party marches at, not what this character carries. That is why it
    is no longer fenced off by a hairline inside the load cell; a row of its own
@@ -729,7 +729,7 @@ body {
 }
 
 /* **Narrow the window and it scrolls sideways, as the party window does**
-   (Leander, 2026-08-31: *"das inventar verhält sich seltsam, wenn man das
+   (Dolmenmaster, 2026-08-31: *"das inventar verhält sich seltsam, wenn man das
    fenster verschmälert… so wie das party inventory, da muss man dann scrollen
    nach links und rechts"*).
 
@@ -750,7 +750,7 @@ body {
 }
 
 /* The name and its buttons are a heading, not the first line of the summary, so
-   they are given the room to read as one (Leander, 2026-08-31: *"etwas mehr
+   they are given the room to read as one (Dolmenmaster, 2026-08-31: *"etwas mehr
    Abstand zwischen der Reihe mit dem Spielernamen und dem was darunter kommt"*).
    On top of the column gap, not instead of it. */
 .inv-header {
@@ -784,7 +784,7 @@ body {
   justify-content: space-between;
   /* The h3 carries flex:1, so everything after it is pushed hard right and,
      with no gap, the double-team button sat against the capacity it changes
-     (Leander, 2026-08-30). One gap here spaces the whole row -- handle, title,
+     (Dolmenmaster, 2026-08-30). One gap here spaces the whole row -- handle, title,
      shared badge, team toggle, capacity -- instead of one margin per case. */
   gap: var(--dw-space-5);
   background: linear-gradient(135deg, var(--dw-primary) 0%, var(--dw-secondary) 100%);
@@ -1105,7 +1105,7 @@ body {
 .party-toolbar {
   /* The convoy badge grew with the type scale and this row had nowhere to put
      the extra width: with no wrap, the buttons go off the right edge rather
-     than moving down (Leander, 2026-08-30). Wrapping costs nothing while there
+     than moving down (Dolmenmaster, 2026-08-30). Wrapping costs nothing while there
      is room and is the only thing that can happen when there is not. */
   flex-wrap: wrap;
 }
@@ -1580,7 +1580,7 @@ body {
 }
 
 /* **The row wraps.** Seven buttons beside a search box fit in English and did
-   not in German, where the same labels are half again as long (Leander,
+   not in German, where the same labels are half again as long (Dolmenmaster,
    2026-09-05: "die spalte mit bezahlbar etc. ist zu lang"). Wrapping is the
    fix rather than shorter words alone: the next language, or one more button,
    would put it back. The search box keeps a floor so it cannot be squeezed to
@@ -1935,7 +1935,7 @@ body {
 /* **Everything tied at the pace, on exactly one line.** Ties are the normal
    case — speeds come from a table of four tiers — so this is usually several
    names, and on a narrow window it is cut with an ellipsis rather than allowed
-   to wrap or to stretch the window (Leander, 2026-08-31: *"es sollte aber
+   to wrap or to stretch the window (Dolmenmaster, 2026-08-31: *"es sollte aber
    maximal eine zeile bleiben, also wenn es sich staut, vielleicht mit '...'
    abkürzen"*). Nothing is lost by the cut: the tooltip carries the full list,
    with the owner of every animal in it. */
@@ -2407,7 +2407,7 @@ body {
 
    It used to be absolutely positioned at top 8px / right 12px, which is exactly
    where the header keeps the capacity figure — so the two sat on top of each
-   other (Leander, 2026-08-31). Nothing had to change for that to happen; they
+   other (Dolmenmaster, 2026-08-31). Nothing had to change for that to happen; they
    were aimed at the same spot from the start, and a fixed offset cannot get out
    of the way of a number that grows.
 
@@ -3260,7 +3260,7 @@ body {
 
    They were two different strips doing that job. They are one now, and only the
    tint differs — loot's says whether the party can see it yet, so it means
-   something there and stays (Leander, 2026-08-31: *"sie sollten untereinander
+   something there and stays (Dolmenmaster, 2026-08-31: *"sie sollten untereinander
    vielleicht ähnlicher aussehen"*). */
 .loot-status,
 .trash-toolbar {
@@ -3809,7 +3809,7 @@ body {
    window was set in Georgia and the day bar, the sheet, the shop and the inn
    simply inherited whatever Foundry was using. They agree now — and they agree
    because each says so, not because the host happens to be running the same
-   font this week (Leander, 2026-08-31: a face without serifs). */
+   font this week (Dolmenmaster, 2026-08-31: a face without serifs). */
 .day-bar-root,
 .party-overview,
 .player-inventory,
@@ -3856,7 +3856,7 @@ body {
      an `auto` label column, which means each label column was as wide as its own
      word -- "Hex" short, "Settlement" long -- so the boxes stepped in and out
      down the two lines and the gap before each one looked different even though
-     it was always 4px (Leander, 2026-08-31).
+     it was always 4px (Dolmenmaster, 2026-08-31).
 
      Sized for the longest of the six, which is Settlement. The label is clipped
      rather than allowed to overflow, so a longer one added later degrades into
@@ -3961,7 +3961,7 @@ body > #dolmenwood-day-bar {
 
 .day-bar-shortcuts /* **A place that is shut is still a place.** Faded rather than gone, so a
    player can see there is an inn or a shop and that it is not open yet — taking
-   the icon away says it does not exist (Leander, 2026-09-01). Disabled as well
+   the icon away says it does not exist (Dolmenmaster, 2026-09-01). Disabled as well
    as faded, because a door that looks shut and opens anyway is worse than
    either, and `not-allowed` says so on the way past. */
 .day-bar-icon-btn.is-shut,
@@ -4077,7 +4077,7 @@ body > #dolmenwood-day-bar {
    the Campaign Book answers for that hex; the line under that is what the
    Referee sets, ordered by how often a hand goes to it. Laid out as one uniform
    grid of seven, the field nobody ever touches looked exactly like the one that
-   is changed on every move (Leander, 2026-08-31).
+   is changed on every move (Dolmenmaster, 2026-08-31).
 
    Still a grid, and still for the old reason: a long town name must not be able
    to shuffle the field beside it sideways. Column one is the hex block; columns
@@ -4155,7 +4155,7 @@ body > #dolmenwood-day-bar {
   min-width: 0;
 }
 
-/* **Right-aligned against the box** (Leander, 2026-08-31). A fixed label column
+/* **Right-aligned against the box** (Dolmenmaster, 2026-08-31). A fixed label column
    makes every control start at the same place, which is what was wanted — but
    left-aligned it also left a pool of empty space after the short words, so
    "Hex" floated a long way from its own box while "Settlement" sat right
@@ -5009,7 +5009,7 @@ body > #dolmenwood-day-bar {
    tick was a bare `<i>` and it had no die at all. The bare icon was eight
    pixels narrower than the button beside it and the missing die was a whole
    lane, so every plain row's icon and text sat left of every rolling row's,
-   and the list read as a column that could not make up its mind (Leander,
+   and the list read as a column that could not make up its mind (Dolmenmaster,
    2026-09-01: *"bei den camp actions shiften die icons und texte hin und
    her"*).
 
@@ -5409,7 +5409,7 @@ span.day-bar-panel-tick {
    of its own at the left of the row, as tall as both lines, fenced off from
    them by a rule — the number, the crosshairs that teach the map to read it off
    the token, and the page it is written up on, which are three parts of one
-   answer rather than three settings (Leander, 2026-08-31: *"die Nummer, der
+   answer rather than three settings (Dolmenmaster, 2026-08-31: *"die Nummer, der
    Knopf zum kalibrieren und die seitenzahl sind ja irgendwie für sich
    stehend"*).
 
@@ -6007,7 +6007,7 @@ span.day-bar-panel-tick {
    All three were written as inline `style=` attributes on the elements
    themselves, which is the same answer put where the next person cannot find
    it — and where it cannot be corrected once for every dialog at a time
-   (Leander, 2026-09-05: the add-line dialog's "texte etwas unschön
+   (Dolmenmaster, 2026-09-05: the add-line dialog's "texte etwas unschön
    formatiert"). */
 
 /* The opening line: what is being bought, and on what terms. */
@@ -6172,7 +6172,7 @@ span.day-bar-panel-tick {
 /* A row that is somebody else's, or one already rolled tonight. **Dimmed, not
    dropped**: the night is a thing the whole party does, and a player who saw
    only their own row could not tell whether anybody else had bedded down
-   (Leander, 2026-09-03). Still legible — the point is to be read. */
+   (Dolmenmaster, 2026-09-03). Still legible — the point is to be read. */
 .dw-sleep-row.is-locked > * {
   opacity: 0.55;
 }
@@ -6197,7 +6197,7 @@ span.day-bar-panel-tick {
 /* What the party owns, above the list. Its own line because it governs every
    row below it rather than belonging to any one of them — and it is the counts
    alone: where they are counted from is not something a Referee needs told
-   every night (Leander, 2026-09-03). The greyed-out tick explains itself on
+   every night (Dolmenmaster, 2026-09-03). The greyed-out tick explains itself on
    hover, where an explanation belongs. */
 .dw-sleep-stock {
   display: flex;
@@ -6548,7 +6548,7 @@ span.day-bar-panel-tick {
    A plain item counts quantity, a quiver counts what is left in it, and a
    bundle folds the two into one — so a row draws one control, the other, or
    neither. While the missing one simply vanished, the minus of one row sat
-   over the plus of the next and the list read as ragged (Leander, 2026-08-31:
+   over the plus of the next and the list read as ragged (Dolmenmaster, 2026-08-31:
    "die - Zahl + sind nicht mehr aligned").
 
    Two columns of exactly the control width, always, empty when the row has
@@ -6573,14 +6573,14 @@ span.day-bar-panel-tick {
 /* The name is the elastic part of the row, so its box ends exactly where the
    first control begins and the text ran right up to the minus. A lane of its
    own to breathe in, so it wraps before it gets there rather than after
-   (Leander, 2026-08-31: "den text links bitte nicht so dicht an das - heran"). */
+   (Dolmenmaster, 2026-08-31: "den text links bitte nicht so dicht an das - heran"). */
 /* **The row is two things: the text, and everything else.**
 
    The name is the only elastic part and takes whatever the window leaves it, so
    it is what scales when the window is resized. Everything else lives in
    .item-controls, which is a fixed width built out of fixed parts — that is what
    makes the minus, the number, the plus, the notes box and the value each stand
-   in one column all the way down the list (Leander, 2026-08-31).
+   in one column all the way down the list (Dolmenmaster, 2026-08-31).
 
    The padding is the room the text needs to wrap in BEFORE it reaches the minus,
    rather than running up against it. */
@@ -6661,7 +6661,7 @@ span.day-bar-panel-tick {
 /* **An absent button still owns its place in the line.**
 
    This is the whole answer to "the roll button moves when the row happens to be
-   a spell" (Leander, 2026-08-31): a control that appears on some rows and not
+   a spell" (Dolmenmaster, 2026-08-31): a control that appears on some rows and not
    others must leave its column standing, or every row below reads as crooked.
    The module had this idea twice under two names and two sizes -- .icon-slot at
    a hard 22px here and .inn-action-empty at 1px in the inn. One primitive now,
@@ -6730,7 +6730,7 @@ span.day-bar-panel-tick {
    so dragging the sheet narrower did nothing to them and the six ability
    columns simply got thinner and thinner until they held one digit each. They
    only ever fired when the whole Foundry window was under 780px, which is not
-   a thing that happens at a table (Leander, 2026-08-31: the sheet *"verhält
+   a thing that happens at a table (Dolmenmaster, 2026-08-31: the sheet *"verhält
    sich seltsam, wenn man das fenster verschmälert"*).
 
    And below the floor, it scrolls sideways rather than reflowing further —
@@ -6906,7 +6906,7 @@ span.day-bar-panel-tick {
 /* **Stretch, not flex-start.** The portrait is sized by the column beside it
    rather than by a number: it runs from the top of the name to the foot of the
    moon sign, which is the last thing in that column, so the two finish on the
-   same line however tall the identity block turns out to be (Leander,
+   same line however tall the identity block turns out to be (Dolmenmaster,
    2026-08-31). A typed height would have to be re-typed every time a field is
    added to the block. */
 .dw-sheet-head {
@@ -6925,7 +6925,7 @@ span.day-bar-panel-tick {
    two things that can help instead: the picture at its own size, and a button
    to choose a bigger file. */
 /* Square, at whatever size the identity block beside it turns out to be
-   (Leander, 2026-08-31: *"bitte mache es wieder quadratisch, aber die höhe
+   (Dolmenmaster, 2026-08-31: *"bitte mache es wieder quadratisch, aber die höhe
    passt so"*).
 
    **The width is set from JavaScript, and it has to be.** A flex row cannot
@@ -7119,7 +7119,7 @@ span.day-bar-panel-tick {
   opacity: 0.75;
 }
 
-/* Two rows of sections, and each row says how it is divided (Leander,
+/* Two rows of sections, and each row says how it is divided (Dolmenmaster,
    2026-08-28). Fixed column counts rather than `auto-fit`, for the same reason
    the fields are: the point is that the cards are the same width as each other,
    which auto-fit gives up on the moment one of them holds more. */
@@ -7294,7 +7294,7 @@ span.day-bar-panel-tick {
 
 /* ── The skill targets: two columns of three ── */
 
-/* *"Mehr als 6 wird niemand haben"* (Leander, 2026-08-28), so the section is
+/* *"Mehr als 6 wird niemand haben"* (Dolmenmaster, 2026-08-28), so the section is
    built to hold exactly six and to be the same size whether or not it does —
    which is what lets it and Experience beside it be pinned to one height.
    An ordinary row-major grid: the context hands the lanes over woven, printed
@@ -7545,7 +7545,7 @@ span.day-bar-panel-tick {
    text glyph rather than an icon, on a parchment ground of its own — and with
    no `color` of its own it fell through to Foundry's, which is near-white in
    some themes. The minus was there all along and simply could not be seen, so
-   the control read as an empty box (Leander, 2026-09-03). The same omission had
+   the control read as an empty box (Dolmenmaster, 2026-09-03). The same omission had
    already cost a round on the XP window's inputs; anything that names a
    background names an ink.
 
@@ -7690,7 +7690,7 @@ span.day-bar-panel-tick {
 /* **The open panel floats; it does not push.** The portrait beside the identity
    block is sized from that block's own height — it is drawn square, with the
    fields' height as its side — so a panel that opened *in* the layout made the
-   picture grow to match and swallow half the window (Leander, 2026-09-03). A
+   picture grow to match and swallow half the window (Dolmenmaster, 2026-09-03). A
    panel laid over the sheet takes no height at all, so nothing below it moves
    and the portrait never notices it opened. */
 .dw-field-langs {
@@ -7837,7 +7837,7 @@ span.day-bar-panel-tick {
    every `button` with `height: var(--button-size)` and the same min-height —
    two fixed ems — and a rule that takes four lines to say then spills out of
    its own box and over the sign below it (*"text überlagert sich teilweise"*,
-   Leander, 2026-09-03). Core outranks a plain class on anything it names, which
+   Dolmenmaster, 2026-09-03). Core outranks a plain class on anything it names, which
    this project has now learned twice: see the number inputs. */
 .dw-moon-sign {
   display: grid;
@@ -7995,7 +7995,7 @@ span.day-bar-panel-tick {
 
 /* The head is a label, not a section of its own: this window has one job and
    the title is the smallest part of doing it, so it gives its space back to the
-   table (Leander, 2026-09-02: *"oben ist viel zu viel platz"*). */
+   table (Dolmenmaster, 2026-09-02: *"oben ist viel zu viel platz"*). */
 .xp-window .dw-window-head { padding-bottom: var(--dw-space-3); }
 
 /* Two states of one control, so they are one control: the pressed side takes
@@ -8053,7 +8053,7 @@ span.day-bar-panel-tick {
    moves nothing: the band keeps its height and the table below it stays where
    the eye left it. Before this the hint was a flex child of the column and its
    `flex-basis` became a *height* — 240px of nothing, which pushed the entry
-   fields off the bottom of the window (Leander, 2026-09-02: *"wenn man auf per
+   fields off the bottom of the window (Dolmenmaster, 2026-09-02: *"wenn man auf per
    character klickt, rutscht die eingabemaske nach unten"*). */
 .xp-total-note,
 .xp-hint {
@@ -8083,7 +8083,7 @@ span.day-bar-panel-tick {
 
    **The tick sits in a control lane, not a mark lane.** A checkbox is a control
    about 14px wide and the mark lane is 14px of glyph, which left it touching
-   the name (Leander, 2026-09-02: *"die häkchenfelder haben zu geringen abstand
+   the name (Dolmenmaster, 2026-09-02: *"die häkchenfelder haben zu geringen abstand
    zum namen"*). The lane is the module's icon-button width now and the column
    gap is a rung wider. */
 .xp-row {
@@ -8153,7 +8153,7 @@ span.day-bar-panel-tick {
 }
 
 /* **The boxes a Referee actually types into**, and the ones that kept coming
-   out too small (Leander, twice).
+   out too small (Dolmenmaster, twice).
 
    Widening the lane alone did not fix it, because most of a number box is not
    the number: a spinner is about 16px of arrows nobody has ever clicked to
@@ -8176,7 +8176,7 @@ span.day-bar-panel-tick {
      one theme and mid-grey in another — on a near-white field that is either
      unreadable or nearly so, and it changes under the Referee without anybody
      touching the module. The attribute sheet learned this the same way and
-     names it for every field on the page; this window had not (Leander,
+     names it for every field on the page; this window had not (Dolmenmaster,
      2026-09-02: *"die schriftfarbe auf dem hintergrund"*). */
   color: var(--dw-text);
   border: 1px solid var(--dw-line);
@@ -8218,7 +8218,7 @@ span.day-bar-panel-tick {
    specificity a plain class cannot beat — so `width` on `.xp-base-input` was
    simply never applied, whatever number it held, and the field stayed at the
    browser's own default. That is why it fitted two digits after three goes at
-   widening it (Leander, 2026-09-02).
+   widening it (Dolmenmaster, 2026-09-02).
 
    Core sets no `flex` on those inputs, so a basis of nought with room to grow
    fills the lane and wins outright — no `!important` anywhere. The zone coin
@@ -8283,7 +8283,7 @@ span.day-bar-panel-tick {
 
 /* **What was earned and what it adds up to are two different subjects**, so the
    step between them is a section gap and a hairline rather than the same gap
-   that separates one figure from the next (Leander, 2026-09-02: *"zwischen
+   that separates one figure from the next (Dolmenmaster, 2026-09-02: *"zwischen
    credited und new total ist der abstand zu gering"*).
 
    Wrapping, because a row can carry two chips at once — passing the threshold
@@ -8413,7 +8413,7 @@ span.day-bar-panel-tick {
 
 /* **One button per route, and the button is the whole row.** It was a button
    beside a strip of terms beside a reason, on a grid — three things competing
-   for one line, which is what overlapped (Leander, 2026-09-02: *"alles
+   for one line, which is what overlapped (Dolmenmaster, 2026-09-02: *"alles
    überlagert sich"*). Now there are three lanes inside one control: the mark,
    the name, and the one fact that changes — how long it takes, or why it is
    shut. The price is in the tooltip and again in the confirmation. */

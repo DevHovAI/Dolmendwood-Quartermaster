@@ -46,7 +46,7 @@ export type ClassKey =
  * Aptitude are the system's business, not this module's.
  *
  * **The aliases are a kindness, not a rule.** OSE keeps the Class as free text
- * and Leander's table plays in German, so a field reading "Kämpfer" should not
+ * and Dolmenmaster's table plays in German, so a field reading "Kämpfer" should not
  * silently fall back to "no modifier known". They are matched as whole words
  * and longest-first, because `zauberer` sits inside `verzauberer` and would
  * otherwise turn every enchanter into a magician.
@@ -208,7 +208,7 @@ export interface MemberModifier {
  * into "spells prepared" on the attribute sheet, so a Class this module does
  * not know, a ruling at the table or an item that grants casting all still
  * work. Nought and no casting Class means the morning does not ask about them
- * at all (Leander, 2026-09-03: *"nur die angezeigt werden, die eine class mit
+ * at all (Dolmenmaster, 2026-09-03: *"nur die angezeigt werden, die eine class mit
  * spells spielen"*).
  */
 export function preparesSpells(actor: Actor): boolean {

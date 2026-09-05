@@ -52,7 +52,7 @@ export function definitionFor(
 /**
  * Fill a row-only definition out to the shape the type promises.
  *
- * **This is where a real crash came from** (Leander, 2026-08-30): the Add Custom
+ * **This is where a real crash came from** (Dolmenmaster, 2026-08-30): the Add Custom
  * Animal dialog writes a `Partial<ItemDefinition>` with no `cost`, the row has an
  * empty `definitionId` so there is no catalogue entry to merge over it, and this
  * function used to hand that partial straight back through an `as` cast. The cast

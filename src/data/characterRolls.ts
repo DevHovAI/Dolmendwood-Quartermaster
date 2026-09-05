@@ -87,7 +87,7 @@ export function buildRollData(actor: Actor): Record<string, unknown> {
  * them apart.
  *
  * **They do not reach the same rolls, and lumping them was a mistake** — caught
- * by Leander asking what hunger even affects (2026-08-25):
+ * by Dolmenmaster asking what hunger even affects (2026-08-25):
  *
  * - **Exhaustion** is "a -1 penalty to Attack **and Damage** Rolls until they
  *   rest", cumulative to -4 (Player's Book p151).

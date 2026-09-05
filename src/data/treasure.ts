@@ -231,7 +231,7 @@ export const ART_WEIGHT = 10;
  * **The weights are this module's, not the book's.** The book gives one figure
  * and then hands the rest over: *"Small items (e.g. pieces of jewellery) weigh
  * 10 coins... The Referee should judge the weight of larger items."* A tapestry
- * that weighed the same as a comb was Leander's catch (2026-08-28), and a
+ * that weighed the same as a comb was Dolmenmaster's catch (2026-08-28), and a
  * hoard whose weight is a lie is worse than one with no weight at all, because
  * the party carries it home without noticing.
  *

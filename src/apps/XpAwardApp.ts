@@ -11,7 +11,7 @@ import { t, tn } from "../helpers/i18n";
 /**
  * The XP window: what the party earned, and what each character actually gets.
  *
- * **Leander's ask, 2026-09-02:** *"ich hätte gerne ein fenster, in dem ich die
+ * **Dolmenmaster's ask, 2026-09-02:** *"ich hätte gerne ein fenster, in dem ich die
  * neu hinzugekommenen XP eintragen kann, sodass sie direkt mit dem korrekten
  * Modifier pro Spieler gutgeschrieben werden."* The arithmetic is a book rule
  * with two steps most tables get wrong at the table — divide evenly, then apply
@@ -264,7 +264,7 @@ export class XpAwardApp extends foundry.applications.api.HandlebarsApplicationMi
    * `updateActor` hook re-renders the inventories, the loot, the day bar and
    * the attribute sheet, and every one of those sits behind an early return
    * that only lets *flag* writes through. A share lives in the game system's
-   * data, so it never reached even that far (Leander, 2026-09-04: *"wenn ich 50
+   * data, so it never reached even that far (Dolmenmaster, 2026-09-04: *"wenn ich 50
    * eintrage passiert nix"*).
    *
    * **A window being worked in is left alone.** The Referee sits in here typing
@@ -433,7 +433,7 @@ function card(rows: XpRow[]): string {
     .map((r) => {
       const parts: string[] = [];
       // The share is printed as the percentage it actually is. It was "half
-      // share of …" at any share other than 100, so 75% read as half (Leander,
+      // share of …" at any share other than 100, so 75% read as half (Dolmenmaster,
       // 2026-09-04: *"muss ja nicht die hälfte sein"*).
       if (r.isHalfShare)
         parts.push(t("DOLMENWOOD.Xp.Card.Share", { pct: r.sharePct, base: r.award.base }));

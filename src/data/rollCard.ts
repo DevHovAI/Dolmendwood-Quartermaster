@@ -28,7 +28,7 @@ export const total = (roll: Roll): number => roll.total ?? 0;
 /**
  * A card the whole table sees.
  *
- * **Which rolls are public is a ruling, not a default**, and Leander made it:
+ * **Which rolls are public is a ruling, not a default**, and Dolmenmaster made it:
  * the weather, the morning's healing and spells, the camp's work and the night's
  * sleep are things the characters live through and would know about, so they are
  * announced. What stays whispered is what the party is *not* meant to know —
@@ -55,7 +55,7 @@ export async function whisperToGMs(content: string, rolls: Roll[] = []): Promise
   await ChatMessage.create({
     content,
     // **The dice are deliberately NOT attached to this document**, and that is
-    // the whole trick (Leander, 2026-09-04, after the first attempt failed).
+    // the whole trick (Dolmenmaster, 2026-09-04, after the first attempt failed).
     // `ChatMessage#visible` reads:
     //
     //     if ( this.whisper.length ) { if ( this.isRoll ) return true; ... }
