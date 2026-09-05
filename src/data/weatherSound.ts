@@ -171,6 +171,45 @@ type PlaylistDoc = {
   stopSound: (s: SoundDoc) => Promise<unknown>;
 };
 
+/**
+ * What the listener's own channel sliders stand at.
+ *
+ * **The commonest reason for silence is not this module at all.** Our loops
+ * play on the environment channel on purpose, so a table can keep weather
+ * under a voice — and a slider at zero silences every ambient sound in the
+ * world, ours among them. The report has to be able to say so, or the next
+ * hour goes into the wrong file.
+ *
+ * The key has moved between versions, so each is tried and the first that
+ * answers wins. An unregistered core setting throws rather than returning
+ * undefined, hence the catch around each one.
+ */
+function channelVolumes(): Record<string, unknown> {
+  const g = game as Game;
+  const read = (key: string): unknown => {
+    try {
+      return g.settings?.get("core", key as never);
+    } catch {
+      return undefined;
+    }
+  };
+  const out: Record<string, unknown> = {};
+  for (const key of ["globalAmbientVolume", "globalPlaylistVolume", "globalInterfaceVolume"]) {
+    const v = read(key);
+    if (v !== undefined) out[key] = v;
+  }
+  return out;
+}
+
+/** Which of our loops the playlist currently believes are running. */
+function playingNow(): string[] {
+  const playlist = findPlaylist();
+  if (!playlist) return [];
+  const names: string[] = [];
+  for (const sound of playlist.sounds) if (sound.playing) names.push(sound.name ?? "?");
+  return names;
+}
+
 /** Whether the table has the module whose files these are. */
 export function simpleWeatherPresent(): boolean {
   const mod = (game as Game).modules?.get(SW_MODULE) as { active?: boolean } | undefined;
@@ -398,6 +437,8 @@ export async function weatherSoundReport(): Promise<Record<string, unknown>> {
     playlistFound: !!findPlaylist(),
     lastSyncAt,
     lastError,
+    playing: playingNow(),
+    channels: channelVolumes(),
   };
   console.log(`${MODULE_ID} | weather sound`, report);
 
@@ -413,6 +454,19 @@ export async function weatherSoundReport(): Promise<Record<string, unknown>> {
     ["Playlist exists", yes(report.playlistFound)],
     ["Last checked at", lastSyncAt ? escapeHTML(lastSyncAt) : "<strong>never ran</strong>"],
     ["Last error", lastError ? `<strong>${escapeHTML(lastError)}</strong>` : "none"],
+    [
+      "Playing right now",
+      playingNow().length ? escapeHTML(playingNow().join(", ")) : "<strong>nothing</strong>",
+    ],
+    [
+      "Your ambient volume",
+      ((): string => {
+        const amb = channelVolumes().globalAmbientVolume;
+        if (amb === undefined) return "unknown";
+        const pct = Math.round(Number(amb) * 100);
+        return pct === 0 ? `<strong>${pct}% — muted</strong>` : `${pct}%`;
+      })(),
+    ],
   ];
 
   await whisperToGMs(
