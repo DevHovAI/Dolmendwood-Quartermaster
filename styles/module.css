@@ -8656,3 +8656,25 @@ span.day-bar-panel-tick {
 .dw-report tr:last-child td {
   border-bottom: none;
 }
+
+/* The audition card: every sounding weather row as a button, wrapped into as
+   many lines as it takes. Small and quiet — this is a workbench, not a card
+   the table looks at. */
+.dw-weather-auditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dw-space-2);
+  margin-bottom: var(--dw-space-4);
+}
+
+/* Core gives every button a fixed single-line height and its own padding;
+   these are chips, so both have to be named here. */
+.dw-weather-audition {
+  height: auto;
+  min-height: 0;
+  width: auto;
+  flex: 0 0 auto;
+  padding: var(--dw-space-2) var(--dw-space-3);
+  font-size: var(--dw-text-sm);
+  line-height: 1.2;
+}

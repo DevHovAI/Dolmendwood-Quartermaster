@@ -24,7 +24,13 @@ import { hexOf, isPartyToken, tokenPoint, refusePlaceIfAway, canReachLoot } from
 import { bookHexAt, followsToken } from "./data/hexGrid";
 import { moveAccount, type MovedToken } from "./data/hexTravel";
 import { syncWeatherFx } from "./data/weatherFx";
-import { syncWeatherSound, simpleWeatherPresent, weatherSoundReport } from "./data/weatherSound";
+import {
+  syncWeatherSound,
+  simpleWeatherPresent,
+  weatherSoundReport,
+  weatherSoundMenu,
+  activateWeatherSoundButtons,
+} from "./data/weatherSound";
 import { installTravelRuler } from "./apps/TravelRuler";
 import { hexInfo } from "./data/hexes";
 import { whisperToGMs } from "./data/rollCard";
@@ -649,6 +655,9 @@ Hooks.once("ready", async () => {
       // legitimate one, so the only way to tell a fair day from a broken
       // setting is to ask.
       weatherSound: () => weatherSoundReport(),
+      // Every sounding row as a button, so a level can be judged without
+      // waiting for the season and the dice to agree.
+      weatherSoundMenu: () => weatherSoundMenu(),
     };
   }
 
@@ -1749,6 +1758,7 @@ function hideFromPlayers(message: unknown, element: HTMLElement): boolean {
 function activateChatButtons(element: HTMLElement): void {
   activateLootChatButtons(element);
   activateEncounterChatButtons(element);
+  activateWeatherSoundButtons(element);
 }
 
 // ─── Module API Functions ─────────────────────────────────────────────────────

@@ -1,7 +1,13 @@
 import { MODULE_ID, SETTINGS } from "../constants";
 import { getDayState } from "./dayDuties";
-import { weatherSky } from "./weather";
+import {
+  weatherSky,
+  weatherEntry,
+  WEATHER_BY_SEASON,
+  type WeatherTableId,
+} from "./weather";
 import { whisperToGMs } from "./rollCard";
+import { t } from "../helpers/i18n";
 import { escapeHTML } from "../helpers/handlebars";
 
 /**
@@ -156,7 +162,10 @@ export function soundsFor(weather: { text: string; effects: unknown[] } | undefi
   // rather than weather.
   if (sky.falls !== "snowstorm") {
     const wind = WIND.find(([re]) => re.test(text));
-    if (wind) out.push({ id: wind[1], pct: 30 });
+    // Raised from 30 on his ear (2026-09-05). Both wind loops move together:
+    // they were set equal, and heavy wind quieter than ordinary wind would be
+    // the wrong way round.
+    if (wind) out.push({ id: wind[1], pct: 40 });
   }
 
   return out;
@@ -519,4 +528,111 @@ export async function weatherSoundReport(): Promise<Record<string, unknown>> {
   );
 
   return report;
+}
+
+// ─── Auditioning ───────────────────────────────────────────────────────────────
+
+/**
+ * Play one row of one table, without rolling for it.
+ *
+ * **Because the honest way to check this is unusable** (Dolmenmaster, 2026-09-05):
+ * *"es ist schwer, alle zu testen, wenn man das richtige würfeln muss"*. There
+ * are twenty-six sounding rows across six tables, and reaching a particular one
+ * by rolling 2d6 in the right season is not a test, it is a wait.
+ *
+ * The day is not touched. This drives the playlist directly, so what you hear
+ * is the same set of loops at the same levels the roll would have produced —
+ * and the next real roll, or Stop, takes it away again.
+ */
+export async function previewWeather(table: WeatherTableId, roll: number): Promise<void> {
+  const g = game as Game;
+  if (!g.user?.isGM) return;
+  const row = weatherEntry(table, roll);
+  if (!row) return;
+  await playLayers(soundsFor({ text: row.text, effects: row.effects }));
+}
+
+/** The half of the sync that only plays — shared by the roll and the preview. */
+async function playLayers(layers: Layer[]): Promise<void> {
+  const playlist = await ensurePlaylist();
+  if (!playlist) return;
+  await ensureSounds(playlist);
+  const byName = new Map<string, number>(layers.map((l) => [SOUNDS[l.id].name, l.pct]));
+  for (const sound of playlist.sounds) {
+    const name = sound.name ?? "";
+    const pct = byName.get(name);
+    if (pct !== undefined) {
+      await sound.update({ volume: gainFor(pct), fade: FADE });
+      if (!sound.playing) await playlist.playSound(sound);
+    } else if (sound.playing) {
+      await playlist.stopSound(sound);
+    }
+  }
+}
+
+/**
+ * A card listing every row that makes a sound, each one a button.
+ *
+ * Twenty-six of the sixty-six. The silent forty are left off on purpose: a
+ * button that plays nothing teaches nothing, and the count at the foot says
+ * they exist.
+ */
+export async function weatherSoundMenu(): Promise<void> {
+  const g = game as Game;
+  if (!g.user?.isGM) return;
+
+  const sections: string[] = [];
+  let sounding = 0;
+  let silent = 0;
+  for (const [table, rows] of Object.entries(WEATHER_BY_SEASON)) {
+    const buttons: string[] = [];
+    for (const row of rows) {
+      const layers = soundsFor({ text: row.text, effects: row.effects });
+      if (!layers.length) {
+        silent++;
+        continue;
+      }
+      sounding++;
+      const what = layers.map((l) => `${l.id} ${Math.round(scaledPct(l.pct))}%`).join(" + ");
+      buttons.push(
+        `<button type="button" class="dw-weather-audition" data-table="${table}" data-roll="${row.roll}"
+                 title="${escapeHTML(what)}">${escapeHTML(row.text)}</button>`
+      );
+    }
+    if (buttons.length)
+      sections.push(
+        `<p class="dw-day-roll-sub">${escapeHTML(table)}</p><div class="dw-weather-auditions">${buttons.join("")}</div>`
+      );
+  }
+
+  await whisperToGMs(
+    `<div class="dw-day-roll">
+      <h3><i class="fas fa-volume-high"></i> ${escapeHTML(t("DOLMENWOOD.Weather.Audition.Title"))}</h3>
+      <p class="dw-day-roll-note">${escapeHTML(t("DOLMENWOOD.Weather.Audition.Hint", { sounding, silent }))}</p>
+      ${sections.join("")}
+      <div class="dw-weather-auditions">
+        <button type="button" class="dw-weather-audition" data-stop="1">${escapeHTML(
+          t("DOLMENWOOD.Weather.Audition.Stop")
+        )}</button>
+      </div>
+    </div>`
+  );
+}
+
+/** Wire the audition card's buttons, the way the encounter card wires its own. */
+export function activateWeatherSoundButtons(html: HTMLElement): void {
+  html.querySelectorAll<HTMLElement>(".dw-weather-audition").forEach((button) => {
+    // Never twice: a render hook can fire more than once for one message.
+    if (button.dataset.dwWired === "1") return;
+    button.dataset.dwWired = "1";
+    button.addEventListener("click", () => {
+      if (button.dataset.stop === "1") {
+        void stopWeatherSound();
+        return;
+      }
+      const table = button.dataset.table as WeatherTableId | undefined;
+      const roll = Number(button.dataset.roll ?? 0);
+      if (table && roll) void previewWeather(table, roll);
+    });
+  });
 }
