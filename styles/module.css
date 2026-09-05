@@ -8630,3 +8630,29 @@ span.day-bar-panel-tick {
   opacity: 0.35;
   cursor: default;
 }
+
+/* A plain two-column readout on a chat card: a label and what it says. Only
+   the weather-sound report uses it, and it is deliberately unstyled beyond
+   legibility — this is a thing you read once when something is wrong, not a
+   card the table looks at every evening. */
+.dw-report {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--dw-text-sm);
+}
+
+.dw-report td {
+  padding: var(--dw-space-2) 0;
+  border-bottom: 1px solid var(--dw-border-light);
+  vertical-align: top;
+}
+
+.dw-report td:first-child {
+  color: var(--dw-tertiary);
+  padding-right: var(--dw-space-4);
+  white-space: nowrap;
+}
+
+.dw-report tr:last-child td {
+  border-bottom: none;
+}

@@ -1,6 +1,8 @@
 import { MODULE_ID, SETTINGS } from "../constants";
 import { getDayState } from "./dayDuties";
 import { weatherSky } from "./weather";
+import { whisperToGMs } from "./rollCard";
+import { escapeHTML } from "../helpers/handlebars";
 
 /**
  * The day's weather, heard as well as seen.
@@ -312,35 +314,68 @@ export async function stopWeatherSound(): Promise<void> {
 
 
 /**
- * Why there is no sound, answered gate by gate.
+ * Why there is no sound, answered gate by gate — as a card in the chat log.
  *
- * Reachable as a macro:
+ * Run it from a macro, with no argument:
  *
  *   game.modules.get("dolmenwood-party-inventory").api.weatherSound()
  *
- * Every condition in `syncWeatherSound` is a silent one — a missing module, a
- * switch that is off, a fair day — and silence is the correct output of three
- * of them. That makes the failure and the success look identical from the
- * outside, which is exactly the shape of bug that eats an evening.
+ * **It whispers rather than logging, and that is the point.** The first cut
+ * wrote to the developer console, which is a fine place for a message nobody
+ * needs and the wrong place for the one message that explains why a feature
+ * is doing nothing: F12 is unbound in the desktop client, and a diagnosis you
+ * cannot reach is not a diagnosis. It still logs as well, for whoever does
+ * have a console open.
+ *
+ * Every gate below produces silence legitimately — a missing module, a switch
+ * that is off, a fair day — so the failure and the success look identical from
+ * the outside. This is the only thing that tells them apart.
  */
-export function weatherSoundReport(): Record<string, unknown> {
+export async function weatherSoundReport(): Promise<Record<string, unknown>> {
   const g = game as Game;
   const weather = getDayState().weather;
-  let setting: unknown = "not registered";
+
+  // A setting that was never registered *throws* on get, which is itself the
+  // answer and the one this whole report was written for.
+  let setting: unknown = "NOT REGISTERED";
   try {
     setting = g.settings?.get(MODULE_ID, SETTINGS.WEATHER_SOUND);
   } catch {
-    /* left as "not registered", which is itself the answer */
+    /* keep the string above */
   }
-  const report = {
+
+  const ids = weather ? soundsFor(weather as never) : [];
+  const report: Record<string, unknown> = {
     isGM: !!g.user?.isGM,
     simpleWeatherInstalled: simpleWeatherPresent(),
     settingOn: setting,
     volumePercent: settingPct(),
     weatherRolled: weather?.text ?? null,
-    soundsForToday: weather ? soundsFor(weather as never) : [],
+    soundsForToday: ids,
     playlistFound: !!findPlaylist(),
   };
   console.log(`${MODULE_ID} | weather sound`, report);
+
+  const yes = (v: unknown) =>
+    v === true ? "yes" : v === false ? "<strong>no</strong>" : escapeHTML(String(v));
+  const rows = [
+    ["You are the Referee", yes(report.isGM)],
+    ["Simple Weather installed", yes(report.simpleWeatherInstalled)],
+    ["Setting switched on", yes(report.settingOn)],
+    ["Volume", `${report.volumePercent}%`],
+    ["Weather rolled today", weather ? escapeHTML(weather.text) : "<strong>none yet</strong>"],
+    ["Loops it maps to", ids.length ? ids.join(", ") : "<strong>none — a silent day</strong>"],
+    ["Playlist exists", yes(report.playlistFound)],
+  ];
+
+  await whisperToGMs(
+    `<div class="dw-day-roll">
+      <h3><i class="fas fa-volume-high"></i> Weather sound</h3>
+      <table class="dw-report">${rows
+        .map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
+        .join("")}</table>
+    </div>`
+  );
+
   return report;
 }
