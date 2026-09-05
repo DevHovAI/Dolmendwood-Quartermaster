@@ -8371,6 +8371,10 @@ span.day-bar-panel-tick {
    the bad ink would read as an error, and it is not one. */
 .xp-remainder.is-over { color: var(--dw-bad-ink); }
 
+/* A forfeited share is the book working, not a mistake, so it reads in the
+   quiet ink rather than the warning one it sits beside. */
+.xp-remainder.is-forfeit { color: var(--dw-ink-faint); }
+
 /* ── Levelling up, on the attribute sheet ──────────────────────────────────────
    Four routes stacked, each one a button with its terms beside it and, where it
    is not open, the reason underneath. A blocked route keeps its full height and

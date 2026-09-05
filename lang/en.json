@@ -71,12 +71,14 @@
   "DOLMENWOOD.Xp.Total.Note.One": "Divided evenly between the {count} counted below, then that character's own modifier.",
   "DOLMENWOOD.Xp.Total.Note.Other": "Divided evenly between the {count} counted below, then each character's own modifier.",
   "DOLMENWOOD.Xp.Total.Reckon": "Press <kbd>Enter</kbd> or click away to reckon it.",
-  "DOLMENWOOD.Xp.Each.Hint": "Type what each one earned in the Earned column. The half share and the Prime Ability modifier are still applied on top — this only skips the dividing.",
+  "DOLMENWOOD.Xp.Each.Hint": "Type what each one earned in the Earned column. The share percentage and the Prime Ability modifier are still reckoned from it — this only skips the dividing.",
 
   "DOLMENWOOD.Xp.Remainder.Label": "{n} left over",
   "DOLMENWOOD.Xp.Remainder.Hint": "What the division could not place, plus anything you took off a row by hand. The book does not say who gets the odd point, so nobody does until you say so.",
   "DOLMENWOOD.Xp.Overspent.Label": "{n} over the total",
   "DOLMENWOOD.Xp.Overspent.Hint": "The shares below add up to more than the party earned, because a row was raised by hand. Nothing stops you — it is only worth knowing.",
+  "DOLMENWOOD.Xp.Forfeited.Label": "{n} forfeited",
+  "DOLMENWOOD.Xp.Forfeited.Hint": "What a share percentage below 100 takes off the shares below. This is not left over for somebody else — a retainer earns half and the other half is simply not earned (Player's Book p25).",
 
   "DOLMENWOOD.Xp.Lane.Character": "Character",
   "DOLMENWOOD.Xp.Lane.Share": "Share",

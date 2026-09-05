@@ -54,6 +54,17 @@
       {{localize "DOLMENWOOD.Xp.Each.Hint"}}
     </span>
     {{/if}}
+
+    {{!-- **Outside the mode switch, because the share rule does not care which
+          mode you are in.** What a retainer's percentage takes off a share is
+          gone rather than left over, so the band says so in its own words
+          instead of letting the total below quietly disagree with the pot
+          above it. --}}
+    {{#if forfeited}}
+    <span class="xp-remainder is-forfeit" title="{{localize "DOLMENWOOD.Xp.Forfeited.Hint"}}">
+      <i class="fas fa-scale-unbalanced"></i> {{localize "DOLMENWOOD.Xp.Forfeited.Label" n=forfeited}}
+    </span>
+    {{/if}}
   </div>
 
   {{#if hasRows}}

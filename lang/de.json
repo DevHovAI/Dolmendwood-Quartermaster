@@ -77,6 +77,8 @@
   "DOLMENWOOD.Xp.Remainder.Hint": "Was die Teilung nicht unterbringen konnte, plus alles, was du von Hand aus einer Zeile genommen hast. Das Buch sagt nicht, wer den überzähligen Punkt bekommt — also bekommt ihn niemand, bis du es sagst.",
   "DOLMENWOOD.Xp.Overspent.Label": "{n} über der Summe",
   "DOLMENWOOD.Xp.Overspent.Hint": "Die Anteile unten ergeben mehr, als die Gruppe verdient hat, weil eine Zeile von Hand erhöht wurde. Nichts hält dich auf — es ist nur gut zu wissen.",
+  "DOLMENWOOD.Xp.Forfeited.Label": "{n} verfallen",
+  "DOLMENWOOD.Xp.Forfeited.Hint": "Was ein Anteil unter 100 % von den Anteilen unten wegnimmt. Das bleibt nicht für jemand anderen übrig — ein Retainer verdient die Hälfte, und die andere Hälfte wird schlicht nicht verdient (Player's Book S. 25).",
 
   "DOLMENWOOD.Xp.Lane.Character": "Charakter",
   "DOLMENWOOD.Xp.Lane.Share": "Anteil",

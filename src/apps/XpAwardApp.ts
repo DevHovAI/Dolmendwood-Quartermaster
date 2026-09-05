@@ -220,6 +220,22 @@ export class XpAwardApp extends foundry.applications.api.HandlebarsApplicationMi
     const awarded = included.reduce((n, r) => n + r.award.award, 0);
     const levelUps = included.filter((r) => r.award.levelUp);
 
+    // **What the share rule takes off the table, which is not the same as what
+    // is left over.** The division hands a retainer a full share and the share
+    // percentage then keeps half of it (Player's Book p25) — the other half is
+    // not waiting to be handed to somebody, it is gone. The remainder is
+    // reckoned from each row's base and so cannot see it: 500 XP with one
+    // retainer read `0 left over` while the footer awarded 450, and the missing
+    // 50 had no name anywhere in the window (Dolmenmaster, 2026-09-04).
+    //
+    // Only the share step counts here. The Prime Ability modifier moves a
+    // character's earnings up as well as down and is already spelled out in
+    // their own row, and the house cap is reported per row where it bites.
+    const forfeited = included.reduce(
+      (n, r) => n + Math.max(0, r.award.base - r.award.shared),
+      0
+    );
+
     return {
       isSplit: this.mode === "split",
       total: this.total,
@@ -228,6 +244,7 @@ export class XpAwardApp extends foundry.applications.api.HandlebarsApplicationMi
       countIn: included.length,
       remainder: left > 0 ? left : 0,
       overspent: left < 0 ? -left : 0,
+      forfeited,
       awarded,
       // Nothing to book is a state worth naming, so the button can say why it
       // is doing nothing rather than appearing broken.
