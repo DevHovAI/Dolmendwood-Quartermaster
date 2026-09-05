@@ -67,6 +67,7 @@ import {
   weatherIcon,
   weatherSky,
   skySummary,
+  weatherText,
 } from "../data/weather";
 import { lostChance } from "../data/gettingLost";
 import { t } from "../helpers/i18n";
@@ -540,7 +541,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
                   })
                 : "") +
               (weatherCost
-                ? " " + t("DOLMENWOOD.DayBar.Budget.Weather", { cost: weatherCost, text: state.weather?.text ?? "" })
+                ? " " + t("DOLMENWOOD.DayBar.Budget.Weather", { cost: weatherCost, text: state.weather ? weatherText(state.weather) : "" })
                 : "") +
               (weatherStopped ? " " + t("DOLMENWOOD.DayBar.Budget.Stopped") : "") +
               (state.travelPointsUsed > budget ? " " + t("DOLMENWOOD.DayBar.Budget.Over") : ""),

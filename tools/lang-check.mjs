@@ -138,6 +138,7 @@ for (const lang of LANGS) {
 // reports the documentation as a bug — which is how this very check first ran.
 const sources = [...walk("src", [".ts"]), ...walk("templates", [".hbs"])];
 const asked = new Map();
+const families = new Map();
 for (const path of sources) {
   const text = readFileSync(path, "utf8")
     .replace(/\{\{!--[\s\S]*?--\}\}/g, "") // {{!-- handlebars block --}}
@@ -148,6 +149,15 @@ for (const path of sources) {
   for (const m of text.matchAll(/["'`](DOLMENWOOD\.[A-Za-z0-9_.]+)["'`]/g)) {
     if (!asked.has(m[1])) asked.set(m[1], path);
   }
+
+  // **A key the code builds rather than writes.** The weather tables ask for
+  // `DOLMENWOOD.Weather.Table.${table}.R${roll}` — sixty-six real keys and not
+  // one literal to match, so without this they all read as unused and a typo
+  // in the pattern would never be caught. The part before the first ${ is the
+  // family; every key under it counts as asked for.
+  for (const m of text.matchAll(/`(DOLMENWOOD\.[A-Za-z0-9_.]*)\${/g)) {
+    if (!families.has(m[1])) families.set(m[1], path);
+  }
 }
 
 const table = tables[BASE];
@@ -157,10 +167,20 @@ for (const [key, path] of asked) {
 }
 console.log(`keys asked for by the code: ${asked.size}`);
 
+const covered = (key) => [...families.keys()].some((p) => key.startsWith(p));
+for (const [prefix, path] of families) {
+  if (!baseKeys.some((k) => k.startsWith(prefix)))
+    fail(`${path} builds keys under ${prefix}, which ${BASE}.json has none of`);
+}
+if (families.size)
+  console.log(
+    `key families built at runtime: ${families.size} (${baseKeys.filter(covered).length} keys)`
+  );
+
 // Unused keys are reported but do not fail: a key may be waiting for the window
 // that will use it, and the 52 keys from v1.x are exactly that.
 const unused = baseKeys.filter(
-  (k) => !asked.has(k) && !asked.has(k.replace(/\.(One|Other)$/, ""))
+  (k) => !asked.has(k) && !asked.has(k.replace(/\.(One|Other)$/, "")) && !covered(k)
 );
 if (unused.length) console.log(`unused keys (not an error): ${unused.length}`);
 

@@ -1,4 +1,5 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { weatherText } from "../data/weather";
 import { t } from "../helpers/i18n";
 import { stepper, wireSteppers } from "../helpers/steppers";
 import { FlagManager } from "../data/FlagManager";
@@ -291,12 +292,13 @@ export async function promptFirewood(): Promise<FirewoodChoice | null> {
       </div>
       <p class="hint">${
         weather
-          ? `Read off this morning's weather — <strong>${escapeHTML(
-              weather.text
-            )}</strong> — which the module scores as ${
-              suggested ? `${suggested} to the roll` : "no penalty"
-            }. Change it if the Referee sees it differently.`
-          : "The weather has not been rolled today, so nothing is assumed."
+          ? t("DOLMENWOOD.Camp.Wood.WeatherHint", {
+              weather: escapeHTML(weatherText(weather)),
+              penalty: suggested
+                ? t("DOLMENWOOD.Camp.Wood.Penalty", { n: suggested })
+                : t("DOLMENWOOD.Camp.Wood.NoPenalty"),
+            })
+          : t("DOLMENWOOD.Camp.Wood.NoWeather")
       }</p>
     </form>`,
     (html) => {

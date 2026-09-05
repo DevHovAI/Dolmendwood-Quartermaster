@@ -102,6 +102,7 @@ import {
   isSunny,
   weatherEntry,
   weatherSummary,
+  weatherText,
   weatherTableFor,
   type WeatherResult,
 } from "./weather";
@@ -127,13 +128,14 @@ import {
 // ─── Weather ───────────────────────────────────────────────────────────────────
 
 function effectChips(effects: WeatherResult["effects"]): string {
-  if (!effects.length) return `<p class="dw-day-roll-none">No adverse effects.</p>`;
+  if (!effects.length)
+    return `<p class="dw-day-roll-none">${escapeHTML(tr("DOLMENWOOD.Weather.NoEffects"))}</p>`;
   return `<ul class="dw-day-roll-effects">${effects
     .map(
       (e) =>
         `<li><i class="fas ${WEATHER_EFFECTS[e].icon}"></i> <strong>${escapeHTML(
-          WEATHER_EFFECTS[e].label
-        )}.</strong> ${escapeHTML(WEATHER_EFFECTS[e].hint)}</li>`
+          tr(WEATHER_EFFECTS[e].labelKey)
+        )}.</strong> ${escapeHTML(tr(WEATHER_EFFECTS[e].hintKey))}</li>`
     )
     .join("")}</ul>`;
 }
@@ -148,7 +150,14 @@ export async function rollWeather(): Promise<WeatherResult | undefined> {
   const entry = weatherEntry(table, roll);
   if (!entry) return undefined;
 
-  const result: WeatherResult = { season, table, roll, text: entry.text, effects: entry.effects };
+  const result: WeatherResult = {
+    season,
+    table,
+    roll,
+    text: entry.text,
+    textKey: entry.textKey,
+    effects: entry.effects,
+  };
   await setDutyResult("weather", { weather: result });
 
   const info = seasonInfo(season);
@@ -156,7 +165,12 @@ export async function rollWeather(): Promise<WeatherResult | undefined> {
   // number elsewhere on the bar.
   const borrowed =
     table !== season
-      ? `<p class="dw-day-roll-note">${escapeHTML(tr(info.labelKey))} has no weather table of its own — rolled on ${escapeHTML(table)}.</p>`
+      ? `<p class="dw-day-roll-note">${escapeHTML(
+          tr("DOLMENWOOD.Weather.Borrowed", {
+            season: tr(info.labelKey),
+            table: tr(seasonInfo(table).labelKey),
+          })
+        )}</p>`
       : "";
 
   // Public: the characters can see the sky. Hiding the weather from the table
@@ -165,9 +179,11 @@ export async function rollWeather(): Promise<WeatherResult | undefined> {
   // to argue about.
   await announce(
     `<div class="dw-day-roll">
-      <h3><i class="fas fa-cloud-sun-rain"></i> Weather</h3>
-      <p class="dw-day-roll-headline">${escapeHTML(entry.text)}</p>
-      <p class="dw-day-roll-sub">${escapeHTML(tr(info.labelKey))}, 2d6 = ${roll}</p>
+      <h3><i class="fas fa-cloud-sun-rain"></i> ${escapeHTML(tr("DOLMENWOOD.Duty.Weather.Label"))}</h3>
+      <p class="dw-day-roll-headline">${escapeHTML(weatherText(result))}</p>
+      <p class="dw-day-roll-sub">${escapeHTML(
+        tr("DOLMENWOOD.Weather.RolledOn", { season: tr(info.labelKey), roll })
+      )}</p>
       ${borrowed}
       ${effectChips(entry.effects)}
     </div>`,

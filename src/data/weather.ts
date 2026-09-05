@@ -1,4 +1,5 @@
 import type { Season } from "./dayContext";
+import { t } from "../helpers/i18n";
 
 /**
  * The day's weather (Campaign Book p112).
@@ -18,39 +19,47 @@ export type WeatherEffect = "I" | "V" | "W";
 export interface WeatherEntry {
   /** 2d6 */
   roll: number;
+  /**
+   * **The English words, and they stay English.** `weatherIcon`, `isSunny`,
+   * `firewoodPenalty` and the `SKIES` table all read this with regexes to
+   * decide what to draw on the map — a translated word would switch FXMaster
+   * off without a sound. What the reader sees comes from `textKey`.
+   */
   text: string;
+  /** What the reader sees. Derived from the table and the roll, not typed out. */
+  textKey: string;
   effects: WeatherEffect[];
 }
 
-export const WEATHER_EFFECTS: Record<WeatherEffect, { label: string; icon: string; hint: string }> =
+export const WEATHER_EFFECTS: Record<WeatherEffect, { labelKey: string; icon: string; hintKey: string }> =
   {
     I: {
-      label: "Travel impeded",
+      labelKey: "DOLMENWOOD.Weather.Effect.Impeded.Label",
       icon: "fa-person-falling",
-      hint: "The party's daily Travel Points are reduced by 2. If that brings them to 0 or below, the party can only progress by forced marching.",
+      hintKey: "DOLMENWOOD.Weather.Effect.Impeded.Hint",
     },
     V: {
-      label: "Poor visibility",
+      labelKey: "DOLMENWOOD.Weather.Effect.Visibility.Label",
       icon: "fa-eye-low-vision",
-      hint: "Encounter distance is halved, and the chance of getting lost while travelling wild rises by 1-in-6.",
+      hintKey: "DOLMENWOOD.Weather.Effect.Visibility.Hint",
     },
     W: {
-      label: "Wet conditions",
+      labelKey: "DOLMENWOOD.Weather.Effect.Wet.Label",
       icon: "fa-droplet",
-      hint: "Building a campfire is difficult. Gathering firewood yields less: -1 damp, -2 snow, -4 heavy rain.",
+      hintKey: "DOLMENWOOD.Weather.Effect.Wet.Hint",
     },
   };
 
 /** The seasons with a weather table of their own. */
 export type WeatherTableId = "winter" | "spring" | "summer" | "autumn" | "hitching" | "vague";
 
-const w = (roll: number, text: string, effects: string): WeatherEntry => ({
+const w = (roll: number, text: string, effects: string): Omit<WeatherEntry, "textKey"> => ({
   roll,
   text,
   effects: effects.split("") as WeatherEffect[],
 });
 
-export const WEATHER_BY_SEASON: Record<WeatherTableId, WeatherEntry[]> = {
+const WEATHER_RAW: Record<WeatherTableId, Omit<WeatherEntry, "textKey">[]> = {
   winter: [
     w(2, "Deep freeze, hoarfrost", ""),
     w(3, "Snow storm", "IVW"),
@@ -139,6 +148,21 @@ export const WEATHER_BY_SEASON: Record<WeatherTableId, WeatherEntry[]> = {
  * "Colliggwyld and Chame do not have special weather tables of their own — use
  * the standard tables for spring and summer, respectively" (CB p112).
  */
+/**
+ * The tables as the rest of the module sees them, each row carrying the key it
+ * is read by. Derived rather than typed: sixty-six keys written out by hand is
+ * sixty-six chances to key a row to the wrong roll.
+ */
+export const WEATHER_BY_SEASON: Record<WeatherTableId, WeatherEntry[]> = Object.fromEntries(
+  Object.entries(WEATHER_RAW).map(([table, rows]) => [
+    table,
+    rows.map((r) => ({
+      ...r,
+      textKey: `DOLMENWOOD.Weather.Table.${table[0].toUpperCase()}${table.slice(1)}.R${r.roll}`,
+    })),
+  ])
+) as Record<WeatherTableId, WeatherEntry[]>;
+
 export function weatherTableFor(season: Season): WeatherTableId {
   if (season === "colliggwyld") return "spring";
   if (season === "chame") return "summer";
@@ -151,7 +175,13 @@ export interface WeatherResult {
   season: Season;
   table: WeatherTableId;
   roll: number;
+  /** English, and read by regex — see `WeatherEntry.text`. */
   text: string;
+  /**
+   * Optional on purpose: days rolled before the German pass have none, and a
+   * saved day must still open. `weatherText` falls back to `text` for those.
+   */
+  textKey?: string;
   effects: WeatherEffect[];
 }
 
@@ -202,10 +232,20 @@ export function firewoodPenalty(result: WeatherResult | undefined): number {
 }
 
 /** A one-line summary for the strip: "Rolling fog (poor visibility)". */
+/**
+ * The day's weather in the reader's language.
+ *
+ * Everything that *decides* something still reads `text` — see the note on
+ * `WeatherEntry.text`. This is the one door for everything that *shows* it.
+ */
+export function weatherText(result: { text: string; textKey?: string }): string {
+  return result.textKey ? t(result.textKey) : result.text;
+}
+
 export function weatherSummary(result: WeatherResult): string {
-  if (!result.effects.length) return result.text;
-  const named = result.effects.map((e) => WEATHER_EFFECTS[e].label.toLowerCase()).join(", ");
-  return `${result.text} (${named})`;
+  if (!result.effects.length) return weatherText(result);
+  const named = result.effects.map((e) => t(WEATHER_EFFECTS[e].labelKey).toLowerCase()).join(", ");
+  return t("DOLMENWOOD.Weather.SummaryWith", { text: weatherText(result), effects: named });
 }
 
 /**
@@ -436,19 +476,20 @@ export function weatherSky(result: WeatherResult | undefined): WeatherSky | unde
 export function skySummary(sky: WeatherSky | undefined): string {
   if (!sky) return "";
   const falling: Record<Falling, string> = {
-    rain: "rain",
-    snow: "snow",
-    snowstorm: "driving snow",
-    hail: "sleet",
+    rain: "DOLMENWOOD.Weather.Sky.Rain",
+    snow: "DOLMENWOOD.Weather.Sky.Snow",
+    snowstorm: "DOLMENWOOD.Weather.Sky.Snowstorm",
+    hail: "DOLMENWOOD.Weather.Sky.Hail",
   };
   const parts: string[] = [];
-  if (sky.falls) parts.push(falling[sky.falls]);
-  if (sky.haze) parts.push(sky.haze >= 0.45 ? "fog" : "haze in the air");
+  if (sky.falls) parts.push(t(falling[sky.falls]));
+  if (sky.haze) parts.push(t(sky.haze >= 0.45 ? "DOLMENWOOD.Weather.Sky.Fog" : "DOLMENWOOD.Weather.Sky.Haze"));
   // Last, and only where it is the whole story: on a day it is raining, the
   // cloud is not the news.
-  if (sky.cloud && !parts.length) parts.push(sky.cloud >= 0.25 ? "heavy cloud" : "cloud");
-  if (sky.lightning) parts.push("lightning");
-  return parts.join(" and ");
+  if (sky.cloud && !parts.length)
+    parts.push(t(sky.cloud >= 0.25 ? "DOLMENWOOD.Weather.Sky.HeavyCloud" : "DOLMENWOOD.Weather.Sky.Cloud"));
+  if (sky.lightning) parts.push(t("DOLMENWOOD.Weather.Sky.Lightning"));
+  return parts.join(t("DOLMENWOOD.Weather.Sky.And"));
 }
 /**
  * Whether the day's weather counts as sunny, for the one hex that asks.
