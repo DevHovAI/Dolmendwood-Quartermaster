@@ -734,5 +734,13 @@
   "DOLMENWOOD.DayBar.Roll.Secret": "Roll it. Real dice, and the result is whispered to the Referee alone.",
   "DOLMENWOOD.DayBar.Roll.Open": "Roll it. Real dice, and the result is announced to the table.",
   "DOLMENWOOD.DayBar.Roll.NotYours": "Not yours to roll.",
-  "DOLMENWOOD.DayBar.Group.Title": "Duties"
+  "DOLMENWOOD.DayBar.Group.Title": "Duties",
+
+  "DOLMENWOOD.DayBar.Deny.Referee": "The Referee rolls this one.",
+  "DOLMENWOOD.DayBar.Deny.SettingOff": "The table has not switched the players' own rolls on.",
+  "DOLMENWOOD.DayBar.Deny.NotOpen": "The Referee has not opened this one yet.",
+  "DOLMENWOOD.DayBar.Deny.NoCharacter": "No character of yours to roll it for.",
+  "DOLMENWOOD.DayBar.Deny.AlreadyOwn": "Already done today. It comes back with the next day.",
+  "DOLMENWOOD.DayBar.Deny.Leader": "The party leader rolls this one.",
+  "DOLMENWOOD.DayBar.Deny.AlreadyParty": "Somebody has already done this today."
 }

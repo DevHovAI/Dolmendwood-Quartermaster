@@ -40,6 +40,7 @@
  */
 
 import { MODULE_ID, SETTINGS } from "../constants";
+import { t } from "../helpers/i18n";
 
 /**
  * A duty each character rolls for themselves, and only for themselves.
@@ -168,35 +169,35 @@ export function mayRoll(dutyId: string, input: RightsInput): Verdict {
   if (input.isGM) return ALLOWED;
 
   const scope = scopeOf(dutyId);
-  if (scope === "referee") return { allowed: false, reason: "The Referee rolls this one." };
+  if (scope === "referee") return { allowed: false, reason: t("DOLMENWOOD.DayBar.Deny.Referee") };
 
   if (!input.playersMayRoll) {
-    return { allowed: false, reason: "The table has not switched the players' own rolls on." };
+    return { allowed: false, reason: t("DOLMENWOOD.DayBar.Deny.SettingOff") };
   }
 
   // **The key first, before anything about characters.** It is the Referee
   // saying "this part of the day is happening now", and until they do, nothing
   // else about the roll is worth asking.
   if (!isOpen(input.openDuties, dutyId)) {
-    return { allowed: false, reason: "The Referee has not opened this one yet." };
+    return { allowed: false, reason: t("DOLMENWOOD.DayBar.Deny.NotOpen") };
   }
 
   if (!input.actorId) {
-    return { allowed: false, reason: "No character of yours to roll it for." };
+    return { allowed: false, reason: t("DOLMENWOOD.DayBar.Deny.NoCharacter") };
   }
 
   if (scope === "own") {
     return alreadyRolled(input.rolledBy, dutyId, input.actorId)
-      ? { allowed: false, reason: "Already done today. It comes back with the next day." }
+      ? { allowed: false, reason: t("DOLMENWOOD.DayBar.Deny.AlreadyOwn") }
       : ALLOWED;
   }
 
   // A group step. Whoever the table named, or anybody if it named nobody.
   if (input.campLeaderId && input.campLeaderId !== input.actorId) {
-    return { allowed: false, reason: "The party leader rolls this one." };
+    return { allowed: false, reason: t("DOLMENWOOD.DayBar.Deny.Leader") };
   }
   return alreadyRolled(input.rolledBy, dutyId)
-    ? { allowed: false, reason: "Somebody has already done this today." }
+    ? { allowed: false, reason: t("DOLMENWOOD.DayBar.Deny.AlreadyParty") }
     : ALLOWED;
 }
 

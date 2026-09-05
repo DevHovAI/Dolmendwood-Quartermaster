@@ -734,5 +734,13 @@
   "DOLMENWOOD.DayBar.Roll.Secret": "Würfeln. Echte Würfel, und das Ergebnis wird allein der SL zugeflüstert.",
   "DOLMENWOOD.DayBar.Roll.Open": "Würfeln. Echte Würfel, und das Ergebnis wird dem Tisch verkündet.",
   "DOLMENWOOD.DayBar.Roll.NotYours": "Nicht dein Wurf.",
-  "DOLMENWOOD.DayBar.Group.Title": "Aufgaben"
+  "DOLMENWOOD.DayBar.Group.Title": "Aufgaben",
+
+  "DOLMENWOOD.DayBar.Deny.Referee": "Diesen würfelt die SL.",
+  "DOLMENWOOD.DayBar.Deny.SettingOff": "Der Tisch hat die eigenen Würfe der Spieler nicht eingeschaltet.",
+  "DOLMENWOOD.DayBar.Deny.NotOpen": "Die SL hat diesen noch nicht geöffnet.",
+  "DOLMENWOOD.DayBar.Deny.NoCharacter": "Kein Charakter von dir, für den zu würfeln wäre.",
+  "DOLMENWOOD.DayBar.Deny.AlreadyOwn": "Heute schon erledigt. Kommt mit dem nächsten Tag wieder.",
+  "DOLMENWOOD.DayBar.Deny.Leader": "Diesen würfelt die Anführerin oder der Anführer der Gruppe.",
+  "DOLMENWOOD.DayBar.Deny.AlreadyParty": "Das hat heute schon jemand erledigt."
 }
