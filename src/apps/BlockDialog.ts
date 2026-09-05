@@ -8,6 +8,7 @@ import {
   type BlockRoll,
   type CharacterBlock,
 } from "../data/characterSheet";
+import { t } from "../helpers/i18n";
 
 /**
  * Writing a block: a trait, a class ability, a spell, a skill of its own.
@@ -37,14 +38,14 @@ export interface BlockDialogResult {
 }
 
 /** The six kinds, in the order the book introduces them. */
-const KINDS: { value: string; label: string }[] = [
-  { value: "", label: "Not rolled — a note" },
-  { value: "ability", label: "Ability Check (1d6 + mod, at or over 4)" },
-  { value: "skill", label: "Skill Check (1d6, at or over a target)" },
-  { value: "save", label: "Saving Throw (1d20, at or over the target)" },
-  { value: "attack", label: "Attack Roll (1d20 + Attack + ability)" },
-  { value: "xin6", label: "X-in-6 chance (1d6, at or under)" },
-  { value: "formula", label: "Plain formula (damage, a duration, anything)" },
+const KINDS: { value: string; labelKey: string }[] = [
+  { value: "", labelKey: "DOLMENWOOD.Block.Kind.None" },
+  { value: "ability", labelKey: "DOLMENWOOD.Block.Kind.Ability" },
+  { value: "skill", labelKey: "DOLMENWOOD.Block.Kind.Skill" },
+  { value: "save", labelKey: "DOLMENWOOD.Block.Kind.Save" },
+  { value: "attack", labelKey: "DOLMENWOOD.Block.Kind.Attack" },
+  { value: "xin6", labelKey: "DOLMENWOOD.Block.Kind.Xin6" },
+  { value: "formula", labelKey: "DOLMENWOOD.Block.Kind.Formula" },
 ];
 
 function kindOf(roll: BlockRoll | undefined): string {
@@ -69,7 +70,10 @@ export async function promptBlock(
   const kind = kindOf(b?.roll);
 
   const kindOptions = KINDS.map(
-    (k) => `<option value="${k.value}"${k.value === kind ? " selected" : ""}>${escapeHTML(k.label)}</option>`
+    (k) =>
+      `<option value="${k.value}"${k.value === kind ? " selected" : ""}>${escapeHTML(
+        t(k.labelKey)
+      )}</option>`
   ).join("");
 
   const abilityOptions = ABILITIES.map((a) => {
@@ -97,120 +101,120 @@ export async function promptBlock(
     };
 
     new Dialog({
-      title: existing ? `Edit “${existing.name}”` : "New block",
+      title: existing
+        ? t("DOLMENWOOD.Block.TitleEdit", { name: existing.name })
+        : t("DOLMENWOOD.Block.TitleNew"),
       content: `
         <form class="dw-camp-form dw-block-form">
           <div class="form-group">
-            <label for="dw-block-group">Heading</label>
+            <label for="dw-block-group">${t("DOLMENWOOD.Block.Group.Label")}</label>
             <input type="text" id="dw-block-group" list="dw-block-groups"
-                   value="${escapeHTML(b?.group ?? "")}" placeholder="Kindred, Class, Spells 1st…">
+                   value="${escapeHTML(b?.group ?? "")}" placeholder="${t(
+                     "DOLMENWOOD.Block.Group.Placeholder"
+                   )}">
             <datalist id="dw-block-groups">
               <option value="Kindred"><option value="Class"><option value="Traits">
               <option value="Spells, 1st"><option value="Spells, 2nd"><option value="Skills">
             </datalist>
           </div>
-          <p class="hint">Blocks are grouped under whatever heading you type. The module ships no
-            class or spell lists on purpose — write what you play.</p>
+          <p class="hint">${t("DOLMENWOOD.Block.Group.Hint")}</p>
 
           <div class="form-group">
-            <label for="dw-block-name">Name</label>
+            <label for="dw-block-name">${t("DOLMENWOOD.Block.Name.Label")}</label>
             <input type="text" id="dw-block-name" value="${escapeHTML(b?.name ?? "")}">
           </div>
 
           <div class="form-group">
-            <label for="dw-block-text">What it says</label>
+            <label for="dw-block-text">${t("DOLMENWOOD.Block.Text.Label")}</label>
             <textarea id="dw-block-text" rows="3">${escapeHTML(b?.text ?? "")}</textarea>
           </div>
 
           <div class="form-group">
-            <label for="dw-block-value">Lends this number to other rolls</label>
+            <label for="dw-block-value">${t("DOLMENWOOD.Block.Value.Label")}</label>
             <input type="number" id="dw-block-value" value="${b?.value ?? ""}" placeholder="—">
           </div>
-          <p class="hint"><strong>Optional, and only useful if something else should read it.</strong>
-            Give this block a number and any other formula on the sheet can borrow it by name:
-            write <code class="dw-block-slug">@b.${escapeHTML(b?.slug ?? "…")}</code> in another
-            block's <em>Added to the roll</em> box and it will add this number.
-            <br>So a trait called <em>Keen Nose</em> holding <strong>2</strong> lets a Search check
-            be written as <code>@b.keen-nose</code>, and changing the 2 later changes every roll
-            that leans on it. Leave it empty if nothing needs to refer to this block.</p>
+          <p class="hint">${t("DOLMENWOOD.Block.Value.Hint", {
+            slug: `<code class="dw-block-slug">@b.${escapeHTML(b?.slug ?? "…")}</code>`,
+          })}</p>
 
           <div class="form-group">
-            <label for="dw-block-uses">Uses per day</label>
+            <label for="dw-block-uses">${t("DOLMENWOOD.Block.Uses.Label")}</label>
             <input type="number" id="dw-block-uses" min="0" max="99"
                    value="${b?.uses?.max ?? ""}" placeholder="—">
           </div>
 
           <div class="form-group">
-            <label for="dw-block-spell">Is it a spell?</label>
+            <label for="dw-block-spell">${t("DOLMENWOOD.Block.Spell.Label")}</label>
             <select id="dw-block-spell">
-              <option value=""${b?.spell ? "" : " selected"}>No — a trait, an ability, a knack</option>
-              <option value="arcane"${b?.spell === "arcane" ? " selected" : ""}>Arcane — memorised from a book</option>
-              <option value="holy"${b?.spell === "holy" ? " selected" : ""}>Holy — prayed for</option>
+              <option value=""${b?.spell ? "" : " selected"}>${t(
+                "DOLMENWOOD.Block.Spell.No"
+              )}</option>
+              <option value="arcane"${b?.spell === "arcane" ? " selected" : ""}>${t(
+                "DOLMENWOOD.Block.Spell.Arcane"
+              )}</option>
+              <option value="holy"${b?.spell === "holy" ? " selected" : ""}>${t(
+                "DOLMENWOOD.Block.Spell.Holy"
+              )}</option>
             </select>
           </div>
-          <p class="hint">Only a spell gets the prepared tick on the sheet. The two kinds are kept
-            apart because the books do: an <strong>arcane</strong> caster memorises from spell books
-            that <em>must be to hand</em> and only from what they have written down (p78), while a
-            <strong>holy</strong> caster prays for an hour and may choose any spell of their Rank
-            (p100). The morning's 1-in-6 loss after a broken night falls on both alike.</p>
+          <p class="hint">${t("DOLMENWOOD.Block.Spell.Hint")}</p>
 
           <hr>
 
           <div class="form-group">
-            <label for="dw-block-kind">Rolled as</label>
+            <label for="dw-block-kind">${t("DOLMENWOOD.Block.Kind.Label")}</label>
             <select id="dw-block-kind">${kindOptions}</select>
           </div>
 
           <div class="form-group dw-block-when" data-kind="ability">
-            <label for="dw-block-ability">Ability</label>
+            <label for="dw-block-ability">${t("DOLMENWOOD.Block.Ability.Label")}</label>
             <select id="dw-block-ability">${abilityOptions}</select>
           </div>
 
           <div class="form-group dw-block-when" data-kind="skill">
-            <label for="dw-block-skill-target">Target (at or over)</label>
+            <label for="dw-block-skill-target">${t(
+              "DOLMENWOOD.Block.SkillTarget.Label"
+            )}</label>
             <input type="number" id="dw-block-skill-target" min="2" max="6" value="${skillTarget}">
           </div>
 
           <div class="form-group dw-block-when" data-kind="save">
-            <label for="dw-block-save">Save</label>
+            <label for="dw-block-save">${t("DOLMENWOOD.Block.Save.Label")}</label>
             <select id="dw-block-save">${saveOptions}</select>
           </div>
           <label class="dw-camp-member dw-block-when" data-kind="save">
             <input type="checkbox" id="dw-block-magical" ${magical ? "checked" : ""}>
-            <span class="dw-camp-member-name">Against magic — adds the Wisdom modifier</span>
+            <span class="dw-camp-member-name">${t("DOLMENWOOD.Block.Magical")}</span>
           </label>
 
           <label class="dw-camp-member dw-block-when" data-kind="attack">
             <input type="checkbox" id="dw-block-missile" ${missile ? "checked" : ""}>
-            <span class="dw-camp-member-name">Missile — Dexterity rather than Strength</span>
+            <span class="dw-camp-member-name">${t("DOLMENWOOD.Block.Missile")}</span>
           </label>
 
           <div class="form-group dw-block-when" data-kind="xin6">
-            <label for="dw-block-chance">Chance in 6 (at or under)</label>
+            <label for="dw-block-chance">${t("DOLMENWOOD.Block.Chance.Label")}</label>
             <input type="number" id="dw-block-chance" min="1" max="6" value="${chanceTarget}">
           </div>
 
           <div class="form-group dw-block-when" data-kind="formula">
-            <label for="dw-block-formula">Formula</label>
+            <label for="dw-block-formula">${t("DOLMENWOOD.Block.Formula.Label")}</label>
             <input type="text" id="dw-block-formula" value="${escapeHTML(formula)}"
-                   placeholder="2d6 + @b.keen-nose">
+                   placeholder="${t("DOLMENWOOD.Block.Formula.Placeholder")}">
           </div>
 
           <div class="form-group dw-block-when" data-kind="ability skill save attack">
-            <label for="dw-block-bonus">Added to the roll</label>
+            <label for="dw-block-bonus">${t("DOLMENWOOD.Block.Bonus.Label")}</label>
             <input type="text" id="dw-block-bonus" value="${escapeHTML(bonusOf(b?.roll))}"
-                   placeholder="+2, @b.blade, @level">
+                   placeholder="${t("DOLMENWOOD.Block.Bonus.Placeholder")}">
           </div>
           <p class="hint dw-block-when" data-kind="ability skill save attack formula xin6">
-            Anything Foundry can roll works here, and every score, save, skill and block on this
-            sheet is available as <code>@str</code>, <code>@doom</code>, <code>@b.slug</code> and so
-            on. <code>@attackPenalty</code> and <code>@damagePenalty</code> carry what hunger and
-            exhaustion already cost — an Attack Roll applies its own without being asked.
+            ${t("DOLMENWOOD.Block.Bonus.Hint")}
           </p>
         </form>`,
       buttons: {
         ok: {
-          label: existing ? "Save" : "Add",
+          label: t(existing ? "DOLMENWOOD.Common.Save" : "DOLMENWOOD.Common.Add"),
           icon: '<i class="fas fa-check"></i>',
           callback: (html: JQuery) => {
             const val = (id: string) => String(html.find(`#${id}`).val() ?? "").trim();
@@ -219,7 +223,7 @@ export async function promptBlock(
 
             const name = val("dw-block-name");
             if (!name) {
-              ui.notifications?.warn("A block needs a name.");
+              ui.notifications?.warn(t("DOLMENWOOD.Block.NeedsName"));
               done(null);
               return;
             }
@@ -303,7 +307,7 @@ export async function promptBlock(
             });
           },
         },
-        cancel: { label: "Cancel", callback: () => done(null) },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => done(null) },
       },
       default: "ok",
       render: (html: JQuery) => {

@@ -7,6 +7,7 @@ import {
   spreadModeFor,
   type BookId,
 } from "../data/books";
+import { t } from "../helpers/i18n";
 
 /**
  * pdf.js reads its scroll and spread modes from its own settings, not from the
@@ -44,16 +45,20 @@ export class BookApp extends foundry.applications.api.ApplicationV2 {
 
   #url = "";
   #page = 1;
-  #title = "Book";
+  // Set the moment a book is opened; the default only ever shows for the
+  // instant between construction and the first render.
+  #title = "";
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-book",
     classes: ["dolmenwood-quartermaster", "dw-book"],
-    window: { title: "Book", resizable: true, icon: "fas fa-book-open" },
+    // A key rather than a word: this is read at module scope, long before
+    // Foundry's translation table exists, and Foundry localises it itself.
+    window: { title: "DOLMENWOOD.Book.Window", resizable: true, icon: "fas fa-book-open" },
   };
 
   override get title(): string {
-    return this.#title;
+    return this.#title || t("DOLMENWOOD.Book.Window");
   }
 
   protected override async _renderHTML(): Promise<string> {
@@ -122,20 +127,21 @@ export class BookApp extends foundry.applications.api.ApplicationV2 {
    */
   static async open(id: BookId, printedPage: number): Promise<void> {
     if (!mayOpenBook(id)) {
-      ui.notifications?.warn(`The ${BOOKS[id].label} is the Referee's book at this table.`);
+      ui.notifications?.warn(t("DOLMENWOOD.Book.RefereeOnly", { book: BOOKS[id].label }));
       return;
     }
     const url = bookViewerURL(id, printedPage);
     if (!url) {
-      ui.notifications?.warn(
-        `No file is set for the ${BOOKS[id].label}. A GM can point at their own copy in Configure Settings → Dolmendudes Companion; the file has to sit in Foundry's own data folder for the browser to reach it.`
-      );
+      ui.notifications?.warn(t("DOLMENWOOD.Book.NoFile", { book: BOOKS[id].label }));
       return;
     }
     const app = (BookApp.#open ??= new BookApp());
     app.#url = url;
     app.#page = Number(url.split("#page=")[1] ?? 1) || 1;
-    app.#title = `${BOOKS[id].label} — p${printedPage}`;
+    app.#title = t("DOLMENWOOD.Book.Title", {
+      book: BOOKS[id].label,
+      page: printedPage,
+    });
     await app.render({ force: true, position: BookApp.#size() } as never);
     app.bringToFront?.();
   }
