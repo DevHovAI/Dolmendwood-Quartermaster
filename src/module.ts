@@ -24,6 +24,7 @@ import { hexOf, isPartyToken, tokenPoint, refusePlaceIfAway, canReachLoot } from
 import { bookHexAt, followsToken } from "./data/hexGrid";
 import { moveAccount, type MovedToken } from "./data/hexTravel";
 import { syncWeatherFx } from "./data/weatherFx";
+import { syncWeatherSound, simpleWeatherPresent } from "./data/weatherSound";
 import { installTravelRuler } from "./apps/TravelRuler";
 import { hexInfo } from "./data/hexes";
 import { whisperToGMs } from "./data/rollCard";
@@ -465,6 +466,34 @@ Hooks.once("init", () => {
     },
     default: "normal",
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+  // **Only where the files are.** These are Simple Weather's loops, played
+  // from its own folder, so a table without it would be offered a switch that
+  // does nothing — which is exactly why the FXMaster sound switch was taken out
+  // again. Registered all the same, so a world that installs it later keeps
+  // whatever it had set; it is simply not drawn.
+  if (simpleWeatherPresent()) {
+    game.settings!.register(MODULE_ID, SETTINGS.WEATHER_SOUND, {
+      name: "DOLMENWOOD.Settings.WeatherSound.Name",
+      hint: "DOLMENWOOD.Settings.WeatherSound.Hint",
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: false,
+      onChange: () => void syncWeatherSound(),
+    } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
+    game.settings!.register(MODULE_ID, SETTINGS.WEATHER_SOUND_VOLUME, {
+      name: "DOLMENWOOD.Settings.WeatherSoundVolume.Name",
+      hint: "DOLMENWOOD.Settings.WeatherSoundVolume.Hint",
+      scope: "world",
+      config: true,
+      type: Number,
+      range: { min: 0, max: 50, step: 5 },
+      default: 25,
+      onChange: () => void syncWeatherSound(),
+    } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+  }
 
   game.settings!.register(MODULE_ID, SETTINGS.WEATHER_FX_SCENES, {
     scope: "world",
@@ -1187,6 +1216,10 @@ onUntypedHook("updateSetting", (setting: { key?: string }) => {
   // agree with it. Cheap on every other write: a sky already right is a
   // comparison and no work at all.
   void syncWeatherFx();
+  // The ear follows the same write as the map: a rolled sky, a cleared one, a
+  // new day. Cheap when nothing changed — a loop already playing is a set
+  // lookup and a volume that matches.
+  void syncWeatherSound();
 });
 
 /**

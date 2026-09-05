@@ -963,5 +963,10 @@
   "DOLMENWOOD.Lost.Card.Hunter": "A hunter in the party can find the path again on a 3-in-6 chance.",
   "DOLMENWOOD.Lost.Line.Road": "On a road — no roll",
   "DOLMENWOOD.Lost.Line.Lost": "Lost — {what}",
-  "DOLMENWOOD.Lost.Line.OnCourse": "On course ({roll} vs {chance}-in-6)"
+  "DOLMENWOOD.Lost.Line.OnCourse": "On course ({roll} vs {chance}-in-6)",
+
+  "DOLMENWOOD.Settings.WeatherSound.Name": "Play the day's weather",
+  "DOLMENWOOD.Settings.WeatherSound.Hint": "Loops Simple Weather's own sound files for whatever the day was rolled as — rain under thunder under wind, together rather than one after another. A fair day plays nothing. This module keeps a playlist of its own, so Simple Weather's weather and this one never stop each other.",
+  "DOLMENWOOD.Settings.WeatherSoundVolume.Name": "Weather volume",
+  "DOLMENWOOD.Settings.WeatherSoundVolume.Hint": "A percentage of the environment channel, so each listener's own ambient slider still governs it. It stops at 50: weather is a background to talk over, not an event."
 }
