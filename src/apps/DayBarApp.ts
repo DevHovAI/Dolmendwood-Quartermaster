@@ -69,6 +69,7 @@ import {
   skySummary,
 } from "../data/weather";
 import { lostChance } from "../data/gettingLost";
+import { t } from "../helpers/i18n";
 import { partyTokensOn, tokenPoint } from "../data/partyPlace";
 import { calibrate, calibrationFor, followsToken, isComplete } from "../data/hexGrid";
 import {
@@ -362,17 +363,17 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         // the answer below may have gone stale.
         moved: ctx.moved
           ? {
-              label: "Party moved",
+              label: t("DOLMENWOOD.DayBar.Moved.Label"),
               // The warning exists because the module cannot tell which hex the
               // party walked into. Where it *could* — the reading is on, this
               // map simply has not been measured — say so, since that is one
               // press away and ends the warning for good.
               title:
-                `A token has crossed a hex boundary on ${ctx.moved.sceneName} since this was last set. ` +
+                t("DOLMENWOOD.DayBar.Moved.Crossed", { scene: ctx.moved.sceneName }) + " " +
                 (followsToken() && !calibrationDone
-                  ? "Reading the hex off the token is switched on, but this map has not been calibrated: stand the token in a hex you know, type it in the box and press the crosshairs. Until then, check the terrain and the way by hand."
-                  : "Check the terrain and the way — the module cannot read them off the map.") +
-                " Change one of them, or click to say it is still right.",
+                  ? t("DOLMENWOOD.DayBar.Moved.Uncalibrated")
+                  : t("DOLMENWOOD.DayBar.Moved.ByHand")) + " " +
+                t("DOLMENWOOD.DayBar.Moved.Confirm"),
             }
           : undefined,
         seasons: SEASONS.map((x) => ({ ...x, selected: x.id === ctx.season })),
@@ -385,26 +386,26 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         ways: WAYS.map((x) => ({ ...x, selected: x.id === ctx.way })),
         regions: REGIONS.map((x) => ({ ...x, selected: x.id === ctx.region })),
         settlements: [
-          { id: "elsewhere", label: "— not in one —", selected: ctx.settlement === "elsewhere" },
+          { id: "elsewhere", label: t("DOLMENWOOD.DayBar.Ctx.NoSettlement"), selected: ctx.settlement === "elsewhere" },
           ...SETTLEMENTS.map((x) => ({ ...x, selected: x.id === ctx.settlement })),
         ],
         seasonHint: `${season.label} — ${season.months}. ${season.hint}`,
-        terrainHint: `${terrain.label} (${terrain.bandLabel.toLowerCase()}): ${terrain.blurb}. ${terrain.chanceIn6}-in-6 to lose the way or to meet something; ${terrain.cost} Travel Points to enter or search a hex. ${terrain.travel}`,
+        terrainHint: t("DOLMENWOOD.DayBar.Ctx.TerrainHint", { label: terrain.label, band: terrain.bandLabel.toLowerCase(), blurb: terrain.blurb, chance: terrain.chanceIn6, cost: terrain.cost, travel: terrain.travel }),
         wayHint: `${way.label}: ${way.hint}`,
         settlementHint:
           ctx.settlement === "elsewhere"
-            ? "Which of the twelve settlements the Campaign Book details the party is in. Only the Settlement tab's encounter rolls use it — everywhere else it is ignored, and a hamlet the book does not cover has no table."
-            : `${settlement}. Its own d6 encounter tables, day and night, are what the Settlement tab rolls on. It does not replace the region: the party is still in ${region.label} the moment they leave.`,
+            ? t("DOLMENWOOD.DayBar.Ctx.SettlementNone")
+            : t("DOLMENWOOD.DayBar.Ctx.SettlementHint", { settlement, region: region.label }),
         regionHint:
           region.id === "aquatic"
-            ? "Aquatic is the column for a day spent on a river or a lake, not a place on the map. Chosen, an encounter is rolled straight off it, as the Campaign Book directs (p114)."
-            : `${region.label} — which regional encounter table this hex reads (Campaign Book p115). A region is a dozen hexes across, so this changes far less often than the terrain does.`,
+            ? t("DOLMENWOOD.DayBar.Ctx.RegionAquatic")
+            : t("DOLMENWOOD.DayBar.Ctx.RegionHint", { region: region.label }),
         // Said here rather than only in the duty's own tooltip, because this is
         // the row where the numbers that produce it are being set.
         lostLine:
           chance.inSix > 0
-            ? `${chance.inSix}-in-6 to lose the way`
-            : "No chance of losing the way",
+            ? t("DOLMENWOOD.DayBar.Ctx.LostChance", { n: chance.inSix })
+            : t("DOLMENWOOD.DayBar.Ctx.LostNone"),
         lostTitle: chance.reason,
         hex: ctx.hex ?? "",
         hexName: here?.name ?? "",
@@ -413,24 +414,24 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         hexNote: here?.note ?? "",
         hexAlso: here?.alsoRegion ?? "",
         hexHint: here
-          ? `${here.hex}, ${here.name}. ${terrain.label}, ${region.label}, ${here.lost} to lose the way. Described in the Campaign Book on p${here.page}.`
-          : "The hex the party is standing in. Type it and the terrain, the region and the lost chance follow from the Campaign Book — including anything that grows here which the foraging tables do not know about. A hex the book does not detail is still kept; set the terrain by hand.",
+          ? t("DOLMENWOOD.DayBar.Ctx.HexHint", { hex: here.hex, name: here.name, terrain: terrain.label, region: region.label, lost: here.lost, page: here.page })
+          : t("DOLMENWOOD.DayBar.Ctx.HexEmpty"),
         // The crosshairs: one measurement per map, and after it the hex reads
         // itself off the token. Offered to the Referee only, and only where
         // there is a hex in the box to measure against.
         mayCalibrate: isGM,
         calibrated: calibrationDone,
         calibrateHalf: !!calibration && !calibrationDone,
-        calibrateLabel: calibrationDone ? "Re-calibrate" : "Calibrate",
+        calibrateLabel: t(calibrationDone ? "DOLMENWOOD.DayBar.Calibrate.Again" : "DOLMENWOOD.DayBar.Calibrate.Label"),
         calibrateTitle: calibrationDone
-          ? `This map is calibrated: ${calibration?.hex} and ${calibration?.hex2}. ${
-              followsToken()
-                ? "Moving a token sets the hex by itself."
-                : "Switch on “Read the hex off the party's token” in the module settings to use it."
-            } Press again to measure it afresh, starting from the first point.`
+          ? t("DOLMENWOOD.DayBar.Calibrate.Done", { a: calibration?.hex ?? "", b: calibration?.hex2 ?? "" }) +
+            " " +
+            (followsToken() ? t("DOLMENWOOD.DayBar.Calibrate.Follows") : t("DOLMENWOOD.DayBar.Calibrate.SwitchOn")) +
+            " " +
+            t("DOLMENWOOD.DayBar.Calibrate.Afresh")
           : calibration
-          ? `Point 1 is ${calibration.hex}. Now put the token one hex to the left or right — the next column along — type that hex in the box and press again. Two points are needed because the columns are staggered by half a hex, and which way they lean is the thing a single measurement cannot say.`
-          : "Calibrate this map. Stand the party's token in a hex you know, select it, type that hex in the box and press this; then do the same one column to the left or right. From then on the module reads the hex off any position on this map.",
+          ? t("DOLMENWOOD.DayBar.Calibrate.Point1", { hex: calibration.hex })
+          : t("DOLMENWOOD.DayBar.Calibrate.Hint"),
       },
       isGM,
       // The bar's shortcuts are the toolbar's buttons in another place, so they
@@ -468,8 +469,8 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       weather: !isGM && state.weather ? weatherSummary(state.weather) : "",
       weatherIcon: state.weather ? weatherIcon(state.weather) : "fa-cloud-question",
       weatherTitle: state.weather
-        ? `${weatherSummary(state.weather)} — the day's weather.`
-        : "The day's weather has not been rolled yet.",
+        ? t("DOLMENWOOD.DayBar.Weather.Is", { what: weatherSummary(state.weather) })
+        : t("DOLMENWOOD.DayBar.Weather.Unrolled"),
       blocks,
 
       // Always on the top line, in every mode: how far the party can still get
@@ -496,18 +497,28 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         perPoint: perPointLabel,
         budgetTitle:
           budget === undefined
-            ? "No party convoy to read a Speed from, so there is no allowance to count against."
-            : `${state.travelPointsUsed} of the day's ${budget} Travel Points spent. The allowance is fixed when the day starts — the party's Speed divided by 5, and half as many again on a forced march (Player's Book p156) — so it does not shift under the march when a load or a ration changes. Unspent points are lost at nightfall.${
-                perPointLabel
-                  ? ` ${state.forcedMarch ? "Sixteen" : "Twelve"} hours on the road split ${marched} ways: each point spent is ${perPointLabel}, and the world clock moves with it.`
-                  : ""
-              }${weatherCost ? ` The weather takes ${weatherCost} off: ${state.weather?.text}.` : ""}${weatherStopped ? " That leaves nothing at all — the party can only progress by forced marching today." : ""}${state.travelPointsUsed > budget ? " More has been spent than the allowance now allows: the extra points were walked under a forced march that has since been called off." : ""}`,
+            ? t("DOLMENWOOD.DayBar.Budget.NoConvoy")
+            : t("DOLMENWOOD.DayBar.Budget.Spent", { used: state.travelPointsUsed, total: budget }) +
+              (perPointLabel
+                ? " " +
+                  t(state.forcedMarch ? "DOLMENWOOD.DayBar.Budget.PerPointForced" : "DOLMENWOOD.DayBar.Budget.PerPoint", {
+                    // Beide sind hier gesetzt: dieser Zweig laeuft nur, wenn
+                    // perPointLabel steht, und das faellt aus marched.
+                    marched: marched ?? 0,
+                    each: perPointLabel,
+                  })
+                : "") +
+              (weatherCost
+                ? " " + t("DOLMENWOOD.DayBar.Budget.Weather", { cost: weatherCost, text: state.weather?.text ?? "" })
+                : "") +
+              (weatherStopped ? " " + t("DOLMENWOOD.DayBar.Budget.Stopped") : "") +
+              (state.travelPointsUsed > budget ? " " + t("DOLMENWOOD.DayBar.Budget.Over") : ""),
         refreshTitle: stale
-          ? `The party would be worth ${derived} Travel Points as they stand now, against the ${normalBudget} this day was started with. Click to adopt ${derived} — the points already spent stay spent.`
-          : "Re-read the day's allowance from the party as they stand now. It is fixed at the start of the day on purpose, so this is only for when their circumstances really have changed.",        forced: state.forcedMarch,
+          ? t("DOLMENWOOD.DayBar.Refresh.Stale", { derived, started: normalBudget ?? 0 })
+          : t("DOLMENWOOD.DayBar.Refresh.Hint"),        forced: state.forcedMarch,
         forcedTitle: state.forcedMarch
-          ? `Forced march: ${normalBudget ?? "?"} Travel Points become ${budget ?? "?"}, at the price of a 16 hour day. Every character who marches owes a full rest day afterwards or is exhausted, -1 to Attack and Damage; marching again before that rest adds another -1 (Player's Book p156). Click to call it off.`
-          : "Normal travel. Click to declare a forced march: half as many Travel Points again, a 16 hour day, and a rest day owed afterwards (Player's Book p156).",
+          ? t("DOLMENWOOD.DayBar.Forced.On", { from: normalBudget ?? "?", to: budget ?? "?" })
+          : t("DOLMENWOOD.DayBar.Forced.Off"),
       },
 
       party,
@@ -645,7 +656,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         const actor =
           g.user?.character ?? (canvas?.tokens?.controlled?.[0]?.actor as Actor | undefined);
         if (actor) CharacterSheetApp.open(actor);
-        else ui.notifications?.warn("No character assigned to you, and no token selected.");
+        else ui.notifications?.warn(t("DOLMENWOOD.DayBar.Msg.NoCharacter"));
         break;
       }
       case "inn": {
@@ -653,7 +664,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         // the template does with it. Hiding a door is presentation; this is the
         // rule.
         if (!(game as Game).user?.isGM && !InnApp.isReleased()) {
-          ui.notifications?.warn("The inn is not open yet.");
+          ui.notifications?.warn(t("DOLMENWOOD.DayBar.Msg.InnShut"));
           break;
         }
         const inn = foundry.applications?.instances?.get("dolmenwood-inn") as
@@ -665,7 +676,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
       }
       case "shop": {
         if (!(game as Game).user?.isGM && !ShopApp.isReleased()) {
-          ui.notifications?.warn("The shop is not open yet.");
+          ui.notifications?.warn(t("DOLMENWOOD.DayBar.Msg.ShopShut"));
           break;
         }
         // The place-less shop. Reaching it from the bar keeps it available when
@@ -699,7 +710,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         }
         const own = (game as Game).user?.character ?? undefined;
         if (!own) {
-          ui.notifications?.warn("No actor found. Assign a character to your user first.");
+          ui.notifications?.warn(t("DOLMENWOOD.DayBar.Msg.NoActor"));
           break;
         }
         new PlayerInventoryApp(own).render(true);
@@ -745,16 +756,17 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     }
     if (result.step === 1) {
       ui.notifications?.info(
-        `Point 1 of 2: ${result.cal.hex} on ${scene?.name ?? "this map"}. Now move the token one hex to the left or right — into the next column — type that hex in the box, and press the crosshairs again. The second measurement is what tells the module which way the columns are staggered.`
+        t("DOLMENWOOD.DayBar.Msg.Point1", { hex: result.cal.hex, scene: scene?.name ?? t("DOLMENWOOD.DayBar.Msg.ThisMap") })
       );
     } else {
       ui.notifications?.info(
-        `${scene?.name ?? "This map"} is calibrated: ${result.cal.hex} and ${result.cal.hex2}` +
-          (result.shift ? `, with the columns half a hex apart` : "") +
-          ". " +
-          (followsToken()
-            ? "Move the token and the hex on the bar follows."
-            : "Switch on “Read the hex off the party's token” in the module settings to use it.")
+        t(result.shift ? "DOLMENWOOD.DayBar.Msg.CalibratedShift" : "DOLMENWOOD.DayBar.Msg.Calibrated", {
+            scene: scene?.name ?? t("DOLMENWOOD.DayBar.Msg.ThisMapCap"),
+            a: result.cal.hex,
+            b: result.cal.hex2 ?? "",
+          }) +
+          " " +
+          (followsToken() ? t("DOLMENWOOD.DayBar.Msg.Follows") : t("DOLMENWOOD.DayBar.Calibrate.SwitchOn"))
       );
     }
     this.render();
@@ -772,10 +784,10 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
 
   private static async _onNewDay(this: DayBarApp): Promise<void> {
     const confirmed = await Dialog.confirm({
-      title: "New Day",
+      title: t("DOLMENWOOD.DayBar.NewDayDialog.Title"),
       content:
-        "<p>Move on to the next day?</p>" +
-        '<p class="qm-hint">Every inn re-rolls its menu, the duty list starts fresh, and each character\'s hunger and rest clocks move on — anyone who did not eat today gains a day of hunger.</p>',
+        `<p>${t("DOLMENWOOD.DayBar.NewDayDialog.Ask")}</p>` +
+        `<p class="qm-hint">${t("DOLMENWOOD.DayBar.NewDayDialog.Hint")}</p>`,
     });
     if (!confirmed) return;
     await startNewDay();
@@ -918,15 +930,15 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
     const g = game as Game;
     const scene = g.scenes?.current as unknown as { id?: string; name?: string } | undefined;
     if (!scene?.id) {
-      ui.notifications?.warn("There is no map in view to show the weather on.");
+      ui.notifications?.warn(t("DOLMENWOOD.DayBar.Msg.NoMap"));
       return;
     }
     const on = !sceneShowsWeather(scene.id);
     await setSceneShowsWeather(scene, on);
     ui.notifications?.info(
       on
-        ? `${scene.name ?? "This map"} now shows the day's weather.`
-        : `${scene.name ?? "This map"} no longer shows the day's weather, and what was on it has been taken down.`
+        ? t("DOLMENWOOD.DayBar.Msg.FxOn", { scene: scene.name ?? t("DOLMENWOOD.DayBar.Msg.ThisMapCap") })
+        : t("DOLMENWOOD.DayBar.Msg.FxOff", { scene: scene.name ?? t("DOLMENWOOD.DayBar.Msg.ThisMapCap") })
     );
     this.render();
   }
@@ -1004,10 +1016,12 @@ function weatherFxChip(): { fxShown: boolean; fxOn?: boolean; fxTitle?: string }
     fxShown: true,
     fxOn: on,
     fxTitle: on
-      ? `${here} shows the day's weather. ${
-          today ? `Today that is ${today}.` : "Today there is nothing to draw."
-        } Click to stop drawing it here.`
-      : `Draw the day's weather on ${here}. Only the maps switched on here are ever touched, and weather you set through FXMaster yourself is left alone.`,
+      ? t("DOLMENWOOD.DayBar.Fx.On", { here }) +
+        " " +
+        (today ? t("DOLMENWOOD.DayBar.Fx.Today", { today }) : t("DOLMENWOOD.DayBar.Fx.Nothing")) +
+        " " +
+        t("DOLMENWOOD.DayBar.Fx.Stop")
+      : t("DOLMENWOOD.DayBar.Fx.Off", { here }),
   };
 }
 
@@ -1054,12 +1068,12 @@ function keyChip(
     keyable,
     open,
     keyTitle: open
-      ? `Open to the players. ${
-          scope === "own"
-            ? "Each of them may roll it once today, for their own character."
-            : "One of them may roll it for the party, once."
-        } Click to close it again.`
-      : "Closed. Turn the key when this part of the day is happening, and the players get the die for it.",
+      ? t("DOLMENWOOD.DayBar.Key.Open") +
+        " " +
+        (scope === "own" ? t("DOLMENWOOD.DayBar.Key.ScopeOwn") : t("DOLMENWOOD.DayBar.Key.ScopeParty")) +
+        " " +
+        t("DOLMENWOOD.DayBar.Key.Close")
+      : t("DOLMENWOOD.DayBar.Key.Closed"),
   };
 }
 
@@ -1107,8 +1121,8 @@ function rollChip(
   // the other nine — and reading it on Prepare spells is what made that roll
   // look like a secret one (Dolmenmaster, 2026-09-04).
   const roll = SECRET_DUTIES.has(dutyId)
-    ? "Roll it. Real dice, and the result is whispered to the Referee alone."
-    : "Roll it. Real dice, and the result is announced to the table.";
+    ? t("DOLMENWOOD.DayBar.Roll.Secret")
+    : t("DOLMENWOOD.DayBar.Roll.Open");
   if (isGM) {
     return { mine: true, canRoll: true, rollTitle: roll, actorId: "" };
   }
@@ -1128,7 +1142,7 @@ function rollChip(
   return {
     mine: true,
     canRoll: verdict.allowed,
-    rollTitle: verdict.allowed ? roll : (verdict.reason ?? "Not yours to roll."),
+    rollTitle: verdict.allowed ? roll : (verdict.reason ?? t("DOLMENWOOD.DayBar.Roll.NotYours")),
     actorId,
   };
 }
@@ -1334,7 +1348,7 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
     id: "dolmenwood-duty-group",
     classes: ["dolmenwood-party-inventory", "duty-group"],
     position: { width: 340, height: "auto" as unknown as number },
-    window: { title: "Duties", icon: "fas fa-campground", resizable: false },
+    window: { title: "DOLMENWOOD.DayBar.Group.Title", icon: "fas fa-campground", resizable: false },
     actions: {
       toggleDuty: DutyGroupApp._onToggleDuty,
       rollDuty: DutyGroupApp._onRollDuty,

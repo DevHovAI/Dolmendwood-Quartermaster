@@ -9,7 +9,7 @@
   <div class="day-bar-row day-bar-row-top">
     <div class="day-bar-day">
       {{#if isGM}}
-      <button type="button" class="day-bar-icon-btn" data-action="newDay" title="Move on to the next in-game day">
+      <button type="button" class="day-bar-icon-btn" data-action="newDay" title="{{localize "DOLMENWOOD.DayBar.NewDay"}}">
         <i class="fas fa-forward"></i>
       </button>
       {{/if}}
@@ -25,7 +25,7 @@
       </button>
       {{else}}
       {{#if this.active}}
-      <span class="day-bar-mode is-active" title="What the party is doing today">
+      <span class="day-bar-mode is-active" title="{{localize "DOLMENWOOD.DayBar.Doing"}}">
         <i class="fas {{this.icon}}"></i><span class="day-bar-mode-label">{{this.label}}</span>
       </span>
       {{/if}}
@@ -89,7 +89,7 @@
             been spent does not change when the day gets longer. --}}
       {{#if isGM}}
       <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="-1"
-              {{#unless travelPoints.spent}}disabled{{/unless}} title="Hand a Travel Point back">&minus;</button>
+              {{#unless travelPoints.spent}}disabled{{/unless}} title="{{localize "DOLMENWOOD.DayBar.Tp.Give"}}">&minus;</button>
       {{/if}}
       <span class="day-bar-tp-value" title="{{travelPoints.budgetTitle}}">
         <strong class="{{#if travelPoints.over}}is-over{{/if}}">{{travelPoints.used}}</strong>/{{travelPoints.total}} TP
@@ -105,7 +105,7 @@
       {{#if isGM}}
       <button type="button" class="day-bar-tp-btn" data-action="spendTP" data-delta="1"
               {{#unless travelPoints.left}}disabled{{/unless}}
-              title="Spend a Travel Point{{#if travelPoints.perPoint}} — {{travelPoints.perPoint}} of the day{{/if}}">+</button>
+              title="{{#if travelPoints.perPoint}}{{localize "DOLMENWOOD.DayBar.Tp.SpendPart" part=travelPoints.perPoint}}{{else}}{{localize "DOLMENWOOD.DayBar.Tp.Spend"}}{{/if}}">+</button>
       {{/if}}
       {{!-- What a point costs the clock. Small and beside the counter, because
             it is the number that answers "can we still make it before dark?"
@@ -180,13 +180,13 @@
             window. --}}
       {{#unless isGM}}
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="character"
-              title="My attributes, saves, skills and traits">
+              title="{{localize "DOLMENWOOD.DayBar.MySheet"}}">
         <i class="fas fa-scroll"></i>
       </button>
       {{/unless}}
       {{#if mayOpenTrash}}
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="trash"
-              title="Trash">
+              title="{{localize "DOLMENWOOD.Trash.Title"}}">
         <i class="fas fa-trash"></i>
       </button>
       {{/if}}
@@ -210,7 +210,7 @@
       {{/if}}
       {{#if mayOpenLoot}}
       <button type="button" class="day-bar-icon-btn" data-action="openShortcut" data-shortcut="loot"
-              title="Loot">
+              title="{{localize "DOLMENWOOD.Loot.Title"}}">
         <i class="fas fa-treasure-chest"></i>
       </button>
       {{/if}}
@@ -218,7 +218,7 @@
 
     <div class="day-bar-right">
       {{#unless collapsed}}{{#if isGM}}
-      <button type="button" class="day-bar-icon-btn" data-action="resetDay" title="Clear today's ticks and spent Travel Points without moving the day on">
+      <button type="button" class="day-bar-icon-btn" data-action="resetDay" title="{{localize "DOLMENWOOD.DayBar.ResetDay"}}">
         <i class="fas fa-rotate-left"></i>
       </button>
       {{/if}}{{/unless}}
@@ -226,7 +226,7 @@
               title="{{#if collapsed}}Unfold the bar{{else}}Fold the bar down to its handle{{/if}}">
         <i class="fas {{#if collapsed}}fa-angles-down{{else}}fa-angles-up{{/if}}"></i>
       </button>
-      <button type="button" class="day-bar-icon-btn" data-action="hideBar" title="Hide the bar entirely (bring it back from the toolbar)">
+      <button type="button" class="day-bar-icon-btn" data-action="hideBar" title="{{localize "DOLMENWOOD.DayBar.HideBar"}}">
         <i class="fas fa-xmark"></i>
       </button>
     </div>
@@ -273,7 +273,7 @@
   <div class="day-bar-row day-bar-context">
 
     <span class="day-bar-context-hex" title="{{context.hexHint}}">
-      <label for="dw-ctx-hex">Hex</label>
+      <label for="dw-ctx-hex">{{localize "DOLMENWOOD.DayBar.Ctx.Hex"}}</label>
       <span class="day-bar-hex-controls">
         <input type="text" id="dw-ctx-hex" data-context-field="hex" maxlength="5"
                inputmode="numeric" placeholder="0101" value="{{context.hex}}" />
@@ -295,7 +295,7 @@
     </span>
 
     <span class="day-bar-context-field is-derived day-bar-ctx-terrain" title="{{context.terrainHint}}">
-      <label for="dw-ctx-terrain">Terrain</label>
+      <label for="dw-ctx-terrain">{{localize "DOLMENWOOD.DayBar.Ctx.Terrain"}}</label>
       <select id="dw-ctx-terrain" data-context-field="terrain">
         {{#each context.terrainGroups}}
         <optgroup label="{{this.label}}">
@@ -308,7 +308,7 @@
     </span>
 
     <span class="day-bar-context-field is-derived day-bar-ctx-region" title="{{context.regionHint}}">
-      <label for="dw-ctx-region">Region</label>
+      <label for="dw-ctx-region">{{localize "DOLMENWOOD.DayBar.Ctx.Region"}}</label>
       <select id="dw-ctx-region" data-context-field="region">
         {{#each context.regions}}
         <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
@@ -331,7 +331,7 @@
     {{!-- Every move, near enough: the ground underfoot is the one thing here
           that changes with the leg rather than with the hex. --}}
     <span class="day-bar-context-field day-bar-ctx-way" title="{{context.wayHint}}">
-      <label for="dw-ctx-way">Way</label>
+      <label for="dw-ctx-way">{{localize "DOLMENWOOD.DayBar.Ctx.Way"}}</label>
       <select id="dw-ctx-way" data-context-field="way">
         {{#each context.ways}}
         <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
@@ -342,7 +342,7 @@
     {{!-- Kept apart from the region, because a party can be in a town and in a
           region and true at the same time. Only the Settlement tab rolls on it. --}}
     <span class="day-bar-context-field day-bar-ctx-settlement" title="{{context.settlementHint}}">
-      <label for="dw-ctx-settlement">Settlement</label>
+      <label for="dw-ctx-settlement">{{localize "DOLMENWOOD.DayBar.Ctx.Settlement"}}</label>
       <select id="dw-ctx-settlement" data-context-field="settlement">
         {{#each context.settlements}}
         <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
@@ -351,7 +351,7 @@
     </span>
 
     <span class="day-bar-context-field day-bar-ctx-season" title="{{context.seasonHint}}">
-      <label for="dw-ctx-season">Season</label>
+      <label for="dw-ctx-season">{{localize "DOLMENWOOD.DayBar.Ctx.Season"}}</label>
       <select id="dw-ctx-season" data-context-field="season">
         {{#each context.seasons}}
         <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
@@ -402,12 +402,12 @@
     <div class="day-bar-party">
       <button type="button" class="day-bar-chip {{#if allAte}}is-done{{/if}}"
               data-action="togglePanel"
-              title="Characters who have eaten today. Everyone needs a ration a day — hunger costs -1 Attack from day one and 1 Constitution a day from day seven (Player's Book p153).">
+              title="{{localize "DOLMENWOOD.DayBar.Panel.Ate.Hint"}}">
         <i class="fas fa-drumstick-bite"></i> {{ateCount}}/{{partySize}}
       </button>
       <button type="button" class="day-bar-chip {{#if allSlept}}is-done{{/if}}"
               data-action="togglePanel"
-              title="Characters who got a GOOD night's rest. Anything less leaves them exhausted until they do (Player's Book p159).">
+              title="{{localize "DOLMENWOOD.DayBar.Panel.Slept.Hint"}}">
         <i class="fas fa-bed"></i> {{sleptCount}}/{{partySize}}
       </button>
       {{#if warnings}}
@@ -438,25 +438,25 @@
 {{#if isGM}}
 <div class="day-bar-panel">
   <div class="day-bar-panel-head">
-    <span class="day-bar-panel-name">Character</span>
-    <span class="day-bar-panel-col">Ate</span>
-    <span class="day-bar-panel-col">Slept well</span>
-    <span class="day-bar-panel-col">Hunger</span>
-    <span class="day-bar-panel-col">No sleep</span>
-    <span class="day-bar-panel-col">No rest</span>
-    <span class="day-bar-panel-col day-bar-panel-penalty-head">Penalty</span>
+    <span class="day-bar-panel-name">{{localize "DOLMENWOOD.DayBar.Panel.Character"}}</span>
+    <span class="day-bar-panel-col">{{localize "DOLMENWOOD.DayBar.Panel.Ate.Label"}}</span>
+    <span class="day-bar-panel-col">{{localize "DOLMENWOOD.DayBar.Panel.Slept.Label"}}</span>
+    <span class="day-bar-panel-col">{{localize "DOLMENWOOD.DayBar.Panel.Hunger"}}</span>
+    <span class="day-bar-panel-col">{{localize "DOLMENWOOD.DayBar.Panel.NoSleep"}}</span>
+    <span class="day-bar-panel-col">{{localize "DOLMENWOOD.DayBar.Panel.NoRest.Label"}}</span>
+    <span class="day-bar-panel-col day-bar-panel-penalty-head">{{localize "DOLMENWOOD.DayBar.Panel.Penalty"}}</span>
   </div>
   {{#each party}}
   <div class="day-bar-panel-row">
     <span class="day-bar-panel-name">
       {{this.name}}
-      {{#unless this.hasFood}}<i class="fas fa-utensils-slash day-bar-nofood" title="Carrying nothing edible"></i>{{/unless}}
+      {{#unless this.hasFood}}<i class="fas fa-utensils-slash day-bar-nofood" title="{{localize "DOLMENWOOD.DayBar.Panel.NoFood"}}"></i>{{/unless}}
     </span>
 
     {{#if ../isGM}}
     <button type="button" class="day-bar-panel-tick {{#if this.ate}}is-on{{/if}}"
             data-action="toggleAte" data-actor-id="{{this.actorId}}" data-value="{{this.ate}}"
-            title="Eating a ration from the inventory or a meal at an inn ticks this by itself">
+            title="{{localize "DOLMENWOOD.DayBar.Panel.Ate.Row"}}">
       <i class="fas {{#if this.ate}}fa-square-check{{else}}fa-square{{/if}}"></i>
     </button>
     {{else}}
@@ -468,7 +468,7 @@
     {{#if ../isGM}}
     <button type="button" class="day-bar-panel-tick {{#if this.sleptWell}}is-on{{/if}}"
             data-action="toggleSlept" data-actor-id="{{this.actorId}}" data-value="{{this.sleptWell}}"
-            title="A GOOD night's rest, not merely lying down: easy conditions are automatic, moderate and difficult ones need a Constitution Check, impossible ones fail outright (Player's Book p159). Paying for lodging at an inn ticks this by itself.">
+            title="{{localize "DOLMENWOOD.DayBar.Panel.Slept.Row"}}">
       <i class="fas {{#if this.sleptWell}}fa-square-check{{else}}fa-square{{/if}}"></i>
     </button>
     {{else}}
@@ -490,8 +490,8 @@
     {{#if ../isGM}}
     <button type="button" class="day-bar-panel-col day-bar-panel-rest {{#if this.overdue}}is-bad{{/if}}"
             data-action="restChar" data-actor-id="{{this.actorId}}"
-            title="Travel days since this character last rested. The counter rises on every day the party spends a Travel Point, and clears on a day it spends none and this character sleeps well. A week is six travel days and one of rest, so the seventh travel day without one costs -1 to Attack and Damage Rolls until it is taken (Player's Book p157). A forced march owes its rest day at once. Click to clear both by hand.">
-      {{this.travelDaysSinceRest}}/{{../restLimit}}{{#if this.forcedMarchesSinceRest}}<i class="fas fa-person-running-fast day-bar-forced-flag" title="Forced marches since the last rest day"></i>{{this.forcedMarchesSinceRest}}{{/if}}
+            title="{{localize "DOLMENWOOD.DayBar.Panel.NoRest.Row"}}">
+      {{this.travelDaysSinceRest}}/{{../restLimit}}{{#if this.forcedMarchesSinceRest}}<i class="fas fa-person-running-fast day-bar-forced-flag" title="{{localize "DOLMENWOOD.DayBar.Panel.ForcedMarches"}}"></i>{{this.forcedMarchesSinceRest}}{{/if}}
     </button>
     {{else}}
     <span class="day-bar-panel-col day-bar-panel-rest {{#if this.overdue}}is-bad{{/if}}">{{this.travelDaysSinceRest}}/{{../restLimit}}</span>

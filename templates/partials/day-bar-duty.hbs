@@ -16,7 +16,7 @@
   {{#if @root.isGM}}
   <button type="button" class="day-bar-duty-tick"
           data-action="toggleDuty" data-duty-id="{{this.id}}" data-done="{{this.done}}"
-          title="Tick off by hand, without rolling">
+          title="{{localize "DOLMENWOOD.DayBar.TickByHand"}}">
     <i class="fas {{#if this.done}}fa-square-check{{else}}fa-square{{/if}} day-bar-tick"></i>
   </button>
   {{else}}
@@ -34,7 +34,7 @@
   {{#if this.fxShown}}
   <button type="button" class="day-bar-duty-fx{{#if this.fxOn}} is-on{{/if}}"
           data-action="toggleWeatherFx" title="{{this.fxTitle}}"
-          aria-label="Show the weather on this map">
+          aria-label="{{localize "DOLMENWOOD.DayBar.ShowWeather"}}">
     <i class="fas {{#if this.fxOn}}fa-cloud-sun-rain{{else}}fa-cloud-slash{{/if}}"></i>
   </button>
   {{/if}}
@@ -44,14 +44,14 @@
   {{#if this.keyable}}
   <button type="button" class="day-bar-duty-key{{#if this.open}} is-open{{/if}}"
           data-action="toggleDutyOpen" data-duty-id="{{this.id}}" data-open="{{this.open}}"
-          title="{{this.keyTitle}}" aria-label="Open this duty to the players">
+          title="{{this.keyTitle}}" aria-label="{{localize "DOLMENWOOD.DayBar.OpenDuty"}}">
     <i class="fas {{#if this.open}}fa-lock-open{{else}}fa-lock{{/if}}"></i>
   </button>
   {{/if}}
   {{#if @root.isGM}}
   {{#if this.result}}
   <button type="button" class="day-bar-duty-roll" data-action="clearDuty" data-duty-id="{{this.id}}"
-          title="Take this roll back so it can be made again">
+          title="{{localize "DOLMENWOOD.DayBar.TakeRollBack"}}">
     <i class="fas fa-rotate-left"></i>
   </button>
   {{else}}
