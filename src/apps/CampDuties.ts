@@ -1,4 +1,5 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { t } from "../helpers/i18n";
 import { stepper, wireSteppers } from "../helpers/steppers";
 import { FlagManager } from "../data/FlagManager";
 import { getConvoyActors, getPartyActors } from "../data/sharedStore";
@@ -1075,7 +1076,7 @@ export async function promptSleep(): Promise<SleepChoice | null> {
             : ` — ${campfire ? "the camp has one" : "there is none"}, as the fire step left it`
         }
       </label>
-      <p class="hint">${escapeHTML(season.label)}${
+      <p class="hint">${escapeHTML(t(season.labelKey))}${
         host === (season.id as string) ? "" : ` (an unseason falling in ${host})`
       }${
         bonus ? `, ${bonus > 0 ? "+" : ""}${bonus} from the evening's cooking and company` : ""

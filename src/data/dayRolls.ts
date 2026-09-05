@@ -1,4 +1,5 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { t as tr } from "../helpers/i18n";
 import { announce, isGM, noteLine, rollDice, total, whisperToGMs } from "./rollCard";
 
 /**
@@ -155,7 +156,7 @@ export async function rollWeather(): Promise<WeatherResult | undefined> {
   // number elsewhere on the bar.
   const borrowed =
     table !== season
-      ? `<p class="dw-day-roll-note">${escapeHTML(info.label)} has no weather table of its own — rolled on ${escapeHTML(table)}.</p>`
+      ? `<p class="dw-day-roll-note">${escapeHTML(tr(info.labelKey))} has no weather table of its own — rolled on ${escapeHTML(table)}.</p>`
       : "";
 
   // Public: the characters can see the sky. Hiding the weather from the table
@@ -166,7 +167,7 @@ export async function rollWeather(): Promise<WeatherResult | undefined> {
     `<div class="dw-day-roll">
       <h3><i class="fas fa-cloud-sun-rain"></i> Weather</h3>
       <p class="dw-day-roll-headline">${escapeHTML(entry.text)}</p>
-      <p class="dw-day-roll-sub">${escapeHTML(info.label)}, 2d6 = ${roll}</p>
+      <p class="dw-day-roll-sub">${escapeHTML(tr(info.labelKey))}, 2d6 = ${roll}</p>
       ${borrowed}
       ${effectChips(entry.effects)}
     </div>`,
@@ -222,11 +223,11 @@ export async function rollGettingLost(): Promise<LostResult | undefined> {
 
   await setDutyResult("lost", { lost: result });
 
-  const t = terrainInfo(ctx.terrain);
+  const terr = terrainInfo(ctx.terrain);
   const where =
     ctx.way === "wild"
-      ? `travelling wild in ${t.label.toLowerCase()}`
-      : `following a ${wayInfo(ctx.way).label.toLowerCase()}`;
+      ? `travelling wild in ${tr(terr.labelKey).toLowerCase()}`
+      : `following a ${tr(wayInfo(ctx.way).labelKey).toLowerCase()}`;
 
   const body = lost
     ? `<p class="dw-day-roll-headline is-bad">Lost.</p>
@@ -459,7 +460,7 @@ export async function rollFindingFood(
       ${noteLine(entry.note)}
       ${yieldLine}`;
   } else {
-    const t = terrainInfo(ctx.terrain);
+    const terr = terrainInfo(ctx.terrain);
     const whichDie = await rollDice("1d20");
     dice.push(whichDie);
     const which = total(whichDie);
@@ -482,7 +483,7 @@ export async function rollFindingFood(
     const extras = Object.values(creatureButtons(name, uuid, total(countDie))).filter(Boolean).join("");
 
     body = `<p class="dw-day-roll-headline">${escapeHTML(name)} &times;${total(countDie)}</p>
-      <p class="dw-day-roll-sub">${escapeHTML(t.label)}, 1d20 = ${which}; number ${numberDice} = ${total(countDie)}</p>
+      <p class="dw-day-roll-sub">${escapeHTML(tr(terr.labelKey))}, 1d20 = ${which}; number ${numberDice} = ${total(countDie)}</p>
       <p class="dw-day-roll-consequence">The party has crept up on them. The kill is a normal combat encounter: the party has surprise and begins <strong>${feet} feet</strong> away (1d4 &times; 30 = ${total(distanceDie)} &times; 30).</p>
       <p class="dw-day-roll-yield"><strong>Rations by Hit Points of what falls</strong> — 1 per HP for small game, 2 for medium, 4 for large (Player's Book p152).</p>`;
 

@@ -1,4 +1,5 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { t } from "../helpers/i18n";
 import { bookRef } from "./books";
 import { whisperToGMs } from "./rollCard";
 import { hexInfo, type HexInfo } from "./hexes";
@@ -73,7 +74,7 @@ function briefingCard(here: HexInfo): string {
   // decides anything before the party has done a thing.
   const travel = `<p class="dw-day-roll-yield"><i class="fas fa-person-hiking"></i>
     <strong>${here.cost} Travel Point${here.cost === 1 ? "" : "s"}</strong> to cross${
-      band ? ` &middot; ${escapeHTML(band.travel)}` : ""
+      band ? ` &middot; ${escapeHTML(t(band.travelKey))}` : ""
     }</p>`;
 
   // **Then what it is like** — short points, not a paragraph, and in plain

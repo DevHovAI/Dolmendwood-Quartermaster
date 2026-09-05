@@ -1,4 +1,5 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { t } from "../helpers/i18n";
 import { getPartyActors, getSharedActor } from "../data/sharedStore";
 import { getExtras } from "../data/characterSheet";
 import { getDayContext, terrainInfo } from "../data/dayContext";
@@ -187,7 +188,7 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
           </label>
 
           <p class="hint dw-food-hint">
-            Hunting rolls against <strong>${escapeHTML(terrain.label.toLowerCase())}</strong>,
+            Hunting rolls against <strong>${escapeHTML(t(terrain.labelKey).toLowerCase())}</strong>,
             foraging against <strong>${escapeHTML(ctx.season)}</strong> — both from the
             bar's "where are we?" row.
           </p>

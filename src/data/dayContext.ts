@@ -1,4 +1,5 @@
 import { briefHex } from "./hexBriefing";
+import { t } from "../helpers/i18n";
 import { MODULE_ID, SETTINGS } from "../constants";
 import { SETTLEMENTS, type Settlement } from "./settlementEncounters";
 
@@ -119,116 +120,116 @@ export interface DayContext {
  */
 export const SEASONS: {
   id: Season;
-  label: string;
+  labelKey: string;
   icon: string;
-  months: string;
+  monthsKey: string;
   host: "winter" | "spring" | "summer" | "autumn";
-  hint: string;
+  hintKey: string;
 }[] = [
   {
     id: "winter",
-    label: "Winter",
+    labelKey: "DOLMENWOOD.Ctx.Season.Winter.Label",
     icon: "fa-snowflake",
-    months: "Grimvold, Lymewald, Haggryme",
+    monthsKey: "DOLMENWOOD.Ctx.Season.Winter.Months",
     host: "winter",
-    hint: "Winter's hold is light since the Cold Prince was vanquished — the waters seldom freeze, and snow rarely piles deep. Foraging yields only 1d4.",
+    hintKey: "DOLMENWOOD.Ctx.Season.Winter.Hint",
   },
   {
     id: "spring",
-    label: "Spring",
+    labelKey: "DOLMENWOOD.Ctx.Season.Spring.Label",
     icon: "fa-seedling",
-    months: "Symswald, Harchment, Iggwyld",
+    monthsKey: "DOLMENWOOD.Ctx.Season.Spring.Months",
     host: "spring",
-    hint: "Sunny and clement. Dolmenwood is widely held to be at its most beautiful.",
+    hintKey: "DOLMENWOOD.Ctx.Season.Spring.Hint",
   },
   {
     id: "summer",
-    label: "Summer",
+    labelKey: "DOLMENWOOD.Ctx.Season.Summer.Label",
     icon: "fa-sun",
-    months: "Chysting, Lillipythe, Haelhold",
+    monthsKey: "DOLMENWOOD.Ctx.Season.Summer.Months",
     host: "summer",
-    hint: "Hot, humid, and abuzz with insects. Sprite season — Lillipythe is awash with them.",
+    hintKey: "DOLMENWOOD.Ctx.Season.Summer.Hint",
   },
   {
     id: "autumn",
-    label: "Autumn",
+    labelKey: "DOLMENWOOD.Ctx.Season.Autumn.Label",
     icon: "fa-leaf",
-    months: "Reedwryme, Obthryme, Braghold",
+    monthsKey: "DOLMENWOOD.Ctx.Season.Autumn.Months",
     host: "autumn",
-    hint: "The best foraging of the year: 1d8 rations rather than the usual 1d6.",
+    hintKey: "DOLMENWOOD.Ctx.Season.Autumn.Hint",
   },
   {
     id: "hitching",
-    label: "Hitching",
+    labelKey: "DOLMENWOOD.Ctx.Season.Hitching.Label",
     icon: "fa-moon-over-sun",
-    months: "unseason — first 20 days of Grimvold",
+    monthsKey: "DOLMENWOOD.Ctx.Season.Hitching.Months",
     host: "winter",
-    hint: "Unseason. The trees drip with dew, balmy mists fill the woods, and the fey moon shines beside the true one. Has a weather table of its own; falls in winter, so foraging yields 1d4.",
+    hintKey: "DOLMENWOOD.Ctx.Season.Hitching.Hint",
   },
   {
     id: "colliggwyld",
-    label: "Colliggwyld",
+    labelKey: "DOLMENWOOD.Ctx.Season.Colliggwyld.Label",
     icon: "fa-mushroom",
-    months: "unseason — the month of Iggwyld",
+    monthsKey: "DOLMENWOOD.Ctx.Season.Colliggwyld.Months",
     host: "spring",
-    hint: "Unseason. Giant fungi bloom throughout the Wood, and foraged fungi are found in DOUBLE quantity. Uses the spring weather table.",
+    hintKey: "DOLMENWOOD.Ctx.Season.Colliggwyld.Hint",
   },
   {
     id: "chame",
-    label: "Chame",
+    labelKey: "DOLMENWOOD.Ctx.Season.Chame.Label",
     icon: "fa-staff-snake",
-    months: "unseason — 2d10 days from early Haelhold",
+    monthsKey: "DOLMENWOOD.Ctx.Season.Chame.Months",
     host: "summer",
-    hint: "Unseason. Serpents fill the wood. Any encounter has a 2-in-6 chance of being snakes or wyrms instead. Uses the summer weather table.",
+    hintKey: "DOLMENWOOD.Ctx.Season.Chame.Hint",
   },
   {
     id: "vague",
-    label: "Vague",
+    labelKey: "DOLMENWOOD.Ctx.Season.Vague.Label",
     icon: "fa-smog",
-    months: "unseason — 1d6 days in Lymewald or Haggryme",
+    monthsKey: "DOLMENWOOD.Ctx.Season.Vague.Months",
     host: "winter",
-    hint: "Unseason. A sinister fog rolls from the earth and the dead rise with it. Any encounter has a 2-in-6 chance of being undead. Has a weather table of its own; falls in winter, so foraging yields 1d4.",
+    hintKey: "DOLMENWOOD.Ctx.Season.Vague.Hint",
   },
 ];
 
 /** What a band costs and risks (Terrain Types, Player's Book p156). */
 export const TERRAIN_BANDS: Record<
   TerrainBand,
-  { label: string; chanceIn6: number; cost: number; travel: string }
+  { labelKey: string; chanceIn6: number; cost: number; travelKey: string }
 > = {
   light: {
-    label: "Light",
+    labelKey: "DOLMENWOOD.Ctx.Band.Light.Label",
     chanceIn6: 1,
     cost: 2,
-    travel: "Mounts and vehicles may enter.",
+    travelKey: "DOLMENWOOD.Ctx.Band.Light.Travel",
   },
   moderate: {
-    label: "Moderate",
+    labelKey: "DOLMENWOOD.Ctx.Band.Moderate.Label",
     chanceIn6: 2,
     cost: 3,
-    travel: "Mounts must be led; no vehicles.",
+    travelKey: "DOLMENWOOD.Ctx.Band.Moderate.Travel",
   },
   difficult: {
-    label: "Difficult",
+    labelKey: "DOLMENWOOD.Ctx.Band.Difficult.Label",
     chanceIn6: 3,
     cost: 4,
-    travel: "No mounts or vehicles.",
+    travelKey: "DOLMENWOOD.Ctx.Band.Difficult.Travel",
   },
 };
 
-export const TERRAINS: { id: Terrain; label: string; band: TerrainBand; blurb: string }[] = [
-  { id: "farmland", label: "Farmland", band: "light", blurb: "Tilled fields and lanes" },
-  { id: "fungal-forest", label: "Fungal forest", band: "light", blurb: "Giant fungi, few trees" },
-  { id: "hills", label: "Hills", band: "light", blurb: "Undulating grassland" },
-  { id: "meadow", label: "Meadow", band: "light", blurb: "Flat grassland" },
-  { id: "open-forest", label: "Open forest", band: "light", blurb: "Light, airy woods" },
-  { id: "bog", label: "Bog", band: "moderate", blurb: "Treeless mire" },
-  { id: "hilly-forest", label: "Hilly forest", band: "moderate", blurb: "Undulating woods" },
-  { id: "tangled-forest", label: "Tangled forest", band: "moderate", blurb: "Dense, gloomy woods" },
-  { id: "boggy-forest", label: "Boggy forest", band: "difficult", blurb: "Wet, muddy woods" },
-  { id: "craggy-forest", label: "Craggy forest", band: "difficult", blurb: "Broken terrain, cliffs" },
-  { id: "swamp", label: "Swamp", band: "difficult", blurb: "Wetland, sparse trees" },
-  { id: "thorny-forest", label: "Thorny forest", band: "difficult", blurb: "Dense thorn thickets" },
+export const TERRAINS: { id: Terrain; labelKey: string; band: TerrainBand; blurbKey: string }[] = [
+  { id: "farmland", labelKey: "DOLMENWOOD.Ctx.Terrain.Farmland.Label", band: "light", blurbKey: "DOLMENWOOD.Ctx.Terrain.Farmland.Blurb" },
+  { id: "fungal-forest", labelKey: "DOLMENWOOD.Ctx.Terrain.FungalForest.Label", band: "light", blurbKey: "DOLMENWOOD.Ctx.Terrain.FungalForest.Blurb" },
+  { id: "hills", labelKey: "DOLMENWOOD.Ctx.Terrain.Hills.Label", band: "light", blurbKey: "DOLMENWOOD.Ctx.Terrain.Hills.Blurb" },
+  { id: "meadow", labelKey: "DOLMENWOOD.Ctx.Terrain.Meadow.Label", band: "light", blurbKey: "DOLMENWOOD.Ctx.Terrain.Meadow.Blurb" },
+  { id: "open-forest", labelKey: "DOLMENWOOD.Ctx.Terrain.OpenForest.Label", band: "light", blurbKey: "DOLMENWOOD.Ctx.Terrain.OpenForest.Blurb" },
+  { id: "bog", labelKey: "DOLMENWOOD.Ctx.Terrain.Bog.Label", band: "moderate", blurbKey: "DOLMENWOOD.Ctx.Terrain.Bog.Blurb" },
+  { id: "hilly-forest", labelKey: "DOLMENWOOD.Ctx.Terrain.HillyForest.Label", band: "moderate", blurbKey: "DOLMENWOOD.Ctx.Terrain.HillyForest.Blurb" },
+  { id: "tangled-forest", labelKey: "DOLMENWOOD.Ctx.Terrain.TangledForest.Label", band: "moderate", blurbKey: "DOLMENWOOD.Ctx.Terrain.TangledForest.Blurb" },
+  { id: "boggy-forest", labelKey: "DOLMENWOOD.Ctx.Terrain.BoggyForest.Label", band: "difficult", blurbKey: "DOLMENWOOD.Ctx.Terrain.BoggyForest.Blurb" },
+  { id: "craggy-forest", labelKey: "DOLMENWOOD.Ctx.Terrain.CraggyForest.Label", band: "difficult", blurbKey: "DOLMENWOOD.Ctx.Terrain.CraggyForest.Blurb" },
+  { id: "swamp", labelKey: "DOLMENWOOD.Ctx.Terrain.Swamp.Label", band: "difficult", blurbKey: "DOLMENWOOD.Ctx.Terrain.Swamp.Blurb" },
+  { id: "thorny-forest", labelKey: "DOLMENWOOD.Ctx.Terrain.ThornyForest.Label", band: "difficult", blurbKey: "DOLMENWOOD.Ctx.Terrain.ThornyForest.Blurb" },
 ];
 
 export type Region =
@@ -268,24 +269,24 @@ export const REGIONS: { id: Region; label: string }[] = [
   { id: "valley-of-wise-beasts", label: "Valley of Wise Beasts" },
 ];
 
-export const WAYS: { id: Way; label: string; icon: string; hint: string }[] = [
+export const WAYS: { id: Way; labelKey: string; icon: string; hintKey: string }[] = [
   {
     id: "road",
-    label: "Road",
+    labelKey: "DOLMENWOOD.Ctx.Way.Road.Label",
     icon: "fa-road",
-    hint: "An actively maintained road. Travel is quick and there is no chance of getting lost at all — the roll is made only when the party leaves it.",
+    hintKey: "DOLMENWOOD.Ctx.Way.Road.Hint",
   },
   {
     id: "track",
-    label: "Track",
+    labelKey: "DOLMENWOOD.Ctx.Way.Track.Label",
     icon: "fa-route",
-    hint: "A smaller path, seldom frequented and sporadically maintained. Travel is quick, with a small risk of losing the way.",
+    hintKey: "DOLMENWOOD.Ctx.Way.Track.Hint",
   },
   {
     id: "wild",
-    label: "Wild",
+    labelKey: "DOLMENWOOD.Ctx.Way.Wild.Label",
     icon: "fa-tree",
-    hint: "Off roads and tracks. Speed and the chance of getting lost both come from the terrain.",
+    hintKey: "DOLMENWOOD.Ctx.Way.Wild.Hint",
   },
 ];
 
@@ -406,10 +407,10 @@ export function seasonInfo(id: Season) {
 
 export function terrainInfo(id: Terrain) {
   const entry = TERRAINS.find((t) => t.id === id) ?? TERRAINS[0];
-  // Destructured, not spread wholesale: the band carries a `label` of its own
+  // Destructured, not spread wholesale: the band carries a `labelKey` of its own
   // ("Moderate") which would otherwise overwrite the terrain's ("Tangled forest").
-  const { label: bandLabel, ...band } = TERRAIN_BANDS[entry.band];
-  return { ...entry, ...band, bandLabel };
+  const { labelKey: bandLabelKey, ...band } = TERRAIN_BANDS[entry.band];
+  return { ...entry, ...band, bandLabelKey };
 }
 
 export function wayInfo(id: Way) {
@@ -428,7 +429,11 @@ export function regionInfo(id: Region) {
 export function terrainGroups() {
   return (Object.keys(TERRAIN_BANDS) as TerrainBand[]).map((band) => ({
     band,
-    label: `${TERRAIN_BANDS[band].label} — ${TERRAIN_BANDS[band].chanceIn6}-in-6, ${TERRAIN_BANDS[band].cost} TP`,
+    label: t("DOLMENWOOD.Ctx.Band.Group", {
+      band: t(TERRAIN_BANDS[band].labelKey),
+      chance: TERRAIN_BANDS[band].chanceIn6,
+      cost: TERRAIN_BANDS[band].cost,
+    }),
     terrains: TERRAINS.filter((t) => t.band === band),
   }));
 }

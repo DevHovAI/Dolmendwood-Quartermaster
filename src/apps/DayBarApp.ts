@@ -381,22 +381,48 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
                 t("DOLMENWOOD.DayBar.Moved.Confirm"),
             }
           : undefined,
-        seasons: SEASONS.map((x) => ({ ...x, selected: x.id === ctx.season })),
+        seasons: SEASONS.map((x) => ({
+          id: x.id,
+          icon: x.icon,
+          label: t(x.labelKey),
+          selected: x.id === ctx.season,
+        })),
         // Grouped by band, so the dropdown reads like the book's own table and
         // the cost and risk of each group are visible while choosing.
         terrainGroups: terrainGroups().map((g) => ({
-          ...g,
-          terrains: g.terrains.map((x) => ({ ...x, selected: x.id === ctx.terrain })),
+          band: g.band,
+          label: g.label,
+          terrains: g.terrains.map((x) => ({
+            id: x.id,
+            label: t(x.labelKey),
+            selected: x.id === ctx.terrain,
+          })),
         })),
-        ways: WAYS.map((x) => ({ ...x, selected: x.id === ctx.way })),
+        ways: WAYS.map((x) => ({
+          id: x.id,
+          icon: x.icon,
+          label: t(x.labelKey),
+          selected: x.id === ctx.way,
+        })),
         regions: REGIONS.map((x) => ({ ...x, selected: x.id === ctx.region })),
         settlements: [
           { id: "elsewhere", label: t("DOLMENWOOD.DayBar.Ctx.NoSettlement"), selected: ctx.settlement === "elsewhere" },
           ...SETTLEMENTS.map((x) => ({ ...x, selected: x.id === ctx.settlement })),
         ],
-        seasonHint: `${season.label} — ${season.months}. ${season.hint}`,
-        terrainHint: t("DOLMENWOOD.DayBar.Ctx.TerrainHint", { label: terrain.label, band: terrain.bandLabel.toLowerCase(), blurb: terrain.blurb, chance: terrain.chanceIn6, cost: terrain.cost, travel: terrain.travel }),
-        wayHint: `${way.label}: ${way.hint}`,
+        seasonHint: t("DOLMENWOOD.DayBar.Ctx.SeasonHint", {
+          label: t(season.labelKey),
+          months: t(season.monthsKey),
+          hint: t(season.hintKey),
+        }),
+        terrainHint: t("DOLMENWOOD.DayBar.Ctx.TerrainHint", {
+          label: t(terrain.labelKey),
+          band: t(terrain.bandLabelKey).toLowerCase(),
+          blurb: t(terrain.blurbKey),
+          chance: terrain.chanceIn6,
+          cost: terrain.cost,
+          travel: t(terrain.travelKey),
+        }),
+        wayHint: t("DOLMENWOOD.DayBar.Ctx.WayHint", { label: t(way.labelKey), hint: t(way.hintKey) }),
         settlementHint:
           ctx.settlement === "elsewhere"
             ? t("DOLMENWOOD.DayBar.Ctx.SettlementNone")
@@ -419,7 +445,7 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
         hexNote: here?.note ?? "",
         hexAlso: here?.alsoRegion ?? "",
         hexHint: here
-          ? t("DOLMENWOOD.DayBar.Ctx.HexHint", { hex: here.hex, name: here.name, terrain: terrain.label, region: region.label, lost: here.lost, page: here.page })
+          ? t("DOLMENWOOD.DayBar.Ctx.HexHint", { hex: here.hex, name: here.name, terrain: t(terrain.labelKey), region: region.label, lost: here.lost, page: here.page })
           : t("DOLMENWOOD.DayBar.Ctx.HexEmpty"),
         // The crosshairs: one measurement per map, and after it the hex reads
         // itself off the token. Offered to the Referee only, and only where

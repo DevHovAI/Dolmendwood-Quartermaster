@@ -1,4 +1,5 @@
 import { regionInfo, terrainInfo, type Region, type Terrain, type Way } from "./dayContext";
+import { t } from "../helpers/i18n";
 import type { DutyMode } from "./dayDuties";
 
 /**
@@ -841,10 +842,14 @@ export function encounterChance(
           reason: "1-in-6 at night in a settlement, if the characters are active (Player's Book p160).",
         };
   }
-  const t = terrainInfo(terrain);
+  const terr = terrainInfo(terrain);
   return {
-    inSix: t.chanceIn6,
-    reason: `${t.chanceIn6}-in-6 in ${t.label.toLowerCase()} (${t.bandLabel.toLowerCase()} terrain, Player's Book p157).`,
+    inSix: terr.chanceIn6,
+    reason: t("DOLMENWOOD.Encounter.Reason.Terrain", {
+      chance: terr.chanceIn6,
+      terrain: t(terr.labelKey),
+      band: t(terr.bandLabelKey).toLowerCase(),
+    }),
   };
 }
 

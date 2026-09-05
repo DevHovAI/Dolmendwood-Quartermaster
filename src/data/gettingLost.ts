@@ -1,4 +1,5 @@
 import { terrainInfo, type Terrain, type Way } from "./dayContext";
+import { t } from "../helpers/i18n";
 
 /**
  * Losing the way (Player's Book p153, p156; Campaign Book p113).
@@ -58,16 +59,17 @@ export function lostChance(way: Way, terrain: Terrain, poorVisibility: boolean):
     };
   }
 
-  const t = terrainInfo(terrain);
+  const terr = terrainInfo(terrain);
   const weather = poorVisibility ? 1 : 0;
   return {
-    inSix: t.chanceIn6 + weather,
-    base: t.chanceIn6,
+    inSix: terr.chanceIn6 + weather,
+    base: terr.chanceIn6,
     weather,
-    reason:
-      `${t.chanceIn6}-in-6 travelling wild in ${t.label.toLowerCase()} (${t.bandLabel.toLowerCase()} terrain)` +
-      (weather ? ", +1 for poor visibility (Campaign Book p112)" : "") +
-      ".",
+    reason: t(weather ? "DOLMENWOOD.Lost.Reason.WildFog" : "DOLMENWOOD.Lost.Reason.Wild", {
+      chance: terr.chanceIn6,
+      terrain: t(terr.labelKey),
+      band: t(terr.bandLabelKey).toLowerCase(),
+    }),
   };
 }
 

@@ -1,4 +1,5 @@
 import { getDayContext, noteHexStep, setDayContext, terrainInfo, wayInfo } from "./data/dayContext";
+import { t } from "./helpers/i18n";
 import { MODULE_ID, SETTINGS, FLAGS, SOCKET_EVENTS, TRASH_LIMIT_DEFAULT } from "./constants";
 import { registerHandlebarsHelpers, registerHandlebarsPartials, escapeHTML } from "./helpers/handlebars";
 import { fitToViewport } from "./helpers/fitToViewport";
@@ -1279,7 +1280,7 @@ async function chargeTravelPoints(
     `<div class="dw-day-roll">
       <h3><i class="fas fa-person-hiking"></i> ${parts.length === 1 ? "One hex crossed" : `${parts.length} hexes crossed`}</h3>
       <p class="dw-day-roll-headline">${total} Travel Point${total === 1 ? "" : "s"}</p>
-      <p class="dw-day-roll-sub">${escapeHTML(way.label)} &mdash; ${
+      <p class="dw-day-roll-sub">${escapeHTML(t(way.labelKey))} &mdash; ${
         ctx.way === "wild"
           ? "each hex costs its own terrain"
           : "2 a hex, whatever the ground (Player's Book p156)"
