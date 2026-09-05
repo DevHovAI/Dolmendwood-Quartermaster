@@ -140,6 +140,17 @@ export function soundsFor(weather: { text: string; effects: unknown[] } | undefi
 
 // ─── The playlist ──────────────────────────────────────────────────────────────
 
+/**
+ * What went wrong last time, and when anything was last attempted.
+ *
+ * Held here rather than only printed, because every caller is a `void` call:
+ * an exception in one of them reaches no user, no log the Referee will find,
+ * and no return value. The report reads these two, so the next question is
+ * answered by the same card that asked it.
+ */
+let lastError: string | null = null;
+let lastSyncAt: string | null = null;
+
 const PLAYLIST_FLAG = "weatherPlaylist";
 const PLAYLIST_NAME = "Dolmenwood Weather";
 
@@ -220,23 +231,38 @@ async function ensurePlaylist(): Promise<PlaylistDoc | undefined> {
   // class this world actually uses — a module that subclasses Playlist puts it
   // there — and it is the only one guaranteed to create a *world* document.
   // The global is the fallback for a core that has not set it up yet.
-  const cls =
-    (CONFIG as unknown as { Playlist?: { documentClass?: unknown } }).Playlist?.documentClass ??
-    (globalThis as unknown as { Playlist?: unknown }).Playlist;
-  const create = (cls as { create?: (d: Record<string, unknown>) => Promise<PlaylistDoc | undefined> })
-    ?.create;
-  if (!create) return undefined;
+  const cls = ((CONFIG as unknown as { Playlist?: { documentClass?: unknown } }).Playlist
+    ?.documentClass ?? (globalThis as unknown as { Playlist?: unknown }).Playlist) as
+    | { create?: (d: Record<string, unknown>) => Promise<PlaylistDoc | undefined> }
+    | undefined;
+  if (!cls?.create) {
+    lastError = "no Playlist document class on this client";
+    return undefined;
+  }
 
   const modes = (CONST as unknown as { PLAYLIST_MODES?: { SIMULTANEOUS?: number } }).PLAYLIST_MODES;
-  const made = await create({
-    name: PLAYLIST_NAME,
-    mode: modes?.SIMULTANEOUS ?? 2,
-    playing: false,
-    fade: FADE,
-    sounds: [],
-    flags: { [MODULE_ID]: { [PLAYLIST_FLAG]: true } },
-  });
-  return made ?? findPlaylist();
+  try {
+    // **Called on the class, never through a saved reference.** `Document.create`
+    // is a static that reads `this` — the document name, the implementation to
+    // build — so `const create = cls.create; create(…)` throws on the first
+    // call. This module already carries that scar for `Hooks.on`, and it cost
+    // an evening a second time here: the throw happened inside a `void` call,
+    // so the playlist quietly never appeared and nothing said why.
+    const made = await cls.create({
+      name: PLAYLIST_NAME,
+      mode: modes?.SIMULTANEOUS ?? 2,
+      playing: false,
+      fade: FADE,
+      sounds: [],
+      flags: { [MODULE_ID]: { [PLAYLIST_FLAG]: true } },
+    });
+    lastError = null;
+    return made ?? findPlaylist();
+  } catch (err) {
+    lastError = err instanceof Error ? err.message : String(err);
+    console.error(`${MODULE_ID} | weather sound: could not create the playlist`, err);
+    return undefined;
+  }
 }
 
 /** Make sure every loop this module can reach for is in the playlist. */
@@ -270,7 +296,24 @@ async function ensureSounds(playlist: PlaylistDoc): Promise<void> {
 export async function syncWeatherSound(): Promise<void> {
   const g = game as Game;
   if (!g.user?.isGM) return;
+  lastSyncAt = new Date().toLocaleTimeString();
+  try {
+    await syncInner();
+    // Only clear it on a clean pass, so a failure survives long enough
+    // to be read on the card.
+    if (findPlaylist()) lastError = null;
+  } catch (err) {
+    lastError = err instanceof Error ? err.message : String(err);
+    console.error(`${MODULE_ID} | weather sound`, err);
+  }
+}
 
+/**
+ * The work itself. Split out so the wrapper above is nothing but the
+ * catch — every caller of `syncWeatherSound` is a `void` call, and an
+ * exception in one of those reaches nobody at all.
+ */
+async function syncInner(): Promise<void> {
   const on = soundOn() && simpleWeatherPresent();
   const wanted = on ? soundsForToday() : [];
 
@@ -353,6 +396,8 @@ export async function weatherSoundReport(): Promise<Record<string, unknown>> {
     weatherRolled: weather?.text ?? null,
     soundsForToday: ids,
     playlistFound: !!findPlaylist(),
+    lastSyncAt,
+    lastError,
   };
   console.log(`${MODULE_ID} | weather sound`, report);
 
@@ -366,6 +411,8 @@ export async function weatherSoundReport(): Promise<Record<string, unknown>> {
     ["Weather rolled today", weather ? escapeHTML(weather.text) : "<strong>none yet</strong>"],
     ["Loops it maps to", ids.length ? ids.join(", ") : "<strong>none — a silent day</strong>"],
     ["Playlist exists", yes(report.playlistFound)],
+    ["Last checked at", lastSyncAt ? escapeHTML(lastSyncAt) : "<strong>never ran</strong>"],
+    ["Last error", lastError ? `<strong>${escapeHTML(lastError)}</strong>` : "none"],
   ];
 
   await whisperToGMs(
