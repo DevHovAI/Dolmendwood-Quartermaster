@@ -1,0 +1,19 @@
+# Ausnahmen fuer privacy-scan.sh. Eine Zeile je erweitertem regulaerem
+# Ausdruck, geprueft gegen die ganze Fundzeile "pfad:zeile:inhalt".
+#
+# Diese Datei gehoert bewusst ins Repo: eine Ausnahme, die niemand sehen
+# kann, ist keine Ausnahme, sondern ein Loch. Sie nennt nur Dateien und
+# Buchbegriffe, nie die geschuetzten Namen selbst.
+
+# Die Namenstabellen des Buches. Dolmenwood wuerfelt seine NSC-Namen aus
+# diesen zwanzig Zeilen je Volk, und die Charaktere am Tisch sind daraus
+# gerollt worden — die Namen kollidieren also zwangslaeufig. Was hier
+# steht, steht genauso im gedruckten Band und ist kein Leck.
+^src/data/nameTables\.ts:
+
+# Ein Mosskin-Name aus dem Bestiarium, gleiche Begruendung. Nur diese eine
+# Vokabel ist ausgenommen, nicht die ganze Datei.
+^src/data/bestiary\.ts:.*\bShank\b
+
+# "Shank-orbs" ist ein Pilz.
+^src/data/findingFood\.ts:.*Shank-orbs

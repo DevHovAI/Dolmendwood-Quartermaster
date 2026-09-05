@@ -69,8 +69,8 @@ async function postServiceCard(
       ? "by arrangement"
       : `${payload.cost.amount} ${payload.cost.currency}`;
 
-  // Who it was for, only where that is not who paid. "Rogbert paid for
-  // Rogbert's bath" is noise; "Rogbert paid for Wilrun's bath" is the point.
+  // Who it was for, only where that is not who paid. "Maydrid paid for
+  // Maydrid's bath" is noise; "Maydrid paid for Tamrin's bath" is the point.
   const forLine =
     recipientName && recipientName !== payerName
       ? `for <strong>${escapeHTML(recipientName)}</strong>, paid by ${escapeHTML(payerName)}`

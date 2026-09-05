@@ -221,7 +221,7 @@ type GridLike = {
  * Beside `hexOf`, which answers only for hex grids because the shop rule is
  * written that way on purpose: a village map has no hexes and standing in the
  * village is the whole test there. **Loot needs the other answer**, and finding
- * that out cost a live test: Olfmar opened a body from clear across the battle
+ * that out cost a live test: a character opened a body from clear across the battle
  * map, because a battle map is a *square* grid, `hexOf` returned nothing, and
  * the rule fell open (Leander, 2026-08-28).
  *
