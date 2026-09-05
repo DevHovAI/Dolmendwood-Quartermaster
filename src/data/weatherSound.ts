@@ -57,8 +57,8 @@ const SOUNDS: Record<string, { name: string; file: string; maxPct?: number }> = 
   // **Snow has a ceiling of its own** (Dolmenmaster, 2026-09-05). Falling snow is
   // the quietest weather there is; the loop is not, and at the volume that
   // suits rain it sounds like static. Whatever the setting says, snow plays
-  // at fifteen — or at the setting, if that is lower still.
-  snow: { name: "Snow", file: "snow.ogg", maxPct: 15 },
+  // at ten — or at the setting, if that is lower still.
+  snow: { name: "Snow", file: "snow.ogg", maxPct: 10 },
   blizzard: { name: "Blizzard", file: "blizzard.ogg" },
   hail: { name: "Hail", file: "hail.ogg" },
   thunder: { name: "Thunder", file: "thunder.ogg" },
