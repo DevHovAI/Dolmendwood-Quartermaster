@@ -145,7 +145,11 @@ export function soundsFor(weather: { text: string; effects: unknown[] } | undefi
     // of it and the heavy-rain loop sits on top for the weight; the heavy loop
     // alone is a hiss with no rain in it.
     if (HEAVY_RAIN.test(text)) out.push({ id: "rain", pct: 35 }, { id: "heavyRain", pct: 25 });
-    else out.push({ id: "rain", pct: 20 });
+    // **Rain under thunder sits between the two.** A thunder storm is not a
+    // drizzle and the book does not word it as a downpour either, so the rain
+    // comes up from 20 without reaching for the heavy loop (Dolmenmaster,
+    // 2026-09-05).
+    else out.push({ id: "rain", pct: sky.lightning ? 30 : 20 });
   } else if (sky.falls === "snow") {
     out.push({ id: "snow", pct: 10 });
   } else if (sky.falls === "snowstorm") {
@@ -156,7 +160,7 @@ export function soundsFor(weather: { text: string; effects: unknown[] } | undefi
     out.push({ id: "hail", pct: 25 });
   }
 
-  if (sky.lightning) out.push({ id: "thunder", pct: 30 });
+  if (sky.lightning) out.push({ id: "thunder", pct: 35 });
 
   // A blizzard is already a wind loop; laying another over it makes noise
   // rather than weather.
