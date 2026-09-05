@@ -344,7 +344,12 @@ export class DayBarApp extends foundry.applications.api.HandlebarsApplicationMix
 
     return {
       collapsed,
-      modes: DUTY_MODES.map((m) => ({ ...m, active: m.id === state.mode })),
+      modes: DUTY_MODES.map((m) => ({
+        id: m.id,
+        label: t(m.labelKey),
+        icon: m.icon,
+        active: m.id === state.mode,
+      })),
 
       // The sticky context: two fixed lines, four columns, nothing folded.
       //
@@ -1184,12 +1189,12 @@ function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean, actorId = "")
     const rollable = ROLLABLE_DUTIES.has(duty.id);
     const entry = {
       id: duty.id,
-      label: duty.label,
+      label: t(duty.labelKey),
       icon: duty.icon,
       ...keyChip(duty.id, rollable, openDuties),
       // What the day already knows goes on the hover, not into the strip: the
       // strip is a checklist, and a line naming three characters unbalances it.
-      hint: withNote(duty.hint, dutyHoverNote(duty.id)),
+      hint: withNote(t(duty.hintKey), dutyHoverNote(duty.id)),
       done: isDone(duty),
       rollable,
       // Only meaningful once rolled; the strip prints it under the label so the
@@ -1207,7 +1212,7 @@ function buildBlocks(duties: Duty[], isDone: (d: Duty) => boolean, actorId = "")
     else
       blocks.push({
         groupId: duty.group,
-        groupLabel: group?.label,
+        groupLabel: group ? t(group.labelKey) : undefined,
         groupIcon: group?.icon,
         duties: [entry],
       });
@@ -1364,7 +1369,8 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
   };
 
   override get title(): string {
-    return DUTY_GROUPS[this.groupId]?.label ?? "Duties";
+    const group = DUTY_GROUPS[this.groupId];
+    return group ? t(group.labelKey) : t("DOLMENWOOD.DayBar.Group.Title");
   }
 
   /** Point an already open window at another group instead of opening a second. */
@@ -1391,9 +1397,9 @@ export class DutyGroupApp extends foundry.applications.api.HandlebarsApplication
       const rollable = ROLLABLE_DUTIES.has(d.id);
       return {
         id: d.id,
-        label: d.label,
+        label: t(d.labelKey),
         icon: d.icon,
-        hint: withNote(d.hint, dutyHoverNote(d.id)),
+        hint: withNote(t(d.hintKey), dutyHoverNote(d.id)),
         done: state.done[d.id] === true,
         rollable,
         // The result takes the hint's place once there is one: the hint is what

@@ -20,7 +20,7 @@
       {{#each modes}}
       {{#if ../isGM}}
       <button type="button" class="day-bar-mode {{#if this.active}}is-active{{/if}}"
-              data-action="setMode" data-mode="{{this.id}}" title="{{this.label}} procedure">
+              data-action="setMode" data-mode="{{this.id}}" title="{{localize "DOLMENWOOD.Duty.Mode.Hint" mode=this.label}}">
         <i class="fas {{this.icon}}"></i><span class="day-bar-mode-label">{{this.label}}</span>
       </button>
       {{else}}

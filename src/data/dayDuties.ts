@@ -31,11 +31,11 @@ import type { EncounterResult } from "./encounters";
 
 export type DutyMode = "dawn" | "travel" | "camp" | "settlement";
 
-export const DUTY_MODES: { id: DutyMode; label: string; icon: string }[] = [
-  { id: "dawn", label: "Day start", icon: "fa-sunrise" },
-  { id: "travel", label: "Travel", icon: "fa-person-hiking" },
-  { id: "camp", label: "Camp", icon: "fa-campground" },
-  { id: "settlement", label: "Settlement", icon: "fa-house-chimney" },
+export const DUTY_MODES: { id: DutyMode; labelKey: string; icon: string }[] = [
+  { id: "dawn", labelKey: "DOLMENWOOD.Duty.Mode.Dawn", icon: "fa-sunrise" },
+  { id: "travel", labelKey: "DOLMENWOOD.Duty.Mode.Travel", icon: "fa-person-hiking" },
+  { id: "camp", labelKey: "DOLMENWOOD.Duty.Mode.Camp", icon: "fa-campground" },
+  { id: "settlement", labelKey: "DOLMENWOOD.Duty.Mode.Settlement", icon: "fa-house-chimney" },
 ];
 
 /**
@@ -43,17 +43,18 @@ export const DUTY_MODES: { id: DutyMode; label: string; icon: string }[] = [
  * Its steps live behind one tick in the strip and open in their own window: seven
  * of them side by side made the Camp tab twice the width of every other one.
  */
-export const DUTY_GROUPS: Record<string, { label: string; icon: string }> = {
-  "camp-setup": { label: "Making camp", icon: "fa-campground" },
+export const DUTY_GROUPS: Record<string, { labelKey: string; icon: string }> = {
+  "camp-setup": { labelKey: "DOLMENWOOD.Duty.Group.CampSetup", icon: "fa-campground" },
 };
 
 export interface Duty {
   id: string;
-  label: string;
+  /** Sprachschluessel, nicht der Text — mit t() lesen. */
+  labelKey: string;
   icon: string;
   modes: DutyMode[];
-  /** What it is and where it comes from, shown on hover. */
-  hint: string;
+  /** Sprachschluessel des Hover-Textes, nicht der Text. */
+  hintKey: string;
   /** Draws this duty inside the named band from DUTY_GROUPS. */
   group?: keyof typeof DUTY_GROUPS;
 }
@@ -62,127 +63,127 @@ export const DUTIES: Duty[] = [
   // ── Day start: what every morning owes, wherever it began ──
   {
     id: "weather",
-    label: "Weather",
+    labelKey: "DOLMENWOOD.Duty.Weather.Label",
     icon: "fa-cloud-sun-rain",
     modes: ["dawn"],
-    hint: "Step 1 of the Travel and Settlement procedures — roll the day's weather on the Campaign Book tables. Fog and blizzards also raise the chance of getting lost, and the season decides how hard it is to sleep out.",
+    hintKey: "DOLMENWOOD.Duty.Weather.Hint",
   },
   {
     id: "healing",
-    label: "Healing",
+    labelKey: "DOLMENWOOD.Duty.Healing.Label",
     icon: "fa-heart-pulse",
     modes: ["dawn"],
-    hint: "Those who got a good night's rest heal 1 HP. A full day of rest in a settlement heals 1d3 instead, but precludes anything more strenuous than an inn chair.",
+    hintKey: "DOLMENWOOD.Duty.Healing.Hint",
   },
   {
     id: "prepare-spells",
-    label: "Prepare spells",
+    labelKey: "DOLMENWOOD.Duty.PrepareSpells.Label",
     icon: "fa-wand-sparkles",
     modes: ["dawn"],
-    hint: "Spell-casters memorise or pray for the day's spells. A character who failed to get a good night's rest has a 1-in-6 chance of losing each spell they try to prepare.",
+    hintKey: "DOLMENWOOD.Duty.PrepareSpells.Hint",
   },
 
   // ── Travel ──
   {
     id: "lost",
-    label: "Getting lost",
+    labelKey: "DOLMENWOOD.Duty.Lost.Label",
     icon: "fa-map-location-dot",
     modes: ["travel"],
-    hint: "Step 3 — one roll per travel day, made at the start of it. 1-in-6 in light terrain and on tracks, 2-in-6 moderate, 3-in-6 difficult; +1 in fog, +2 in darkness. No chance at all on a road.",
+    hintKey: "DOLMENWOOD.Duty.Lost.Hint",
   },
   {
     id: "encounter-day",
-    label: "Encounter (day)",
+    labelKey: "DOLMENWOOD.Duty.EncounterDay.Label",
     icon: "fa-sun",
     modes: ["travel", "settlement"],
-    hint: "One daytime wandering-monster check. In the wilds the chance is the terrain's (1/2/3-in-6); in a settlement it is 2-in-6 while the party is out and about.",
+    hintKey: "DOLMENWOOD.Duty.EncounterDay.Hint",
   },
   {
     id: "forage",
-    label: "Finding food",
+    labelKey: "DOLMENWOOD.Duty.Forage.Label",
     icon: "fa-wheat-awn",
     modes: ["travel"],
-    hint: "Optional — ONE Survival Check per travelling group per day, on the best Skill Target among them (Player's Book p152). Splitting up allows a check each, at the cost of a separate getting-lost and wandering-monster check per group. Foraging yields 1d6 fresh rations, 1d4 in winter and 1d8 in autumn; a whole day given over to it grants +2.",
+    hintKey: "DOLMENWOOD.Duty.Forage.Hint",
   },
 
   // ── Making camp: one job, seven steps ──
   {
     id: "campsite",
-    label: "Campsite",
+    labelKey: "DOLMENWOOD.Duty.Campsite.Label",
     icon: "fa-tents",
     modes: ["camp"],
     group: "camp-setup",
-    hint: "Step 1 — at least one character stays back to clear ground, pitch tents, and dig a fire pit.",
+    hintKey: "DOLMENWOOD.Duty.Campsite.Hint",
   },
   {
     id: "firewood",
-    label: "Firewood",
+    labelKey: "DOLMENWOOD.Duty.Firewood.Label",
     icon: "fa-fire-burner",
     modes: ["camp"],
     group: "camp-setup",
-    hint: "Each character fetching wood collects enough for 1d6 hours of fire. Damp -1, snow -2, heavy rain -4.",
+    hintKey: "DOLMENWOOD.Duty.Firewood.Hint",
   },
   {
     id: "water",
-    label: "Water",
+    labelKey: "DOLMENWOOD.Duty.Water.Label",
     icon: "fa-droplet",
     modes: ["camp"],
     group: "camp-setup",
-    hint: "Refill waterskins. Easy almost everywhere in Dolmenwood — but a character without water loses 3 Constitution a day.",
+    hintKey: "DOLMENWOOD.Duty.Water.Hint",
   },
   {
     id: "fire",
-    label: "Fire",
+    labelKey: "DOLMENWOOD.Duty.Fire.Label",
     icon: "fa-fire",
     modes: ["camp"],
     group: "camp-setup",
     // Not "every row": a campfire is worth nothing at all to a character lying
     // on bare ground — see the table itself in camping.ts.
-    hint: "Step 2 — automatic given a tinder box and wood; 4-in-6 or worse in troublesome conditions. A campfire eases the sleep difficulty for everyone who has bedding, and for nobody who has not.",
+    hintKey: "DOLMENWOOD.Duty.Fire.Hint",
   },
   {
     id: "cooking",
-    label: "Cooking",
+    labelKey: "DOLMENWOOD.Duty.Cooking.Label",
     icon: "fa-utensils",
     modes: ["camp"],
     group: "camp-setup",
-    hint: "Optional Wisdom Check. Success gives everyone +1 on the Constitution Check to rest; a natural 1 means Save Versus Doom or the ingredients are ruined.",
+    hintKey: "DOLMENWOOD.Duty.Cooking.Hint",
   },
   {
     id: "entertainment",
-    label: "Camaraderie",
+    labelKey: "DOLMENWOOD.Duty.Entertainment.Label",
     icon: "fa-guitar",
     modes: ["camp"],
     group: "camp-setup",
-    hint: "Optional Charisma Check. Success gives everyone +1 on the Constitution Check to rest; a natural 1 means Save Versus Doom or -1 instead.",
+    hintKey: "DOLMENWOOD.Duty.Entertainment.Hint",
   },
   {
     id: "watches",
-    label: "Watches",
+    labelKey: "DOLMENWOOD.Duty.Watches.Label",
     icon: "fa-tower-observation",
     modes: ["camp"],
     group: "camp-setup",
-    hint: "Step 3 — usually four characters taking 2 hour watches across 8 hours. Under 6 hours of sleep is not a good night's rest, and a broken night makes spell preparation harder. Rolling it uses the optional falling-asleep-on-watch rule.",
+    hintKey: "DOLMENWOOD.Duty.Watches.Hint",
   },
 
   // ── The night ──
   {
     id: "encounter-night",
-    label: "Encounter (night)",
+    labelKey: "DOLMENWOOD.Duty.EncounterNight.Label",
     icon: "fa-moon",
     modes: ["camp", "settlement"],
-    hint: "One nighttime wandering-monster check — the terrain's chance while camping, 1-in-6 in a settlement if the party is active. Sleeping characters are automatically surprised.",
+    hintKey: "DOLMENWOOD.Duty.EncounterNight.Hint",
   },
   {
     id: "sleep",
-    label: "Sleep",
+    labelKey: "DOLMENWOOD.Duty.Sleep.Label",
     icon: "fa-bed",
     modes: ["camp"],
     // Step 5, and the last thing the camp does — which is why it is not inside
     // the "Making camp" group: it is rolled after the night's encounter check,
     // and it is the only camp roll whose result follows the characters into
     // tomorrow.
-    hint: "Step 5 — bedding down. Fire, bedding and the season set the difficulty; an easy night is automatic, a moderate or difficult one is a Constitution Check, and an impossible one fails outright. Failing it means exhaustion until they do sleep well.",
+    hintKey: "DOLMENWOOD.Duty.Sleep.Hint",
   },
 ];
 
