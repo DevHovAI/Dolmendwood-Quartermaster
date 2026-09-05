@@ -44,8 +44,7 @@ export function lostChance(way: Way, terrain: Terrain, poorVisibility: boolean):
       inSix: 0,
       base: 0,
       weather: 0,
-      reason:
-        "No chance at all: the party is following a maintained road. The roll is made only when they leave it.",
+      reason: t("DOLMENWOOD.Lost.Reason.Road"),
     };
   }
 
@@ -54,8 +53,7 @@ export function lostChance(way: Way, terrain: Terrain, poorVisibility: boolean):
       inSix: 1,
       base: 1,
       weather: 0,
-      reason:
-        "1-in-6 on a track. The Player's Book calls it \"a small risk\" without printing a figure, so this module uses the smallest one the Terrain Types table offers. Poor visibility adds nothing here: the Campaign Book raises the chance for travelling wild only.",
+      reason: t("DOLMENWOOD.Lost.Reason.Track"),
     };
   }
 
@@ -76,7 +74,8 @@ export function lostChance(way: Way, terrain: Terrain, poorVisibility: boolean):
 export interface LostConsequence {
   min: number;
   max: number;
-  text: string;
+  /** Sprachschluessel, nicht der Text. */
+  textKey: string;
   /** Worth the Referee keeping to themselves rather than announcing. */
   secret?: boolean;
 }
@@ -90,32 +89,32 @@ export interface LostConsequence {
  * where that choice applies, so the chat card can say so instead of spoiling it.
  */
 export const LOST_CONSEQUENCES: LostConsequence[] = [
-  { min: 3, max: 3, text: "Lost in time. Travel is along the intended course, but 1d4+1 days pass." },
+  { min: 3, max: 3, textKey: "DOLMENWOOD.Lost.Consequence.R3" },
   {
     min: 4,
     max: 4,
-    text: "Accidentally stumble into a randomly selected fairy road (Fairy Roads, Campaign Book p26).",
+    textKey: "DOLMENWOOD.Lost.Consequence.R4",
   },
-  { min: 5, max: 5, text: "Move in circles, ending the day where it began." },
-  { min: 6, max: 7, text: "Travel 90° to the left of the intended course.", secret: true },
-  { min: 8, max: 9, text: "Travel 45° to the left of the intended course.", secret: true },
+  { min: 5, max: 5, textKey: "DOLMENWOOD.Lost.Consequence.R5" },
+  { min: 6, max: 7, textKey: "DOLMENWOOD.Lost.Consequence.R6", secret: true },
+  { min: 8, max: 9, textKey: "DOLMENWOOD.Lost.Consequence.R8", secret: true },
   {
     min: 10,
     max: 11,
-    text: "Travel along the intended course, but uncertain paths cause all Travel Point costs to be doubled.",
+    textKey: "DOLMENWOOD.Lost.Consequence.R10",
   },
-  { min: 12, max: 13, text: "Travel 45° to the right of the intended course.", secret: true },
-  { min: 14, max: 15, text: "Travel 90° to the right of the intended course.", secret: true },
-  { min: 16, max: 16, text: "Move in circles, ending the day where it began." },
+  { min: 12, max: 13, textKey: "DOLMENWOOD.Lost.Consequence.R12", secret: true },
+  { min: 14, max: 15, textKey: "DOLMENWOOD.Lost.Consequence.R14", secret: true },
+  { min: 16, max: 16, textKey: "DOLMENWOOD.Lost.Consequence.R16" },
   {
     min: 17,
     max: 17,
-    text: "Knocked unconscious by flashing, coloured lights. Awaken 1d4 hours later in the hex of a randomly selected nodal stone (Ley Lines and Standing Stones, Campaign Book p18).",
+    textKey: "DOLMENWOOD.Lost.Consequence.R17",
   },
   {
     min: 18,
     max: 18,
-    text: "Enveloped in a bewildering fog. Emerge at the end of the day in a randomly selected hex, at least 2 hexes from the original.",
+    textKey: "DOLMENWOOD.Lost.Consequence.R18",
   },
 ];
 
@@ -131,7 +130,14 @@ export interface LostResult {
   chance: number;
   lost: boolean;
   /** Present only when the party actually got lost. */
-  consequence?: { roll: number; text: string; secret: boolean };
+  consequence?: {
+    roll: number;
+    /** English, as it was stored before the German pass. Absent since. */
+    text?: string;
+    /** Missing on a day rolled before the German pass; `text` stands in. */
+    textKey?: string;
+    secret: boolean;
+  };
   /**
    * A hunter can find the path again on a 3-in-6 chance (CB p113). Not rolled
    * here — whether the party has one is the Referee's call, and this is a

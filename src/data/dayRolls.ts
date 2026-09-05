@@ -193,6 +193,18 @@ export async function rollWeather(): Promise<WeatherResult | undefined> {
   return result;
 }
 
+/**
+ * What today's off-course result says, in the reader's language.
+ *
+ * Two shapes reach this: a day rolled since the German pass carries the key,
+ * one rolled before it carries the English sentence and no key. A saved day
+ * must keep opening either way.
+ */
+function consequenceText(c: { text?: string; textKey?: string } | undefined): string {
+  if (!c) return "";
+  return c.textKey ? tr(c.textKey) : (c.text ?? "");
+}
+
 // ─── Getting lost ──────────────────────────────────────────────────────────────
 
 export async function rollGettingLost(): Promise<LostResult | undefined> {
@@ -210,8 +222,8 @@ export async function rollGettingLost(): Promise<LostResult | undefined> {
     await setDutyResult("lost", { lost: result });
     await whisperToGMs(
       `<div class="dw-day-roll">
-        <h3><i class="fas fa-map-location-dot"></i> Getting lost</h3>
-        <p class="dw-day-roll-headline">No roll: the party is on a road.</p>
+        <h3><i class="fas fa-map-location-dot"></i> ${escapeHTML(tr("DOLMENWOOD.Duty.Lost.Label"))}</h3>
+        <p class="dw-day-roll-headline">${escapeHTML(tr("DOLMENWOOD.Lost.Card.NoRoll"))}</p>
         <p class="dw-day-roll-sub">${escapeHTML(chance.reason)}</p>
       </div>`
     );
@@ -231,7 +243,9 @@ export async function rollGettingLost(): Promise<LostResult | undefined> {
     const consequence = lostConsequence(cRoll);
     result.consequence = {
       roll: cRoll,
-      text: consequence?.text ?? "—",
+      // The key, not the sentence: a day saved in German must still read in
+      // English if the world is switched over, and the other way round.
+      textKey: consequence?.textKey,
       secret: !!consequence?.secret,
     };
     result.hunterHint = true;
@@ -242,22 +256,27 @@ export async function rollGettingLost(): Promise<LostResult | undefined> {
   const terr = terrainInfo(ctx.terrain);
   const where =
     ctx.way === "wild"
-      ? `travelling wild in ${tr(terr.labelKey).toLowerCase()}`
-      : `following a ${tr(wayInfo(ctx.way).labelKey).toLowerCase()}`;
+      ? tr("DOLMENWOOD.Lost.Card.Wild", { terrain: tr(terr.labelKey) })
+      : tr("DOLMENWOOD.Lost.Card.OnWay", { way: tr(wayInfo(ctx.way).labelKey) });
 
+  const rolled = escapeHTML(
+    tr("DOLMENWOOD.Lost.Card.Rolled", { roll, chance: chance.inSix, where })
+  );
   const body = lost
-    ? `<p class="dw-day-roll-headline is-bad">Lost.</p>
-      <p class="dw-day-roll-sub">1d6 = ${roll}, against ${chance.inSix}-in-6 &mdash; ${escapeHTML(where)}</p>
-      <p class="dw-day-roll-consequence"><strong>3d6 = ${result.consequence?.roll}.</strong>
-        ${escapeHTML(result.consequence?.text ?? "")}</p>
+    ? `<p class="dw-day-roll-headline is-bad">${escapeHTML(tr("DOLMENWOOD.Lost.Card.Lost"))}</p>
+      <p class="dw-day-roll-sub">${rolled}</p>
+      <p class="dw-day-roll-consequence"><strong>${escapeHTML(
+        tr("DOLMENWOOD.Lost.Card.Consequence", { roll: result.consequence?.roll ?? 0 })
+      )}</strong>
+        ${escapeHTML(consequenceText(result.consequence))}</p>
       ${
         result.consequence?.secret
-          ? `<p class="dw-day-roll-note">Off-course: the Campaign Book lets you keep this to yourself and let their map go wrong, or tell them the direction they are really walking. Either way they cannot correct it today.</p>`
+          ? `<p class="dw-day-roll-note">${escapeHTML(tr("DOLMENWOOD.Lost.Card.Secret"))}</p>`
           : ""
       }
-      <p class="dw-day-roll-note">A hunter in the party can find the path again on a 3-in-6 chance.</p>`
-    : `<p class="dw-day-roll-headline">On course.</p>
-      <p class="dw-day-roll-sub">1d6 = ${roll}, against ${chance.inSix}-in-6 &mdash; ${escapeHTML(where)}</p>`;
+      <p class="dw-day-roll-note">${escapeHTML(tr("DOLMENWOOD.Lost.Card.Hunter"))}</p>`
+    : `<p class="dw-day-roll-headline">${escapeHTML(tr("DOLMENWOOD.Lost.Card.OnCourse"))}</p>
+      <p class="dw-day-roll-sub">${rolled}</p>`;
 
   await whisperToGMs(
     `<div class="dw-day-roll">
@@ -2386,10 +2405,10 @@ export function dutyResultLine(dutyId: string): string | undefined {
   if (dutyId === "weather" && state.weather) return weatherSummary(state.weather);
 
   if (dutyId === "lost" && state.lost) {
-    if (state.lost.chance === 0) return "On a road — no roll";
+    if (state.lost.chance === 0) return tr("DOLMENWOOD.Lost.Line.Road");
     return state.lost.lost
-      ? `Lost — ${state.lost.consequence?.text ?? ""}`
-      : `On course (${state.lost.roll} vs ${state.lost.chance}-in-6)`;
+      ? tr("DOLMENWOOD.Lost.Line.Lost", { what: consequenceText(state.lost.consequence) })
+      : tr("DOLMENWOOD.Lost.Line.OnCourse", { roll: state.lost.roll, chance: state.lost.chance });
   }
 
   if (dutyId === "encounter-day" || dutyId === "encounter-night") {
