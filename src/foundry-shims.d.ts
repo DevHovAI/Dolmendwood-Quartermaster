@@ -78,6 +78,7 @@ declare global {
     >;
     "dolmenwood-party-inventory.weatherSound": boolean;
     "dolmenwood-party-inventory.weatherSoundVolume": number;
+    "dolmenwood-party-inventory.clockLapse": number;
     "dolmenwood-party-inventory.hexCalibration": Record<
       string,
       { i: number; j: number; hex: string; scene?: string }

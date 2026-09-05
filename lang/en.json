@@ -972,5 +972,8 @@
 
   "DOLMENWOOD.Weather.Audition.Title": "Weather sound — audition",
   "DOLMENWOOD.Weather.Audition.Hint": "Every row that makes a sound, at the levels it would play at today. {sounding} of them; the other {silent} are fog, mist or a clear sky and are silent on purpose. Pressing one does not change the day.",
-  "DOLMENWOOD.Weather.Audition.Stop": "Stop"
+  "DOLMENWOOD.Weather.Audition.Stop": "Stop",
+
+  "DOLMENWOOD.Settings.ClockLapse.Name": "Let the clock run on as the party travels",
+  "DOLMENWOOD.Settings.ClockLapse.Hint": "How many seconds the world clock takes to walk forward when a move spends Travel Points, instead of jumping. Every clock at the table follows the same world time, so Smalltime and Simple Calendar sweep along with it. Set it to 0 for the old behaviour: the hours arrive at once. Handing a point back walks the clock the same way in reverse."
 }

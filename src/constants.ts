@@ -103,6 +103,7 @@ export const SETTINGS = {
   WEATHER_FX_SCENES: "weatherFxScenes", // Record<sceneId, {on, applied}> — which maps take the weather
   WEATHER_SOUND: "weatherSound", // play Simple Weather's loops for the day that was rolled
   WEATHER_SOUND_VOLUME: "weatherSoundVolume", // 0–50, a percentage of the environment channel
+  CLOCK_LAPSE: "clockLapse", // seconds to walk the world clock over when travel spends time; 0 jumps
 } as const;
 
 // Key under which the generic (non-map-note) shop stores its GM-added stock in

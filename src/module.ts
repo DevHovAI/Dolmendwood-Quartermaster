@@ -513,6 +513,18 @@ Hooks.once("init", () => {
     } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
   }
 
+  // Sits with the travel settings rather than the weather ones: it is about
+  // what a move does, not about what the sky does.
+  game.settings!.register(MODULE_ID, SETTINGS.CLOCK_LAPSE, {
+    name: "DOLMENWOOD.Settings.ClockLapse.Name",
+    hint: "DOLMENWOOD.Settings.ClockLapse.Hint",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: { min: 0, max: 10, step: 1 },
+    default: 3,
+  } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
+
   game.settings!.register(MODULE_ID, SETTINGS.WEATHER_FX_SCENES, {
     scope: "world",
     config: false,

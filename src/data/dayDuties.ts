@@ -416,11 +416,70 @@ async function advanceWorldClockToMorning(): Promise<void> {
  * back has to walk the clock back with it, or one misclick strands the
  * afternoon somewhere it never was.
  */
-async function advanceWorldClock(seconds: number): Promise<void> {
+async function advanceWorldClock(seconds: number, smooth = false): Promise<void> {
   if (!seconds) return;
   const g = game as Game;
   if (typeof g.time?.worldTime !== "number") return;
-  await (g.time as unknown as { advance: (s: number) => Promise<unknown> }).advance(seconds);
+  const advance = (s: number) =>
+    (g.time as unknown as { advance: (s: number) => Promise<unknown> }).advance(s);
+
+  const span = smooth ? lapseSeconds() : 0;
+  if (!span) {
+    await advance(seconds);
+    return;
+  }
+  queueLapse(seconds, span, advance);
+}
+
+/** How many wall-clock seconds a travelled span is walked over. 0 is a jump. */
+function lapseSeconds(): number {
+  const raw = (game as Game).settings?.get(MODULE_ID, SETTINGS.CLOCK_LAPSE);
+  return Math.max(0, Math.min(10, Number(raw ?? 3)));
+}
+
+/**
+ * The time-lapse: the clock walked forward in steps instead of jumping.
+ *
+ * **Dolmenmaster's ask, 2026-09-05** — a party token crossing a hex should have
+ * the afternoon visibly pass, not blink from two o'clock to half past three.
+ * Every clock module at the table reads the same `worldTime`, so Smalltime and
+ * Simple Calendar sweep along with it for free; nothing here knows they exist.
+ *
+ * **It is deliberately not awaited by its caller.** The chat card for the move
+ * should appear the moment the token lands — making the Referee wait three
+ * seconds for it would be paying for the animation twice. The clock catches up
+ * behind the card, which is what a time-lapse looks like anyway.
+ *
+ * **One at a time.** Two quick moves would otherwise interleave their steps and
+ * the clock would stutter back and forth, so each waits for the one before it.
+ * The total is exact whatever the arithmetic does in between: the last step
+ * carries whatever the integer division left over, and a negative span walks
+ * backwards the same way — the − button beside the counter has to undo an
+ * afternoon it gave.
+ */
+let lapseChain: Promise<void> = Promise.resolve();
+
+function queueLapse(
+  seconds: number,
+  span: number,
+  advance: (s: number) => Promise<unknown>
+): void {
+  const STEP_MS = 250;
+  const steps = Math.max(1, Math.round((span * 1000) / STEP_MS));
+  lapseChain = lapseChain
+    .then(async () => {
+      const per = Math.trunc(seconds / steps);
+      let left = seconds;
+      for (let i = 0; i < steps; i++) {
+        const chunk = i === steps - 1 ? left : per;
+        left -= chunk;
+        if (chunk) await advance(chunk);
+        if (i < steps - 1) await new Promise((r) => setTimeout(r, STEP_MS));
+      }
+    })
+    .catch((err) => {
+      console.error(`${MODULE_ID} | world clock`, err);
+    });
 }
 
 /**
@@ -687,7 +746,10 @@ export async function spendTravelPoints(delta: number, budget: number): Promise<
   // walked does not re-time them: those hours are already gone.
   const perPoint = travelPointSeconds(budget, state.forcedMarch);
   if (perPoint && (game as Game).settings.get(MODULE_ID, SETTINGS.FOLLOW_WORLD_TIME)) {
-    await advanceWorldClock(walked * perPoint);
+    // Smooth, because this is the one clock move a person is watching happen.
+    // Rolling over to the next morning jumps: nobody wants to sit through the
+    // night at four steps a second.
+    await advanceWorldClock(walked * perPoint, true);
   }
 }
 

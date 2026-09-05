@@ -972,5 +972,8 @@
 
   "DOLMENWOOD.Weather.Audition.Title": "Wetterklang — Vorhören",
   "DOLMENWOOD.Weather.Audition.Hint": "Jede Zeile, die einen Klang hat, mit den Lautstärken von heute. {sounding} Stück; die übrigen {silent} sind Nebel, Dunst oder klarer Himmel und bleiben mit Absicht still. Ein Druck darauf ändert den Tag nicht.",
-  "DOLMENWOOD.Weather.Audition.Stop": "Stopp"
+  "DOLMENWOOD.Weather.Audition.Stop": "Stopp",
+
+  "DOLMENWOOD.Settings.ClockLapse.Name": "Die Uhr beim Reisen weiterlaufen lassen",
+  "DOLMENWOOD.Settings.ClockLapse.Hint": "Wie viele Sekunden die Weltzeit braucht, um vorzurücken, wenn ein Zug Travel Points kostet — statt zu springen. Alle Uhren am Tisch folgen derselben Weltzeit, Smalltime und Simple Calendar wandern also mit. Auf 0 gestellt gilt das alte Verhalten: die Stunden sind sofort da. Gibt man einen Punkt zurück, läuft die Uhr auf demselben Weg rückwärts."
 }
