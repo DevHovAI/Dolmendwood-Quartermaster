@@ -103,6 +103,9 @@ const WIND: [RegExp, SoundId][] = [
 /** Rain the book words as more than rain. */
 const HEAVY_RAIN = /torrential|pouring|driving rain|relentless/;
 
+/** The top of the setting's range: the point at which every tuned figure is exact. */
+const FULL = 50;
+
 /** How long a loop takes to come up and to go down, in milliseconds. */
 const FADE = 4000;
 
@@ -254,15 +257,24 @@ function settingPct(): number {
   return Math.max(0, Math.min(50, Number(raw ?? 25)));
 }
 
+/** A layer's own percentage, after the master slider has scaled it. */
+function scaledPct(pct: number): number {
+  return (pct * settingPct()) / FULL;
+}
+
 /**
- * A layer's percentage as gain, with the setting as the ceiling over all of it.
+ * A layer's level as gain, through Foundry's own perceptual curve.
  *
- * The slider is a master limit rather than a level: each layer plays at its own
- * figure, and pulling the slider down pulls everything under it. At the top of
- * its range every figure above is exact, which is where they were tuned.
+ * **The slider scales, it does not cap** (Dolmenmaster's call, 2026-09-05, after it
+ * confused him twice). A ceiling looked reasonable on paper and made a bad
+ * control: wind is tuned to 30, so every position from 30 to 50 sounded
+ * identical and the top half of the slider did nothing at all. Scaling keeps
+ * the whole range live and keeps the tuned figures in proportion to each other
+ * wherever it stands — at 50 each one is exact, at 25 the weather is half as
+ * loud and rain is still louder than snow by the same margin.
  */
 function gainFor(pct: number): number {
-  const wanted = Math.min(settingPct(), pct) / 100;
+  const wanted = scaledPct(pct) / 100;
   const helper = (foundry as unknown as { audio?: { AudioHelper?: { inputToVolume?: (v: number) => number } } })
     .audio?.AudioHelper;
   return helper?.inputToVolume ? helper.inputToVolume(wanted) : wanted;
@@ -451,7 +463,7 @@ export async function weatherSoundReport(): Promise<Record<string, unknown>> {
   }
 
   const layers = weather ? soundsFor(weather as never) : [];
-  const spelt = layers.map((l) => `${l.id} ${Math.min(settingPct(), l.pct)}%`);
+  const spelt = layers.map((l) => `${l.id} ${Math.round(scaledPct(l.pct))}%`);
   const report: Record<string, unknown> = {
     isGM: !!g.user?.isGM,
     simpleWeatherInstalled: simpleWeatherPresent(),

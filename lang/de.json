@@ -968,5 +968,5 @@
   "DOLMENWOOD.Settings.WeatherSound.Name": "Das Wetter des Tages hören",
   "DOLMENWOOD.Settings.WeatherSound.Hint": "Spielt Simple Weathers eigene Klangdateien in Schleife zu dem, was für den Tag gewürfelt wurde — Regen unter Donner unter Wind, gleichzeitig statt nacheinander. An einem schönen Tag bleibt es still. Dieses Modul hält eine eigene Playlist, damit Simple Weathers Wetter und dieses sich nie gegenseitig abwürgen.",
   "DOLMENWOOD.Settings.WeatherSoundVolume.Name": "Lautstärke des Wetters",
-  "DOLMENWOOD.Settings.WeatherSoundVolume.Hint": "Ein Anteil des Umgebungskanals, sodass der eigene Umgebungsregler jedes Zuhörers weiterhin bestimmt. Bei 50 ist Schluss: Wetter ist ein Hintergrund, über den geredet wird, kein Ereignis."
+  "DOLMENWOOD.Settings.WeatherSoundVolume.Hint": "Wie laut das Wetter ist, als Anteil des Umgebungskanals — der eigene Umgebungsregler jedes Zuhörers bestimmt also weiterhin mit. Darunter hat jede Wetterart ihre eigene, nach Gehör gesetzte Lautstärke: Regen ist lauter als Schnee, was auch immer hier steht. Bei 50 spielt jede genau die Zahl, auf die sie eingestellt wurde; niedrigere Werte ziehen das ganze Wetter gemeinsam herunter."
 }

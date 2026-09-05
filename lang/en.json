@@ -968,5 +968,5 @@
   "DOLMENWOOD.Settings.WeatherSound.Name": "Play the day's weather",
   "DOLMENWOOD.Settings.WeatherSound.Hint": "Loops Simple Weather's own sound files for whatever the day was rolled as — rain under thunder under wind, together rather than one after another. A fair day plays nothing. This module keeps a playlist of its own, so Simple Weather's weather and this one never stop each other.",
   "DOLMENWOOD.Settings.WeatherSoundVolume.Name": "Weather volume",
-  "DOLMENWOOD.Settings.WeatherSoundVolume.Hint": "A percentage of the environment channel, so each listener's own ambient slider still governs it. It stops at 50: weather is a background to talk over, not an event."
+  "DOLMENWOOD.Settings.WeatherSoundVolume.Hint": "How loud the weather is, as a percentage of the environment channel — so each listener's own ambient slider still governs it. Each kind of weather has a level of its own beneath this, set by ear: rain is louder than snow whatever you put here. At 50 every one of them plays at the figure it was tuned to; lower settings scale the whole weather down together."
 }
