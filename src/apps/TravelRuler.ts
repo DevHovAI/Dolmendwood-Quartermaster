@@ -1,4 +1,5 @@
 import { moveAccount, type MovedToken } from "../data/hexTravel";
+import { t } from "../helpers/i18n";
 
 /**
  * The price of the next hex, before anybody commits to it.
@@ -88,11 +89,16 @@ export function installTravelRuler(): void {
       // Core's template draws this as "{total} {units} ({delta})", so the
       // label reads "3 TP (2 left)" — the price, and whether it can be paid,
       // which is the whole question while the token is still in the air.
+      //
+      // **`TP` is a key even though both languages spell it the same.** The
+      // abbreviation is text a reader sees, and the module keeps that kind of
+      // decision in `lang/*.json` rather than in a source file where no
+      // translator can reach it.
       const short = account.total > account.left;
       context.cost = {
         total: `${account.total}`,
-        units: "TP",
-        delta: `${account.left} left`,
+        units: t("DOLMENWOOD.Ruler.Units"),
+        delta: t("DOLMENWOOD.Ruler.Left", { n: account.left }),
       };
       context.cssClass = `${context.cssClass ?? ""}${short ? " dw-tp-short" : ""}`.trim();
       return context;

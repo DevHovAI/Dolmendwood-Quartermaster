@@ -1,4 +1,5 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { t } from "../helpers/i18n";
 import { stepper, wireSteppers } from "../helpers/steppers";
 import { preparesSpells } from "../data/xpAward";
 import { getExtras, updateExtras } from "../data/characterSheet";
@@ -29,7 +30,7 @@ function ask<T>(
   title: string,
   content: string,
   read: (html: JQuery) => T | null,
-  label = "Roll"
+  label?: string
 ): Promise<T | null> {
   return new Promise<T | null>((resolve) => {
     let settled = false;
@@ -43,11 +44,14 @@ function ask<T>(
       content,
       buttons: {
         ok: {
-          label,
+          // Resolved here rather than as a default parameter: `t()` reads
+          // Foundry's table, which does not exist until `i18nInit`, and a
+          // default is evaluated whenever the module is first loaded.
+          label: label ?? t("DOLMENWOOD.Common.Roll"),
           icon: '<i class="fas fa-dice-d20"></i>',
           callback: (html: JQuery) => done(read(html)),
         },
-        cancel: { label: "Cancel", callback: () => done(null) },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => done(null) },
       },
       default: "ok",
       // Ticking a caster's box should not also mean reaching for the keyboard.
@@ -84,9 +88,7 @@ export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[
   // The Referee owns every actor, so their form is the party's.
   const badly = partyBadly.filter((actor) => (actor as { isOwner?: boolean }).isOwner);
   if (!badly.length) {
-    ui.notifications?.info(
-      "None of your spell-casters lost sleep last night — there is nothing for you to roll."
-    );
+    ui.notifications?.info(t("DOLMENWOOD.Morning.Spells.NoneYours"));
     return null;
   }
 
@@ -107,23 +109,21 @@ export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[
       return `
       <div class="dw-spell-row" data-actor-id="${escapeHTML(id)}">
         <input type="checkbox" class="dw-spell-caster" checked>
-        <span class="dw-camp-member-name">${escapeHTML(actor.name ?? "Someone")}</span>
+        <span class="dw-camp-member-name">${escapeHTML(
+          actor.name ?? t("DOLMENWOOD.Party.Unsorted.Someone")
+        )}</span>
         ${stepper(`class="dw-spell-count" min="0" max="20" value="${spells > 0 ? spells : 1}"`)}
-        <span class="dw-camp-member-stat">spells attempted</span>
+        <span class="dw-camp-member-stat">${t("DOLMENWOOD.Morning.Spells.Attempted")}</span>
       </div>`;
     })
     .join("");
 
   const choice = await ask<{ casters: CasterChoice[]; remember: Map<string, number> }>(
-    "Preparing spells",
+    t("DOLMENWOOD.Morning.Spells.Title"),
     `<form class="dw-camp-form">
-      <p class="hint">These spell-casters failed to get a good night's rest, so each spell they try
-        to memorise or pray for has a <strong>${SPELL_LOSS_IN_6}-in-6</strong> chance of failing —
-        the slot stays empty and unusable today. Only Classes that prepare spells are listed; the
-        numbers are remembered on the characters, so this is asked properly only once.</p>
+      <p class="hint">${t("DOLMENWOOD.Morning.Spells.Hint", { chance: SPELL_LOSS_IN_6 })}</p>
       <div class="dw-spell-rows">${rows}</div>
-      <p class="hint">Everyone else in the party slept well and prepares their spells without
-        rolling.</p>
+      <p class="hint">${t("DOLMENWOOD.Morning.Spells.Rested")}</p>
     </form>`,
     (html) => {
       const remember = new Map<string, number>();
@@ -141,12 +141,16 @@ export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[
           remember.set(id, on ? Math.max(0, spells) : 0);
           if (!on || spells <= 0) return undefined;
           const actor = (game as Game).actors?.get(id);
-          return { actorId: id, name: actor?.name ?? "Someone", spells };
+          return {
+            actorId: id,
+            name: actor?.name ?? t("DOLMENWOOD.Party.Unsorted.Someone"),
+            spells,
+          };
         })
         .filter((c): c is CasterChoice => !!c && !!c.actorId);
 
       if (!casters.length) {
-        ui.notifications?.warn("Nobody is preparing spells.");
+        ui.notifications?.warn(t("DOLMENWOOD.Morning.Spells.Nobody"));
         return null;
       }
       return { casters, remember };

@@ -1,4 +1,5 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { t, tn } from "../helpers/i18n";
 import { KILL_YIELD, rationWeight } from "../data/rations";
 import { gameAnimalStats } from "../data/findingFood";
 import { foodHolders } from "./FindFoodDialog";
@@ -21,13 +22,23 @@ export interface HuntSpoilsChoice {
   name: string;
 }
 
+/**
+ * The book's size for a quarry is an id — `small`, `medium`, `large` — and it
+ * was being printed straight into the hint, which read well enough in English
+ * to hide that it was never a label at all. It needs the short form from the
+ * table, not the identifier.
+ */
+function sizeShortKey(size: "small" | "medium" | "large"): string {
+  return `DOLMENWOOD.Hunt.Size.${size.charAt(0).toUpperCase()}${size.slice(1)}.Short`;
+}
+
 export async function promptHuntSpoils(
   beast?: string,
   storeToId?: string
 ): Promise<HuntSpoilsChoice | null> {
   const holders = foodHolders();
   if (!holders.length) {
-    ui.notifications?.warn("No party characters to carry it.");
+    ui.notifications?.warn(t("DOLMENWOOD.Hunt.NoHolders"));
     return null;
   }
 
@@ -50,7 +61,7 @@ export async function promptHuntSpoils(
         <input type="radio" name="dw-spoils-size" value="${k.size}" ${
           k.size === preset ? "checked" : ""
         }>
-        <span class="dw-camp-member-name">${escapeHTML(k.label)}</span>
+        <span class="dw-camp-member-name">${escapeHTML(t(k.labelKey))}</span>
       </label>`
   ).join("");
 
@@ -63,7 +74,9 @@ export async function promptHuntSpoils(
       (h) =>
         `<option value="${escapeHTML(h.actorId)}"${
           known && h.actorId === storeToId ? " selected" : ""
-        }>${escapeHTML(h.name)}${h.shared ? " (the party's own store)" : ""}</option>`
+        }>${escapeHTML(h.name)}${
+          h.shared ? ` ${t("DOLMENWOOD.Food.Store.Shared")}` : ""
+        }</option>`
     )
     .join("");
 
@@ -76,51 +89,58 @@ export async function promptHuntSpoils(
     };
 
     new Dialog({
-      title: "Rations from the kill",
+      title: t("DOLMENWOOD.Hunt.Title"),
       content: `
         <form class="dw-camp-form">
           <p class="hint">${
-            beast ? `<strong>${escapeHTML(beast)}</strong>. ` : ""
-          }Fresh rations by the Hit Points of what fell — the book's own rate.</p>
+            beast
+              ? t("DOLMENWOOD.Hunt.IntroNamed", { beast: escapeHTML(beast) })
+              : t("DOLMENWOOD.Hunt.Intro")
+          }</p>
           <div class="form-group">
-            <label for="dw-spoils-hp">Hit Points killed</label>
+            <label for="dw-spoils-hp">${t("DOLMENWOOD.Hunt.HitPoints.Label")}</label>
             <input type="number" id="dw-spoils-hp" min="0" max="500" value="0">
           </div>
           ${
             book
-              ? `<p class="hint">The book gives one ${escapeHTML(beast ?? "")} <strong>${book.hp}</strong>
-                   Hit Points, about <strong>${book.average}</strong> (Monster Book p${book.page}).
-                   Add up whichever of them actually fell.</p>`
+              ? `<p class="hint">${t("DOLMENWOOD.Hunt.Book.Hint", {
+                  beast: escapeHTML(beast ?? ""),
+                  hp: book.hp,
+                  average: book.average,
+                  page: book.page,
+                })}</p>`
               : ""
           }
           <div class="form-group">
-            <label for="dw-spoils-name">Called</label>
-            <input type="text" id="dw-spoils-name" value="${escapeHTML(beast ?? "Fresh meat")}">
+            <label for="dw-spoils-name">${t("DOLMENWOOD.Hunt.Name.Label")}</label>
+            <input type="text" id="dw-spoils-name" value="${escapeHTML(
+              beast ?? t("DOLMENWOOD.Hunt.FreshMeat")
+            )}">
           </div>
-          <p class="hint">The meat goes into the pack under this name, not as "fresh rations" —
-            so the players can note what eating it does. It weighs and feeds the same either way.</p>
+          <p class="hint">${t("DOLMENWOOD.Hunt.Name.Hint")}</p>
           <div class="dw-camp-members">${bands}</div>
           ${
             book
-              ? `<p class="hint">Set from the stat block: the Monster Book calls a
-                   ${escapeHTML(beast ?? "")} <strong>${escapeHTML(book.size)}</strong> game.</p>`
+              ? `<p class="hint">${t("DOLMENWOOD.Hunt.Size.FromBook", {
+                  beast: escapeHTML(beast ?? ""),
+                  size: escapeHTML(t(sizeShortKey(book.size))),
+                })}</p>`
               : ""
           }
           <p class="dw-spoils-count"></p>
           <div class="form-group">
-            <label for="dw-spoils-holder">Into the pack of</label>
+            <label for="dw-spoils-holder">${t("DOLMENWOOD.Hunt.Holder.Label")}</label>
             <select id="dw-spoils-holder">${targets}</select>
           </div>
           ${
             known
-              ? `<p class="hint">Already chosen when the hunt was rolled. Change it if the
-                   haul is more than that pack can hold.</p>`
+              ? `<p class="hint">${t("DOLMENWOOD.Hunt.Holder.Preset")}</p>`
               : ""
           }
         </form>`,
       buttons: {
         ok: {
-          label: "Butcher",
+          label: t("DOLMENWOOD.Hunt.Butcher"),
           icon: '<i class="fas fa-drumstick-bite"></i>',
           callback: (html: JQuery) => {
             const hitPoints = Number(html.find("#dw-spoils-hp").val()) || 0;
@@ -128,16 +148,18 @@ export async function promptHuntSpoils(
               (html.find('input[name="dw-spoils-size"]:checked').val() as HuntSpoilsChoice["size"]) ??
               "medium";
             const holderId = String(html.find("#dw-spoils-holder").val() ?? "");
-            const name = String(html.find("#dw-spoils-name").val() ?? "").trim() || "Fresh meat";
+            const name =
+              String(html.find("#dw-spoils-name").val() ?? "").trim() ||
+              t("DOLMENWOOD.Hunt.FreshMeat");
             if (hitPoints <= 0) {
-              ui.notifications?.warn("Nothing fell, so nothing was butchered.");
+              ui.notifications?.warn(t("DOLMENWOOD.Hunt.NothingFell"));
               done(null);
               return;
             }
             done({ hitPoints, size, holderId, name });
           },
         },
-        cancel: { label: "Cancel", callback: () => done(null) },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => done(null) },
       },
       default: "ok",
       render: (html: JQuery) => {
@@ -150,8 +172,8 @@ export async function promptHuntSpoils(
             .find(".dw-spoils-count")
             .text(
               count
-                ? `${count} fresh rations — ${count} slots, ${count * rationWeight()} coins of weight.`
-                : "Nothing yet."
+                ? tn("DOLMENWOOD.Hunt.Count", count, { weight: count * rationWeight() })
+                : t("DOLMENWOOD.Hunt.CountNone")
             )
             .toggleClass("is-short", count > 10);
         };

@@ -21,6 +21,8 @@ String übersetzt, schlägt hier nach, bevor er ein Wort erfindet.
 | Retainer | ~~Gefolgsmann, Söldner~~ | Ebenso. Im Deutschen als Substantiv groß. |
 | Player's Book, Campaign Book, Monster Book | — | Buchtitel sind Eigennamen. Seitenangabe deutsch: `Player's Book S. 25`. |
 | Eigen- und Ortsnamen | — | Prinzell, Lankshorn, Hag's Addle … bleiben, wie sie sind. |
+| Slot (Ausrüstung) | ~~Feld~~ | Dolmenmasters Entscheidung, 2026-09-05. Der Gepäckplatz heißt Slot, Plural Slots. **Achtung:** `Feld` bleibt richtig, wo ein *Eingabefeld* gemeint ist („trag das Hex ins Feld ein“) und wo es um Äcker geht. |
+| Survival, Skill Target | ~~Überleben, Fertigkeitswert~~ | Regelbegriffe wie Prime Ability. |
 
 ## Wird übersetzt
 

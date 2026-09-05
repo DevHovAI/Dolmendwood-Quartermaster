@@ -280,7 +280,7 @@ export async function rollGettingLost(): Promise<LostResult | undefined> {
 
   await whisperToGMs(
     `<div class="dw-day-roll">
-      <h3><i class="fas fa-map-location-dot"></i> Getting lost</h3>
+      <h3><i class="fas fa-map-location-dot"></i> ${escapeHTML(tr("DOLMENWOOD.Duty.Lost.Label"))}</h3>
       ${body}
     </div>`,
     dice
@@ -568,7 +568,7 @@ export async function rollFindingFood(
   // what was looked for, whether it was found, and what went into the packs.
   await announce(
     `<div class="dw-day-roll">
-      <h3><i class="fas ${info.icon}"></i> ${escapeHTML(info.label)}</h3>
+      <h3><i class="fas ${info.icon}"></i> ${escapeHTML(tr(info.labelKey))}</h3>
       <p class="dw-day-roll-sub">${forager ? escapeHTML(forager) + "&rsquo;s " : ""}Survival ${escapeHTML(check.explain)}${
         fullDay ? " Includes +2 for a whole day given to it." : ""
       }</p>
@@ -595,7 +595,7 @@ export async function rollFindingFood(
   if (secret || hidden.length) {
     await whisperToGMs(
       `<div class="dw-day-roll">
-        <h3><i class="fas fa-user-secret"></i> ${escapeHTML(info.label)} — for you</h3>
+        <h3><i class="fas fa-user-secret"></i> ${escapeHTML(tr(info.labelKey))} — for you</h3>
         ${secret}
         ${hint}
         ${
@@ -2428,7 +2428,7 @@ export function dutyResultLine(dutyId: string): string | undefined {
 
   if (dutyId === "forage" && state.food) {
     const f = state.food;
-    const label = foodMethodInfo(f.method).label;
+    const label = tr(foodMethodInfo(f.method).labelKey);
     if (!f.success) return `${label} — nothing found`;
     const count = f.number ? ` ×${f.number}` : "";
     const rations = f.rations ? `, ${f.rations.total} rations` : "";

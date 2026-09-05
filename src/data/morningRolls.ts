@@ -1,4 +1,5 @@
 import { escapeHTML } from "../helpers/handlebars";
+import { t, tn } from "../helpers/i18n";
 import { announce, isGM, rollDice, total } from "./rollCard";
 import { bookRef } from "./books";
 import { getCharacterDay, setHealed } from "./characterDay";
@@ -31,7 +32,12 @@ import {
  * Foundry's token health bars read the system's own data. One home per value.
  */
 
-const nameOf = (actor: Actor): string => actor.name ?? "Someone";
+const nameOf = (actor: Actor): string =>
+  actor.name ?? t("DOLMENWOOD.Party.Unsorted.Someone");
+
+/** The page reference these two cards share, in the reader's own language. */
+const playersBook = (page: number): string =>
+  bookRef("players", page, t("DOLMENWOOD.Book.Players", { page }));
 
 function card(icon: string, title: string, body: string): string {
   return `<div class="dw-day-roll">
@@ -84,12 +90,15 @@ export async function grantMorningHealing(): Promise<void> {
   for (const actor of getPartyActors()) {
     const name = nameOf(actor);
     const day = getCharacterDay(actor);
+    // **The reason is stored as a key, not as a sentence.** The result goes
+    // into the day's own record, and a finished sentence would freeze the
+    // language the morning happened to be rolled in.
     if (day.healed) {
-      result.passed.push({ name, why: "already healed this morning" });
+      result.passed.push({ name, why: "DOLMENWOOD.Morning.Passed.Already" });
       continue;
     }
     if (!sleptWellForMorning(actor)) {
-      result.passed.push({ name, why: "no good night's rest" });
+      result.passed.push({ name, why: "DOLMENWOOD.Morning.Passed.NoRest" });
       continue;
     }
     const { hp } = getSystemFields(actor);
@@ -97,7 +106,10 @@ export async function grantMorningHealing(): Promise<void> {
     if (gain <= 0) {
       result.passed.push({
         name,
-        why: hp.max <= 0 ? "no Hit Points on this sheet" : "already at full Hit Points",
+        why:
+          hp.max <= 0
+            ? "DOLMENWOOD.Morning.Passed.NoHp"
+            : "DOLMENWOOD.Morning.Passed.Full",
       });
       continue;
     }
@@ -109,31 +121,39 @@ export async function grantMorningHealing(): Promise<void> {
   await setMorningResult("healing", { healing: result });
 
   const lines = [
-    ...result.healed.map(
-      (h) => `<strong>${escapeHTML(h.name)}</strong> — ${h.from} → ${h.to} HP`
+    ...result.healed.map((h) =>
+      t("DOLMENWOOD.Morning.Healing.Row", {
+        name: escapeHTML(h.name),
+        from: h.from,
+        to: h.to,
+      })
     ),
-    ...result.passed.map(
-      (p) => `<strong>${escapeHTML(p.name)}</strong> — ${escapeHTML(p.why)}`
+    // A day rolled before the reasons became keys still holds a finished
+    // sentence; it is printed as it stands rather than as a missing key.
+    ...result.passed.map((p) =>
+      t("DOLMENWOOD.Morning.Healing.Passed", {
+        name: escapeHTML(p.name),
+        why: p.why.startsWith("DOLMENWOOD.") ? t(p.why) : escapeHTML(p.why),
+      })
     ),
   ];
 
   await announce(
     card(
       "fa-heart-pulse",
-      "Waking up",
+      t("DOLMENWOOD.Morning.Healing.Title"),
       `<p class="dw-day-roll-headline${result.healed.length ? "" : " is-bad"}">${
         result.healed.length
-          ? `${result.healed.length} heal ${OVERNIGHT_HEALING} Hit Point`
-          : "Nobody heals this morning"
+          ? tn("DOLMENWOOD.Morning.Healing.Headline", result.healed.length, {
+              hp: OVERNIGHT_HEALING,
+            })
+          : t("DOLMENWOOD.Morning.Healing.None")
       }</p>
-       <p class="dw-day-roll-sub">A good night's rest in the wild or a night in a settlement &middot; ${bookRef(
-         "players",
-         159,
-         "Player's Book p159"
-       )}</p>
+       <p class="dw-day-roll-sub">${t("DOLMENWOOD.Morning.Healing.Sub", {
+         book: playersBook(159),
+       })}</p>
        ${rows(lines)}
-       <p class="dw-day-roll-sub">A full day of rest heals 1d3 instead, and is not this button's
-         business — it precludes anything more strenuous than an inn chair.</p>`
+       <p class="dw-day-roll-sub">${t("DOLMENWOOD.Morning.Healing.Foot")}</p>`
     )
   );
 }
@@ -223,28 +243,35 @@ export async function rollSpellPreparation(casters: CasterChoice[]): Promise<voi
   const lost = results.reduce((sum, r) => sum + r.lost, 0);
   await setMorningResult("prepare-spells", { spells: { casters: results, lost } });
 
-  const lines = results.map(
-    (r) =>
-      `<strong>${escapeHTML(r.name)}</strong> — ${r.spells} spell${
-        r.spells === 1 ? "" : "s"
-      }, rolled ${r.rolls.join(", ") || "nothing"} → ${
-        r.lost ? `<em>${r.lost} lost</em>` : "all prepared"
-      }`
+  const lines = results.map((r) =>
+    tn("DOLMENWOOD.Morning.Spells.Row", r.spells, {
+      name: escapeHTML(r.name),
+      rolls: r.rolls.join(", ") || t("DOLMENWOOD.Morning.Spells.Row.Nothing"),
+      outcome: r.lost
+        ? t("DOLMENWOOD.Morning.Spells.Row.Lost", { n: r.lost })
+        : t("DOLMENWOOD.Morning.Spells.Row.AllPrepared"),
+    })
   );
 
   await announce(
     card(
       "fa-wand-sparkles",
-      "Preparing spells",
+      t("DOLMENWOOD.Morning.Spells.Title"),
       `<p class="dw-day-roll-headline${lost ? " is-bad" : ""}">${
-        lost ? `${lost} spell${lost === 1 ? "" : "s"} lost` : "Every spell prepared"
+        lost
+          ? tn("DOLMENWOOD.Morning.Spells.Lost", lost)
+          : t("DOLMENWOOD.Morning.Spells.AllPrepared")
       }</p>
-       <p class="dw-day-roll-sub">${SPELL_LOSS_IN_6}-in-6 per spell, for a caster who failed to get
-         a good night's rest &middot; ${bookRef("players", 159, "Player's Book p159")}</p>
+       <p class="dw-day-roll-sub">${t("DOLMENWOOD.Morning.Spells.CardSub", {
+         chance: SPELL_LOSS_IN_6,
+         book: playersBook(159),
+       })}</p>
        ${rows(lines)}
        ${
          lost
-           ? `<p class="dw-day-roll-consequence">Those slots stay empty and unusable today.</p>`
+           ? `<p class="dw-day-roll-consequence">${t(
+               "DOLMENWOOD.Morning.Spells.Consequence"
+             )}</p>`
            : ""
        }`,
     ),
@@ -289,14 +316,19 @@ export function morningResultLine(dutyId: string): string | undefined {
     const h = morning.healing;
     if (!h) return undefined;
     return h.healed.length
-      ? `${h.healed.length} healed, ${h.passed.length} passed over`
-      : "Nobody healed";
+      ? t("DOLMENWOOD.Morning.Line.Healed", {
+          healed: h.healed.length,
+          passed: h.passed.length,
+        })
+      : t("DOLMENWOOD.Morning.Line.NobodyHealed");
   }
 
   const s = morning.spells;
   if (!s) return undefined;
   const spells = s.casters.reduce((sum, c) => sum + c.spells, 0);
-  return s.lost ? `${s.lost} of ${spells} spells lost` : `${spells} spells, none lost`;
+  return s.lost
+    ? t("DOLMENWOOD.Morning.Line.SpellsLost", { lost: s.lost, spells })
+    : tn("DOLMENWOOD.Morning.Line.SpellsNoneLost", spells);
 }
 
 /**
@@ -325,18 +357,24 @@ export function morningWarningLine(dutyId: string): string | undefined {
       // Two different nothings, and the difference is worth a word: a party
       // that slept badly is a problem, a party at full Hit Points is not.
       return getPartyActors().some((a) => sleptWellForMorning(a))
-        ? "Everyone rested is at full Hit Points"
-        : "Nobody rested — no healing this morning";
+        ? t("DOLMENWOOD.Morning.Warn.AllFull")
+        : t("DOLMENWOOD.Morning.Warn.NobodyRested");
     }
-    return `${owed.map((a) => nameOf(a)).join(", ")} heal ${OVERNIGHT_HEALING} HP`;
+    return tn("DOLMENWOOD.Morning.Warn.WillHeal", owed.length, {
+      names: owed.map((a) => nameOf(a)).join(", "),
+      hp: OVERNIGHT_HEALING,
+    });
   }
 
   if (dutyId !== "prepare-spells") return undefined;
   if (morning.spells) return undefined;
   const badly = sleptBadly();
-  if (!badly.length) return "Everyone slept well — no roll needed";
+  if (!badly.length) return t("DOLMENWOOD.Morning.Warn.NoRollNeeded");
   const names = badly.map((a) => nameOf(a)).join(", ");
-  return `${names} slept badly — ${SPELL_LOSS_IN_6}-in-6 per spell`;
+  return tn("DOLMENWOOD.Morning.Warn.SleptBadly", badly.length, {
+    names,
+    chance: SPELL_LOSS_IN_6,
+  });
 }
 
 /**
@@ -354,13 +392,11 @@ export async function noteSpellsPreparedFreely(): Promise<void> {
   await announce(
     card(
       "fa-wand-sparkles",
-      "Preparing spells",
-      `<p class="dw-day-roll-headline">Every spell prepared</p>
-       <p class="dw-day-roll-sub">Everyone got a good night's rest, so no spell is at risk &middot; ${bookRef(
-         "players",
-         159,
-         "Player's Book p159"
-       )}</p>`
+      t("DOLMENWOOD.Morning.Spells.Title"),
+      `<p class="dw-day-roll-headline">${t("DOLMENWOOD.Morning.Spells.AllPrepared")}</p>
+       <p class="dw-day-roll-sub">${t("DOLMENWOOD.Morning.Spells.FreeSub", {
+         book: playersBook(159),
+       })}</p>`
     )
   );
 }

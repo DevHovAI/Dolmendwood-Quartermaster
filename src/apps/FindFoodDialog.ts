@@ -2,7 +2,7 @@ import { escapeHTML } from "../helpers/handlebars";
 import { t } from "../helpers/i18n";
 import { getPartyActors, getSharedActor } from "../data/sharedStore";
 import { getExtras } from "../data/characterSheet";
-import { getDayContext, terrainInfo } from "../data/dayContext";
+import { getDayContext, seasonInfo, terrainInfo } from "../data/dayContext";
 import { SITUATIONAL_MODIFIERS } from "../data/checks";
 import {
   DEFAULT_SURVIVAL_TARGET,
@@ -66,10 +66,15 @@ export interface FoodHolder {
 export function foodHolders(): FoodHolder[] {
   const holders: FoodHolder[] = getPartyActors().map((actor) => ({
     actorId: actor.id ?? "",
-    name: actor.name ?? "Someone",
+    name: actor.name ?? t("DOLMENWOOD.Party.Unsorted.Someone"),
   }));
   const shared = getSharedActor();
-  if (shared?.id) holders.push({ actorId: shared.id, name: shared.name ?? "Party Stores", shared: true });
+  if (shared?.id)
+    holders.push({
+      actorId: shared.id,
+      name: shared.name ?? t("DOLMENWOOD.Food.Store.Default"),
+      shared: true,
+    });
   return holders;
 }
 
@@ -90,7 +95,7 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
     .filter((actor) => (actor as { isOwner?: boolean }).isOwner)
     .map((actor) => ({
       actorId: actor.id ?? "",
-      name: actor.name ?? "Someone",
+      name: actor.name ?? t("DOLMENWOOD.Party.Unsorted.Someone"),
       survival: getExtras(actor).skills.survival,
     }));
   // The best forager is the lowest target, which is who the party would send.
@@ -106,20 +111,22 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
         <input type="radio" name="dw-food-who" value="${escapeHTML(f.actorId)}"
                data-survival="${f.survival}" ${f.actorId === best.actorId ? "checked" : ""}>
         <span class="dw-camp-member-name">${escapeHTML(f.name)}</span>
-        <span class="dw-camp-member-stat">(Survival ${f.survival}+)</span>
+        <span class="dw-camp-member-stat">${t("DOLMENWOOD.Food.Survival", {
+          n: f.survival,
+        })}</span>
       </label>`
     )
     .join("");
 
   const methods = FOOD_METHODS.map(
     (m) => `
-      <label class="dw-food-method" title="${escapeHTML(m.hint)}">
+      <label class="dw-food-method" title="${escapeHTML(t(m.hintKey))}">
         <input type="radio" name="dw-food-method" value="${m.id}" ${m.id === "forage" ? "checked" : ""}>
         <i class="fas ${m.icon}"></i>
         <span class="dw-food-method-text">
-          <strong>${escapeHTML(m.label)}</strong>
-          <span class="dw-food-method-yield">${escapeHTML(m.yield)}</span>
-          <span class="dw-food-method-needs">${escapeHTML(m.needs)}</span>
+          <strong>${escapeHTML(t(m.labelKey))}</strong>
+          <span class="dw-food-method-yield">${escapeHTML(t(m.yieldKey))}</span>
+          <span class="dw-food-method-needs">${escapeHTML(t(m.needsKey))}</span>
         </span>
       </label>`
   ).join("");
@@ -132,70 +139,66 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
       (h) =>
         `<option value="${escapeHTML(h.actorId)}" ${h.actorId === best.actorId ? "selected" : ""}>${escapeHTML(
           h.name
-        )}${h.shared ? " (the party's own store)" : ""}</option>`
+        )}${h.shared ? ` ${t("DOLMENWOOD.Food.Store.Shared")}` : ""}</option>`
     )
     .join("");
 
   const modifiers = SITUATIONAL_MODIFIERS.map(
     (n) =>
       `<option value="${n}" ${n === 0 ? "selected" : ""}>${
-        n === 0 ? "None" : n > 0 ? `+${n}` : `${n}`
+        n === 0 ? t("DOLMENWOOD.Food.Mod.None") : n > 0 ? `+${n}` : `${n}`
       }</option>`
   ).join("");
 
   return new Promise<FindFoodChoice | null>((resolve) => {
     new Dialog({
-      title: "Finding food in the wild",
+      title: t("DOLMENWOOD.Food.Title"),
       content: `
         <form class="dw-food-form">
           <div class="dw-food-methods">${methods}</div>
 
           ${
             foragers.length
-              ? `<p class="hint"><strong>Who goes looking.</strong> The target follows whoever is
-                   picked — the best forager is the lowest number.</p>
+              ? `<p class="hint">${t("DOLMENWOOD.Food.Who.Hint")}</p>
                  <div class="dw-camp-members">${who}</div>`
               : ""
           }
-          <p class="hint dw-food-hint">
-            1d6 plus modifiers, meeting or exceeding the forager's own Survival target. A natural 1
-            always fails and a natural 6 always succeeds, whatever the modifiers.
-          </p>
+          <p class="hint dw-food-hint">${t("DOLMENWOOD.Food.Check.Hint")}</p>
 
           <div class="form-group">
-            <label for="dw-food-mod">Situational modifier</label>
+            <label for="dw-food-mod">${t("DOLMENWOOD.Food.Mod.Label")}</label>
             <select id="dw-food-mod">${modifiers}</select>
           </div>
 
           ${
             holders.length
               ? `<div class="form-group">
-                   <label for="dw-food-store">Rations go to</label>
+                   <label for="dw-food-store">${t("DOLMENWOOD.Food.Store.Label")}</label>
                    <select id="dw-food-store">${storeOptions}</select>
                  </div>
-                 <p class="hint dw-food-hint">
-                   A fresh ration is <strong>1 gear slot</strong> and <strong>20 coins</strong> of
-                   weight (Player's Book p116, p149), so a good day's fishing is a real load — the
-                   party's own store is there for exactly that. Hunting stores nothing yet: its card
-                   carries a button for once the game is down.
-                 </p>`
+                 <p class="hint dw-food-hint">${t("DOLMENWOOD.Food.Store.Hint")}</p>`
               : ""
           }
 
           <label class="dw-food-fullday" for="dw-food-day">
             <input type="checkbox" id="dw-food-day">
-            A whole day given to it, travelling nowhere (+${FULL_DAY_BONUS})
+            ${t("DOLMENWOOD.Food.FullDay", { bonus: FULL_DAY_BONUS })}
           </label>
 
-          <p class="hint dw-food-hint">
-            Hunting rolls against <strong>${escapeHTML(t(terrain.labelKey).toLowerCase())}</strong>,
-            foraging against <strong>${escapeHTML(ctx.season)}</strong> — both from the
-            bar's "where are we?" row.
-          </p>
+          ${/* The season was printed as its own id — "autumn" reads like a word
+                in English and like nothing at all in German. Both of these go
+                through the tables' own labels now. */ ""}
+          ${/* Neither label is lower-cased. It read well in English and turned
+                "Pilzwald" into "pilzwald" in German, where a noun keeps its
+                capital wherever it stands in the sentence. */ ""}
+          <p class="hint dw-food-hint">${t("DOLMENWOOD.Food.Context.Hint", {
+            terrain: escapeHTML(t(terrain.labelKey)),
+            season: escapeHTML(t(seasonInfo(ctx.season).labelKey)),
+          })}</p>
         </form>`,
       buttons: {
         ok: {
-          label: "Roll",
+          label: t("DOLMENWOOD.Common.Roll"),
           icon: '<i class="fas fa-dice-d20"></i>',
           callback: (html: JQuery) => {
             const method =
@@ -220,7 +223,7 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
             });
           },
         },
-        cancel: { label: "Cancel", callback: () => resolve(null) },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => resolve(null) },
       },
       default: "ok",
       // Picking a character moves the target with them, and leaves it editable:

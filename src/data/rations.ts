@@ -41,10 +41,14 @@ export function rationWeight(): number {
  * sends the party into a combat first — so this is applied afterwards, from the
  * card, once the Referee knows what fell.
  */
-export const KILL_YIELD: { size: "small" | "medium" | "large"; per: number; label: string }[] = [
-  { size: "small", per: 1, label: "Small — 1 ration per Hit Point" },
-  { size: "medium", per: 2, label: "Medium — 2 rations per Hit Point" },
-  { size: "large", per: 4, label: "Large — 4 rations per Hit Point" },
+export const KILL_YIELD: {
+  size: "small" | "medium" | "large";
+  per: number;
+  labelKey: string;
+}[] = [
+  { size: "small", per: 1, labelKey: "DOLMENWOOD.Hunt.Size.Small.Label" },
+  { size: "medium", per: 2, labelKey: "DOLMENWOOD.Hunt.Size.Medium.Label" },
+  { size: "large", per: 4, labelKey: "DOLMENWOOD.Hunt.Size.Large.Label" },
 ];
 
 export function rationsFromKill(hitPoints: number, size: "small" | "medium" | "large"): number {

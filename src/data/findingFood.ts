@@ -24,37 +24,44 @@ import { seasonInfo, type Season, type Terrain } from "./dayContext";
 
 export type FoodMethod = "fish" | "forage" | "hunt";
 
+// **The prose lives in the language files, the arithmetic here.** Only `id`
+// and `icon` mean anything to the code; everything a reader sees is a key,
+// the same shape the season and terrain tables use.
+//
+// Do not write a star-slash pair into a line comment here — `lang` followed
+// by a wildcard and `.json` was enough to make `lang:check` read the rest of
+// this table as one long block comment and report all twelve keys as unused.
 export const FOOD_METHODS: {
   id: FoodMethod;
-  label: string;
+  labelKey: string;
   icon: string;
-  yield: string;
-  needs: string;
-  hint: string;
+  yieldKey: string;
+  needsKey: string;
+  hintKey: string;
 }[] = [
   {
     id: "fish",
-    label: "Fish",
+    labelKey: "DOLMENWOOD.Food.Method.Fish.Label",
     icon: "fa-fish",
-    yield: "2d6 rations",
-    needs: "A fishing rod and tackle, and a hex with a lake or river.",
-    hint: "Roll 1d20 for the catch. Several of them are a hazard to land or to prepare, and a giant catfish is a combat encounter in its own right.",
+    yieldKey: "DOLMENWOOD.Food.Method.Fish.Yield",
+    needsKey: "DOLMENWOOD.Food.Method.Fish.Needs",
+    hintKey: "DOLMENWOOD.Food.Method.Fish.Hint",
   },
   {
     id: "forage",
-    label: "Forage",
+    labelKey: "DOLMENWOOD.Food.Method.Forage.Label",
     icon: "fa-wheat-awn",
-    yield: "1d6 rations (1d4 winter, 1d8 autumn)",
-    needs: "Nothing but the time.",
-    hint: "1d6 decides fungi (1–3) or plants (4–6), then 1d20 for which. Some hexes list their own special finds, instead of or as well as these.",
+    yieldKey: "DOLMENWOOD.Food.Method.Forage.Yield",
+    needsKey: "DOLMENWOOD.Food.Method.Forage.Needs",
+    hintKey: "DOLMENWOOD.Food.Method.Forage.Hint",
   },
   {
     id: "hunt",
-    label: "Hunt",
+    labelKey: "DOLMENWOOD.Food.Method.Hunt.Label",
     icon: "fa-crosshairs",
-    yield: "By the quarry's Hit Points, once killed",
-    needs: "The terrain decides what there is to stalk.",
-    hint: "Success only means the party has crept up on game. The kill is a normal combat encounter — the party has surprise and starts 1d4×30 feet away — and the rations come from what falls: 1 per HP small, 2 medium, 4 large.",
+    yieldKey: "DOLMENWOOD.Food.Method.Hunt.Yield",
+    needsKey: "DOLMENWOOD.Food.Method.Hunt.Needs",
+    hintKey: "DOLMENWOOD.Food.Method.Hunt.Hint",
   },
 ];
 
