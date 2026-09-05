@@ -1270,7 +1270,7 @@
   "DOLMENWOOD.Camp.Watch.Card.Sleeps": "Jeder von ihnen schläft {hours}{tail}",
   "DOLMENWOOD.Camp.Watch.Card.TailShort": " — unter den {min} Stunden, die eine gute Nachtruhe braucht, also scheitert jeder Wächter daran. Ein viertes Augenpaar würde das beheben.",
   "DOLMENWOOD.Camp.Watch.Card.TailFull": ", was einer vollen Nachtruhe entspricht.",
-  "DOLMENWOOD.Camp.Watch.Card.Chain": "Ein schlafender Wächter weckt den Nächsten nie, also fällt der Rest der Nachtordnung mit ihm aus.",
+  "DOLMENWOOD.Camp.Watch.Card.Chain": "Ein schlafender Wächter weckt den Nächsten nie — das Lager war ab {from} unbewacht.",
 
   "DOLMENWOOD.Camp.Sleep.Why.Short": "Weniger als {hours} Stunden Schlaf — keine gute Nachtruhe, unter welchen Bedingungen auch immer.",
   "DOLMENWOOD.Camp.Sleep.Why.Easy": "Leichte Bedingungen — kein Wurf nötig.",
@@ -1302,5 +1302,12 @@
   "DOLMENWOOD.Camp.Line.ActivityDoomed": ", und der Save misslang",
   "DOLMENWOOD.Camp.Line.WatchAsleep": "{names} auf Wache eingeschlafen",
   "DOLMENWOOD.Camp.Line.WatchAwake": "{count} auf Wache, alle wach",
-  "DOLMENWOOD.Camp.Line.Rested": "{rested}/{total} haben gut geruht"
+  "DOLMENWOOD.Camp.Line.Rested": "{rested}/{total} haben gut geruht",
+
+  "DOLMENWOOD.Camp.Watch.Card.SleptThrough": "{names} wurden nie geweckt und haben durchgeschlafen.",
+  "DOLMENWOOD.Camp.Sleep.Hours": " · {hours} Schlaf",
+  "DOLMENWOOD.Camp.Sleep.Something": "etwas",
+  "DOLMENWOOD.Camp.Sleep.Roused": "Das Lager ist davon aufgewacht — Wache {watch}, {what}",
+  "DOLMENWOOD.Camp.Sleep.RousedHint": "Hake es an, wenn der Wächter die anderen geweckt hat oder der Lärm es für ihn tat. Ohne Haken läuft die Nacht weiter — ein Wanderer, der mit der Wache ein paar Worte wechselt und weiterzieht, kostet niemanden seine Ruhe. Mit Haken endet die Nachtruhe dort, und je früher es geschah, desto weniger hat jeder abbekommen.",
+  "DOLMENWOOD.Camp.Sleep.Card.Roused": "Das Lager wurde in Wache {watch} geweckt, und damit war die Nachtruhe zu Ende."
 }

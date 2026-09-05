@@ -50,6 +50,7 @@ import {
   beddingFrom,
   fallAsleepFaces,
   hoursLabel,
+  nightSleepHours,
   restModifier,
   watchShares,
   sleepDifficulty,
@@ -951,6 +952,8 @@ export async function promptWatches(): Promise<WatchChoice | null> {
 export interface SleepChoice {
   sleepers: SleeperChoice[];
   campfire: boolean;
+  /** The watch the camp was roused in, where the Referee said it woke. */
+  rousedInWatch?: number;
 }
 
 /**
@@ -996,12 +999,34 @@ export async function promptSleep(): Promise<SleepChoice | null> {
   // short fire costs a point rather than the whole row.
   const campfire = camp.fire?.lit ?? true;
 
-  // The watch roll already worked out who slept short: with three watchers over
-  // eight hours nobody gets six. Pre-ticked from it rather than left for the
-  // Referee to notice, and still a tick they can clear.
-  const shortFromWatch = new Set(
-    camp.watches?.shortNight ? (camp.watches.keepers ?? []).map((k) => k.actorId) : []
-  );
+  // **How long each of them actually got**, which is not one number for the
+  // party. Three watchers over eight hours leave each other five hours and
+  // twenty minutes; a watcher who nodded off hands everybody after them the
+  // whole night; and a camp roused in the small hours got only what it had by
+  // then (Dolmenmaster, 2026-09-05).
+  const watch = camp.watches;
+  const keepers = watch?.keepers ?? [];
+  const asleepFrom = keepers.find((k) => k.asleep)?.order;
+
+  // **Something happened in the night, and it is the table's call whether the
+  // camp woke for it.** The book already has the module roll which watch it
+  // fell in; what it cannot know is whether the watcher shook everybody awake
+  // or a wanderer stopped for a word and moved on (Dolmenmaster, 2026-09-05).
+  // So the hour is offered and the waking is asked, unticked: ruining the
+  // party's night is a statement somebody makes, not a default.
+  const night = getDayState().encounterNight;
+  const rousedIn = night?.happened ? night.watch : undefined;
+
+  const sleptHours = (actorId: string, roused: boolean): number => {
+    const keeper = keepers.find((k) => k.actorId === actorId);
+    return nightSleepHours({
+      nightHours: watch?.nightHours ?? NIGHT_HOURS,
+      watchers: keepers.length,
+      asleepFrom,
+      ...(roused && rousedIn ? { rousedInWatch: rousedIn } : {}),
+      order: keeper?.order ?? 0,
+    });
+  };
 
   // **What the party actually owns, counted across every pack and the store.**
   // Before this the bedding was read out of each character's own bag alone, so
@@ -1042,7 +1067,9 @@ export async function promptSleep(): Promise<SleepChoice | null> {
       // bedroll for a "some" would be a guess printed as a fact.
       const bedroll = done ? done.bedding === "both" : withBedroll.has(m.actorId);
       const tent = done ? done.bedding === "both" : withTent.has(m.actorId);
-      const short = done ? done.shortNight : shortFromWatch.has(m.actorId);
+      const short = done
+        ? done.shortNight
+        : sleptHours(m.actorId, false) < MIN_SLEEP_HOURS;
       const beddingKey = BEDDING.find((b) => b.id === done?.bedding)?.labelKey;
       const bedding = beddingKey ? t(beddingKey) : "";
       const note = done
@@ -1056,7 +1083,8 @@ export async function promptSleep(): Promise<SleepChoice | null> {
         <input type="checkbox" class="dw-sleep-in" checked${off}
                title="${t("DOLMENWOOD.Camp.Sleep.InTitle")}">
         <span class="dw-camp-member-name">${escapeHTML(m.name)}</span>
-        <span class="dw-camp-member-stat">(${escapeHTML(statLabel(m, "con"))})${escapeHTML(note)}</span>
+        <span class="dw-camp-member-stat">(${escapeHTML(statLabel(m, "con"))})${escapeHTML(note)}
+          <span class="dw-sleep-hours" data-actor-id="${escapeHTML(m.actorId)}"></span></span>
         <label class="dw-sleep-gear" title="${t("DOLMENWOOD.Camp.Sleep.BedrollTitle")}">
           <input type="checkbox" class="dw-sleep-bedroll" ${bedroll ? "checked" : ""}${off}>
           ${t("DOLMENWOOD.Camp.Sleep.Bedroll")}
@@ -1102,6 +1130,18 @@ export async function promptSleep(): Promise<SleepChoice | null> {
               })
         }
       </label>
+      ${
+        rousedIn
+          ? `<label class="dw-sleep-fire dw-sleep-roused">
+               <input type="checkbox" id="dw-sleep-roused"${isGM() ? "" : " disabled"}>
+               ${t("DOLMENWOOD.Camp.Sleep.Roused", {
+                 watch: rousedIn,
+                 what: escapeHTML(night?.name ?? t("DOLMENWOOD.Camp.Sleep.Something")),
+               })}
+             </label>
+             <p class="hint">${t("DOLMENWOOD.Camp.Sleep.RousedHint")}</p>`
+          : ""
+      }
       <p class="hint">${t("DOLMENWOOD.Camp.Sleep.SeasonHint", {
         season: escapeHTML(t(season.labelKey)),
         unseason:
@@ -1119,17 +1159,25 @@ export async function promptSleep(): Promise<SleepChoice | null> {
       </p>
       <div class="dw-sleep-rows">${rows}</div>
       ${
-        shortFromWatch.size
-          ? `<p class="hint">${t("DOLMENWOOD.Camp.Sleep.WatchShort", {
-              n: shortFromWatch.size,
-              hours: MIN_SLEEP_HOURS,
-            })}</p>`
-          : ""
+        // The count is read off the rows the module itself pre-ticked, so the
+        // sentence and the boxes cannot disagree.
+        (() => {
+          const n = members.filter(
+            (m) => sleptHours(m.actorId, false) < MIN_SLEEP_HOURS
+          ).length;
+          return n
+            ? `<p class="hint">${t("DOLMENWOOD.Camp.Sleep.WatchShort", {
+                n,
+                hours: MIN_SLEEP_HOURS,
+              })}</p>`
+            : "";
+        })()
       }
       ${woodWarning}
     </form>`,
     (html) => {
       const fire = !!html.find("#dw-sleep-fire").prop("checked");
+      const roused = !!html.find("#dw-sleep-roused").prop("checked");
       const sleepers: SleeperChoice[] = html
         // **Only the rows this reader owns and has not already rolled.** The
         // others are on the form to be seen, not to be answered for; the
@@ -1157,7 +1205,11 @@ export async function promptSleep(): Promise<SleepChoice | null> {
         ui.notifications?.warn(t("DOLMENWOOD.Camp.Sleep.NobodySleeping"));
         return null;
       }
-      return { sleepers, campfire: fire };
+      return {
+        sleepers,
+        campfire: fire,
+        ...(roused && rousedIn ? { rousedInWatch: rousedIn } : {}),
+      };
     },
     {
       width: 720,
@@ -1204,8 +1256,29 @@ export async function promptSleep(): Promise<SleepChoice | null> {
           return { claimed, left };
         };
 
+        // Ticking the waking is a decision, not a keystroke: it rewrites every
+        // row's short-night box once, and leaves them editable afterwards.
+        html.on("change", "#dw-sleep-roused", () => {
+          const roused = !!html.find("#dw-sleep-roused").prop("checked");
+          for (const el of html.find(".dw-sleep-row[data-mine='true']").toArray()) {
+            const row = el as HTMLElement;
+            const box = row.querySelector(".dw-sleep-short-box") as HTMLInputElement | null;
+            if (!box || box.disabled) continue;
+            box.checked = sleptHours(row.dataset.actorId ?? "", roused) < MIN_SLEEP_HOURS;
+          }
+        });
+
         const paint = () => {
           const fire = !!html.find("#dw-sleep-fire").prop("checked");
+          const roused = !!html.find("#dw-sleep-roused").prop("checked");
+          for (const el of html.find(".dw-sleep-hours").toArray()) {
+            const span = el as HTMLElement;
+            const hours = sleptHours(span.dataset.actorId ?? "", roused);
+            span.textContent = t("DOLMENWOOD.Camp.Sleep.Hours", {
+              hours: hoursLabel(hours),
+            });
+            span.classList.toggle("is-short", hours < MIN_SLEEP_HOURS);
+          }
 
           // The plural, because the sentence it lands in counts places.
           const bed = limit(".dw-sleep-bedroll", bedrolls, "DOLMENWOOD.Camp.Stock.Bedrolls");
@@ -1301,6 +1374,6 @@ export async function runCampDuty(dutyId: string): Promise<void> {
   }
   if (dutyId === "sleep") {
     const choice = await promptSleep();
-    if (choice) await rollSleep(choice.sleepers, choice.campfire);
+    if (choice) await rollSleep(choice.sleepers, choice.campfire, choice.rousedInWatch);
   }
 }

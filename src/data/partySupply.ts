@@ -22,9 +22,11 @@
  * carried.
  *
  * **Everything is pure except `partyStock`.** The arithmetic of spaces and
- * claims can be walked by `check-supply.js` without Foundry running, which is
+ * claims is walked by `npm run rules:check` without Foundry running, which is
  * the point: a rule that quietly lets a seventh character into three tents is
- * the sort of thing nobody notices at the table.
+ * the sort of thing nobody notices at the table. That checker went unwritten
+ * for a while and this comment named it anyway; it exists now, and it covers
+ * the night's sleep beside this.
  */
 
 import { FlagManager } from "./FlagManager";

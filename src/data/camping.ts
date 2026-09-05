@@ -345,6 +345,81 @@ export function watchShares(keepers: number, nightHours = NIGHT_HOURS): WatchSha
   return { hoursOnWatch, hoursAsleep, shortNight: hoursAsleep < MIN_SLEEP_HOURS };
 }
 
+/**
+ * How long one person in the camp actually slept.
+ *
+ * **The even division is only the starting point**, and two things bend it.
+ * Dolmenmaster found both (2026-09-05).
+ *
+ * **A watcher who nods off never wakes the next in line.** The module said so
+ * on the card and then went on dividing the night evenly, which got the sign
+ * wrong: everyone after the sleeper is never woken, so they sleep *through*
+ * and get more rest, not less. What the camp loses is not sleep, it is the
+ * watch — from that point on nobody is keeping it.
+ *
+ * **Something in the night ends the night.** A nighttime encounter already
+ * knows which watch it fell in (Player's Book p158 asks the Referee to roll
+ * for it, and `rollEncounter` does). Dolmenmaster's ruling is that the rest is
+ * over when the camp is roused: the earlier it happens, the less anybody got.
+ *
+ * **The unknown moment is resolved against the party, in both directions.**
+ * Nobody knows when in their own watch the sleeper dropped off. So they are
+ * credited no sleep for it — their watch counts as stood — *and* the camp
+ * counts as unguarded from the moment that watch began. Erring one way for
+ * the sleeper and the other for the camp is deliberate: neither is a fact
+ * the module can produce, and a guess that flattered the party in both
+ * places would be a rule this module invented.
+ *
+ * Pure arithmetic on purpose — no Foundry, no state — so the awkward cases
+ * can be walked through in a terminal.
+ */
+export function nightSleepHours(opts: {
+  nightHours: number;
+  /** How many stood watch at all. Zero means nobody did. */
+  watchers: number;
+  /** The order of the first watcher who nodded off, if one did. */
+  asleepFrom?: number;
+  /** The watch during which something roused the camp, if anything did. */
+  rousedInWatch?: number;
+  /** Whose night this is: a watcher's order, or 0 for anybody not on watch. */
+  order: number;
+}): number {
+  const { nightHours, watchers, asleepFrom, rousedInWatch, order } = opts;
+  if (nightHours <= 0) return 0;
+  const span = watchers > 0 ? nightHours / watchers : 0;
+
+  // A watch is only stood if it was reached: the chain stops at the first
+  // sleeper, and the sleeper's own watch still counts as stood.
+  const stood = order > 0 && span > 0 && (asleepFrom === undefined || order <= asleepFrom);
+  const startsAt = (order - 1) * span;
+  const endsAt = order * span;
+
+  if (rousedInWatch === undefined) return stood ? nightHours - span : nightHours;
+
+  // The night ends when the camp is roused, at the start of that watch.
+  const roused = Math.min(Math.max(0, (rousedInWatch - 1) * span), nightHours);
+  if (!stood) return roused;
+  // Their watch was over before it happened: they lost their watch out of the
+  // hours that were left.
+  if (endsAt <= roused) return Math.max(0, roused - span);
+  // It happened while they were on watch, or before their turn came at all.
+  return Math.min(startsAt, roused);
+}
+
+/**
+ * From when the camp stood unguarded, in hours after lights-out — or nothing,
+ * where the watch held all night. See `nightSleepHours` for why this is the
+ * *start* of the sleeper's watch rather than some point inside it.
+ */
+export function unguardedFrom(
+  nightHours: number,
+  watchers: number,
+  asleepFrom: number | undefined
+): number | undefined {
+  if (asleepFrom === undefined || watchers <= 0) return undefined;
+  return Math.max(0, (asleepFrom - 1) * (nightHours / watchers));
+}
+
 /** "2h", "2h 40m" — hours as a table says them aloud. */
 export function hoursLabel(hours: number): string {
   const whole = Math.floor(hours + 1e-9);
@@ -621,6 +696,11 @@ export interface WatchResult {
   /** True where the watchers were too few to leave six hours' sleep each. */
   shortNight: boolean;
   keepers: WatchKeeper[];
+  /**
+   * Hours after lights-out from when nobody was keeping watch, where somebody
+   * nodded off. Absent where the watch held.
+   */
+  unguardedFrom?: number;
 }
 
 export interface SleeperResult {
@@ -652,6 +732,12 @@ export interface SleepResult {
   /** The evening's doing: supper, songs, or discord. */
   bonus: number;
   sleepers: SleeperResult[];
+  /**
+   * The watch the camp was roused in, where the Referee said the night's
+   * encounter woke it. Absent where nobody stirred — a wanderer who stopped
+   * for a word with the watcher and went on his way costs nobody their rest.
+   */
+  rousedInWatch?: number;
 }
 
 /** Everything the camp rolled tonight. Lives on the day and dies with it. */

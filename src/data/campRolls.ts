@@ -1,6 +1,7 @@
 import { escapeHTML } from "../helpers/handlebars";
 import { t, tn } from "../helpers/i18n";
 import { ABILITY_CHECK_TARGET } from "./checks";
+import { nightSleepHours, unguardedFrom } from "./camping";
 import { announce, isGM, rollDice, total, whisperToGMs } from "./rollCard";
 import { abilityCheck } from "./checks";
 import { bookRef } from "./books";
@@ -667,6 +668,8 @@ export async function rollWatches(
       // hurried Referee still come out as distinct watches.
       order: index + 1,
       hoursOnWatch: share.hoursOnWatch,
+      // Filled in below: it cannot be known until every die is thrown, because
+      // one sleeper changes the night for everybody after them.
       hoursAsleep: share.hoursAsleep,
       faces,
       roll,
@@ -674,8 +677,30 @@ export async function rollWatches(
     });
   }
 
+  // **The chain, once every die is in.** A watcher who nodded off never wakes
+  // the next in line, so everyone after them sleeps through — more rest, not
+  // less, and the cost is the watch rather than the night. Only the first
+  // sleeper matters: after that nobody is being woken anyway.
+  const asleepFrom = results.find((r) => r.asleep)?.order;
+  for (const r of results) {
+    r.hoursAsleep = nightSleepHours({
+      nightHours,
+      watchers: results.length,
+      asleepFrom,
+      order: r.order,
+    });
+  }
+  const unguarded = unguardedFrom(nightHours, results.length, asleepFrom);
+
   await setCampResult("watches", {
-    watches: { nightHours, shortNight: share.shortNight, keepers: results },
+    watches: {
+      nightHours,
+      // Still the party-wide reading — too few watchers to leave anybody six
+      // hours. The per-character truth is each keeper's own `hoursAsleep`.
+      shortNight: share.shortNight,
+      keepers: results,
+      ...(unguarded === undefined ? {} : { unguardedFrom: unguarded }),
+    },
   });
 
   const asleep = results.filter((r) => r.asleep);
@@ -720,7 +745,15 @@ export async function rollWatches(
        )}</p>
        ${
          asleep.length
-           ? `<p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Watch.Card.Chain")}</p>`
+           ? `<p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Watch.Card.Chain", {
+               from: hoursLabel(unguarded ?? 0),
+             })}</p>
+             <p class="dw-day-roll-sub">${t("DOLMENWOOD.Camp.Watch.Card.SleptThrough", {
+               names: results
+                 .filter((r) => asleepFrom !== undefined && r.order > asleepFrom)
+                 .map((r) => escapeHTML(r.name))
+                 .join(", "),
+             })}</p>`
            : ""
        }`
     ),
@@ -746,7 +779,11 @@ export interface SleeperChoice {
  * day is only settled on a day nobody spent a Travel Point, which is why the
  * day state is read for it.
  */
-export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): Promise<void> {
+export async function rollSleep(
+  sleepers: SleeperChoice[],
+  campfire: boolean,
+  rousedInWatch?: number
+): Promise<void> {
   if (!isGM() || !sleepers.length) return;
 
   const state = getDayState();
@@ -841,7 +878,13 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
     (s) => !results.some((r) => r.actorId === s.actorId)
   );
   await setCampResult("sleep", {
-    sleep: { campfire, season, bonus, sleepers: [...already, ...results] },
+    sleep: {
+      campfire,
+      season,
+      bonus,
+      sleepers: [...already, ...results],
+      ...(rousedInWatch === undefined ? {} : { rousedInWatch }),
+    },
   });
 
   const lines = results.map((r) => {
@@ -897,6 +940,13 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
          book: playersBook(159),
        })}</p>
        ${rows(lines)}
+       ${
+         rousedInWatch
+           ? `<p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Sleep.Card.Roused", {
+               watch: rousedInWatch,
+             })}</p>`
+           : ""
+       }
        ${
          rested.length
            ? `<p class="dw-day-roll-yield">${t("DOLMENWOOD.Camp.Sleep.Card.Heal", {

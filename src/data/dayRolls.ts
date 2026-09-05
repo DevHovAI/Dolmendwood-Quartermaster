@@ -785,8 +785,16 @@ export async function rollEncounter(period: "day" | "night"): Promise<EncounterR
   // during the night it occurs (e.g. during which character's watch)" — Player's
   // Book p158. Four two-hour watches across the party's eight hours of rest is
   // what that page describes, and what the bar's own Watches duty says.
+  //
+  // **The die has as many faces as there are watches.** It was a flat 1d4,
+  // which is the page's own example rather than this camp's arrangement: a
+  // party of three watchers could be sent a fourth watch that does not exist,
+  // and one of five would never be disturbed on the last. Where the watch has
+  // not been rolled yet, the book's four stands (Dolmenmaster, 2026-09-05).
   if (period === "night") {
-    const watchDie = await rollDice("1d4");
+    const watches = getDayState().camp?.watches?.keepers.length ?? 0;
+    const faces = watches > 0 ? watches : 4;
+    const watchDie = await rollDice(`1d${faces}`);
     dice.push(watchDie);
     result.watch = total(watchDie);
   }

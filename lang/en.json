@@ -1270,7 +1270,7 @@
   "DOLMENWOOD.Camp.Watch.Card.Sleeps": "Each of them sleeps {hours}{tail}",
   "DOLMENWOOD.Camp.Watch.Card.TailShort": " — under the {min} hours a good night's rest takes, so every watcher fails it. A fourth pair of eyes would fix that.",
   "DOLMENWOOD.Camp.Watch.Card.TailFull": ", which is a full night's rest.",
-  "DOLMENWOOD.Camp.Watch.Card.Chain": "A sleeping watcher never wakes the next in line, so the rest of the night's order goes with them.",
+  "DOLMENWOOD.Camp.Watch.Card.Chain": "A sleeping watcher never wakes the next in line, so the camp stood unguarded from {from} onward.",
 
   "DOLMENWOOD.Camp.Sleep.Why.Short": "Under {hours} hours asleep — not a good night's rest, whatever the conditions.",
   "DOLMENWOOD.Camp.Sleep.Why.Easy": "Easy conditions — no roll needed.",
@@ -1302,5 +1302,12 @@
   "DOLMENWOOD.Camp.Line.ActivityDoomed": ", and doomed",
   "DOLMENWOOD.Camp.Line.WatchAsleep": "{names} asleep on watch",
   "DOLMENWOOD.Camp.Line.WatchAwake": "{count} on watch, all awake",
-  "DOLMENWOOD.Camp.Line.Rested": "{rested}/{total} rested well"
+  "DOLMENWOOD.Camp.Line.Rested": "{rested}/{total} rested well",
+
+  "DOLMENWOOD.Camp.Watch.Card.SleptThrough": "{names} were never woken and slept the night through.",
+  "DOLMENWOOD.Camp.Sleep.Hours": " · {hours} asleep",
+  "DOLMENWOOD.Camp.Sleep.Something": "something",
+  "DOLMENWOOD.Camp.Sleep.Roused": "The camp woke for it — watch {watch}, {what}",
+  "DOLMENWOOD.Camp.Sleep.RousedHint": "Tick it where the watcher shook the others awake, or the noise did it for them. Left unticked the night runs on — a wanderer who stops for a word with the watcher costs nobody their rest. Ticked, the night's rest ends there, and the earlier it happened the less anybody got.",
+  "DOLMENWOOD.Camp.Sleep.Card.Roused": "The camp was roused in watch {watch}, and the night's rest ended there."
 }

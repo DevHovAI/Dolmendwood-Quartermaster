@@ -6286,6 +6286,24 @@ span.day-bar-panel-tick {
   margin: 0;
 }
 
+/* The night was interrupted: a question rather than a setting, so it stands
+   with the fire rather than among the rows it changes. */
+.dw-sleep-roused {
+  margin-top: var(--dw-space-4);
+}
+
+/* What this character actually got, beside their name. Quiet until it is
+   short, because the number only matters when it falls under six. */
+.dw-sleep-hours {
+  opacity: 0.7;
+}
+
+.dw-sleep-hours.is-short {
+  opacity: 1;
+  color: var(--dw-warn-ink);
+  font-weight: 600;
+}
+
 /* ── What a camp card prints ─────────────────────────────────────────────── */
 
 .dw-camp-rows {
