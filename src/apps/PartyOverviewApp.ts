@@ -3,7 +3,6 @@ import { FlagManager } from "../data/FlagManager";
 import { CatalogManager } from "../data/CatalogManager";
 import { definitionFor } from "../data/itemDefs";
 import { calculateEncumbrance } from "../data/EncumbranceCalculator";
-import { ShopApp } from "./ShopApp";
 import { PlayerInventoryApp } from "./PlayerInventoryApp";
 import { CharacterSheetApp } from "./CharacterSheetApp";
 import { openXpAward } from "./XpAwardApp";
@@ -189,7 +188,6 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
     },
     classes: ["dolmenwood-party-inventory", "party-overview"],
     actions: {
-      openShop: PartyOverviewApp._onOpenShop,
       openSheet: PartyOverviewApp._onOpenSheet,
       openXp: PartyOverviewApp._onOpenXp,
     },
@@ -361,10 +359,6 @@ export class PartyOverviewApp extends foundry.applications.api.HandlebarsApplica
   }
 
   // ─── Action Handlers ────────────────────────────────────────────────────────
-
-  private static _onOpenShop(this: PartyOverviewApp): void {
-    new ShopApp().render(true);
-  }
 
   /** The session's XP — the party window is where every character is already listed. */
   private static _onOpenXp(this: PartyOverviewApp): void {
