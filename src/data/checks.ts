@@ -18,6 +18,8 @@
  * plain "roll at or under the chance" and live with the tables that use them.
  */
 
+import { t } from "../helpers/i18n";
+
 export interface CheckOutcome {
   /** The face that came up. */
   roll: number;
@@ -32,6 +34,9 @@ export interface CheckOutcome {
   explain: string;
 }
 
+// **`kind` stays English on purpose.** Skill Check and Ability Check are the
+// book's own names for the two rolls, and the glossary keeps rule terms as
+// they are printed; only the sentence around them is translated.
 function resolve(roll: number, modifier: number, target: number, kind: string): CheckOutcome {
   const totalled = roll + modifier;
   const mod = modifier === 0 ? "" : modifier > 0 ? ` + ${modifier}` : ` − ${Math.abs(modifier)}`;
@@ -43,7 +48,7 @@ function resolve(roll: number, modifier: number, target: number, kind: string): 
       target,
       success: false,
       natural: "fail",
-      explain: `Natural 1 — always fails, whatever the modifiers (1d6 = 1${mod}, target ${target}).`,
+      explain: t("DOLMENWOOD.Checks.Natural1", { mod, target }),
     };
   }
   if (roll === 6) {
@@ -53,7 +58,7 @@ function resolve(roll: number, modifier: number, target: number, kind: string): 
       target,
       success: true,
       natural: "success",
-      explain: `Natural 6 — always succeeds, whatever the modifiers (1d6 = 6${mod}, target ${target}).`,
+      explain: t("DOLMENWOOD.Checks.Natural6", { mod, target }),
     };
   }
   return {
@@ -61,7 +66,7 @@ function resolve(roll: number, modifier: number, target: number, kind: string): 
     modifier,
     target,
     success: totalled >= target,
-    explain: `${kind}: 1d6 = ${roll}${mod} = ${totalled}, against a target of ${target}.`,
+    explain: t("DOLMENWOOD.Checks.Line", { kind, roll, mod, total: totalled, target }),
   };
 }
 

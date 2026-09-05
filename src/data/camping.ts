@@ -490,7 +490,13 @@ export interface SleepPlan {
   /** The evening's bonus plus the difficult night's -2, ready to add to 1d6. */
   modifier: number;
   target: number;
-  /** Settled without a die: the outcome, and why. */
+  /**
+   * Settled without a die: the outcome, and why.
+   *
+   * **`why` is a translation key.** The plan is turned into a sleep result
+   * that goes into the day's record, and a finished sentence there would
+   * freeze the night into the language it was rolled in.
+   */
   decided?: { sleptWell: boolean; why: string };
 }
 
@@ -511,18 +517,22 @@ export function planSleep(
       roll: false,
       decided: {
         sleptWell: false,
-        why: `Under ${MIN_SLEEP_HOURS} hours asleep — not a good night's rest, whatever the conditions.`,
+        why: "DOLMENWOOD.Camp.Sleep.Why.Short",
       },
     };
   }
   if (difficulty === "easy") {
-    return { ...base, roll: false, decided: { sleptWell: true, why: "Easy conditions — no roll needed." } };
+    return {
+      ...base,
+      roll: false,
+      decided: { sleptWell: true, why: "DOLMENWOOD.Camp.Sleep.Why.Easy" },
+    };
   }
   if (difficulty === "impossible") {
     return {
       ...base,
       roll: false,
-      decided: { sleptWell: false, why: "Impossible conditions — no rest is to be had here." },
+      decided: { sleptWell: false, why: "DOLMENWOOD.Camp.Sleep.Why.Impossible" },
     };
   }
   return { ...base, roll: true };

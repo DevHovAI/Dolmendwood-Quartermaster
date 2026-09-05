@@ -1,5 +1,6 @@
 import { escapeHTML } from "../helpers/handlebars";
-import { t } from "../helpers/i18n";
+import { t, tn } from "../helpers/i18n";
+import { ABILITY_CHECK_TARGET } from "./checks";
 import { announce, isGM, rollDice, total, whisperToGMs } from "./rollCard";
 import { abilityCheck } from "./checks";
 import { bookRef } from "./books";
@@ -73,7 +74,12 @@ import {
 
 // ─── Small shared pieces ──────────────────────────────────────────────────────
 
-const nameOf = (actor: Actor): string => actor.name ?? "Someone";
+const nameOf = (actor: Actor): string =>
+  actor.name ?? t("DOLMENWOOD.Party.Unsorted.Someone");
+
+/** The page reference these cards share, in the reader's own language. */
+const playersBook = (page: number): string =>
+  bookRef("players", page, t("DOLMENWOOD.Book.Players", { page }));
 
 function actorById(id: string): Actor | undefined {
   return (game as Game).actors?.get(id) ?? undefined;
@@ -261,11 +267,16 @@ export async function rollFirewood(
     if (got > 0) await addFirewood(g.actorId, got);
   }
 
-  const lines = results.map(
-    (r) =>
-      `<strong>${escapeHTML(r.name)}</strong> — 1d6 = ${r.roll}${signed(modifier)} → ${
-        r.hours === 0 ? "nothing usable" : `${r.hours} hour${r.hours === 1 ? "" : "s"}`
-      }`
+  const lines = results.map((r) =>
+    t("DOLMENWOOD.Camp.Wood.Row", {
+      name: escapeHTML(r.name),
+      roll: r.roll,
+      mod: signed(modifier),
+      result:
+        r.hours === 0
+          ? t("DOLMENWOOD.Camp.Wood.RowNothing")
+          : tn("DOLMENWOOD.Camp.Wood.RowHours", r.hours),
+    })
   );
 
   // What the number is actually for: whether the fire is still burning when the
@@ -273,29 +284,36 @@ export async function rollFirewood(
   // moves.
   const shortfall =
     hours === 0
-      ? `<p class="dw-day-roll-headline is-bad">No firewood at all.</p>`
+      ? `<p class="dw-day-roll-headline is-bad">${t("DOLMENWOOD.Camp.Wood.Card.None")}</p>`
       : hours < NIGHT_HOURS
-        ? `<p class="dw-day-roll-consequence">Enough for ${hours} of the night's ${NIGHT_HOURS} hours — the fire will not see them to morning unless it is fed from the packs.</p>`
-        : `<p class="dw-day-roll-consequence">Enough to burn through the night.</p>`;
+        ? `<p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Wood.Card.Partial", {
+            hours,
+            night: NIGHT_HOURS,
+          })}</p>`
+        : `<p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Wood.Card.Full")}</p>`;
 
   // The card is about the wood these hands just brought in; the pile it joins
   // is said underneath, because that is the number the night is judged by.
   const justNow = results.reduce((sum, r) => sum + r.hours, 0);
   const earlier =
     hours > justNow
-      ? `<p class="dw-day-roll-sub">Added to what was already gathered: the pile now stands at ${hours} hour${
-          hours === 1 ? "" : "s"
-        }.</p>`
+      ? `<p class="dw-day-roll-sub">${tn("DOLMENWOOD.Camp.Wood.Card.Earlier", hours)}</p>`
       : "";
 
   await announce(
     card(
       "fa-fire-burner",
-      "Fetching firewood",
-      `<p class="dw-day-roll-headline">${justNow} hour${justNow === 1 ? "" : "s"} of campfire</p>
-       <p class="dw-day-roll-sub">${gatherers.length} gathering${
-         modifier ? `, ${modifier} for the conditions` : ""
-       } &middot; ${bookRef("players", 158, "Player's Book p158")}</p>
+      t("DOLMENWOOD.Camp.Wood.Title"),
+      `<p class="dw-day-roll-headline">${tn(
+         "DOLMENWOOD.Camp.Wood.Card.Headline",
+         justNow
+       )}</p>
+       <p class="dw-day-roll-sub">${t(
+         modifier
+           ? "DOLMENWOOD.Camp.Wood.Card.SubMod"
+           : "DOLMENWOOD.Camp.Wood.Card.Sub",
+         { n: gatherers.length, modifier, book: playersBook(158) }
+       )}</p>
        ${rows(lines)}
        ${earlier}
        ${shortfall}`
@@ -349,46 +367,47 @@ export async function rollFire(
 
   const how =
     roll === undefined
-      ? "Normal conditions — a tinder box and a stash of wood is all it takes."
-      : `1d6 = ${roll} against a ${chance}-in-6 chance.`;
+      ? t("DOLMENWOOD.Camp.Fire.Card.Auto")
+      : t("DOLMENWOOD.Camp.Fire.Card.Roll", { roll, chance });
 
   const grade = gradeFire(lit, hours);
   const enough = fireLastsTheNight(hours);
   const woodLine = !lit
     ? ""
     : hours === 0
-      ? `<p class="dw-day-roll-consequence">No wood was put on it. Whatever burns here came from somewhere
-          the module cannot see — the Sleep Difficulty table is rolled from the no-fire rows.</p>`
+      ? `<p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Fire.Card.NoWood")}</p>`
       : `<p class="dw-day-roll-yield"><i class="fas fa-fire"></i>
-          <strong>${hours} hour${hours === 1 ? "" : "s"}</strong> of wood on the fire &mdash; ${spent
-            .map((s) => `${s.hours}h from ${escapeHTML(s.holderName)}`)
-            .join(", ")}.</p>
+          ${tn("DOLMENWOOD.Camp.Fire.Card.Wood", hours, {
+            from: spent
+              .map((s) => t("DOLMENWOOD.Camp.Fire.Card.From", {
+                hours: s.hours,
+                name: escapeHTML(s.holderName),
+              }))
+              .join(", "),
+          })}</p>
         <p class="dw-day-roll-${enough ? "sub" : "consequence"}">${
           enough
-            ? `Enough for the whole ${NIGHT_HOURS}-hour rest.`
+            ? t("DOLMENWOOD.Camp.Fire.Card.Enough", { night: NIGHT_HOURS })
             : grade.campfire
-              ? `<strong>${NIGHT_HOURS - hours} hour${NIGHT_HOURS - hours === 1 ? "" : "s"} short</strong> of the
-                 ${NIGHT_HOURS}-hour rest. It still counts as a campfire on the Sleep Difficulty table and costs
-                 <strong>${SHORT_FIRE_PENALTY}</strong> on the Constitution Check &mdash; and nothing at all to anybody
-                 the fire was never going to help.`
-              : `Under ${FIRE_MINIMUM_HOURS} hours is not a night's fire: the Sleep Difficulty table is rolled from its
-                 no-fire rows, and the wood is gone.`
+              ? tn("DOLMENWOOD.Camp.Fire.Card.Short", NIGHT_HOURS - hours, {
+                  night: NIGHT_HOURS,
+                  penalty: SHORT_FIRE_PENALTY,
+                })
+              : t("DOLMENWOOD.Camp.Fire.Card.TooLittle", { minimum: FIRE_MINIMUM_HOURS })
         }</p>`;
 
   await announce(
     card(
       "fa-fire",
-      "Building a fire",
-      `<p class="dw-day-roll-headline${lit ? "" : " is-bad"}">${
-        lit ? "The fire catches" : "No fire tonight"
-      }</p>
+      t("DOLMENWOOD.Camp.Fire.Title"),
+      `<p class="dw-day-roll-headline${lit ? "" : " is-bad"}">${t(
+        lit ? "DOLMENWOOD.Camp.Fire.Card.Catches" : "DOLMENWOOD.Camp.Fire.Card.NoFire"
+      )}</p>
        <p class="dw-day-roll-sub">${escapeHTML(how)}</p>
        ${woodLine}
-       <p class="dw-day-roll-consequence">${
-         lit
-           ? "A campfire moves the Sleep Difficulty table in the party's favour — for everyone who has bedding."
-           : "Sleep is rolled from the no-fire rows of the Sleep Difficulty table."
-       }</p>`
+       <p class="dw-day-roll-consequence">${t(
+         lit ? "DOLMENWOOD.Camp.Fire.Card.Helps" : "DOLMENWOOD.Camp.Fire.Card.NoHelp"
+       )}</p>`
     ),
     dice
   );
@@ -461,12 +480,17 @@ export async function rollCampActivity(
       // The d20 absolutes, the same ones the attribute sheet's saves use.
       const saved = saveRoll === 20 ? true : saveRoll === 1 ? false : saveRoll >= target;
       result.doom = { roll: saveRoll, target, saved };
-      doomLine = `<p class="dw-day-roll-consequence"><strong>Save Versus Doom:</strong> 1d20 = ${saveRoll} against ${target}+ — ${
-        saved ? "saved." : escapeHTML(t(spec.doomKey))
-      }</p>`;
+      doomLine = `<p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Activity.Card.Doom", {
+        roll: saveRoll,
+        target,
+        outcome: saved
+          ? t("DOLMENWOOD.Camp.Activity.Card.Saved")
+          : escapeHTML(t(spec.doomKey)),
+      })}</p>`;
     } else {
-      doomLine = `<p class="dw-day-roll-consequence"><strong>Save Versus Doom</strong> is called for, and this sheet carries no Doom target — the Referee rules it. On a failure: ${escapeHTML(
-        t(spec.doomKey)
+      doomLine = `<p class="dw-day-roll-consequence">${t(
+        "DOLMENWOOD.Camp.Activity.Card.NoTarget",
+        { doom: escapeHTML(t(spec.doomKey)) }
       )}</p>`;
     }
   }
@@ -499,14 +523,22 @@ export async function rollCampActivity(
     result.meal = { ingredients: spent, portions, eaters: [], ruined };
 
     const spentLine = spent
-      .map((s) => `${s.portions} × ${escapeHTML(s.name)} (${escapeHTML(s.holder)})`)
+      .map((s) =>
+        t("DOLMENWOOD.Camp.Activity.Card.Ing", {
+          count: s.portions,
+          name: escapeHTML(s.name),
+          holder: escapeHTML(s.holder),
+        })
+      )
       .join(", ");
-    mealLine = `<p class="dw-day-roll-yield"><strong>Into the pot:</strong> ${
-      spentLine || "nothing"
-    } — ${portions} portion${portions === 1 ? "" : "s"}.</p>
+    mealLine = `<p class="dw-day-roll-yield">${tn("DOLMENWOOD.Camp.Activity.Card.Pot", portions, {
+      what: spentLine || t("DOLMENWOOD.Camp.Activity.Card.PotNothing"),
+    })}</p>
       ${
         ruined
-          ? `<p class="dw-day-roll-headline is-bad">Wasted. Nobody eats tonight.</p>`
+          ? `<p class="dw-day-roll-headline is-bad">${t(
+              "DOLMENWOOD.Camp.Activity.Card.Wasted"
+            )}</p>`
           : ""
       }`;
   }
@@ -517,18 +549,27 @@ export async function rollCampActivity(
     card(
       spec.icon,
       t(spec.labelKey),
-      `<p class="dw-day-roll-headline${outcome.success ? "" : " is-bad"}">${escapeHTML(
-        nameOf(actor)
-      )} — ${outcome.success ? "success" : "failure"}</p>
-       <p class="dw-day-roll-sub">${escapeHTML(abilityLabel)} Check. ${escapeHTML(
-         outcome.explain
+      `<p class="dw-day-roll-headline${outcome.success ? "" : " is-bad"}">${t(
+         "DOLMENWOOD.Camp.Activity.Card.Outcome",
+         {
+           name: escapeHTML(nameOf(actor)),
+           result: t(
+             outcome.success
+               ? "DOLMENWOOD.Camp.Activity.Card.Success"
+               : "DOLMENWOOD.Camp.Activity.Card.Failure"
+           ),
+         }
        )}</p>
+       <p class="dw-day-roll-sub">${t("DOLMENWOOD.Camp.Activity.Card.Check", {
+         ability: escapeHTML(abilityLabel),
+         explain: escapeHTML(outcome.explain),
+       })}</p>
        <p class="dw-day-roll-consequence">${escapeHTML(
          t(outcome.success ? spec.successKey : spec.failureKey)
        )}</p>
        ${doomLine}
        ${mealLine}
-       <p class="dw-day-roll-sub">${bookRef("players", 158, "Player's Book p158")}</p>`
+       <p class="dw-day-roll-sub">${playersBook(158)}</p>`
     ),
     dice
   );
@@ -566,12 +607,13 @@ export async function serveMeal(eaterIds: string[]): Promise<void> {
   await announce(
     card(
       "fa-drumstick-bite",
-      "Supper",
+      t("DOLMENWOOD.Camp.Supper.Title"),
       `<p class="dw-day-roll-headline">${fed.map((n) => escapeHTML(n)).join(", ")}</p>
-       <p class="dw-day-roll-sub">${fed.length} of ${meal.portions} portion${
-         meal.portions === 1 ? "" : "s"
-       } eaten${left ? `, ${left} left over` : ""}.</p>
-       <p class="dw-day-roll-consequence">Their hunger is settled for today.</p>`
+       <p class="dw-day-roll-sub">${tn("DOLMENWOOD.Camp.Supper.Sub", meal.portions, {
+         fed: fed.length,
+         left: left ? t("DOLMENWOOD.Camp.Supper.Left", { n: left }) : "",
+       })}</p>
+       <p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Supper.Settled")}</p>`
     )
   );
 }
@@ -637,38 +679,48 @@ export async function rollWatches(
   });
 
   const asleep = results.filter((r) => r.asleep);
-  const lines = results.map(
-    (r) =>
-      `<strong>${r.order}. ${escapeHTML(r.name)}</strong> — ${hoursLabel(
-        r.hoursOnWatch
-      )} on watch, 1-in-${r.faces}, rolled ${r.roll} → ${
-        r.asleep ? "<em>nods off</em>" : "stays awake"
-      }`
+  const lines = results.map((r) =>
+    t("DOLMENWOOD.Camp.Watch.Card.Row", {
+      order: r.order,
+      name: escapeHTML(r.name),
+      hours: hoursLabel(r.hoursOnWatch),
+      faces: r.faces,
+      roll: r.roll,
+      outcome: t(
+        r.asleep ? "DOLMENWOOD.Camp.Watch.Card.Asleep" : "DOLMENWOOD.Camp.Watch.Card.Awake"
+      ),
+    })
   );
 
   await whisperToGMs(
     card(
       "fa-tower-observation",
-      "Watches through the night",
+      t("DOLMENWOOD.Camp.Watch.Title"),
       `<p class="dw-day-roll-headline${asleep.length ? " is-bad" : ""}">${
         asleep.length
-          ? `${asleep.map((r) => escapeHTML(r.name)).join(", ")} asleep on watch`
-          : "The watch holds"
+          ? t("DOLMENWOOD.Camp.Watch.Card.SomeAsleep", {
+              names: asleep.map((r) => escapeHTML(r.name)).join(", "),
+            })
+          : t("DOLMENWOOD.Camp.Watch.Card.Holds")
       }</p>
-       <p class="dw-day-roll-sub">${keepers.length} watches across ${hoursLabel(
-         nightHours
-       )} &middot; Optional rule &middot; ${bookRef("players", 159, "Player's Book p159")}</p>
+       <p class="dw-day-roll-sub">${t("DOLMENWOOD.Camp.Watch.Card.Sub", {
+         count: keepers.length,
+         hours: hoursLabel(nightHours),
+         book: playersBook(159),
+       })}</p>
        ${rows(lines)}
-       <p class="dw-day-roll-${share.shortNight ? "consequence" : "sub"}">Each of them sleeps ${hoursLabel(
-         share.hoursAsleep
-       )}${
-         share.shortNight
-           ? ` — under the ${MIN_SLEEP_HOURS} hours a good night's rest takes, so every watcher fails it. A fourth pair of eyes would fix that.`
-           : ", which is a full night's rest."
-       }</p>
+       <p class="dw-day-roll-${share.shortNight ? "consequence" : "sub"}">${t(
+         "DOLMENWOOD.Camp.Watch.Card.Sleeps",
+         {
+           hours: hoursLabel(share.hoursAsleep),
+           tail: share.shortNight
+             ? t("DOLMENWOOD.Camp.Watch.Card.TailShort", { min: MIN_SLEEP_HOURS })
+             : t("DOLMENWOOD.Camp.Watch.Card.TailFull"),
+         }
+       )}</p>
        ${
          asleep.length
-           ? `<p class="dw-day-roll-consequence">A sleeping watcher never wakes the next in line, so the rest of the night's order goes with them.</p>`
+           ? `<p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Watch.Card.Chain")}</p>`
            : ""
        }`
     ),
@@ -796,17 +848,29 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
     const d = SLEEP_DIFFICULTIES[r.difficulty];
     const how =
       r.roll === undefined
-        ? escapeHTML(r.why ?? "")
-        : `1d6 = ${r.roll}${spellOutParts(r.parts ?? [])} = ${r.roll + r.modifier} against 4${
-            r.natural === "fail"
-              ? " — natural 1, always fails"
-              : r.natural === "success"
-                ? " — natural 6, always succeeds"
-                : ""
-          }`;
-    return `<strong>${escapeHTML(r.name)}</strong> — ${escapeHTML(t(d.labelKey))}${
-      r.shortNight ? ", short night" : ""
-    }: ${how} → ${r.sleptWell ? "<em>rests well</em>" : "<em>no rest</em>"}`;
+        ? // A night settled without a die stores the reason as a key.
+          escapeHTML(r.why ? t(r.why, { hours: MIN_SLEEP_HOURS }) : "")
+        : t("DOLMENWOOD.Camp.Sleep.Card.How", {
+            roll: r.roll,
+            parts: spellOutParts(r.parts ?? []),
+            total: r.roll + r.modifier,
+            target: ABILITY_CHECK_TARGET,
+            natural:
+              r.natural === "fail"
+                ? t("DOLMENWOOD.Camp.Sleep.Card.Nat1")
+                : r.natural === "success"
+                  ? t("DOLMENWOOD.Camp.Sleep.Card.Nat6")
+                  : "",
+          });
+    return t("DOLMENWOOD.Camp.Sleep.Card.Row", {
+      name: escapeHTML(r.name),
+      difficulty: escapeHTML(t(d.labelKey)),
+      short: r.shortNight ? t("DOLMENWOOD.Camp.Sleep.Card.ShortSuffix") : "",
+      how,
+      outcome: t(
+        r.sleptWell ? "DOLMENWOOD.Camp.Sleep.Card.Rests" : "DOLMENWOOD.Camp.Sleep.Card.NoRest"
+      ),
+    });
   });
 
   const rested = results.filter((r) => r.sleptWell);
@@ -815,32 +879,36 @@ export async function rollSleep(sleepers: SleeperChoice[], campfire: boolean): P
   await announce(
     card(
       "fa-bed",
-      "Sleep",
-      `<p class="dw-day-roll-headline${badly.length ? " is-bad" : ""}">${rested.length} of ${
-        results.length
-      } get a good night's rest</p>
-       <p class="dw-day-roll-sub">${campfire ? "Campfire" : "No fire"}, ${escapeHTML(
-         season
-       )}${bonus ? `, ${bonus > 0 ? "+" : ""}${bonus} from the evening` : ""} &middot; ${bookRef(
-         "players",
-         159,
-         "Player's Book p159"
+      t("DOLMENWOOD.Duty.Sleep.Label"),
+      `<p class="dw-day-roll-headline${badly.length ? " is-bad" : ""}">${t(
+         "DOLMENWOOD.Camp.Sleep.Card.Headline",
+         { rested: rested.length, total: results.length }
        )}</p>
+       <p class="dw-day-roll-sub">${t("DOLMENWOOD.Camp.Sleep.Card.Sub", {
+         fire: t(
+           campfire
+             ? "DOLMENWOOD.Camp.Sleep.Card.Campfire"
+             : "DOLMENWOOD.Camp.Sleep.Card.NoFire"
+         ),
+         season: escapeHTML(season),
+         bonus: bonus
+           ? t("DOLMENWOOD.Camp.Sleep.Card.Bonus", { n: `${bonus > 0 ? "+" : ""}${bonus}` })
+           : "",
+         book: playersBook(159),
+       })}</p>
        ${rows(lines)}
        ${
          rested.length
-           ? `<p class="dw-day-roll-yield"><strong>${rested
-               .map((r) => escapeHTML(r.name))
-               .join(", ")}</strong> heal 1 Hit Point on waking.</p>`
+           ? `<p class="dw-day-roll-yield">${t("DOLMENWOOD.Camp.Sleep.Card.Heal", {
+               names: rested.map((r) => escapeHTML(r.name)).join(", "),
+             })}</p>`
            : ""
        }
        ${
          badly.length
-           ? `<p class="dw-day-roll-consequence">${badly
-               .map((r) => escapeHTML(r.name))
-               .join(
-                 ", "
-               )} are exhausted until they do get one, and each spell they try to prepare has a 1-in-6 chance of failing.</p>`
+           ? `<p class="dw-day-roll-consequence">${t("DOLMENWOOD.Camp.Sleep.Card.Exhausted", {
+               names: badly.map((r) => escapeHTML(r.name)).join(", "),
+             })}</p>`
            : ""
        }`
     ),
@@ -888,21 +956,34 @@ export function campResultLine(dutyId: string): string | undefined {
   if (dutyId === "firewood") {
     const f = camp.firewood;
     if (!f) return undefined;
-    return `${f.hours} hour${f.hours === 1 ? "" : "s"} of fire, ${f.gatherers.length} gathering`;
+    return tn("DOLMENWOOD.Camp.Line.Wood", f.hours, { n: f.gatherers.length });
   }
 
   if (dutyId === "fire") {
     const f = camp.fire;
     if (!f) return undefined;
-    if (f.roll === undefined) return f.lit ? "Lit — no roll needed" : "No fire";
-    return f.lit ? `Lit (${f.roll} vs ${f.chance}-in-6)` : `Would not catch (${f.roll} vs ${f.chance}-in-6)`;
+    if (f.roll === undefined)
+      return t(
+        f.lit ? "DOLMENWOOD.Camp.Line.FireAuto" : "DOLMENWOOD.Camp.Line.NoFire"
+      );
+    return t(
+      f.lit ? "DOLMENWOOD.Camp.Line.FireLit" : "DOLMENWOOD.Camp.Line.FireFailed",
+      { roll: f.roll, chance: f.chance }
+    );
   }
 
   if (dutyId === "cooking" || dutyId === "entertainment") {
     const a = dutyId === "cooking" ? camp.cooking : camp.camaraderie;
     if (!a) return undefined;
-    const doom = a.doom && !a.doom.saved ? ", and doomed" : "";
-    return `${a.name} — ${a.success ? "+1 to rest" : "no bonus"}${doom}`;
+    return t("DOLMENWOOD.Camp.Line.Activity", {
+      name: a.name,
+      result: t(
+        a.success
+          ? "DOLMENWOOD.Camp.Line.ActivityBonus"
+          : "DOLMENWOOD.Camp.Line.ActivityNoBonus"
+      ),
+      doom: a.doom && !a.doom.saved ? t("DOLMENWOOD.Camp.Line.ActivityDoomed") : "",
+    });
   }
 
   if (dutyId === "watches") {
@@ -910,13 +991,15 @@ export function campResultLine(dutyId: string): string | undefined {
     if (!w) return undefined;
     const asleep = w.keepers.filter((k) => k.asleep);
     return asleep.length
-      ? `${asleep.map((k) => k.name).join(", ")} asleep on watch`
-      : `${w.keepers.length} on watch, all awake`;
+      ? t("DOLMENWOOD.Camp.Line.WatchAsleep", {
+          names: asleep.map((k) => k.name).join(", "),
+        })
+      : t("DOLMENWOOD.Camp.Line.WatchAwake", { count: w.keepers.length });
   }
 
   const s = camp.sleep;
   if (!s) return undefined;
   const rested = s.sleepers.filter((r) => r.sleptWell).length;
-  return `${rested}/${s.sleepers.length} rested well`;
+  return t("DOLMENWOOD.Camp.Line.Rested", { rested, total: s.sleepers.length });
 }
 

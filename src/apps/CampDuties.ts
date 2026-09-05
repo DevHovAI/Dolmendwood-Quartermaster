@@ -292,12 +292,14 @@ export async function promptFirewood(): Promise<FirewoodChoice | null> {
       </div>
       <p class="hint">${
         weather
-          ? t("DOLMENWOOD.Camp.Wood.WeatherHint", {
-              weather: escapeHTML(weatherText(weather)),
-              penalty: suggested
-                ? t("DOLMENWOOD.Camp.Wood.Penalty", { n: suggested })
-                : t("DOLMENWOOD.Camp.Wood.NoPenalty"),
-            })
+          ? suggested
+            ? t("DOLMENWOOD.Camp.Wood.WeatherHint", {
+                weather: escapeHTML(weatherText(weather)),
+                penalty: suggested,
+              })
+            : t("DOLMENWOOD.Camp.Wood.WeatherHintNone", {
+                weather: escapeHTML(weatherText(weather)),
+              })
           : t("DOLMENWOOD.Camp.Wood.NoWeather")
       }</p>
     </form>`,

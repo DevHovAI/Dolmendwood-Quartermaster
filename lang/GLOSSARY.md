@@ -34,7 +34,7 @@ String übersetzt, schlägt hier nach, bevor er ein Wort erfindet.
 | Earned | Verdient |
 | Credited | Gutgeschrieben |
 | Modifier | Modifikator |
-| GM / Referee | SL |
+| GM / Referee | Referee (der Referee, maskulin) |
 | attribute sheet | Attributsbogen |
 | party | Gruppe |
 
