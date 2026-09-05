@@ -4258,13 +4258,36 @@ body > #dolmenwood-day-bar {
   color: var(--dw-bg-parchment);
 }
 
-/* ── Finding food dialog ───────────────────────────────────────────────────── */
+/* ── Finding food dialog ─────────────────────────────────────────────────────
+   **The gap sets the rhythm and the children bring no margins of their own.**
+   This form is a stack of separate subjects — how to look, who goes, the
+   modifier, where the haul lands, whether the day is given to it — and that is
+   rung 6 on the ladder. It used to be three different margins (4px, 6px, 8px)
+   on three children, which is the untidiness the ladder exists to stop. */
+
+.dw-food-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-6);
+}
+
+.dw-food-form > *,
+.dw-food-form .dw-camp-members {
+  margin: 0;
+}
+
+/* A hint and the list it introduces are one subject, so they sit closer to
+   each other than to what comes next. */
+.dw-food-who {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-4);
+}
 
 .dw-food-methods {
   display: flex;
   flex-direction: column;
   gap: var(--dw-space-3);
-  margin-bottom: var(--dw-space-5);
 }
 
 .dw-food-method {
@@ -4309,12 +4332,7 @@ body > #dolmenwood-day-bar {
   display: flex;
   align-items: center;
   gap: var(--dw-space-4);
-  margin: var(--dw-space-3) 0;
   cursor: pointer;
-}
-
-.dw-food-hint {
-  margin-top: var(--dw-space-4);
 }
 
 /* What a procedure actually put in the party's packs. */
@@ -6105,7 +6123,11 @@ span.day-bar-panel-tick {
    camp card prints back. Both are lists of names carrying a number, so both are
    laid out as one. */
 
-.dw-camp-form .dw-camp-members {
+/* The finding-food dialog carries the same list of names and was not in this
+   selector, so its rows stood on top of one another with no gap and no
+   margin while the identical list in the camp dialogs was laid out. */
+.dw-camp-form .dw-camp-members,
+.dw-food-form .dw-camp-members {
   display: flex;
   flex-direction: column;
   gap: var(--dw-space-3);

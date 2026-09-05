@@ -159,11 +159,13 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
 
           ${
             foragers.length
-              ? `<p class="hint">${t("DOLMENWOOD.Food.Who.Hint")}</p>
-                 <div class="dw-camp-members">${who}</div>`
+              ? `<div class="dw-food-who">
+                   <p class="hint">${t("DOLMENWOOD.Food.Who.Hint")}</p>
+                   <div class="dw-camp-members">${who}</div>
+                 </div>`
               : ""
           }
-          <p class="hint dw-food-hint">${t("DOLMENWOOD.Food.Check.Hint")}</p>
+          <p class="hint">${t("DOLMENWOOD.Food.Check.Hint")}</p>
 
           <div class="form-group">
             <label for="dw-food-mod">${t("DOLMENWOOD.Food.Mod.Label")}</label>
@@ -176,7 +178,7 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
                    <label for="dw-food-store">${t("DOLMENWOOD.Food.Store.Label")}</label>
                    <select id="dw-food-store">${storeOptions}</select>
                  </div>
-                 <p class="hint dw-food-hint">${t("DOLMENWOOD.Food.Store.Hint")}</p>`
+                 <p class="hint">${t("DOLMENWOOD.Food.Store.Hint")}</p>`
               : ""
           }
 
@@ -191,7 +193,7 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
           ${/* Neither label is lower-cased. It read well in English and turned
                 "Pilzwald" into "pilzwald" in German, where a noun keeps its
                 capital wherever it stands in the sentence. */ ""}
-          <p class="hint dw-food-hint">${t("DOLMENWOOD.Food.Context.Hint", {
+          <p class="hint">${t("DOLMENWOOD.Food.Context.Hint", {
             terrain: escapeHTML(t(terrain.labelKey)),
             season: escapeHTML(t(seasonInfo(ctx.season).labelKey)),
           })}</p>
