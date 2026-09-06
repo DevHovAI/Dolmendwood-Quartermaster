@@ -43,7 +43,7 @@ import {
   isSharedActor,
 } from "../data/sharedStore";
 import type { InventoryItem, ItemDefinition, ExtraZone, ZoneCoins, CharacterInventory, EncumbranceResult } from "../types";
-import { t } from "../helpers/i18n";
+import { t, tn } from "../helpers/i18n";
 
 /**
  * Per-zone view model for the inventory template. Built once for the character's
@@ -246,7 +246,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     id: "dolmenwood-player-inventory",
     window: {
-      title: "Inventory",
+      // A key, not a word: `DEFAULT_OPTIONS` is read at module scope, before
+      // Foundry has a translation table, and Foundry localises `window.title`
+      // itself. The same reason the day bar and the loot window do it.
+      title: "DOLMENWOOD.PlayerInventory.Title",
       resizable: true,
     },
     position: {
@@ -296,7 +299,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
   };
 
   override get title(): string {
-    return `${this.actor.name} — Inventory`;
+    return t("DOLMENWOOD.Inv.TitleFor", { name: this.actor.name ?? "" });
   }
 
   // ─── Shared store resolution ────────────────────────────────────────────────
@@ -615,9 +618,14 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       el.appendChild(bar);
     }
     bar.innerHTML =
-      `<span class="qm-sel-count"><i class="fas fa-check-double"></i> ${count} item${count === 1 ? "" : "s"} selected</span>` +
-      `<button type="button" class="qm-sel-actions"><i class="fas fa-bars"></i> Actions</button>` +
-      `<button type="button" class="qm-sel-clear">Clear</button>`;
+      `<span class="qm-sel-count"><i class="fas fa-check-double"></i> ${tn(
+        "DOLMENWOOD.Inv.Selected",
+        count
+      )}</span>` +
+      `<button type="button" class="qm-sel-actions"><i class="fas fa-bars"></i> ${t(
+        "DOLMENWOOD.Inv.Actions"
+      )}</button>` +
+      `<button type="button" class="qm-sel-clear">${t("DOLMENWOOD.Inv.Clear")}</button>`;
 
     bar.querySelector(".qm-sel-actions")?.addEventListener("click", (e) => {
       const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -959,7 +967,9 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       });
     }
 
-    ui.notifications?.info(`Gave ${handed.length} item(s) to ${toActor.name}.`);
+    ui.notifications?.info(
+      tn("DOLMENWOOD.Give.Done", handed.length, { who: toActor.name ?? "" })
+    );
     this.selectedItemIds.clear();
     this.render();
   }
@@ -970,10 +980,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     if (count === 0) return;
 
     const confirmed = await Dialog.confirm({
-      title: "Remove Items",
+      title: tn("DOLMENWOOD.Inv.Remove.Title", count),
       content:
-        `<p>Remove <strong>${count}</strong> item${count === 1 ? "" : "s"} from inventory?</p>` +
-        '<p class="qm-hint">They go to the trash, where the GM can put them back.</p>',
+        tn("DOLMENWOOD.Inv.Remove.Many", count) +
+        `<p class="qm-hint">${t("DOLMENWOOD.Inv.Remove.ManyHint")}</p>`,
     });
     if (!confirmed) return;
 
@@ -1019,8 +1029,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     if (item.quantity <= 1) {
       // Last one — confirm removal
       const confirmed = await Dialog.confirm({
-        title: "Remove Item",
-        content: `<p>Use the last <strong>${item.name}</strong>? This will remove it from inventory.</p>`,
+        title: tn("DOLMENWOOD.Inv.Remove.Title", 1),
+        content: t("DOLMENWOOD.Inv.UseLast", { name: escapeHTML(item.name) }),
       });
       if (!confirmed) return;
       await FlagManager.updateInventory(owner, (inv) => {
@@ -1072,8 +1082,8 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     // quantity control does
     if (stackUnits(item, def.maxUses) <= 1) {
       const confirmed = await Dialog.confirm({
-        title: "Remove Item",
-        content: `<p>Use the last <strong>${escapeHTML(item.name)}</strong>? This will remove it from inventory.</p>`,
+        title: tn("DOLMENWOOD.Inv.Remove.Title", 1),
+        content: t("DOLMENWOOD.Inv.UseLast", { name: escapeHTML(item.name) }),
       });
       if (!confirmed) return;
     }
@@ -1159,10 +1169,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
   ): Promise<void> {
     const itemId = target.dataset.itemId!;
     const confirmed = await Dialog.confirm({
-      title: "Remove Item",
+      title: tn("DOLMENWOOD.Inv.Remove.Title", 1),
       content:
-        "<p>Remove this item from inventory?</p>" +
-        '<p class="qm-hint">It goes to the trash, where the GM can put it back.</p>',
+        `<p>${t("DOLMENWOOD.Inv.Remove.Single")}</p>` +
+        `<p class="qm-hint">${t("DOLMENWOOD.Inv.Remove.SingleHint")}</p>`,
     });
     if (!confirmed) return;
 
@@ -1237,11 +1247,11 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     // registered whatever the template renders.
     const g = game as Game;
     if (!g.user?.isGM && !g.settings.get(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP)) {
-      ui.notifications?.warn("Shops are reached from the map — travel to one and open its note.");
+      ui.notifications?.warn(t("DOLMENWOOD.Inv.Shop.FromMap"));
       return;
     }
     if (!g.user?.isGM && !ShopApp.isReleased()) {
-      ui.notifications?.warn("That shop is not open yet.");
+      ui.notifications?.warn(t("DOLMENWOOD.Inv.Shop.Closed"));
       return;
     }
     const actorId = this.actor.id ?? null;
@@ -1281,14 +1291,14 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
       const coins = sharedInv.coinsByZone?.[zoneId];
       const hasCoins = !!coins && coins.cp + coins.sp + coins.gp + coins.pp > 0;
       if (sharedInv.items.some((i) => i.zone === zoneId) || hasCoins) {
-        ui.notifications?.warn("A shared container must be empty before it can be deleted.");
+        ui.notifications?.warn(t("DOLMENWOOD.Zone.Delete.NotEmpty"));
         return;
       }
     }
 
     const confirmed = await Dialog.confirm({
-      title: "Delete Storage Zone",
-      content: `<p>Delete this zone? All items in it will be moved to <strong>${fallbackLabel}</strong>.</p>`,
+      title: t("DOLMENWOOD.Zone.Delete.Title"),
+      content: t("DOLMENWOOD.Zone.Delete.Body", { fallback: fallbackLabel }),
     });
     if (!confirmed) return;
 
@@ -1425,10 +1435,10 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     if (!zone) return;
 
     const confirmed = await Dialog.confirm({
-      title: "Share with the Party",
+      title: t("DOLMENWOOD.Zone.Share.Title"),
       content:
-        `<p>Move <strong>${escapeHTML(zone.name)}</strong> and everything in it into the party's shared store?</p>` +
-        `<p style="font-size:var(--dw-text-sm);color:#888;">Every player can then take things out and put things in. Secret items stop being secret.</p>`,
+        t("DOLMENWOOD.Zone.Share.Body", { name: escapeHTML(zone.name) }) +
+        `<p style="font-size:var(--dw-text-sm);color:#888;">${t("DOLMENWOOD.Zone.Share.Hint")}</p>`,
     });
     if (!confirmed) return;
 
@@ -1439,7 +1449,7 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
         fromActorId: this.actor.id,
         zoneId,
       });
-      ui.notifications?.info("Sharing — waiting for the GM's client to set up the shared store.");
+      ui.notifications?.info(t("DOLMENWOOD.Zone.Share.Waiting"));
       return;
     }
 
@@ -1460,10 +1470,11 @@ export class PlayerInventoryApp extends foundry.applications.api.HandlebarsAppli
     if (!zone) return;
 
     const confirmed = await Dialog.confirm({
-      title: "Take Back",
-      content:
-        `<p>Move <strong>${escapeHTML(zone.name)}</strong> and everything in it out of the shared store ` +
-        `and into <strong>${escapeHTML(this.actor.name ?? "")}</strong>'s inventory?</p>`,
+      title: t("DOLMENWOOD.Zone.Unshare.Title"),
+      content: t("DOLMENWOOD.Zone.Unshare.Body", {
+        name: escapeHTML(zone.name),
+        who: escapeHTML(this.actor.name ?? ""),
+      }),
     });
     if (!confirmed) return;
 
@@ -2016,7 +2027,7 @@ export class AddItemDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "add",
     }, { width: 520 } as Partial<Dialog.Options>);
@@ -2162,7 +2173,7 @@ export class AddCustomItemDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "add",
     });
@@ -2190,7 +2201,12 @@ class GiveItemDialog extends Dialog {
     // Returning before super() throws in a derived constructor — bail out with
     // a message instead.
     if (!item) {
-      super({ title: "Give Item", content: "<p>Item not found.</p>", buttons: { ok: { label: "OK" } }, default: "ok" });
+      super({
+        title: t("DOLMENWOOD.Give.Item.Title"),
+        content: t("DOLMENWOOD.Give.Item.NotFound"),
+        buttons: { ok: { label: t("DOLMENWOOD.Common.Ok") } },
+        default: "ok",
+      });
       return;
     }
 
@@ -2201,11 +2217,11 @@ class GiveItemDialog extends Dialog {
     const available = displayQuantity(item, def);
 
     super({
-      title: `Give ${item.name}`,
+      title: t("DOLMENWOOD.Give.TitleFor", { name: item.name }),
       content: `
         <form>
           <div class="form-group">
-            <label>Give to</label>
+            <label>${t("DOLMENWOOD.Give.To")}</label>
             <select id="give-item-target">${memberOptions}</select>
           </div>
           <div class="form-group">
@@ -2216,14 +2232,14 @@ class GiveItemDialog extends Dialog {
             <input type="number" id="give-item-qty" value="${available}" min="1" max="${available}" />
           </div>
           <div class="form-group">
-            <label>Into</label>
+            <label>${t("DOLMENWOOD.Give.Into")}</label>
             <select id="give-item-zone"></select>
           </div>
         </form>
       `,
       buttons: {
         give: {
-          label: "Give",
+          label: t("DOLMENWOOD.Give.Button"),
           callback: async (html: JQuery) => {
             const toActorId = html.find("#give-item-target").val() as string;
             const count = Math.min(
@@ -2263,7 +2279,7 @@ class GiveItemDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "give",
     });
@@ -2366,7 +2382,7 @@ class PickGiveZoneDialog extends Dialog {
     const available = splittableCount(items);
 
     super({
-      title: `Give to ${toActor.name}`,
+      title: t("DOLMENWOOD.Give.ToWho", { who: toActor.name ?? "" }),
       content: `
         <form>
           <p style="margin:0 0 8px;opacity:0.8;">
@@ -2374,7 +2390,7 @@ class PickGiveZoneDialog extends Dialog {
           </p>
           ${amountFieldHTML(available, "pick-give-amount")}
           <div class="form-group">
-            <label>Into</label>
+            <label>${t("DOLMENWOOD.Give.Into")}</label>
             <select id="pick-give-zone">${optionsHTML}</select>
           </div>
           <p style="font-size:var(--dw-text-sm);color:#888;margin-top:4px;">
@@ -2385,13 +2401,13 @@ class PickGiveZoneDialog extends Dialog {
       `,
       buttons: {
         give: {
-          label: "Give",
+          label: t("DOLMENWOOD.Give.Button"),
           callback: (html: JQuery) => {
             const zoneId = html.find("#pick-give-zone").val() as string;
             if (zoneId) onPick(zoneId, readAmount(html, "pick-give-amount", available));
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "give",
     });
@@ -2411,25 +2427,25 @@ class MovePartDialog extends Dialog {
       .join("");
 
     super({
-      title: `Move ${item.name}`,
+      title: t("DOLMENWOOD.Give.MoveTitle", { name: item.name }),
       content: `
         <form>
           ${amountFieldHTML(available, "move-part-amount")}
           <div class="form-group">
-            <label>Move to</label>
+            <label>${t("DOLMENWOOD.Give.MoveTo")}</label>
             <select id="move-part-zone">${optionsHTML}</select>
           </div>
         </form>
       `,
       buttons: {
         move: {
-          label: "Move",
+          label: t("DOLMENWOOD.Give.Move"),
           callback: (html: JQuery) => {
             const zoneId = html.find("#move-part-zone").val() as string;
             if (zoneId) onPick(zoneId, readAmount(html, "move-part-amount", available));
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "move",
     });
@@ -2445,12 +2461,22 @@ class GiveZoneDialog extends Dialog {
     const inventory = FlagManager.getInventory(fromActor);
     const zone = (inventory.extraZones ?? []).find((ez) => ez.id === zoneId);
     if (!zone) {
-      super({ title: "Give Zone", content: "<p>Zone not found.</p>", buttons: { ok: { label: "OK" } }, default: "ok" });
+      super({
+        title: t("DOLMENWOOD.Give.Zone.Title"),
+        content: t("DOLMENWOOD.Give.Zone.NotFound"),
+        buttons: { ok: { label: t("DOLMENWOOD.Common.Ok") } },
+        default: "ok",
+      });
       return;
     }
 
     if (partyMembers.length === 0) {
-      super({ title: "Give Zone", content: "<p>No other party members to give to.</p>", buttons: { ok: { label: "OK" } }, default: "ok" });
+      super({
+        title: t("DOLMENWOOD.Give.Zone.Title"),
+        content: t("DOLMENWOOD.Give.Zone.NoOne"),
+        buttons: { ok: { label: t("DOLMENWOOD.Common.Ok") } },
+        default: "ok",
+      });
       return;
     }
 
@@ -2461,11 +2487,11 @@ class GiveZoneDialog extends Dialog {
     const itemCount = inventory.items.filter((i) => i.zone === zoneId).length;
 
     super({
-      title: `Give ${zone.name}`,
+      title: t("DOLMENWOOD.Give.TitleFor", { name: zone.name }),
       content: `
         <form>
           <div class="form-group">
-            <label>Give to</label>
+            <label>${t("DOLMENWOOD.Give.To")}</label>
             <select id="give-zone-target">${memberOptions}</select>
           </div>
           <p style="font-size:var(--dw-text-sm);color:#888;margin-top:4px;">
@@ -2475,7 +2501,7 @@ class GiveZoneDialog extends Dialog {
       `,
       buttons: {
         give: {
-          label: "Give",
+          label: t("DOLMENWOOD.Give.Button"),
           callback: (html: JQuery) => {
             const toActorId = html.find("#give-zone-target").val() as string;
             if (!toActorId) return;
@@ -2490,7 +2516,7 @@ class GiveZoneDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "give",
     });
@@ -2505,9 +2531,9 @@ class GiveCoinsDialog extends Dialog {
 
     if (partyMembers.length === 0) {
       super({
-        title: "Give Coins",
-        content: "<p>No other party members to give coins to.</p>",
-        buttons: { ok: { label: "OK" } },
+        title: t("DOLMENWOOD.Give.Coins.Title"),
+        content: t("DOLMENWOOD.Give.Coins.NoOne"),
+        buttons: { ok: { label: t("DOLMENWOOD.Common.Ok") } },
         default: "ok",
       });
       return;
@@ -2520,34 +2546,46 @@ class GiveCoinsDialog extends Dialog {
     const inv = FlagManager.getInventory(fromActor);
 
     super({
-      title: "Give Coins",
+      title: t("DOLMENWOOD.Give.Coins.Title"),
       content: `
         <form>
           <div class="form-group">
-            <label>Give to</label>
+            <label>${t("DOLMENWOOD.Give.To")}</label>
             <select id="give-coins-target">${memberOptions}</select>
           </div>
           <div class="form-group">
-            <label>PP (have: ${inv.coins.pp})</label>
+            <label>${t("DOLMENWOOD.Give.Coins.Have", {
+              currency: t("DOLMENWOOD.Currency.PP"),
+              n: inv.coins.pp,
+            })}</label>
             <input type="number" id="give-pp" value="0" min="0" max="${inv.coins.pp}" />
           </div>
           <div class="form-group">
-            <label>GP (have: ${inv.coins.gp})</label>
+            <label>${t("DOLMENWOOD.Give.Coins.Have", {
+              currency: t("DOLMENWOOD.Currency.GP"),
+              n: inv.coins.gp,
+            })}</label>
             <input type="number" id="give-gp" value="0" min="0" max="${inv.coins.gp}" />
           </div>
           <div class="form-group">
-            <label>SP (have: ${inv.coins.sp})</label>
+            <label>${t("DOLMENWOOD.Give.Coins.Have", {
+              currency: t("DOLMENWOOD.Currency.SP"),
+              n: inv.coins.sp,
+            })}</label>
             <input type="number" id="give-sp" value="0" min="0" max="${inv.coins.sp}" />
           </div>
           <div class="form-group">
-            <label>CP (have: ${inv.coins.cp})</label>
+            <label>${t("DOLMENWOOD.Give.Coins.Have", {
+              currency: t("DOLMENWOOD.Currency.CP"),
+              n: inv.coins.cp,
+            })}</label>
             <input type="number" id="give-cp" value="0" min="0" max="${inv.coins.cp}" />
           </div>
         </form>
       `,
       buttons: {
         give: {
-          label: "Give",
+          label: t("DOLMENWOOD.Give.Button"),
           callback: (html: JQuery) => {
             const toActorId = html.find("#give-coins-target").val() as string;
             const pp = Math.min(inv.coins.pp, Math.max(0, parseInt(html.find("#give-pp").val() as string, 10) || 0));
@@ -2567,7 +2605,7 @@ class GiveCoinsDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "give",
     });
@@ -2579,25 +2617,25 @@ class GiveCoinsDialog extends Dialog {
 class AddExtraZoneDialog extends Dialog {
   constructor(actor: Actor, onComplete: () => void) {
     super({
-      title: "Add Storage Zone",
+      title: t("DOLMENWOOD.Zone.Add.Title"),
       content: `
         <form>
           <div class="form-group">
-            <label>Zone Name</label>
-            <input type="text" id="extra-zone-name" placeholder="e.g. Pack Horse" />
+            <label>${t("DOLMENWOOD.Zone.Name.Label")}</label>
+            <input type="text" id="extra-zone-name" placeholder="${t("DOLMENWOOD.Zone.Name.Placeholder")}" />
           </div>
           <div class="form-group">
-            <label>Max Slots</label>
+            <label>${t("DOLMENWOOD.Zone.MaxSlots")}</label>
             <input type="number" id="extra-zone-slots" value="10" min="1" max="999" />
           </div>
         </form>
       `,
       buttons: {
         add: {
-          label: "Add Zone",
+          label: t("DOLMENWOOD.Zone.Add.Button"),
           callback: async (html: JQuery) => {
             const name = (html.find("#extra-zone-name").val() as string).trim();
-            if (!name) { ui.notifications?.warn("Zone name is required."); return; }
+            if (!name) { ui.notifications?.warn(t("DOLMENWOOD.Zone.Name.Required")); return; }
             const maxSlots = Math.max(1, parseInt(html.find("#extra-zone-slots").val() as string, 10) || 10);
             await FlagManager.updateInventory(actor, (inv) => {
               if (!inv.extraZones) inv.extraZones = [];
@@ -2607,7 +2645,7 @@ class AddExtraZoneDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "add",
     });
@@ -2626,26 +2664,26 @@ class RenameZoneDialog extends Dialog {
     onComplete: () => void
   ) {
     super({
-      title: "Rename Storage Zone",
+      title: t("DOLMENWOOD.Zone.Rename.Title"),
       content: `
         <form>
           <div class="form-group">
-            <label>Zone Name</label>
+            <label>${t("DOLMENWOOD.Zone.Name.Label")}</label>
             <input type="text" id="rename-zone-name" value="${escapeHTML(currentName)}" />
           </div>
           <div class="form-group">
-            <label>Icon</label>
+            <label>${t("DOLMENWOOD.ItemDialog.Icon")}</label>
             ${buildIconPickerHTML(currentIcon ?? "fa-backpack", ZONE_ICONS)}
           </div>
           <div class="form-group">
-            <label>Color</label>
+            <label>${t("DOLMENWOOD.Zone.Colour")}</label>
             ${buildColorPickerHTML(currentColor ?? "green")}
           </div>
         </form>
       `,
       buttons: {
         rename: {
-          label: "Rename",
+          label: t("DOLMENWOOD.Zone.Rename.Button"),
           callback: async (html: JQuery) => {
             const name = (html.find("#rename-zone-name").val() as string).trim();
             if (!name) return;
@@ -2659,7 +2697,7 @@ class RenameZoneDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "rename",
     });
@@ -2677,7 +2715,7 @@ class RenameZoneDialog extends Dialog {
 class GrantCoinsDialog extends Dialog {
   constructor(toActor: Actor, onComplete: () => void) {
     super({
-      title: `Grant Coins to ${toActor.name}`,
+      title: t("DOLMENWOOD.Coins.Grant.Title", { who: toActor.name ?? "" }),
       content: `
         <form>
           <div class="form-group">
@@ -2700,7 +2738,7 @@ class GrantCoinsDialog extends Dialog {
       `,
       buttons: {
         grant: {
-          label: "Grant",
+          label: t("DOLMENWOOD.Coins.Grant.Button"),
           callback: async (html: JQuery) => {
             const pp = Math.max(0, parseInt(html.find("#grant-pp").val() as string, 10) || 0);
             const gp = Math.max(0, parseInt(html.find("#grant-gp").val() as string, 10) || 0);
@@ -2716,11 +2754,13 @@ class GrantCoinsDialog extends Dialog {
               addCoinsToZone(inv.coinsByZone, { cp, sp, gp, pp }, "stowed");
               return inv;
             });
-            ui.notifications?.info(`Granted coins to ${toActor.name}.`);
+            ui.notifications?.info(
+              t("DOLMENWOOD.Coins.Grant.Done", { who: toActor.name ?? "" })
+            );
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "grant",
     });
@@ -2786,7 +2826,7 @@ class MoveCoinsBetweenZonesDialog extends Dialog {
     const toOptions = [...ownOptions, ...otherOptions].join("");
 
     super({
-      title: `Move Coins from ${fromName}`,
+      title: t("DOLMENWOOD.Coins.Move.TitleFrom", { from: fromName }),
       content: `
         <form>
           <p style="margin:0 0 8px;opacity:0.8;">
@@ -2797,7 +2837,7 @@ class MoveCoinsBetweenZonesDialog extends Dialog {
             )}
           </p>
           <div class="form-group">
-            <label>Move to</label>
+            <label>${t("DOLMENWOOD.Give.MoveTo")}</label>
             <select id="move-coins-to">${toOptions}</select>
           </div>
           <div class="form-group">
@@ -2820,7 +2860,7 @@ class MoveCoinsBetweenZonesDialog extends Dialog {
       `,
       buttons: {
         move: {
-          label: "Move",
+          label: t("DOLMENWOOD.Give.Move"),
           callback: async (html: JQuery) => {
             const selection = html.find("#move-coins-to").val() as string;
             // "<actorId>:<zoneId>" — the zone ID may not be in `actor`
@@ -2857,7 +2897,7 @@ class MoveCoinsBetweenZonesDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "move",
     });
@@ -2913,44 +2953,46 @@ class CustomAnimalDialog extends Dialog {
     const d = existing?.draft;
 
     super({
-      title: existing ? "Edit Animal / Vehicle" : "Add Custom Animal / Vehicle",
+      title: existing
+        ? t("DOLMENWOOD.Animal.Title.Edit")
+        : t("DOLMENWOOD.Animal.Title.Add"),
       content: `
         <form>
           <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="animal-name" placeholder="e.g. Alden the Wolf" value="${escapeHTML(d?.name ?? "")}" />
+            <label>${t("DOLMENWOOD.ItemDialog.Name.Label")}</label>
+            <input type="text" id="animal-name" placeholder="${t("DOLMENWOOD.Animal.Name.Placeholder")}" value="${escapeHTML(d?.name ?? "")}" />
           </div>
           <div class="form-group">
-            <label>Type / Subcategory</label>
-            <input type="text" id="animal-subcategory" placeholder="e.g. Wolves, Horses, Land Vehicles" value="${escapeHTML(d?.subcategory ?? "")}" />
+            <label>${t("DOLMENWOOD.Animal.Kind.Label")}</label>
+            <input type="text" id="animal-subcategory" placeholder="${t("DOLMENWOOD.Animal.Kind.Placeholder")}" value="${escapeHTML(d?.subcategory ?? "")}" />
           </div>
           <div class="form-group">
-            <label>Icon</label>
+            <label>${t("DOLMENWOOD.ItemDialog.Icon")}</label>
             ${buildIconPickerHTML(d?.icon || "fa-horse", ZONE_ICONS)}
           </div>
           <div class="form-group">
-            <label>Color</label>
+            <label>${t("DOLMENWOOD.Zone.Colour")}</label>
             ${buildColorPickerHTML(d?.color || "green")}
           </div>
           <div class="form-group">
-            <label>Speed (ft)</label>
+            <label>${t("DOLMENWOOD.Animal.Speed")}</label>
             <input type="number" id="animal-speed" value="${d?.speed ?? 40}" min="0" />
           </div>
           <div class="form-group">
-            <label>Weight Capacity (coin wt)</label>
+            <label>${t("DOLMENWOOD.Animal.WeightCapacity")}</label>
             <input type="number" id="animal-weight-cap" value="${d?.weightCapacity ?? 0}" min="0" />
           </div>
           <div class="form-group">
-            <label>Slot Capacity</label>
+            <label>${t("DOLMENWOOD.Animal.SlotCapacity")}</label>
             <input type="number" id="animal-slot-cap" value="${d?.maxSlots ?? 0}" min="0" />
           </div>
           <div class="form-group">
-            <label>Qualities (comma-separated)</label>
-            <input type="text" id="animal-qualities" placeholder="e.g. Loyal, Fast, Night Vision" value="${escapeHTML((d?.qualities ?? []).join(", "))}" />
+            <label>${t("DOLMENWOOD.Animal.Qualities.Label")}</label>
+            <input type="text" id="animal-qualities" placeholder="${t("DOLMENWOOD.Animal.Qualities.Placeholder")}" value="${escapeHTML((d?.qualities ?? []).join(", "))}" />
           </div>
           <div class="form-group">
-            <label>Description</label>
-            <textarea id="animal-desc" placeholder="Optional description…" rows="2" style="width:100%;resize:vertical;">${escapeHTML(d?.description ?? "")}</textarea>
+            <label>${t("DOLMENWOOD.ItemDialog.Description.Label")}</label>
+            <textarea id="animal-desc" placeholder="${t("DOLMENWOOD.ItemDialog.Description.Placeholder")}" rows="2" style="width:100%;resize:vertical;">${escapeHTML(d?.description ?? "")}</textarea>
           </div>
         </form>
       `,
@@ -2959,7 +3001,7 @@ class CustomAnimalDialog extends Dialog {
           label: existing ? "Save Changes" : "Add Animal",
           callback: async (html: JQuery) => {
             const name = (html.find("#animal-name").val() as string).trim();
-            if (!name) { ui.notifications?.warn("Name is required."); return; }
+            if (!name) { ui.notifications?.warn(t("DOLMENWOOD.Animal.Name.Required")); return; }
             const subcategory = (html.find("#animal-subcategory").val() as string).trim();
             const icon = (html.find("#custom-icon-value").val() as string) || "fa-horse";
             const color = (html.find("#zone-color-value").val() as string) || "green";
@@ -3074,7 +3116,7 @@ class CustomAnimalDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "add",
     });
@@ -3149,25 +3191,25 @@ class EditItemDialog extends Dialog {
         ${
           encMode === "weight"
             ? `<div class="form-group">
-                 <label for="edit-weight">Weight</label>
+                 <label for="edit-weight">${t("DOLMENWOOD.ItemDialog.Edit.Weight")}</label>
                  <div class="qm-field">
                    <input type="number" id="edit-weight" value="${def?.weight ?? 0}" min="0" step="1" />
                    <span class="qm-unit">coin wt</span>
                  </div>
                </div>`
             : `<div class="form-group">
-                 <label for="edit-size">Size</label>
+                 <label for="edit-size">${t("DOLMENWOOD.ItemDialog.Size")}</label>
                  <div class="qm-field">
                    <select id="edit-size">
-                     <option value="tiny"${sizeSel("tiny")}>Tiny (0 slots)</option>
-                     <option value="normal"${sizeSel("normal")}>Normal (1 slot)</option>
-                     <option value="large"${sizeSel("large")}>Large (2 slots)</option>
+                     <option value="tiny"${sizeSel("tiny")}>${t("DOLMENWOOD.ItemDialog.Slots.Tiny")}</option>
+                     <option value="normal"${sizeSel("normal")}>${t("DOLMENWOOD.ItemDialog.Slots.Normal")}</option>
+                     <option value="large"${sizeSel("large")}>${t("DOLMENWOOD.ItemDialog.Slots.Large")}</option>
                    </select>
                  </div>
                </div>`
         }
         <div class="form-group">
-          <label for="edit-cost">Price</label>
+          <label for="edit-cost">${t("DOLMENWOOD.ItemDialog.Edit.Price.Label")}</label>
           <div class="qm-field">
             <input type="number" id="edit-cost" value="${def?.cost?.amount ?? 0}" min="0" step="1" />
             <select id="edit-currency">
@@ -3177,26 +3219,26 @@ class EditItemDialog extends Dialog {
               <option value="pp"${currSel("pp")}>${t("DOLMENWOOD.Currency.PP")}</option>
             </select>
           </div>
-          <p class="qm-hint">What a shop reckons it is worth. One that buys back pays its own share of this.</p>
+          <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edit.Price.Hint")}</p>
         </div>
         <div class="form-group">
-          <label for="edit-unit">Counted in</label>
+          <label for="edit-unit">${t("DOLMENWOOD.ItemDialog.Edit.Unit.Label")}</label>
           <div class="qm-field">
             <input type="text" id="edit-unit" value="${escapeHTML(def?.unit ?? "piece")}" placeholder="piece" />
           </div>
-          <p class="qm-hint">piece, portion, charge, meter, hour — what one of it is.</p>
+          <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edit.Unit.Hint")}</p>
         </div>
         <div class="form-group">
-          <label for="edit-max-uses">Uses when full</label>
+          <label for="edit-max-uses">${t("DOLMENWOOD.ItemDialog.Edit.MaxUses.Label")}</label>
           <div class="qm-field">
             <input type="number" id="edit-max-uses" value="${def?.maxUses ?? 0}" min="0" step="1" />
           </div>
-          <p class="qm-hint">Nought for a plain item. Above nought the row counts portions — a quiver, a flask, a cask.</p>
+          <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edit.MaxUses.Hint")}</p>
         </div>
         ${
           def?.maxUses
             ? `<div class="form-group">
-                 <label for="edit-uses">Uses left</label>
+                 <label for="edit-uses">${t("DOLMENWOOD.ItemDialog.Edit.Uses")}</label>
                  <div class="qm-field">
                    <input type="number" id="edit-uses" value="${item.uses ?? def.maxUses}" min="0" step="1" />
                  </div>
@@ -3204,23 +3246,23 @@ class EditItemDialog extends Dialog {
             : ""
         }
         <div class="form-group">
-          <label for="edit-coin-capacity">Holds coins</label>
+          <label for="edit-coin-capacity">${t("DOLMENWOOD.ItemDialog.Edit.CoinCapacity.Label")}</label>
           <div class="qm-field">
             <input type="number" id="edit-coin-capacity" value="${def?.coinCapacity ?? 0}" min="0" step="1" />
           </div>
-          <p class="qm-hint">Nought for anything that is not a purse. Coins up to this many ride in it without weighing on the zone.</p>
+          <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edit.CoinCapacity.Hint")}</p>
         </div>
         <div class="form-group">
-          <label for="edit-edible">Edible</label>
+          <label for="edit-edible">${t("DOLMENWOOD.ItemDialog.Edible.Label")}</label>
           <div class="qm-field">
             <input type="checkbox" id="edit-edible"${def?.edible ? " checked" : ""} />
           </div>
-          <p class="qm-hint">Gives the row an Eat button that feeds the character for the day.</p>
+          <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edible.Hint")}</p>
         </div>
         <div class="form-group qm-wide">
-          <label for="edit-qualities">Qualities</label>
+          <label for="edit-qualities">${t("DOLMENWOOD.ItemDialog.Qualities.Label")}</label>
           <div class="qm-field">
-            <input type="text" id="edit-qualities" value="${escapeHTML((def?.qualities ?? []).join(", "))}" placeholder="e.g. 1d8, Melee, Two-handed" />
+            <input type="text" id="edit-qualities" value="${escapeHTML((def?.qualities ?? []).join(", "))}" placeholder="${escapeHTML(t("DOLMENWOOD.ItemDialog.Qualities.Placeholder"))}" />
           </div>
           <p class="qm-hint">${escapeHTML(qualitiesHint())}</p>
           <p class="qm-hint" data-read-for="edit-qualities"></p>
@@ -3229,40 +3271,40 @@ class EditItemDialog extends Dialog {
     const gmFields = !isGM
       ? ""
       : `<div class="form-group qm-wide">
-           <label for="edit-gm-note">Referee's note</label>
+           <label for="edit-gm-note">${t("DOLMENWOOD.ItemDialog.Edit.GmNote.Label")}</label>
            <div class="qm-field">
-             <textarea id="edit-gm-note" rows="2" placeholder="What this really is, and what it does.">${escapeHTML(item.gmNote ?? "")}</textarea>
+             <textarea id="edit-gm-note" rows="2" placeholder="${escapeHTML(t("DOLMENWOOD.ItemDialog.Edit.GmNote.Placeholder"))}">${escapeHTML(item.gmNote ?? "")}</textarea>
            </div>
-           <p class="qm-hint">Read by the Referee alone. The row stays in plain sight; this is what it is not saying.</p>
+           <p class="qm-hint">${t("DOLMENWOOD.ItemDialog.Edit.GmNote.Hint")}</p>
          </div>`;
 
     super({
-      title: `Edit ${item.name}`,
+      title: t("DOLMENWOOD.ItemDialog.Edit.Title", { name: item.name }),
       content: `
         <form class="qm-form">
           <div class="form-group">
-            <label for="edit-name">Name</label>
+            <label for="edit-name">${t("DOLMENWOOD.ItemDialog.Name.Label")}</label>
             <div class="qm-field">
               <input type="text" id="edit-name" value="${escapeHTML(item.name)}" />
             </div>
           </div>
           <div class="form-group qm-wide">
-            <label>Icon</label>
+            <label>${t("DOLMENWOOD.ItemDialog.Icon")}</label>
             <div class="qm-field qm-field-icons">
               ${buildIconPickerHTML(def?.icon ?? "fa-sack", undefined, ICON_BOX)}
             </div>
           </div>
           ${rulesFields}
           <div class="form-group qm-wide">
-            <label for="edit-desc">Description</label>
+            <label for="edit-desc">${t("DOLMENWOOD.ItemDialog.Description.Label")}</label>
             <div class="qm-field">
-              <textarea id="edit-desc" rows="2" placeholder="What it is.">${escapeHTML(def?.description ?? "")}</textarea>
+              <textarea id="edit-desc" rows="2" placeholder="${escapeHTML(t("DOLMENWOOD.ItemDialog.Edit.Desc.Placeholder"))}">${escapeHTML(def?.description ?? "")}</textarea>
             </div>
           </div>
           <div class="form-group qm-wide">
-            <label for="edit-notes">Notes</label>
+            <label for="edit-notes">${t("DOLMENWOOD.ItemDialog.Edit.Notes.Label")}</label>
             <div class="qm-field">
-              <textarea id="edit-notes" rows="2" placeholder="Yours — where it came from, who it is for.">${escapeHTML(item.notes ?? "")}</textarea>
+              <textarea id="edit-notes" rows="2" placeholder="${escapeHTML(t("DOLMENWOOD.ItemDialog.Edit.Notes.Placeholder"))}">${escapeHTML(item.notes ?? "")}</textarea>
             </div>
           </div>
           ${gmFields}
@@ -3270,7 +3312,7 @@ class EditItemDialog extends Dialog {
       `,
       buttons: {
         save: {
-          label: "Save",
+          label: t("DOLMENWOOD.Common.Save"),
           callback: async (html: JQuery) => {
             const name = (html.find("#edit-name").val() as string).trim();
             if (!name) { ui.notifications?.warn(t("DOLMENWOOD.ItemDialog.NameRequired")); return; }
@@ -3333,7 +3375,7 @@ class EditItemDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "save",
     });

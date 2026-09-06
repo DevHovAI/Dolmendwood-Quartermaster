@@ -129,7 +129,9 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
 
   static override DEFAULT_OPTIONS: DeepPartial<ApplicationV2Options> = {
     classes: ["dolmenwood-party-inventory", "dw-sheet"],
-    window: { title: "Attributes", resizable: true, icon: "fas fa-scroll" },
+    // A key, not a word: `DEFAULT_OPTIONS` is read at module scope and Foundry
+    // localises `window.title` itself. The real title comes from `get title`.
+    window: { title: "DOLMENWOOD.Sheet.WindowTitle", resizable: true, icon: "fas fa-scroll" },
     position: { width: Math.min(880, window.innerWidth - 80), height: 760 },
     actions: {
       rollAbility: CharacterSheetApp._onRollAbility,

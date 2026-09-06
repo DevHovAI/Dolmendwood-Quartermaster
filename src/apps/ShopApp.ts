@@ -713,7 +713,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
               resolve({ confirmed: true, zone });
             },
           },
-          cancel: { label: "Cancel", callback: () => resolve({ confirmed: false, zone: "stowed" }) },
+          cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => resolve({ confirmed: false, zone: "stowed" }) },
         },
         default: "confirm",
       }).render(true);
@@ -791,7 +791,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
             icon: '<i class="fas fa-hand-holding-dollar"></i>',
             callback: () => resolve(true),
           },
-          cancel: { label: "Cancel", callback: () => resolve(false) },
+          cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => resolve(false) },
         },
         default: "confirm",
       }).render(true);
@@ -1054,7 +1054,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
               callback: (html: JQuery) =>
                 resolve(Math.max(1, Math.min(value.units, parseInt(html.find("#sell-qty").val() as string, 10) || 1))),
             },
-            cancel: { label: "Cancel", callback: () => resolve(0) },
+            cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => resolve(0) },
           },
           default: "sell",
         }).render(true);
@@ -1099,7 +1099,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
             icon: '<i class="fas fa-hand-holding-dollar"></i>',
             callback: () => resolve(true),
           },
-          cancel: { label: "Cancel", callback: () => resolve(false) },
+          cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => resolve(false) },
         },
         default: "sell",
       }).render(true);
@@ -1217,7 +1217,7 @@ class StockFromCatalogueDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "add",
     });
@@ -1510,7 +1510,7 @@ class AddToShopDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "add",
     });
@@ -1628,7 +1628,7 @@ class StockFromLibraryDialog extends Dialog {
             onComplete();
           },
         },
-        cancel: { label: "Cancel" },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel") },
       },
       default: "add",
     });
@@ -1690,7 +1690,7 @@ class StockFromLibraryDialog extends Dialog {
                 new StockFromLibraryDialog(this.shopName, this.onComplete).render(true);
               },
             },
-            cancel: { label: "Cancel" },
+            cancel: { label: t("DOLMENWOOD.Common.Cancel") },
           },
           default: "cancel",
         }).render(true);
