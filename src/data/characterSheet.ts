@@ -32,13 +32,13 @@ export type AbilityKey = "str" | "int" | "wis" | "dex" | "con" | "cha";
  * modifier is for. The caption is on the sheet itself and is half of why the
  * printed one is easy to read.
  */
-export const ABILITIES: { key: AbilityKey; label: string; short: string; governs: string }[] = [
-  { key: "str", label: "Strength", short: "STR", governs: "Melee attacks and damage" },
-  { key: "int", label: "Intelligence", short: "INT", governs: "Extra languages" },
-  { key: "wis", label: "Wisdom", short: "WIS", governs: "Magic Resistance" },
-  { key: "dex", label: "Dexterity", short: "DEX", governs: "AC and missile attacks" },
-  { key: "con", label: "Constitution", short: "CON", governs: "Hit Points per Level" },
-  { key: "cha", label: "Charisma", short: "CHA", governs: "Reaction Rolls" },
+export const ABILITIES: { key: AbilityKey; label: string; short: string; governsKey: string }[] = [
+  { key: "str", label: "Strength", short: "STR", governsKey: "DOLMENWOOD.Sheet.Ability.Governs.str" },
+  { key: "int", label: "Intelligence", short: "INT", governsKey: "DOLMENWOOD.Sheet.Ability.Governs.int" },
+  { key: "wis", label: "Wisdom", short: "WIS", governsKey: "DOLMENWOOD.Sheet.Ability.Governs.wis" },
+  { key: "dex", label: "Dexterity", short: "DEX", governsKey: "DOLMENWOOD.Sheet.Ability.Governs.dex" },
+  { key: "con", label: "Constitution", short: "CON", governsKey: "DOLMENWOOD.Sheet.Ability.Governs.con" },
+  { key: "cha", label: "Charisma", short: "CHA", governsKey: "DOLMENWOOD.Sheet.Ability.Governs.cha" },
 ];
 
 // ─── The five saves ───────────────────────────────────────────────────────────
@@ -72,18 +72,18 @@ export const ABILITY_CHECK_TARGET = 4;
  * down, then how it carries itself, then what is inside it, and the three plain
  * facts last. `wide` marks the two that hold a sentence rather than a phrase.
  */
-export const PERSONA_FIELDS: { key: PersonaKey; label: string; wide?: boolean }[] = [
-  { key: "head", label: "Head" },
-  { key: "face", label: "Face" },
-  { key: "body", label: "Body" },
-  { key: "speech", label: "Speech" },
-  { key: "demeanour", label: "Demeanour" },
-  { key: "dress", label: "Dress" },
-  { key: "desires", label: "Desires", wide: true },
-  { key: "beliefs", label: "Beliefs", wide: true },
-  { key: "birthday", label: "Birthday" },
-  { key: "height", label: "Height" },
-  { key: "weight", label: "Weight" },
+export const PERSONA_FIELDS: { key: PersonaKey; labelKey: string; wide?: boolean }[] = [
+  { key: "head", labelKey: "DOLMENWOOD.Sheet.Persona.Field.head" },
+  { key: "face", labelKey: "DOLMENWOOD.Sheet.Persona.Field.face" },
+  { key: "body", labelKey: "DOLMENWOOD.Sheet.Persona.Field.body" },
+  { key: "speech", labelKey: "DOLMENWOOD.Sheet.Persona.Field.speech" },
+  { key: "demeanour", labelKey: "DOLMENWOOD.Sheet.Persona.Field.demeanour" },
+  { key: "dress", labelKey: "DOLMENWOOD.Sheet.Persona.Field.dress" },
+  { key: "desires", labelKey: "DOLMENWOOD.Sheet.Persona.Field.desires", wide: true },
+  { key: "beliefs", labelKey: "DOLMENWOOD.Sheet.Persona.Field.beliefs", wide: true },
+  { key: "birthday", labelKey: "DOLMENWOOD.Sheet.Persona.Field.birthday" },
+  { key: "height", labelKey: "DOLMENWOOD.Sheet.Persona.Field.height" },
+  { key: "weight", labelKey: "DOLMENWOOD.Sheet.Persona.Field.weight" },
 ];
 
 export type PersonaKey =
@@ -168,15 +168,15 @@ export const ALIGNMENTS = ["Lawful", "Neutral", "Chaotic"];
  * choice what the book prints as impossible. Both can still be typed by hand,
  * which is the whole reason the field stays a field.
  */
-export const LANGUAGE_GROUPS: { label: string; languages: string[] }[] = [
-  { label: "The common tongue", languages: ["Woldish", "Old Woldish"] },
-  { label: "Breggle tongues", languages: ["Caprice", "Gaffe"] },
-  { label: "The scriptural tongue", languages: ["Liturgic"] },
-  { label: "Fairy tongues", languages: ["Sylvan", "High Elfish", "Mewl", "Dwelve"] },
-  { label: "The mossling tongue", languages: ["Mulch"] },
-  { label: "Drunic", languages: ["Drunic"] },
+export const LANGUAGE_GROUPS: { labelKey: string; languages: string[] }[] = [
+  { labelKey: "DOLMENWOOD.Sheet.Lang.Group.Common", languages: ["Woldish", "Old Woldish"] },
+  { labelKey: "DOLMENWOOD.Sheet.Lang.Group.Breggle", languages: ["Caprice", "Gaffe"] },
+  { labelKey: "DOLMENWOOD.Sheet.Lang.Group.Scriptural", languages: ["Liturgic"] },
+  { labelKey: "DOLMENWOOD.Sheet.Lang.Group.Fairy", languages: ["Sylvan", "High Elfish", "Mewl", "Dwelve"] },
+  { labelKey: "DOLMENWOOD.Sheet.Lang.Group.Mossling", languages: ["Mulch"] },
+  { labelKey: "DOLMENWOOD.Sheet.Lang.Group.Drunic", languages: ["Drunic"] },
   {
-    label: "Obscure, at the Referee's discretion",
+    labelKey: "DOLMENWOOD.Sheet.Lang.Group.Obscure",
     languages: ["Boggin", "Deorling", "Merfolk", "Wyrm"],
   },
 ];

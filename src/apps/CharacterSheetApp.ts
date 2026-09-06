@@ -1,6 +1,7 @@
 import { TEMPLATES } from "../constants";
 import {
   ABILITIES,
+  ABILITY_CHECK_TARGET,
   ALIGNMENTS,
   DEFAULT_SKILL_TARGET,
   KINDREDS,
@@ -160,7 +161,9 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
   };
 
   override get title(): string {
-    return `${this.actor.name ?? "Character"} — Attributes`;
+    return t("DOLMENWOOD.Sheet.Title", {
+      name: this.actor.name ?? t("DOLMENWOOD.Common.Unknown"),
+    });
   }
 
   override async close(options?: Record<string, unknown>): Promise<this> {
@@ -181,6 +184,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       const byTheBook = abilityModifier(value);
       return {
         ...a,
+        governs: t(a.governsKey),
         value,
         bonus,
         // "+2" reads as a modifier; "2" reads as a second score.
@@ -199,9 +203,9 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     // has a height that never moves, which is the whole point: it can be pinned
     // to Experience beside it.
     const printed = [
-      { key: "listen", label: "Listen", target: extras.skills.listen, custom: false, address: "@listen" },
-      { key: "search", label: "Search", target: extras.skills.search, custom: false, address: "@search" },
-      { key: "survival", label: "Survival", target: extras.skills.survival, custom: false, address: "@survival" },
+      { key: "listen", label: t("DOLMENWOOD.Sheet.Skill.listen"), target: extras.skills.listen, custom: false, address: "@listen" },
+      { key: "search", label: t("DOLMENWOOD.Sheet.Skill.search"), target: extras.skills.search, custom: false, address: "@search" },
+      { key: "survival", label: t("DOLMENWOOD.Sheet.Skill.survival"), target: extras.skills.survival, custom: false, address: "@survival" },
     ];
     const own = extras.moreSkills.map((s) => ({
       key: s.id,
@@ -229,9 +233,9 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       // Only a weapon that can be thrown or shot has bands to choose between.
       bands: w.ranges
         ? [
-            { key: "short", label: `Short ${w.ranges.short}' (+1)` },
-            { key: "medium", label: `Medium ${w.ranges.medium}'` },
-            { key: "long", label: `Long ${w.ranges.long}' (−1)` },
+            { key: "short", label: t("DOLMENWOOD.Sheet.Weapons.Band.Short", { feet: w.ranges.short }) },
+            { key: "medium", label: t("DOLMENWOOD.Sheet.Weapons.Band.Medium", { feet: w.ranges.medium }) },
+            { key: "long", label: t("DOLMENWOOD.Sheet.Weapons.Band.Long", { feet: w.ranges.long }) },
           ]
         : undefined,
       notesLine: w.notes.join(" · "),
@@ -259,6 +263,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       },
 
       abilities,
+      abilityCheckTarget: ABILITY_CHECK_TARGET,
       saves: SAVES.map((s) => ({ ...s, value: sys.saves[s.key] })),
 
       hp: sys.hp,
@@ -291,7 +296,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       // per Kindred rather than one list, and names no factions to choose from.
       kindredNames: KINDREDS,
       alignmentNames: ALIGNMENTS,
-      languageGroups: LANGUAGE_GROUPS,
+      languageGroups: LANGUAGE_GROUPS.map((g) => ({ label: t(g.labelKey), languages: g.languages })),
       langPickerOpen: this.#langPickerOpen,
       advance: advanceView(actor),
 
@@ -342,7 +347,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
           value: extras.persona[f.key] ?? "",
           // Breggles and grimalkins have fur where the others have a body, and
           // the field takes the Kindred's own word for it.
-          label: f.key === "body" ? (tables?.bodyLabel ?? f.label) : f.label,
+          label: f.key === "body" ? (tables?.bodyLabel ?? t(f.labelKey)) : t(f.labelKey),
           // **The two wide ones are textareas, and no browser puts a datalist
           // on one** — so where the other six get suggestions in the box,
           // Desires and Beliefs get a panel under it (Dolmenmaster, 2026-09-03).
@@ -590,8 +595,8 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       const short = Math.min(w, h) < wanted;
       box.classList.toggle("is-upscaled", short);
       img.title = short
-        ? `${w} × ${h} — smaller than the ${wanted} pixels this box is drawn at, so it is being stretched. Click to see the file itself; the button beside it picks a larger one.`
-        : `${w} × ${h}. Click to see this picture at its own size.`;
+        ? t("DOLMENWOOD.Sheet.Portrait.Small", { w, h, wanted })
+        : t("DOLMENWOOD.Sheet.Portrait.Fine", { w, h });
     };
 
     if (img.complete) report();
@@ -1245,13 +1250,18 @@ function derivedXpModifier(actor: Actor): number | null {
 function penaltyLine(actor: Actor): string {
   const p = characterPenalties(actor);
   if (!p.attack && !p.damage) return "";
-  const why = [
-    p.hunger ? `hunger ${p.hunger}` : "",
-    p.exhaustion ? `exhaustion ${p.exhaustion}` : "",
-  ]
-    .filter(Boolean)
-    .join(", ");
-  return `${signed(p.attack)} to Attack Rolls and ${signed(p.damage)} to Damage — ${why}. Already in every formula below.`;
+  // **A whole sentence per case**, rather than one sentence with a translated
+  // fragment dropped into it: the reason is the middle of the line, and German
+  // does not put "Hunger -1, Erschöpfung -2" where English puts it by accident.
+  const both = { attack: signed(p.attack), damage: signed(p.damage) };
+  if (p.hunger && p.exhaustion)
+    return t("DOLMENWOOD.Sheet.Penalty.Both", {
+      ...both,
+      hunger: p.hunger,
+      exhaustion: p.exhaustion,
+    });
+  if (p.hunger) return t("DOLMENWOOD.Sheet.Penalty.Hunger", { ...both, hunger: p.hunger });
+  return t("DOLMENWOOD.Sheet.Penalty.Exhaustion", { ...both, exhaustion: p.exhaustion });
 }
 
 /**
@@ -1295,7 +1305,7 @@ function groupBlocks(
   const order: string[] = [];
   const byGroup = new Map<string, BlockView[]>();
   for (const b of blocks) {
-    const key = b.group.trim() || "Other";
+    const key = b.group.trim() || t("DOLMENWOOD.Sheet.Blocks.Ungrouped");
     if (!byGroup.has(key)) {
       byGroup.set(key, []);
       order.push(key);

@@ -1,3 +1,5 @@
+import { t, tn } from "../helpers/i18n";
+
 /**
  * Spell credits, and the charges they buy.
  *
@@ -83,11 +85,11 @@ export function castOne(prepared: number | undefined): number | null {
 /** "2 ready" / "1 ready" / nothing at all when the spell is not prepared. */
 export function chargeLabel(prepared: number | undefined): string {
   const charges = chargesOf(prepared);
-  return charges > 0 ? `${charges} ready` : "";
+  return charges > 0 ? t("DOLMENWOOD.Sheet.Charges.Ready", { n: charges }) : "";
 }
 
 /** "3 spell credits left" — the line above the list, and the empty case. */
 export function creditLine(credits: number): string {
-  if (credits <= 0) return "No spell credits left";
-  return `${credits} spell credit${credits === 1 ? "" : "s"} left`;
+  if (credits <= 0) return t("DOLMENWOOD.Sheet.Credits.None");
+  return tn("DOLMENWOOD.Sheet.Credits.Left", credits);
 }

@@ -18,8 +18,7 @@
   {{#unless hasSystem}}
   <p class="dw-sheet-warning">
     <i class="fas fa-triangle-exclamation"></i>
-    This actor has no ability scores this module can read. The boxes below will stay empty and
-    write nothing — the sheet expects an OSE character.
+    {{localize "DOLMENWOOD.Sheet.NoSystem"}}
   </p>
   {{/unless}}
 
@@ -37,11 +36,11 @@
     <div class="dw-sheet-portrait-box">
       {{#if img}}
       <img class="dw-sheet-portrait" src="{{img}}" alt="" data-action="showPortrait"
-           title="Click to see this picture at its own size">
+           title="{{localize "DOLMENWOOD.Sheet.Portrait.Show"}}">
       {{/if}}
       {{#if canEdit}}
       <button type="button" class="dw-portrait-edit" data-action="pickPortrait"
-              title="Choose a different picture. A file of at least 400 by 400 stays sharp in this box.">
+              title="{{localize "DOLMENWOOD.Sheet.Portrait.Pick"}}">
         <i class="fas fa-image"></i>
       </button>
       {{/if}}
@@ -55,20 +54,20 @@
                 is titled and not in a stripe between two sections it does not
                 favour. Never stored: a stored one is eventually a forgotten
                 one. --}}
-          <label class="dw-sheet-situational" title="Added to the next thing you click — an Ability Check, a save, a skill, an attack or its damage. Never saved.">
-            <span>This roll</span>
+          <label class="dw-sheet-situational" title="{{localize "DOLMENWOOD.Sheet.Situational.Hint"}}">
+            <span>{{localize "DOLMENWOOD.Sheet.Situational.Label"}}</span>
             <input type="number" id="dw-sheet-situational" value="0" step="1">
           </label>
           <button type="button" class="dw-sheet-btn" data-action="openInventory"
-                  title="This character's inventory — the module's own, which is where their gear lives">
-            <i class="fas fa-backpack"></i> Inventory
+                  title="{{localize "DOLMENWOOD.Sheet.Inventory.Hint"}}">
+            <i class="fas fa-backpack"></i> {{localize "DOLMENWOOD.Sheet.Inventory.Label"}}
           </button>
         </div>
       </div>
 
       <div class="dw-fields dw-fields-3">
         <label class="dw-field">
-          <span>Kindred</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Field.Kindred"}}</span>
           {{!-- A list, not a dropdown, for the reason the Class field gives
                 below: the six are offered without being imposed. --}}
           <input type="text" data-extra="kindred" value="{{identity.kindred}}" list="dw-kindred-list"
@@ -78,7 +77,7 @@
           </datalist>
         </label>
         <label class="dw-field">
-          <span>Class</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Field.Class"}}</span>
           {{!-- A list, not a dropdown: OSE keeps this as free text and a table
                 may write "Fighter 3" or a Class this module has never heard of,
                 so the nine are offered without being imposed. Naming one of
@@ -91,7 +90,7 @@
           </datalist>
         </label>
         <label class="dw-field">
-          <span>Alignment</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Field.Alignment"}}</span>
           <input type="text" data-field="alignment" value="{{identity.alignment}}" list="dw-alignment-list"
                  {{#unless canEdit}}disabled{{/unless}}>
           <datalist id="dw-alignment-list">
@@ -99,7 +98,7 @@
           </datalist>
         </label>
         <label class="dw-field">
-          <span>Background</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Field.Background"}}</span>
           {{!-- **The suggestions are the Kindred's own d20 table**, because the
                 book prints one per Kindred rather than one for everybody. Fill
                 the Kindred in first and this fills itself with onion farmers or
@@ -115,7 +114,7 @@
           {{/if}}
         </label>
         <label class="dw-field">
-          <span>Affiliation</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Field.Affiliation"}}</span>
           <input type="text" data-extra="affiliation" value="{{identity.affiliation}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
         {{!-- Languages sit up here with the other one-word facts. OSE keeps them
@@ -131,9 +130,9 @@
               precisely what the nesting keeps apart. --}}
         <div class="dw-field dw-field-langs">
           <label class="dw-field">
-            <span>Languages</span>
+            <span>{{localize "DOLMENWOOD.Sheet.Field.Languages"}}</span>
             <input type="text" data-field="languages" value="{{languages}}"
-                   title="Separated by commas. Extra languages come from Intelligence."
+                   title="{{localize "DOLMENWOOD.Sheet.Field.LanguagesHint"}}"
                    {{#unless canEdit}}disabled{{/unless}}>
           </label>
           {{!-- **Ticked rather than listed** (Dolmenmaster, 2026-09-03). A datalist
@@ -146,7 +145,7 @@
                 only a convenience. --}}
           {{#if canEdit}}
           <details class="dw-lang-picker" {{#if langPickerOpen}}open{{/if}}>
-            <summary><i class="fas fa-chevron-right dw-lang-caret"></i>Pick from the book</summary>
+            <summary><i class="fas fa-chevron-right dw-lang-caret"></i>{{localize "DOLMENWOOD.Sheet.Pick.FromBook"}}</summary>
             <div class="dw-lang-groups">
               {{#each languageGroups}}
               <div class="dw-lang-group">
@@ -171,9 +170,9 @@
             it a name with the mechanics kept somewhere else. --}}
       <div class="dw-field dw-field-wide dw-field-moon">
         <label class="dw-field">
-          <span>Moon Sign</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Field.MoonSign"}}</span>
           <textarea data-extra="moonSign" rows="2"
-                    placeholder="The sign, and what it does"
+                    placeholder="{{localize "DOLMENWOOD.Sheet.Field.MoonSignPlaceholder"}}"
                     {{#unless canEdit}}disabled{{/unless}}>{{identity.moonSign}}</textarea>
         </label>
         {{!-- **Picked, not typed, and the effect goes where rules go.** A sign
@@ -185,21 +184,19 @@
               picture swallow the window. --}}
         {{#if canEdit}}
         <details class="dw-moon-picker" {{#if moonPickerOpen}}open{{/if}}>
-          <summary><i class="fas fa-chevron-right dw-lang-caret"></i>Pick from the book's 36</summary>
+          <summary><i class="fas fa-chevron-right dw-lang-caret"></i>{{localize "DOLMENWOOD.Sheet.Pick.Moon36"}}</summary>
           <div class="dw-moon-panel">
             {{#if moonSignForeign}}
-            <p class="hint dw-moon-note">Moon signs fall on those born in the mortal world — mortals
-              and demi-fey. Elves and grimalkins are fairies and have none, unless your table says
-              otherwise.</p>
+            <p class="hint dw-moon-note">{{localize "DOLMENWOOD.Sheet.Moon.Foreign"}}</p>
             {{/if}}
             <div class="dw-moon-months">
               {{#each moonSigns}}
               <div class="dw-moon-group">
-                <span class="dw-moon-name">{{this.moon}} moon</span>
+                <span class="dw-moon-name">{{localize "DOLMENWOOD.Sheet.Moon.Of" moon=this.moon}}</span>
                 {{#each this.signs}}
                 <button type="button" class="dw-moon-sign {{#if this.chosen}}is-chosen{{/if}}"
                         data-action="pickMoonSign" data-moon-index="{{this.index}}"
-                        title="Rolled on {{this.range}} — click to take this sign">
+                        title="{{localize "DOLMENWOOD.Sheet.Moon.Take" range=this.range}}">
                   <span class="dw-moon-phase">{{this.phase}}</span>
                   <span class="dw-moon-effect">{{this.effect}}</span>
                 </button>
@@ -229,7 +226,7 @@
         (Dolmenmaster, 2026-09-03). Same fix as the two pickers: the state rides on
         the window. --}}
   <details class="dw-sheet-section dw-sheet-persona" {{#if personaOpen}}open{{/if}}>
-    <summary><i class="fas fa-chevron-right dw-sheet-persona-caret"></i>Appearance and bearing</summary>
+    <summary><i class="fas fa-chevron-right dw-sheet-persona-caret"></i>{{localize "DOLMENWOOD.Sheet.Persona.Title"}}</summary>
     <div class="dw-fields dw-fields-3">
       {{!-- Each box offers its Kindred's own d12 table. The two wide ones hold a
             sentence and are therefore textareas, and no browser puts a datalist
@@ -247,13 +244,13 @@
         </label>
         {{#if this.picks}}{{#if ../canEdit}}
         <details class="dw-persona-picker" data-persona-key="{{this.key}}" {{#if this.pickerOpen}}open{{/if}}>
-          <summary><i class="fas fa-chevron-right dw-lang-caret"></i>Pick from the book</summary>
+          <summary><i class="fas fa-chevron-right dw-lang-caret"></i>{{localize "DOLMENWOOD.Sheet.Pick.FromBook"}}</summary>
           <div class="dw-persona-panel">
             {{#each this.picks}}
             <button type="button" class="dw-persona-pick {{#if this.chosen}}is-chosen{{/if}}"
                     data-action="pickPersona" data-persona-key="{{../key}}"
                     data-persona-value="{{this.text}}"
-                    title="Take this one — it replaces what is written">{{this.text}}</button>
+                    title="{{localize "DOLMENWOOD.Sheet.Persona.Take"}}">{{this.text}}</button>
             {{/each}}
           </div>
         </details>
@@ -278,23 +275,23 @@
 
   {{!-- ── The six ──────────────────────────────────────────────────────── --}}
   <section class="dw-sheet-section">
-    <h3>Ability Scores</h3>
+    <h3>{{localize "DOLMENWOOD.Sheet.Abilities.Title"}}</h3>
     <div class="dw-sheet-abilities">
       {{#each abilities}}
       <div class="dw-ability">
         <span class="dw-ability-label">{{this.label}}</span>
         <div class="dw-ability-numbers">
-          <label class="dw-ability-score" title="Score">
+          <label class="dw-ability-score" title="{{localize "DOLMENWOOD.Sheet.Abilities.Score"}}">
             <input type="number" data-field="score-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
           </label>
           <label class="dw-ability-mod {{#if this.houseRuled}}is-house-ruled{{/if}}"
-                 title="Modifier. Filled in from the score by the book's own table (Player's Book p22){{#if this.houseRuled}} — the book says {{this.byTheBook}} for a score of {{this.value}}, so this one has been set by hand and is left alone{{/if}}.">
+                 title="{{#if this.houseRuled}}{{localize "DOLMENWOOD.Sheet.Abilities.ModHouseRuled" book=this.byTheBook score=this.value}}{{else}}{{localize "DOLMENWOOD.Sheet.Abilities.Mod"}}{{/if}}">
             <input type="number" data-field="mod-{{this.key}}" value="{{this.bonus}}" {{#unless ../canEdit}}disabled{{/unless}}>
           </label>
         </div>
         <button type="button" class="dw-roll-btn" data-action="rollAbility" data-ability="{{this.key}}"
-                title="Ability Check: 1d6 {{this.signed}}, at or over 4">
-          <i class="fas fa-dice-d6"></i> Check
+                title="{{localize "DOLMENWOOD.Sheet.Abilities.CheckHint" mod=this.signed target=../abilityCheckTarget}}">
+          <i class="fas fa-dice-d6"></i> {{localize "DOLMENWOOD.Sheet.Abilities.Check"}}
         </button>
         <span class="dw-ability-governs">{{this.governs}}</span>
       </div>
@@ -311,13 +308,13 @@
         against. --}}
   <section class="dw-sheet-section">
     <h3>
-      Save Targets
+      {{localize "DOLMENWOOD.Sheet.Saves.Title"}}
       {{!-- It belongs here and nowhere else: `magical` exists on exactly one of
             the six roll kinds, and adding Wisdom to an Ability Check or an
             attack is not a thing the book ever does. --}}
-      <label class="dw-sheet-magic" title="Dolmenwood adds the Wisdom modifier to a Saving Throw against a magical effect, and only the table knows which effects those are. Tick it before rolling one.">
+      <label class="dw-sheet-magic" title="{{localize "DOLMENWOOD.Sheet.Saves.MagicHint"}}">
         <input type="checkbox" id="dw-sheet-magical">
-        <span>against magic <em>(+WIS)</em></span>
+        <span>{{{localize "DOLMENWOOD.Sheet.Saves.Magic"}}}</span>
       </label>
     </h3>
     <div class="dw-sheet-saves">
@@ -326,8 +323,8 @@
         <span class="dw-save-label">{{this.label}}</span>
         <input type="number" class="is-number" data-field="save-{{this.key}}" value="{{this.value}}" {{#unless ../canEdit}}disabled{{/unless}}>
         <button type="button" class="dw-roll-btn" data-action="rollSave" data-save="{{this.key}}"
-                title="1d20, at or over {{this.value}}">
-          <i class="fas fa-dice-d20"></i> Save
+                title="{{localize "DOLMENWOOD.Sheet.Saves.RollHint" target=this.value}}">
+          <i class="fas fa-dice-d20"></i> {{localize "DOLMENWOOD.Sheet.Saves.Roll"}}
         </button>
       </div>
       {{/each}}
@@ -339,7 +336,7 @@
   <div class="dw-sheet-columns is-pair">
 
     <section class="dw-sheet-section">
-      <h3>Weapons in hand</h3>
+      <h3>{{localize "DOLMENWOOD.Sheet.Weapons.Title"}}</h3>
       {{!-- Only when it costs something. A fed and rested character gets no line,
             because "no penalty" is not news. --}}
       {{#if penalties}}
@@ -355,7 +352,7 @@
             <span class="dw-weapon-damage">{{this.damage}}</span>
           </span>
           {{#if this.bands}}
-          <select class="dw-weapon-band" data-item-id="{{this.itemId}}" title="Which range band the shot is at">
+          <select class="dw-weapon-band" data-item-id="{{this.itemId}}" title="{{localize "DOLMENWOOD.Sheet.Weapons.BandHint"}}">
             {{#each this.bands}}
             <option value="{{this.key}}"{{#if (eq this.key "medium")}} selected{{/if}}>{{this.label}}</option>
             {{/each}}
@@ -365,51 +362,50 @@
             {{#each this.modes}}
             <button type="button" class="dw-roll-btn" data-action="rollAttack"
                     data-item-id="{{../this.itemId}}" data-missile="{{this.missile}}"
-                    title="{{this.label}} Attack Roll">
+                    title="{{localize "DOLMENWOOD.Sheet.Weapons.AttackHint" mode=this.label}}">
               <i class="fas fa-crosshairs"></i> {{this.label}}
             </button>
             {{/each}}
             {{#each this.modes}}
             <button type="button" class="dw-roll-btn is-damage" data-action="rollDamage"
                     data-item-id="{{../this.itemId}}" data-missile="{{this.missile}}"
-                    title="{{this.label}} damage{{#unless this.missile}} — Strength is added to melee damage and not to missile damage{{/unless}}">
-              <i class="fas fa-burst"></i> {{this.label}} dmg
+                    title="{{#if this.missile}}{{localize "DOLMENWOOD.Sheet.Weapons.DamageHint" mode=this.label}}{{else}}{{localize "DOLMENWOOD.Sheet.Weapons.DamageHintMelee" mode=this.label}}{{/if}}">
+              <i class="fas fa-burst"></i> {{localize "DOLMENWOOD.Sheet.Weapons.Damage" mode=this.label}}
             </button>
             {{/each}}
           </span>
-          {{#if this.notesLine}}<span class="dw-weapon-notes" title="Read off the item and left for you to rule on">{{this.notesLine}}</span>{{/if}}
+          {{#if this.notesLine}}<span class="dw-weapon-notes" title="{{localize "DOLMENWOOD.Sheet.Weapons.NotesHint"}}">{{this.notesLine}}</span>{{/if}}
         </div>
         {{/each}}
       </div>
       {{else}}
-      <p class="dw-sheet-hint">Nothing equipped. A weapon rolls from here once it is
-        <strong>equipped</strong> in the inventory and its qualities carry a damage die.</p>
+      <p class="dw-sheet-hint">{{{localize "DOLMENWOOD.Sheet.Weapons.None"}}}</p>
       {{/if}}
     </section>
 
     <section class="dw-sheet-section">
-      <h3>In a fight</h3>
+      <h3>{{localize "DOLMENWOOD.Sheet.Fight.Title"}}</h3>
       <div class="dw-fields dw-fields-2">
         <label class="dw-field">
-          <span>Hit Points</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Fight.Hp"}}</span>
           <input type="number" class="is-number" data-field="hp" value="{{hp.value}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
         <label class="dw-field">
-          <span>Max HP</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Fight.HpMax"}}</span>
           <input type="number" class="is-number" data-field="hpMax" value="{{hp.max}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
         {{!-- AC is the one number OSE derives from the armour worn, so an edit
               here becomes a change to the modifier rather than the total. --}}
-        <label class="dw-field" title="OSE works this out from the armour worn. Typing a total here writes the difference into the modifier, which is the part that is yours to set.">
-          <span>Armour Class</span>
+        <label class="dw-field" title="{{localize "DOLMENWOOD.Sheet.Fight.AcHint"}}">
+          <span>{{localize "DOLMENWOOD.Sheet.Fight.Ac"}}</span>
           <input type="number" class="is-number" data-field="ac" value="{{ac}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
         <label class="dw-field">
-          <span>Attack</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Fight.Attack"}}</span>
           <input type="number" class="is-number" data-field="attack" value="{{attack}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
-        <label class="dw-field dw-field-span" title="On the printed sheet this is the Wisdom modifier. Left free for a table that rules otherwise — {{magicResistanceDerived}} is what Wisdom says.">
-          <span>Magic Resistance</span>
+        <label class="dw-field dw-field-span" title="{{localize "DOLMENWOOD.Sheet.Fight.MagicResistanceHint" derived=magicResistanceDerived}}">
+          <span>{{localize "DOLMENWOOD.Sheet.Fight.MagicResistance"}}</span>
           <input type="text" data-extra="magicResistance" value="{{magicResistance}}"
                  placeholder="{{magicResistanceDerived}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
@@ -424,25 +420,25 @@
         two dozen blocks. --}}
   <section class="dw-sheet-section dw-sheet-blocks">
     <h3>
-      <span class="dw-sheet-heading-text">Traits, abilities and spells</span>
+      <span class="dw-sheet-heading-text">{{localize "DOLMENWOOD.Sheet.Blocks.Title"}}</span>
       {{!-- The spell count lives with the spells. Nought means "not a
             spell-caster", which is why one number carries both answers and why
             the morning's duty need not be told twice. --}}
-      <label class="dw-sheet-prepares" title="How many spells this character sets about preparing of a morning. Nought means they are not a spell-caster, and the morning's duty will not ask about them.">
-        <span>Spells prepared daily</span>
+      <label class="dw-sheet-prepares" title="{{localize "DOLMENWOOD.Sheet.Blocks.PreparesHint"}}">
+        <span>{{localize "DOLMENWOOD.Sheet.Blocks.Prepares"}}</span>
         <input type="number" class="is-number" data-extra="prepares" min="0" max="20" value="{{prepares}}" {{#unless canEdit}}disabled{{/unless}}>
       </label>
       {{!-- What this morning's preparation left to spend. Only shown to a sheet
             that has spells on it at all — a fighter has no use for the line. --}}
       {{#if hasSpells}}
       <span class="dw-sheet-credits {{#unless spellCredits}}is-spent{{/unless}}"
-            title="Handed out when spells are prepared of a morning: one for each spell that got through. Spend one to memorise or pray for a spell below — the same spell as often as they last. Casting spends the charge, not the credit.">
+            title="{{localize "DOLMENWOOD.Sheet.Blocks.CreditsHint"}}">
         <i class="fas fa-wand-sparkles"></i> {{spellCreditLine}}
       </span>
       {{/if}}
       {{#if canEdit}}
-      <button type="button" class="dw-sheet-add" data-action="addBlock" title="Write a new block">
-        <i class="fas fa-plus"></i> Add
+      <button type="button" class="dw-sheet-add" data-action="addBlock" title="{{localize "DOLMENWOOD.Sheet.Blocks.AddHint"}}">
+        <i class="fas fa-plus"></i> {{localize "DOLMENWOOD.Common.Add"}}
       </button>
       {{/if}}
     </h3>
@@ -455,15 +451,15 @@
       <div class="dw-block {{#if this.prepared}}is-prepared{{/if}}">
         <div class="dw-block-head">
           {{#if this.uses}}
-          <span class="dw-block-uses" title="Uses left today">
+          <span class="dw-block-uses" title="{{localize "DOLMENWOOD.Sheet.Blocks.UsesHint"}}">
             {{#if ../../canEdit}}
             <button type="button" class="dw-uses-btn" data-action="spendUse" data-block-id="{{this.id}}"
-                    title="Use one">&minus;</button>
+                    title="{{localize "DOLMENWOOD.Sheet.Blocks.UseOne"}}">&minus;</button>
             {{/if}}
             <span>{{this.uses.value}}/{{this.uses.max}}</span>
             {{#if ../../canEdit}}
             <button type="button" class="dw-uses-btn" data-action="restoreUses" data-block-id="{{this.id}}"
-                    title="Back to full — what a night's rest does">
+                    title="{{localize "DOLMENWOOD.Sheet.Blocks.Restore"}}">
               <i class="fas fa-rotate-left"></i>
             </button>
             {{/if}}
@@ -472,12 +468,12 @@
           <span class="dw-block-name">{{this.name}}</span>
           {{#if this.spell}}
           <span class="dw-block-spell is-{{this.spell}}"
-                title="{{#if this.isArcane}}Arcane: memorised after a night's rest, from spell books that must be to hand (Player's Book p78).{{else}}Holy: prayed for after a night's rest, one hour, and any spell of the right Rank may be chosen (Player's Book p100).{{/if}}">
-            {{#if this.isArcane}}<i class="fas fa-hat-wizard"></i> Arcane{{else}}<i class="fas fa-hands-praying"></i> Holy{{/if}}
+                title="{{#if this.isArcane}}{{localize "DOLMENWOOD.Sheet.Blocks.ArcaneHint"}}{{else}}{{localize "DOLMENWOOD.Sheet.Blocks.HolyHint"}}{{/if}}">
+            {{#if this.isArcane}}<i class="fas fa-hat-wizard"></i> {{localize "DOLMENWOOD.Sheet.Blocks.Arcane"}}{{else}}<i class="fas fa-hands-praying"></i> {{localize "DOLMENWOOD.Sheet.Blocks.Holy"}}{{/if}}
           </span>
           {{/if}}
-          {{#if this.value}}<span class="dw-block-value" title="The number @b.{{this.slug}} lends to other rolls">{{this.value}}</span>{{/if}}
-          <code class="dw-block-address" title="How another formula on this sheet reaches it">@b.{{this.slug}}</code>
+          {{#if this.value}}<span class="dw-block-value" title="{{localize "DOLMENWOOD.Sheet.Blocks.ValueHint" slug=this.slug}}">{{this.value}}</span>{{/if}}
+          <code class="dw-block-address" title="{{localize "DOLMENWOOD.Sheet.Blocks.AddressHint"}}">@b.{{this.slug}}</code>
           {{!-- Every control here keeps its column whether or not this block has
                 it, so Roll is in one place down the whole list. Without the two
                 slots below, a spell's book button widened a right-aligned group
@@ -486,8 +482,8 @@
           <span class="dw-block-actions">
             {{#if this.rollable}}
             <button type="button" class="dw-roll-btn" data-action="rollBlock" data-block-id="{{this.id}}"
-                    title="Roll it">
-              <i class="fas fa-dice-d20"></i> Roll
+                    title="{{localize "DOLMENWOOD.Sheet.Blocks.RollHint"}}">
+              <i class="fas fa-dice-d20"></i> {{localize "DOLMENWOOD.Common.Roll"}}
             </button>
             {{else}}
             <span class="roll-slot"></span>
@@ -505,23 +501,23 @@
               {{#if this.charges}}
               <button type="button" class="dw-uses-btn" data-action="togglePrepared"
                       data-block-id="{{this.id}}" data-unmark="true"
-                      title="Take a charge back off {{this.name}} and get the credit returned">&minus;</button>
+                      title="{{localize "DOLMENWOOD.Sheet.Blocks.Unmark" name=this.name}}">&minus;</button>
               {{/if}}
               <button type="button" class="icon-btn{{#unless this.canMark}} is-spent{{/unless}}"
                       data-action="togglePrepared" data-block-id="{{this.id}}"
                       {{#unless this.canMark}}disabled{{/unless}}
-                      title="{{#if this.isArcane}}Memorise{{else}}Pray for{{/if}} it — spends one spell credit. The same spell may be prepared more than once.">
+                      title="{{#if this.isArcane}}{{localize "DOLMENWOOD.Sheet.Blocks.MarkArcane"}}{{else}}{{localize "DOLMENWOOD.Sheet.Blocks.MarkHoly"}}{{/if}}">
                 <i class="fas {{#if this.charges}}fa-book-bookmark{{else}}fa-book{{/if}}"></i>
               </button>
-              {{#if this.charges}}<span class="dw-spell-charge-count" title="{{this.chargeLabel}} to cast">{{this.charges}}</span>{{/if}}
+              {{#if this.charges}}<span class="dw-spell-charge-count" title="{{localize "DOLMENWOOD.Sheet.Blocks.ChargesHint" charges=this.chargeLabel}}">{{this.charges}}</span>{{/if}}
             </span>
             {{else}}
             <span class="icon-slot"></span>
             {{/if}}
-            <button type="button" class="icon-btn" data-action="editBlock" data-block-id="{{this.id}}" title="Edit">
+            <button type="button" class="icon-btn" data-action="editBlock" data-block-id="{{this.id}}" title="{{localize "DOLMENWOOD.Sheet.Blocks.Edit"}}">
               <i class="fas fa-pen"></i>
             </button>
-            <button type="button" class="icon-btn delete-btn" data-action="deleteBlock" data-block-id="{{this.id}}" title="Delete">
+            <button type="button" class="icon-btn delete-btn" data-action="deleteBlock" data-block-id="{{this.id}}" title="{{localize "DOLMENWOOD.Sheet.Blocks.Delete"}}">
               <i class="fas fa-trash"></i>
             </button>
             {{/if}}
@@ -533,11 +529,7 @@
     </div>
     {{/each}}
     {{else}}
-    <p class="dw-sheet-hint">
-      Nothing written yet. A block is a trait, a class ability, a spell or a skill of its own —
-      the module ships no lists on purpose, so write what you play. Every block gets an address
-      like <code>@b.keen-nose</code>, and any other formula on this sheet can lean on it.
-    </p>
+    <p class="dw-sheet-hint">{{{localize "DOLMENWOOD.Sheet.Blocks.None"}}}</p>
     {{/if}}
   </section>
 
@@ -545,8 +537,8 @@
   <div class="dw-sheet-columns is-foot">
 
     <section class="dw-sheet-section">
-      <h3>Skill Targets</h3>
-      <p class="dw-sheet-hint">Six is everybody's, and Kindred or Class only ever lowers it.</p>
+      <h3>{{localize "DOLMENWOOD.Sheet.Skills.Title"}}</h3>
+      <p class="dw-sheet-hint">{{localize "DOLMENWOOD.Sheet.Skills.Hint"}}</p>
       {{!-- **Two columns of three** (Dolmenmaster, 2026-08-28): the book's three on
             the left, the table's own on the right, and **an empty lane is the
             button that fills it** — no Add in the heading, because the place
@@ -560,17 +552,17 @@
         {{#if this.empty}}
         {{#if this.add}}{{#if ../canEdit}}
         <button type="button" class="dw-skill-empty" data-action="addSkill"
-                title="Add a skill target of your own">
-          <i class="fas fa-plus"></i> Add
+                title="{{localize "DOLMENWOOD.Sheet.Skills.AddHint"}}">
+          <i class="fas fa-plus"></i> {{localize "DOLMENWOOD.Common.Add"}}
         </button>
         {{else}}<span class="dw-skill-blank"></span>{{/if}}
         {{else}}<span class="dw-skill-blank"></span>{{/if}}
         {{else}}
         <div class="dw-row">
-          <span class="dw-row-label" title="Reachable from any formula as {{this.address}}">{{this.label}}</span>
+          <span class="dw-row-label" title="{{localize "DOLMENWOOD.Sheet.Skills.AddressHint" address=this.address}}">{{this.label}}</span>
           <input type="number" class="is-number" data-extra="skill-{{this.key}}" min="1" max="6" value="{{this.target}}" {{#unless ../canEdit}}disabled{{/unless}}>
           <button type="button" class="dw-roll-btn is-icon" data-action="rollSkill" data-skill="{{this.key}}"
-                  title="1d6, at or over {{this.target}}">
+                  title="{{localize "DOLMENWOOD.Sheet.Skills.RollHint" target=this.target}}">
             <i class="fas fa-dice-d6"></i>
           </button>
           {{!-- A lane that stays whether or not there is a bin in it, so the
@@ -578,7 +570,7 @@
           <span class="dw-row-trail">
             {{#if this.custom}}{{#if ../canEdit}}
             <button type="button" class="icon-btn delete-btn" data-action="deleteSkill" data-skill-id="{{this.key}}"
-                    title="Remove this skill target">
+                    title="{{localize "DOLMENWOOD.Sheet.Skills.DeleteHint"}}">
               <i class="fas fa-trash"></i>
             </button>
             {{/if}}{{/if}}
@@ -590,24 +582,24 @@
     </section>
 
     <section class="dw-sheet-section">
-      <h3>Experience</h3>
+      <h3>{{localize "DOLMENWOOD.Sheet.Experience.Title"}}</h3>
       <div class="dw-fields dw-fields-2">
         {{!-- Level lives here, not among the fighting numbers: it is what
               experience buys, and the box beside it is the one that says how
               much more is needed (Dolmenmaster, 2026-08-27). --}}
         <label class="dw-field">
-          <span>Level</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Experience.Level"}}</span>
           <input type="number" class="is-number" data-field="level" value="{{level}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
         {{!-- Worked out from the Class's Prime Abilities and still typeable:
               typing marks it hand-set, and the arrow hands it back. --}}
-        <label class="dw-field" title="{{#if xpMod.hasDerived}}{{#if xpMod.manual}}Typed by hand. The Class would say {{xpMod.derived}}% — the arrow puts that back.{{else}}Taken from the Class's Prime Abilities (Player's Book p22). Typing here overrules it.{{/if}}{{else}}The percentage a high Prime Ability earns — Player's Book p22.{{/if}}">
-          <span>XP Modifier %{{#if xpMod.manual}} <em class="dw-sheet-handset">set</em>{{/if}}</span>
+        <label class="dw-field" title="{{#if xpMod.hasDerived}}{{#if xpMod.manual}}{{localize "DOLMENWOOD.Sheet.XpMod.Manual" derived=xpMod.derived}}{{else}}{{localize "DOLMENWOOD.Sheet.XpMod.Derived"}}{{/if}}{{else}}{{localize "DOLMENWOOD.Sheet.XpMod.Plain"}}{{/if}}">
+          <span>{{localize "DOLMENWOOD.Sheet.XpMod.Label"}}{{#if xpMod.manual}} <em class="dw-sheet-handset">{{localize "DOLMENWOOD.Sheet.XpMod.HandSet"}}</em>{{/if}}</span>
           <span class="dw-field-with-reset">
             <input type="number" class="is-number" data-field="xpBonus" value="{{xpMod.value}}" {{#unless canEdit}}disabled{{/unless}}>
             {{#if xpMod.canReset}}
             <button type="button" class="icon-btn" data-action="resetXpMod" {{#unless canEdit}}disabled{{/unless}}
-                    title="Back to the Class's own figure, {{xpMod.derived}}%">
+                    title="{{localize "DOLMENWOOD.Sheet.XpMod.Reset" derived=xpMod.derived}}">
               <i class="fas fa-rotate-left"></i>
             </button>
             {{/if}}
@@ -616,7 +608,7 @@
         {{!-- Wide, because these hold five and six digits, and a box that cuts
               a number in half is worse than no box at all. --}}
         <label class="dw-field dw-field-span">
-          <span>Experience</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Experience.Xp"}}</span>
           <input type="number" class="is-wide" data-field="xp" value="{{xp.value}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
 
@@ -624,19 +616,19 @@
         {{!-- Read out of the Class's advancement table rather than typed: both
               are printed facts about a Class and a Level (Dolmenmaster, 2026-09-02).
               Italic, which in this module means "this was not typed here". --}}
-        <div class="dw-field dw-field-derived" title="The XP the next Level asks for, from the {{advance.classLabel}} advancement table.">
-          <span>Next level at</span>
+        <div class="dw-field dw-field-derived" title="{{localize "DOLMENWOOD.Sheet.Advance.NextHint" class=advance.classLabel}}">
+          <span>{{localize "DOLMENWOOD.Sheet.Advance.Next"}}</span>
           <span class="dw-derived-value">{{#if advance.hasNext}}{{advance.nextXp}}{{else}}&mdash;{{/if}}</span>
         </div>
-        <div class="dw-field dw-field-derived {{#if advance.atCap}}is-at-cap{{/if}}" title="The ceiling on this character's XP while they stay at this Level — the threshold two Levels up. Reaching it opens the fourth route below.">
-          <span>Cap</span>
+        <div class="dw-field dw-field-derived {{#if advance.atCap}}is-at-cap{{/if}}" title="{{localize "DOLMENWOOD.Sheet.Advance.CapHint"}}">
+          <span>{{localize "DOLMENWOOD.Sheet.Advance.Cap"}}</span>
           <span class="dw-derived-value">
-            {{#if advance.hasCap}}{{advance.capXp}}{{#unless advance.atCap}} <em>({{advance.toCap}} to go)</em>{{/unless}}{{else}}&mdash;{{/if}}
+            {{#if advance.hasCap}}{{advance.capXp}}{{#unless advance.atCap}} <em>{{localize "DOLMENWOOD.Sheet.Advance.ToGo" n=advance.toCap}}</em>{{/unless}}{{else}}&mdash;{{/if}}
           </span>
         </div>
         {{else}}
         <label class="dw-field dw-field-span">
-          <span>Next level at</span>
+          <span>{{localize "DOLMENWOOD.Sheet.Advance.Next"}}</span>
           <input type="number" class="is-wide" data-field="xpNext" value="{{xp.next}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
         {{/if}}
@@ -652,8 +644,8 @@
               for a setting with no visible way to reach it (Dolmenmaster,
               2026-09-04). Last in the grid so the odd cell falls at the end of
               the block rather than tearing a hole in the middle of it. --}}
-        <label class="dw-field" title="The share of a divided XP award this character takes. 100 for a full member of the party; 50 for an adventuring retainer, which is the book's own rule (Player's Book p25). The XP window marks anyone who is not on 100.">
-          <span>XP Share %</span>
+        <label class="dw-field" title="{{localize "DOLMENWOOD.Sheet.Experience.ShareHint"}}">
+          <span>{{localize "DOLMENWOOD.Sheet.Experience.Share"}}</span>
           <input type="number" class="is-number" data-field="xpShare" value="{{xp.share}}" {{#unless canEdit}}disabled{{/unless}}>
         </label>
       </div>
@@ -665,8 +657,8 @@
       {{#if advance}}
       <div class="dw-levelup">
         <div class="dw-levelup-head">
-          <span class="dw-levelup-class">{{advance.classLabel}} &middot; Level {{level}}</span>
-          <span class="dw-levelup-cap {{#if advance.atCap}}is-at-cap{{/if}}" title="A character may keep earning past the next threshold, but only as far as the one above it. That ceiling is the cap, and it is where XP stops counting. Reaching it opens the fourth route: the same one Level as the others, taken at once and paid for in experience instead of weeks.">
+          <span class="dw-levelup-class">{{localize "DOLMENWOOD.Sheet.Advance.Head" class=advance.classLabel level=level}}</span>
+          <span class="dw-levelup-cap {{#if advance.atCap}}is-at-cap{{/if}}" title="{{localize "DOLMENWOOD.Sheet.Advance.CapLineHint"}}">
             {{advance.capLine}}
           </span>
         </div>
@@ -682,7 +674,7 @@
           <button type="button" class="dw-levelup-route {{#unless this.available}}is-blocked{{/unless}}"
                   data-action="levelUp" data-route="{{this.id}}"
                   {{#unless ../canEdit}}disabled{{/unless}} {{#unless this.available}}disabled{{/unless}}
-                  title="{{this.label}} — {{this.duration}}. Costs {{this.costNote}}.{{#if this.blocked}} {{this.blocked}}{{/if}}">
+                  title="{{#if this.blocked}}{{localize "DOLMENWOOD.Sheet.Advance.RouteHintBlocked" label=this.label duration=this.duration cost=this.costNote blocked=this.blocked}}{{else}}{{localize "DOLMENWOOD.Sheet.Advance.RouteHint" label=this.label duration=this.duration cost=this.costNote}}{{/if}}">
             <i class="fas fa-angles-up dw-levelup-mark"></i>
             <span class="dw-levelup-label">{{this.label}}</span>
             <span class="dw-levelup-when">{{#if this.available}}{{this.duration}}{{else}}{{this.blocked}}{{/if}}</span>
@@ -694,11 +686,9 @@
       <p class="dw-levelup-none">
         <i class="fas fa-circle-info"></i>
         {{#if identity.class}}
-          <em>&ldquo;{{identity.class}}&rdquo;</em> is not one of the nine Classes, so there are no
-          advancement figures to level against. Name a Class above to get the buttons.
+          {{{localize "DOLMENWOOD.Sheet.Advance.UnknownClass" class=identity.class}}}
         {{else}}
-          No Class on the sheet. Name one above and the level-up routes appear, with the XP
-          thresholds from the Player's Book behind them.
+          {{localize "DOLMENWOOD.Sheet.Advance.NoClass"}}
         {{/if}}
       </p>
       {{/if}}
