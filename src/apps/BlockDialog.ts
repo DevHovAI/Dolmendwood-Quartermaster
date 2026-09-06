@@ -116,7 +116,7 @@ export async function promptBlock(
       resolve(value);
     };
 
-    new Dialog({
+    const dialog = new Dialog({
       title: existing
         ? t("DOLMENWOOD.Block.TitleEdit", { name: existing.name })
         : t("DOLMENWOOD.Block.TitleNew"),
@@ -344,6 +344,12 @@ export async function promptBlock(
             const kinds = (el.getAttribute("data-kind") ?? "").split(" ");
             el.style.display = chosen && kinds.includes(chosen) ? "" : "none";
           });
+          // And the window grows with them. Foundry measures a dialog exactly
+          // once and then writes that number into `style.height` as pixels
+          // (`Application#setPosition`), so questions revealed afterwards
+          // would be pushed into a small scrolling box. The custom-item
+          // dialog already refits itself for the same reason.
+          dialog.setPosition({ height: "auto" });
         };
         html.find("#dw-block-kind").on("change", paint);
 
@@ -363,6 +369,7 @@ export async function promptBlock(
       // 400px while every comparable dialog here asks for 460 to 720 — and
       // this one carries a text area, three explanations and inline code
       // samples (Dolmenmaster, 2026-09-05).
-    }, { width: 560 }).render(true);
+    }, { width: 560 });
+    dialog.render(true);
   });
 }
