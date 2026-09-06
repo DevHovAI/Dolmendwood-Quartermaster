@@ -19,7 +19,11 @@ import { activateEncounterChatButtons, ENCOUNTER_FOLDER } from "./data/dayRolls"
 import { BookApp } from "./apps/BookApp";
 import type { BookId } from "./data/books";
 import { CatalogManager } from "./data/CatalogManager";
-import { verifySharedActorOwnership, getSharedActorId } from "./data/sharedStore";
+import {
+  verifySharedActorOwnership,
+  renameSharedActorFromDefault,
+  getSharedActorId,
+} from "./data/sharedStore";
 import { hexOf, isPartyToken, tokenPoint, refusePlaceIfAway, canReachLoot } from "./data/partyPlace";
 import { bookHexAt, followsToken } from "./data/hexGrid";
 import { moveAccount, type MovedToken } from "./data/hexTravel";
@@ -185,7 +189,7 @@ Hooks.once("init", () => {
   // with no visible switch is baffling when something goes wrong.
   game.settings!.register(MODULE_ID, SETTINGS.HIDE_MANAGED_ACTORS, {
     name: "Hide Quartermaster actors from the sidebar",
-    hint: "Keeps the shared Party Stores actor and all loot boxes out of the Actors tab, for the GM as well. They stay reachable: the shared store has its own card in the Party Overview, and every loot box is listed in the Loot window. Turn this off to get the sidebar entries back.",
+    hint: "Keeps the shared party store actor and all loot boxes out of the Actors tab, for the GM as well. They stay reachable: the shared store has its own card in the Party Overview, and every loot box is listed in the Loot window. Turn this off to get the sidebar entries back.",
     scope: "world",
     config: true,
     type: Boolean,
@@ -645,6 +649,8 @@ Hooks.once("ready", async () => {
 
   // Players can only write to the shared store while it is owned by everyone
   await verifySharedActorOwnership();
+  // And it is called what the interface calls it, unless a table renamed it
+  await renameSharedActorFromDefault();
 
   // Expose module API on the module object for macro access
   const mod = (game as Game).modules.get(MODULE_ID);

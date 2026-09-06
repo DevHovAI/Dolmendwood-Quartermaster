@@ -999,7 +999,6 @@
   "DOLMENWOOD.Food.Store.Label": "Rations go to",
   "DOLMENWOOD.Food.Store.Hint": "A fresh ration is <strong>1 gear slot</strong> and <strong>20 coins</strong> of weight (Player's Book p116, p149), so a good day's fishing is a real load — the party's own store is there for exactly that. Hunting stores nothing yet: its card carries a button for once the game is down.",
   "DOLMENWOOD.Food.Store.Shared": "(shared store)",
-  "DOLMENWOOD.Food.Store.Default": "Party Stores",
   "DOLMENWOOD.Food.FullDay": "A whole day given to it, travelling nowhere (+{bonus})",
   "DOLMENWOOD.Food.Context.Hint": "Hunting rolls against <strong>{terrain}</strong>, foraging against <strong>{season}</strong> — both from the bar's \"where are we?\" row.",
 
@@ -1763,5 +1762,9 @@
   "DOLMENWOOD.Coins.InContainer": "{stored} / {capacity} coins",
   "DOLMENWOOD.Coins.Loose": "{n} coins",
 
-  "DOLMENWOOD.Zone.Load.Wt": "{used} / {capacity} wt"
+  "DOLMENWOOD.Zone.Load.Wt": "{used} / {capacity} wt",
+
+  "DOLMENWOOD.Shared.ActorName": "Party Stores",
+  "DOLMENWOOD.Shared.NoActorTypes": "Cannot create the shared party actor: the game system defines no actor types.",
+  "DOLMENWOOD.Shared.Renamed": "The shared store is now called {name}."
 }

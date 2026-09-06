@@ -72,7 +72,7 @@ export function foodHolders(): FoodHolder[] {
   if (shared?.id)
     holders.push({
       actorId: shared.id,
-      name: shared.name ?? t("DOLMENWOOD.Food.Store.Default"),
+      name: shared.name ?? t("DOLMENWOOD.Shared.ActorName"),
       shared: true,
     });
   return holders;

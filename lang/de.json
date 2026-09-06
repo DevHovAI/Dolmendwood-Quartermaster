@@ -999,7 +999,6 @@
   "DOLMENWOOD.Food.Store.Label": "Rationen gehen an",
   "DOLMENWOOD.Food.Store.Hint": "Eine frische Ration ist <strong>1 Slot</strong> und <strong>20 Münzen</strong> Gewicht (Player's Book S. 116, S. 149), ein guter Fischtag ist also eine echte Last — genau dafür gibt es den Vorrat der Gruppe. Die Jagd legt noch nichts ab: ihre Karte trägt einen Knopf für den Moment, in dem das Wild erlegt ist.",
   "DOLMENWOOD.Food.Store.Shared": "(gemeinsamer Vorrat)",
-  "DOLMENWOOD.Food.Store.Default": "Gruppenvorrat",
   "DOLMENWOOD.Food.FullDay": "Einen ganzen Tag darauf verwenden, statt weiterzureisen (+{bonus})",
   "DOLMENWOOD.Food.Context.Hint": "Die Jagd wird gegen <strong>{terrain}</strong> gewürfelt, das Sammeln gegen <strong>{season}</strong> — beides aus der Kontextzeile der Tagesleiste.",
 
@@ -1763,5 +1762,9 @@
   "DOLMENWOOD.Coins.InContainer": "{stored} / {capacity} Münzen",
   "DOLMENWOOD.Coins.Loose": "{n} Münzen",
 
-  "DOLMENWOOD.Zone.Load.Wt": "{used} / {capacity} wt"
+  "DOLMENWOOD.Zone.Load.Wt": "{used} / {capacity} wt",
+
+  "DOLMENWOOD.Shared.ActorName": "Gruppenvorrat",
+  "DOLMENWOOD.Shared.NoActorTypes": "Der gemeinsame Gruppen-Akteur kann nicht angelegt werden: Das Spielsystem kennt keine Akteurstypen.",
+  "DOLMENWOOD.Shared.Renamed": "Der gemeinsame Vorrat heißt jetzt {name}."
 }

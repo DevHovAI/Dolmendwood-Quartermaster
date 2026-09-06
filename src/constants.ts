@@ -113,8 +113,18 @@ export const GENERIC_SHOP_KEY = "__generic_shop__" as const;
 // Same idea for the toolbar inn, which has no name to key its tables by.
 export const GENERIC_INN_KEY = "__generic_inn__" as const;
 
-// Name and portrait of the auto-created actor that holds shared containers
-export const SHARED_ACTOR_NAME = "Party Stores" as const;
+/**
+ * The name the shared-container actor was given before this module spoke more
+ * than one language, and the portrait it still gets.
+ *
+ * **The name is no longer read when one is created** — `ensureSharedActor`
+ * asks the translation table for it. This constant stays because every world
+ * that has run this module before carries an actor called exactly this, and
+ * that is what `renameSharedActorFromDefault` recognises as "never renamed by
+ * hand" and therefore safe to translate. Nothing looks the actor up by name:
+ * its id is in a setting.
+ */
+export const SHARED_ACTOR_ORIGINAL_NAME = "Party Stores" as const;
 export const SHARED_ACTOR_IMG = "icons/containers/bags/pack-leather-brown.webp" as const;
 
 // Loot boxes: portrait and the zone every item and coin in a box lives in.

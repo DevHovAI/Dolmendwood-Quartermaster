@@ -1,4 +1,5 @@
-import { MODULE_ID, SETTINGS, SHARED_ACTOR_NAME, SHARED_ACTOR_IMG } from "../constants";
+import { MODULE_ID, SETTINGS, SHARED_ACTOR_ORIGINAL_NAME, SHARED_ACTOR_IMG } from "../constants";
+import { t } from "../helpers/i18n";
 import { FlagManager } from "./FlagManager";
 import { isLootActor } from "./lootStore";
 import type { ExtraZone } from "../types";
@@ -54,12 +55,12 @@ export async function ensureSharedActor(): Promise<Actor | null> {
   const types = declared.filter((t) => t !== CONST.BASE_DOCUMENT_TYPE);
   const type = types.find((t) => t === "npc") ?? types[0];
   if (!type) {
-    ui.notifications?.error("Cannot create the shared party actor: the game system defines no actor types.");
+    ui.notifications?.error(t("DOLMENWOOD.Shared.NoActorTypes"));
     return null;
   }
 
   const created = await Actor.create({
-    name: SHARED_ACTOR_NAME,
+    name: t("DOLMENWOOD.Shared.ActorName"),
     type,
     img: SHARED_ACTOR_IMG,
     ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER },
@@ -82,6 +83,41 @@ export async function verifySharedActorOwnership(): Promise<void> {
   await actor.update({
     ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER },
   } as Parameters<typeof actor.update>[0]);
+}
+
+/**
+ * Translate the shared store's name, once, and only where nobody has renamed it.
+ *
+ * **Dolmenmaster's ask, 2026-09-06: *"party stores bitte übersetzen"*.** The
+ * name is the one string in this module that is not read out of the language
+ * table when it is shown — it is an actor's name, written into the world the
+ * first time a container was shared, and every world that did so before today
+ * carries the English one.
+ *
+ * **Guarded three ways, because this writes to somebody's world.** It runs for
+ * a GM only; it acts only when the name is *exactly* the name this module gave
+ * it, so a table that renamed the actor keeps their own word; and it does
+ * nothing when the language already agrees. That also makes it idempotent:
+ * after the rename the name is no longer the default, so nothing here fires
+ * again — switching the interface back to English does not switch the actor
+ * back, which is the right way round for a thing a table may have started
+ * calling by its German name.
+ *
+ * Nothing identifies the actor by name — its id lives in a setting — so this is
+ * a label and nothing else depends on it.
+ */
+export async function renameSharedActorFromDefault(): Promise<void> {
+  const actor = getSharedActor();
+  if (!actor || !(game as Game).user?.isGM) return;
+  if (actor.name !== SHARED_ACTOR_ORIGINAL_NAME) return;
+
+  const wanted = t("DOLMENWOOD.Shared.ActorName");
+  // `t` hands back the key when it is asked too early, and an empty table would
+  // otherwise rename the actor to "DOLMENWOOD.Shared.ActorName".
+  if (!wanted || wanted.startsWith("DOLMENWOOD.") || wanted === actor.name) return;
+
+  await actor.update({ name: wanted } as Parameters<typeof actor.update>[0]);
+  ui.notifications?.info(t("DOLMENWOOD.Shared.Renamed", { name: wanted }));
 }
 
 // ─── Party lists ───────────────────────────────────────────────────────────────
