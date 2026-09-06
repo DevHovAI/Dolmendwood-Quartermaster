@@ -1330,7 +1330,7 @@
   "DOLMENWOOD.Block.Spell.No": "Nein — eine Eigenschaft, eine Fähigkeit, ein Kniff",
   "DOLMENWOOD.Block.Spell.Arcane": "Arcane — aus einem Buch eingeprägt",
   "DOLMENWOOD.Block.Spell.Holy": "Holy — erbeten",
-  "DOLMENWOOD.Block.Spell.Hint": "Nur ein Zauber bekommt auf dem Bogen den Haken für „vorbereitet\". Die beiden Arten werden getrennt gehalten, weil die Bücher es auch tun: ein <strong>arcane</strong> Zauberkundiger prägt sich aus Zauberbüchern ein, die <em>zur Hand sein müssen</em>, und nur das, was er aufgeschrieben hat (S. 78), während ein <strong>holy</strong> Zauberkundiger eine Stunde betet und jeden Zauber seines Rank wählen darf (S. 100). Der morgendliche Verlust von 1-von-6 nach einer unterbrochenen Nacht trifft beide gleichermaßen.",
+  "DOLMENWOOD.Block.Spell.Hint": "Nur ein Zauber bekommt auf dem Bogen den Haken für „vorbereitet“. Die beiden Arten werden getrennt gehalten, weil die Bücher es auch tun: wer <strong>arcane</strong> zaubert, prägt sich seine Zauber aus Zauberbüchern ein, die <em>zur Hand sein müssen</em>, und nur das, was er aufgeschrieben hat (S. 78); wer <strong>holy</strong> zaubert, betet eine Stunde und darf jeden Zauber seines Rank frei wählen (S. 100). Der morgendliche Verlust von 1-von-6 nach einer unterbrochenen Nacht trifft beide gleichermaßen.",
   "DOLMENWOOD.Block.Kind.Label": "Gewürfelt als",
   "DOLMENWOOD.Block.Kind.None": "Nicht gewürfelt — eine Notiz",
   "DOLMENWOOD.Block.Kind.Ability": "Ability Check (1d6 + Mod., 4 oder mehr)",
@@ -1350,5 +1350,12 @@
   "DOLMENWOOD.Block.Bonus.Label": "Zum Wurf addiert",
   "DOLMENWOOD.Block.Bonus.Placeholder": "+2, @b.klinge, @level",
   "DOLMENWOOD.Block.Bonus.Hint": "Hier geht alles, was Foundry würfeln kann, und jeder Wert, jeder Save, jeder Skill und jeder Block dieses Bogens steht als <code>@str</code>, <code>@doom</code>, <code>@b.slug</code> und so weiter bereit. <code>@attackPenalty</code> und <code>@damagePenalty</code> tragen, was Hunger und Erschöpfung schon kosten — ein Attack Roll wendet seinen eigenen ungefragt an.",
-  "DOLMENWOOD.Block.NeedsName": "Ein Block braucht einen Namen."
+  "DOLMENWOOD.Block.NeedsName": "Ein Block braucht einen Namen.",
+
+  "DOLMENWOOD.Block.Group.Suggest.Kindred": "Kindred",
+  "DOLMENWOOD.Block.Group.Suggest.Class": "Klasse",
+  "DOLMENWOOD.Block.Group.Suggest.Traits": "Eigenschaften",
+  "DOLMENWOOD.Block.Group.Suggest.Spells1": "Zauber, 1. Rang",
+  "DOLMENWOOD.Block.Group.Suggest.Spells2": "Zauber, 2. Rang",
+  "DOLMENWOOD.Block.Group.Suggest.Skills": "Skills"
 }

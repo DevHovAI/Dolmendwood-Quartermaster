@@ -1350,5 +1350,12 @@
   "DOLMENWOOD.Block.Bonus.Label": "Added to the roll",
   "DOLMENWOOD.Block.Bonus.Placeholder": "+2, @b.blade, @level",
   "DOLMENWOOD.Block.Bonus.Hint": "Anything Foundry can roll works here, and every score, save, skill and block on this sheet is available as <code>@str</code>, <code>@doom</code>, <code>@b.slug</code> and so on. <code>@attackPenalty</code> and <code>@damagePenalty</code> carry what hunger and exhaustion already cost — an Attack Roll applies its own without being asked.",
-  "DOLMENWOOD.Block.NeedsName": "A block needs a name."
+  "DOLMENWOOD.Block.NeedsName": "A block needs a name.",
+
+  "DOLMENWOOD.Block.Group.Suggest.Kindred": "Kindred",
+  "DOLMENWOOD.Block.Group.Suggest.Class": "Class",
+  "DOLMENWOOD.Block.Group.Suggest.Traits": "Traits",
+  "DOLMENWOOD.Block.Group.Suggest.Spells1": "Spells, 1st",
+  "DOLMENWOOD.Block.Group.Suggest.Spells2": "Spells, 2nd",
+  "DOLMENWOOD.Block.Group.Suggest.Skills": "Skills"
 }

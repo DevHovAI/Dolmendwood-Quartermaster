@@ -48,6 +48,22 @@ const KINDS: { value: string; labelKey: string }[] = [
   { value: "formula", labelKey: "DOLMENWOOD.Block.Kind.Formula" },
 ];
 
+/**
+ * What the heading field offers before anything is typed.
+ *
+ * Suggestions rather than a list: the field is free text, and the module
+ * ships no class or spell list on purpose. They are keys because a German
+ * table files its blocks under German headings.
+ */
+const GROUP_SUGGESTIONS = [
+  "DOLMENWOOD.Block.Group.Suggest.Kindred",
+  "DOLMENWOOD.Block.Group.Suggest.Class",
+  "DOLMENWOOD.Block.Group.Suggest.Traits",
+  "DOLMENWOOD.Block.Group.Suggest.Spells1",
+  "DOLMENWOOD.Block.Group.Suggest.Spells2",
+  "DOLMENWOOD.Block.Group.Suggest.Skills",
+];
+
 function kindOf(roll: BlockRoll | undefined): string {
   return roll?.kind ?? "";
 }
@@ -106,18 +122,23 @@ export async function promptBlock(
         : t("DOLMENWOOD.Block.TitleNew"),
       content: `
         <form class="dw-camp-form dw-block-form">
-          <div class="form-group">
-            <label for="dw-block-group">${t("DOLMENWOOD.Block.Group.Label")}</label>
-            <input type="text" id="dw-block-group" list="dw-block-groups"
-                   value="${escapeHTML(b?.group ?? "")}" placeholder="${t(
-                     "DOLMENWOOD.Block.Group.Placeholder"
-                   )}">
-            <datalist id="dw-block-groups">
-              <option value="Kindred"><option value="Class"><option value="Traits">
-              <option value="Spells, 1st"><option value="Spells, 2nd"><option value="Skills">
-            </datalist>
+          <div class="dw-block-field">
+            <div class="form-group">
+              <label for="dw-block-group">${t("DOLMENWOOD.Block.Group.Label")}</label>
+              <input type="text" id="dw-block-group" list="dw-block-groups"
+                     value="${escapeHTML(b?.group ?? "")}" placeholder="${t(
+                       "DOLMENWOOD.Block.Group.Placeholder"
+                     )}">
+              ${/* Suggestions, not a list the module enforces — they are
+                    typed into a free text field and become the heading. */ ""}
+              <datalist id="dw-block-groups">
+                ${GROUP_SUGGESTIONS.map(
+                  (key) => `<option value="${escapeHTML(t(key))}">`
+                ).join("")}
+              </datalist>
+            </div>
+            <p class="hint">${t("DOLMENWOOD.Block.Group.Hint")}</p>
           </div>
-          <p class="hint">${t("DOLMENWOOD.Block.Group.Hint")}</p>
 
           <div class="form-group">
             <label for="dw-block-name">${t("DOLMENWOOD.Block.Name.Label")}</label>
@@ -129,13 +150,15 @@ export async function promptBlock(
             <textarea id="dw-block-text" rows="3">${escapeHTML(b?.text ?? "")}</textarea>
           </div>
 
-          <div class="form-group">
-            <label for="dw-block-value">${t("DOLMENWOOD.Block.Value.Label")}</label>
-            <input type="number" id="dw-block-value" value="${b?.value ?? ""}" placeholder="—">
+          <div class="dw-block-field">
+            <div class="form-group">
+              <label for="dw-block-value">${t("DOLMENWOOD.Block.Value.Label")}</label>
+              <input type="number" id="dw-block-value" value="${b?.value ?? ""}" placeholder="—">
+            </div>
+            <p class="hint">${t("DOLMENWOOD.Block.Value.Hint", {
+              slug: `<code class="dw-block-slug">@b.${escapeHTML(b?.slug ?? "…")}</code>`,
+            })}</p>
           </div>
-          <p class="hint">${t("DOLMENWOOD.Block.Value.Hint", {
-            slug: `<code class="dw-block-slug">@b.${escapeHTML(b?.slug ?? "…")}</code>`,
-          })}</p>
 
           <div class="form-group">
             <label for="dw-block-uses">${t("DOLMENWOOD.Block.Uses.Label")}</label>
@@ -143,21 +166,23 @@ export async function promptBlock(
                    value="${b?.uses?.max ?? ""}" placeholder="—">
           </div>
 
-          <div class="form-group">
-            <label for="dw-block-spell">${t("DOLMENWOOD.Block.Spell.Label")}</label>
-            <select id="dw-block-spell">
-              <option value=""${b?.spell ? "" : " selected"}>${t(
-                "DOLMENWOOD.Block.Spell.No"
-              )}</option>
-              <option value="arcane"${b?.spell === "arcane" ? " selected" : ""}>${t(
-                "DOLMENWOOD.Block.Spell.Arcane"
-              )}</option>
-              <option value="holy"${b?.spell === "holy" ? " selected" : ""}>${t(
-                "DOLMENWOOD.Block.Spell.Holy"
-              )}</option>
-            </select>
+          <div class="dw-block-field">
+            <div class="form-group">
+              <label for="dw-block-spell">${t("DOLMENWOOD.Block.Spell.Label")}</label>
+              <select id="dw-block-spell">
+                <option value=""${b?.spell ? "" : " selected"}>${t(
+                  "DOLMENWOOD.Block.Spell.No"
+                )}</option>
+                <option value="arcane"${b?.spell === "arcane" ? " selected" : ""}>${t(
+                  "DOLMENWOOD.Block.Spell.Arcane"
+                )}</option>
+                <option value="holy"${b?.spell === "holy" ? " selected" : ""}>${t(
+                  "DOLMENWOOD.Block.Spell.Holy"
+                )}</option>
+              </select>
+            </div>
+            <p class="hint">${t("DOLMENWOOD.Block.Spell.Hint")}</p>
           </div>
-          <p class="hint">${t("DOLMENWOOD.Block.Spell.Hint")}</p>
 
           <hr>
 
@@ -334,6 +359,10 @@ export async function promptBlock(
         paint();
       },
       close: () => done(null),
-    }).render(true);
+      // **A width, which this dialog never had.** It fell back to Foundry's
+      // 400px while every comparable dialog here asks for 460 to 720 — and
+      // this one carries a text area, three explanations and inline code
+      // samples (Dolmenmaster, 2026-09-05).
+    }, { width: 560 }).render(true);
   });
 }

@@ -7641,8 +7641,35 @@ span.day-bar-panel-tick {
   font-weight: 700;
 }
 
+/* ── Writing a block ──────────────────────────────────────────────────────────
+   **The gap sets the rhythm and the children bring no margins.** This form had
+   no layout of its own at all — one rule, for its horizontal line — so it was
+   whatever Foundry's own form-group and paragraph margins happened to add up
+   to. It is a stack of separate questions, which is rung 6 on the ladder. */
+
+.dw-block-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-6);
+}
+
+.dw-block-form > *,
+.dw-block-form .form-group,
+.dw-block-form p {
+  margin: 0;
+}
+
+/* A question and the paragraph explaining it are one thing, so they sit a
+   rung closer to each other than to the next question. Three of the fields
+   here carry an explanation that is longer than the field itself. */
+.dw-block-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--dw-space-4);
+}
+
 .dw-block-form hr {
-  margin: var(--dw-space-5) 0;
+  margin: 0;
   border: none;
   border-top: 1px solid var(--dw-border-light);
 }
