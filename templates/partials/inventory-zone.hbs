@@ -4,11 +4,11 @@
   {{/each}}
   {{#if canEdit}}
   <button type="button" class="add-item-zone-btn" data-action="addItem" data-zone="{{zone}}">
-    <i class="fas fa-plus"></i> Add Item
+    <i class="fas fa-plus"></i> {{localize "DOLMENWOOD.Item.Add"}}
   </button>
   {{else if canAddItem}}
   <button type="button" class="add-item-zone-btn add-item-zone-btn--player" data-action="addItem" data-zone="{{zone}}">
-    <i class="fas fa-plus"></i> Add Custom Item
+    <i class="fas fa-plus"></i> {{localize "DOLMENWOOD.ItemDialog.Custom.Title"}}
   </button>
   {{/if}}
 </div>

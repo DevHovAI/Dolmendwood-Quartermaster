@@ -4,15 +4,15 @@
 <section class="inv-zone-section inv-zone-extra item-drop-zone {{#if zone.isDropped}}zone-dropped{{/if}} {{#if zone.isShared}}inv-zone-shared{{/if}}"
          data-zone-drag-id="{{zone.id}}" data-zone-color="{{zone.color}}" data-zone-id="{{zone.id}}">
   <div class="zone-header zone-header-extra">
-    {{#if isOwner}}<i class="fas fa-grip-vertical zone-drag-handle" draggable="true" title="Drag to reorder"></i>{{/if}}
+    {{#if isOwner}}<i class="fas fa-grip-vertical zone-drag-handle" draggable="true" title="{{localize "DOLMENWOOD.Zone.DragHint"}}"></i>{{/if}}
     <h3>
       <i class="fas {{#if zone.icon}}{{zone.icon}}{{else if zone.isStorage}}fa-backpack{{else}}fa-horse{{/if}}"></i>
       {{zone.name}}
-      {{#if zone.selfWeight}}<span class="zone-self-weight" title="Container weight">({{zone.selfWeight}} wt)</span>{{/if}}
+      {{#if zone.selfWeight}}<span class="zone-self-weight" title="{{localize "DOLMENWOOD.Zone.SelfWeight"}}">({{zone.selfWeight}} wt)</span>{{/if}}
     </h3>
     {{#if zone.isShared}}
-    <span class="zone-shared-badge" title="Shared with the whole party — everyone can take from it and add to it">
-      <i class="fas fa-people-group"></i> Shared
+    <span class="zone-shared-badge" title="{{localize "DOLMENWOOD.Zone.Shared.BadgeHint"}}">
+      <i class="fas fa-people-group"></i> {{localize "DOLMENWOOD.Zone.Shared.Badge"}}
     </span>
     {{/if}}
     {{!-- Land vehicles can be hitched to a double team, which doubles what
@@ -21,21 +21,21 @@
     {{#if isOwner}}
     <button type="button" class="zone-team-toggle {{#if zone.doubleTeam}}active{{/if}}"
             data-action="toggleDoubleTeam" data-zone-id="{{zone.id}}"
-            title="{{#if zone.doubleTeam}}Drawn by a double team — cargo capacity doubled. Click for a single team.{{else}}Drawn by a single team. Click if twice the draught animals are hitched, doubling cargo capacity.{{/if}}">
+            title="{{#if zone.doubleTeam}}{{localize "DOLMENWOOD.Zone.Team.Double"}}{{else}}{{localize "DOLMENWOOD.Zone.Team.Single"}}{{/if}}">
       <i class="fas fa-horse"></i> ×{{#if zone.doubleTeam}}2{{else}}1{{/if}}
     </button>
     {{else if zone.doubleTeam}}
-    <span class="zone-team-toggle active" title="Drawn by a double team — cargo capacity doubled">
+    <span class="zone-team-toggle active" title="{{localize "DOLMENWOOD.Zone.Team.DoubleRead"}}">
       <i class="fas fa-horse"></i> ×2
     </span>
     {{/if}}
     {{/if}}
     {{#if zone.isStorage}}
-    <span class="zone-count">{{zone.usedWeight}} / {{zone.effectiveWeightCapacity}} wt</span>
+    <span class="zone-count">{{localize "DOLMENWOOD.Zone.Load.Wt" used=zone.usedWeight capacity=zone.effectiveWeightCapacity}}</span>
     {{else if (eq encMode "weight")}}
-    <span class="zone-count">{{zone.usedWeight}} / {{zone.effectiveWeightCapacity}} wt</span>
+    <span class="zone-count">{{localize "DOLMENWOOD.Zone.Load.Wt" used=zone.usedWeight capacity=zone.effectiveWeightCapacity}}</span>
     {{else}}
-    <span class="zone-count">{{zone.usedSlots}} / {{zone.effectiveMaxSlots}} slots</span>
+    <span class="zone-count">{{localize "DOLMENWOOD.Encumbrance.SlotTrack" n=zone.usedSlots max=zone.effectiveMaxSlots}}</span>
     {{/if}}
   </div>
 
@@ -45,14 +45,14 @@
     {{#if zone.animalItemName}}<span class="animal-type-badge">{{zone.animalItemName}}</span>{{/if}}
     {{#if zone.speedInfo}}
     <span class="animal-speed-badge {{#if zone.speedInfo.isOverCapacity}}speed-red{{else if zone.speedInfo.isOverloaded}}speed-orange{{else if zone.speedInfo.isOverWeight}}speed-orange{{else if (gte zone.speedInfo.effectiveSpeed 40)}}speed-green{{else if (gte zone.speedInfo.effectiveSpeed 30)}}speed-yellow{{else}}speed-red{{/if}}"
-          title="Load: {{zone.speedInfo.usedWeight}} / {{zone.speedInfo.capacity}} wt">
+          title="{{localize "DOLMENWOOD.Zone.Load.Hint" used=zone.speedInfo.usedWeight capacity=zone.speedInfo.capacity}}">
       <i class="fas fa-running"></i>
       {{#if zone.speedInfo.isOverCapacity}}
-        Overloaded! (cannot move)
+        {{localize "DOLMENWOOD.Zone.Overloaded"}}
       {{else}}
         {{speedLabel zone.speedInfo.effectiveSpeed}}
-        {{#if zone.speedInfo.isOverloaded}}<i class="fas fa-exclamation-triangle" title="Overloaded — half speed"></i>{{/if}}
-        {{#if zone.speedInfo.isOverWeight}}<i class="fas fa-weight-hanging" title="Over cargo capacity"></i>{{/if}}
+        {{#if zone.speedInfo.isOverloaded}}<i class="fas fa-exclamation-triangle" title="{{localize "DOLMENWOOD.Zone.HalfSpeed"}}"></i>{{/if}}
+        {{#if zone.speedInfo.isOverWeight}}<i class="fas fa-weight-hanging" title="{{localize "DOLMENWOOD.Zone.OverCargo"}}"></i>{{/if}}
       {{/if}}
     </span>
     {{/if}}

@@ -1,21 +1,21 @@
 <div class="item-row coin-slot-row">
   <span class="item-name">
     <i class="fas fa-coins item-cat-icon" style="color:#a07b00;"></i>
-    Coin Purse
-    <span class="item-size-badge size-normal">{{slot.coins}} coins</span>
+    {{localize "DOLMENWOOD.Coins.Purse"}}
+    <span class="item-size-badge size-normal">{{localize "DOLMENWOOD.Coins.Loose" n=slot.coins}}</span>
   </span>
 
   {{#if isOwner}}
-  <select class="coin-slot-zone-select" data-slot-id="{{slot.id}}" title="Move coins to zone">
+  <select class="coin-slot-zone-select" data-slot-id="{{slot.id}}" title="{{localize "DOLMENWOOD.Zone.Purse.Move.Hint"}}">
     {{#if (eq encMode "weight")}}
-    <option value="equipped" {{#if (eq slot.zone "equipped")}}selected{{/if}}>Equipped</option>
+    <option value="equipped" {{#if (eq slot.zone "equipped")}}selected{{/if}}>{{localize "DOLMENWOOD.Zone.Equipped"}}</option>
     {{#each extraZones}}
     <option value="{{this.id}}" {{#if (eq ../slot.zone this.id)}}selected{{/if}}>{{this.name}}</option>
     {{/each}}
     {{else}}
-    <option value="tiny" {{#if (eq slot.zone "tiny")}}selected{{/if}}>Belt Pouch</option>
-    <option value="equipped" {{#if (eq slot.zone "equipped")}}selected{{/if}}>Equipped</option>
-    <option value="stowed" {{#if (eq slot.zone "stowed")}}selected{{/if}}>Stowed</option>
+    <option value="tiny" {{#if (eq slot.zone "tiny")}}selected{{/if}}>{{localize "DOLMENWOOD.Zone.BeltPouch"}}</option>
+    <option value="equipped" {{#if (eq slot.zone "equipped")}}selected{{/if}}>{{localize "DOLMENWOOD.Zone.Equipped"}}</option>
+    <option value="stowed" {{#if (eq slot.zone "stowed")}}selected{{/if}}>{{localize "DOLMENWOOD.Zone.Stowed"}}</option>
     {{#each extraZones}}
     <option value="{{this.id}}" {{#if (eq ../slot.zone this.id)}}selected{{/if}}>{{this.name}}</option>
     {{/each}}

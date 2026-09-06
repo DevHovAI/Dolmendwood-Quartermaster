@@ -7,29 +7,29 @@
     {{!-- Only worth showing once something has actually been left behind --}}
     {{#if droppedCount}}
     <button type="button" data-action="toggleDroppedVisibility" class="btn-toolbar btn-dropped-toggle"
-            title="{{#if hideDropped}}Show the {{droppedCount}} zone(s) left behind{{else}}Fold away the {{droppedCount}} zone(s) left behind{{/if}}">
+            title="{{#if hideDropped}}{{localizeN "DOLMENWOOD.Inv.Dropped.ShowHint" droppedCount}}{{else}}{{localizeN "DOLMENWOOD.Inv.Dropped.HideHint" droppedCount}}{{/if}}">
       <i class="fas {{#if hideDropped}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
-      {{#if hideDropped}}Show{{else}}Hide{{/if}} left behind ({{droppedCount}})
+      {{#if hideDropped}}{{localize "DOLMENWOOD.Inv.Dropped.ShowLabel" n=droppedCount}}{{else}}{{localize "DOLMENWOOD.Inv.Dropped.HideLabel" n=droppedCount}}{{/if}}
     </button>
     {{/if}}
     {{!-- Opens the shop with this character already selected as the buyer —
           which is why it is worth having here and not only on the toolbar. --}}
     {{#if mayOpenGenericShop}}
     <button type="button" data-action="openShop" class="btn-toolbar btn-shop"
-            title="Open the shop, buying for {{actor.name}}">
-      <i class="fas fa-store"></i> Shop
+            title="{{localize "DOLMENWOOD.Inv.Shop.Hint" name=actor.name}}">
+      <i class="fas fa-store"></i> {{localize "DOLMENWOOD.Inv.Shop.Label"}}
     </button>
     {{/if}}
     {{!-- The other half of the character: the sheet's own Inventory button
           comes back here, so the two windows point at each other. --}}
     <button type="button" data-action="openSheet" class="btn-toolbar btn-sheet"
-            title="{{actor.name}}'s attributes, saves, skills and traits">
-      <i class="fas fa-scroll"></i> Attributes
+            title="{{localize "DOLMENWOOD.Inv.Sheet.Hint" name=actor.name}}">
+      <i class="fas fa-scroll"></i> {{localize "DOLMENWOOD.Inv.Sheet.Label"}}
     </button>
     {{!-- What the pack is worth, for the Referee alone. Beside the name because
           it is a fact about this character, not a control. --}}
     {{#if isGM}}{{#if totalValue}}
-    <span class="inv-total-value" title="Every item this character carries, at catalogue prices — coins not counted. Only you can see this.">
+    <span class="inv-total-value" title="{{localize "DOLMENWOOD.Inv.TotalValue.Hint"}}">
       <i class="fas fa-sack-dollar"></i> {{totalValue}}
     </span>
     {{/if}}{{/if}}
@@ -43,20 +43,20 @@
         read as their caption rather than as a statement of its own. --}}
   {{#unless isSharedStore}}
   <div class="convoy-speed-bar">
-    <span class="convoy-label"><i class="fas fa-route"></i> Convoy</span>
+    <span class="convoy-label"><i class="fas fa-route"></i> {{localize "DOLMENWOOD.Inv.Convoy.Label"}}</span>
     {{!-- Everything tied at that pace, not one example of it. The line is held
           to one line by the CSS, which cuts it with an ellipsis where the window
           is too narrow — the tooltip always has the full list, with the owner of
           each animal (Dolmenmaster, 2026-08-31). --}}
     {{#if partyConvoy}}
     <span class="convoy-final {{speedColor partyConvoy.speed}}"
-          title="The whole party moves at its slowest part{{#if (gt partyConvoy.slowest.length 1)}} — and {{partyConvoy.slowest.length}} of them are tied at this pace, so unloading any one alone changes nothing{{/if}}: {{convoySlowest partyConvoy.slowest true}}. Each animal's own pace is on its zone header below.">
+          title="{{#if (gt partyConvoy.slowest.length 1)}}{{localize "DOLMENWOOD.Inv.Convoy.HintTied" tied=partyConvoy.slowest.length slowest=(convoySlowest partyConvoy.slowest true)}}{{else}}{{localize "DOLMENWOOD.Inv.Convoy.Hint" slowest=(convoySlowest partyConvoy.slowest true)}}{{/if}}">
       {{speedLabel partyConvoy.speed}}
       <span class="convoy-slowest">— {{convoySlowest partyConvoy.slowest}}</span>
     </span>
     {{else}}
     <span class="convoy-final {{speedColor encumbrance.footSpeed}}"
-          title="Nobody else is travelling, so this is your own marching pace from what you carry.">
+          title="{{localize "DOLMENWOOD.Inv.Convoy.Alone"}}">
       {{speedLabel encumbrance.footSpeed}}
     </span>
     {{/if}}
@@ -82,15 +82,15 @@
         below. Last and narrowest of the three: a purse is four short figures. --}}
   <section class="inv-summary-cell inv-coins">
     <div class="coins-header">
-      <h3><i class="fas fa-coins"></i> Coins</h3>
+      <h3><i class="fas fa-coins"></i> {{localize "DOLMENWOOD.Inv.Coins.Title"}}</h3>
       {{#if isGM}}
-      <button type="button" data-action="grantCoins" class="btn-grant-coins" title="Grant coins to this character">
-        <i class="fas fa-gift"></i> Grant
+      <button type="button" data-action="grantCoins" class="btn-grant-coins" title="{{localize "DOLMENWOOD.Inv.Coins.GrantHint"}}">
+        <i class="fas fa-gift"></i> {{localize "DOLMENWOOD.Coins.Grant.Button"}}
       </button>
       {{/if}}
       {{#if canGive}}
-      <button type="button" data-action="giveCoins" class="btn-give-coins" title="Give coins to another party member">
-        <i class="fas fa-hand-holding-heart"></i> Give
+      <button type="button" data-action="giveCoins" class="btn-give-coins" title="{{localize "DOLMENWOOD.Inv.Coins.GiveHint"}}">
+        <i class="fas fa-hand-holding-heart"></i> {{localize "DOLMENWOOD.Give.Button"}}
       </button>
       {{/if}}
     </div>
@@ -104,8 +104,8 @@
   {{#if showUnsorted}}
   <section class="inv-zone-section inv-zone-unsorted">
     <div class="zone-header">
-      <h3><i class="fas fa-exclamation-triangle"></i> Unsorted</h3>
-      <span class="zone-count" style="color:orange;">Move to a container</span>
+      <h3><i class="fas fa-exclamation-triangle"></i> {{localize "DOLMENWOOD.Inv.Unsorted.Title"}}</h3>
+      <span class="zone-count" style="color:orange;">{{localize "DOLMENWOOD.Inv.Unsorted.Hint"}}</span>
     </div>
     {{> inventory-zone items=zones.stowed zone="stowed" canEdit=canEdit canGive=canGive isGM=isGM isOwner=isOwner canAddItem=false extraZones=extraZones encMode=encMode}}
     {{> zone-coin-purse zoneId="stowed" zoneCoins=(lookup coinsByZone "stowed") canEdit=canEdit isOwner=isOwner}}
@@ -117,12 +117,12 @@
   {{#unless (eq encMode "weight")}}
   <section class="inv-zone-section">
     <div class="zone-header">
-      <h3><i class="fas fa-gem"></i> Belt Pouch</h3>
+      <h3><i class="fas fa-gem"></i> {{localize "DOLMENWOOD.Zone.BeltPouch"}}</h3>
       <span class="zone-count {{#if (gt encumbrance.tinyCount 10)}}over-limit{{/if}}">
         {{encumbrance.tinyCount}} / 10
         {{#if (gt encumbrance.tinyOverflow 0)}}
-        <span class="overflow-badge" title="{{encumbrance.tinyOverflow}} tiny items overflow into stowed slots">
-          +{{encumbrance.tinyOverflow}} overflow
+        <span class="overflow-badge" title="{{localize "DOLMENWOOD.Inv.Tiny.OverflowHint" count=encumbrance.tinyOverflow}}">
+          {{localize "DOLMENWOOD.Inv.Tiny.Overflow" count=encumbrance.tinyOverflow}}
         </span>
         {{/if}}
       </span>
@@ -135,11 +135,11 @@
   {{!-- Equipped Zone --}}
   <section class="inv-zone-section">
     <div class="zone-header">
-      <h3><i class="fas fa-shield-alt"></i> Equipped</h3>
+      <h3><i class="fas fa-shield-alt"></i> {{localize "DOLMENWOOD.Zone.Equipped"}}</h3>
       {{#if (eq encMode "weight")}}
-      <span class="zone-count">{{encumbrance.equippedWeight}} wt</span>
+      <span class="zone-count">{{localize "DOLMENWOOD.Inv.Wt" n=encumbrance.equippedWeight}}</span>
       {{else}}
-      <span class="zone-count">{{encumbrance.equippedSlots}} slots</span>
+      <span class="zone-count">{{localize "DOLMENWOOD.Inv.SlotCount" n=encumbrance.equippedSlots}}</span>
       {{/if}}
     </div>
     {{> inventory-zone items=zones.equipped zone="equipped" canEdit=canEdit canGive=canGive isGM=isGM isOwner=isOwner canAddItem=canAddItem extraZones=extraZones encMode=encMode}}
@@ -150,11 +150,11 @@
   {{#unless (eq encMode "weight")}}
   <section class="inv-zone-section">
     <div class="zone-header">
-      <h3><i class="fas fa-backpack"></i> Stowed</h3>
-      <span class="zone-count">{{encumbrance.stowedSlots}} slots
+      <h3><i class="fas fa-backpack"></i> {{localize "DOLMENWOOD.Zone.Stowed"}}</h3>
+      <span class="zone-count">{{localize "DOLMENWOOD.Inv.SlotCount" n=encumbrance.stowedSlots}}
         {{#if (gt encumbrance.coinSlots 0)}}
-        <span class="coin-slot-note" title="Includes {{encumbrance.coinSlots}} slot(s) from coins">
-          ({{encumbrance.coinSlots}} coins)
+        <span class="coin-slot-note" title="{{localizeN "DOLMENWOOD.Inv.CoinSlotsHint" encumbrance.coinSlots}}">
+          {{localize "DOLMENWOOD.Inv.CoinSlots" count=encumbrance.coinSlots}}
         </span>
         {{/if}}
       </span>
@@ -181,7 +181,7 @@
   {{#if hasSharedZones}}
   <div class="shared-store-header">
     <h3><i class="fas fa-people-group"></i> {{sharedActorName}}</h3>
-    <span class="shared-store-hint">Shared with the whole party — does not count toward your load</span>
+    <span class="shared-store-hint">{{localize "DOLMENWOOD.Inv.Shared.Hint"}}</span>
   </div>
   {{#each sharedZones}}
   {{> zone-section zone=this zoneCoins=(lookup ../sharedCoinsByZone this.id) canEdit=../canEdit canGive=false canGiveZone=../sharedIsOwner canShare=../sharedIsOwner isGM=../isGM isOwner=../sharedIsOwner extraZones=../extraZones encMode=../encMode}}
@@ -193,11 +193,11 @@
   <div class="gm-zone-buttons">
     {{#if (neq encMode "weight")}}
     <button type="button" data-action="addExtraZone" class="btn-add-extra-zone">
-      <i class="fas fa-plus"></i> Add Storage Zone
+      <i class="fas fa-plus"></i> {{localize "DOLMENWOOD.Zone.Add.Title"}}
     </button>
     {{/if}}
     <button type="button" data-action="addCustomAnimal" class="btn-add-extra-zone">
-      <i class="fas fa-paw"></i> Add Custom Animal / Vehicle
+      <i class="fas fa-paw"></i> {{localize "DOLMENWOOD.Animal.Title.Add"}}
     </button>
   </div>
   {{/if}}

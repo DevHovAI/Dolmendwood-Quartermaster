@@ -1,18 +1,18 @@
 <div class="item-row {{#if item.isSecret}}is-secret{{/if}}" data-item-id="{{item.id}}"{{#if isOwner}} draggable="true"{{/if}}>
   <span class="item-name">
     {{#if item.isSecret}}
-    <i class="fas fa-lock secret-icon" title="Secret item"></i>
+    <i class="fas fa-lock secret-icon" title="{{localize "DOLMENWOOD.Item.SecretIcon"}}"></i>
     {{else if item.def}}
     <i class="fas {{#if item.def.icon}}{{item.def.icon}}{{else}}{{itemIcon item.def.category item.def.subcategory}}{{/if}} item-cat-icon" title="{{item.def.category}}"></i>
     {{else}}
-    <i class="fas {{#if item.customDefinition.icon}}{{item.customDefinition.icon}}{{else}}fa-sack{{/if}} item-cat-icon" title="Custom item"></i>
+    <i class="fas {{#if item.customDefinition.icon}}{{item.customDefinition.icon}}{{else}}fa-sack{{/if}} item-cat-icon" title="{{localize "DOLMENWOOD.Item.Custom"}}"></i>
     {{/if}}
     {{item.name}}
     {{#if (eq encMode "weight")}}
       {{#if item.def}}
-      <span class="item-size-badge item-weight-badge" title="Weight per unit">{{item.def.weight}} wt</span>
+      <span class="item-size-badge item-weight-badge" title="{{localize "DOLMENWOOD.Item.WeightPerUnit"}}">{{item.def.weight}} wt</span>
       {{else if item.customDefinition}}
-      <span class="item-size-badge item-weight-badge" title="Weight per unit">{{#if item.customDefinition.weight}}{{item.customDefinition.weight}}{{else}}0{{/if}} wt</span>
+      <span class="item-size-badge item-weight-badge" title="{{localize "DOLMENWOOD.Item.WeightPerUnit"}}">{{#if item.customDefinition.weight}}{{item.customDefinition.weight}}{{else}}0{{/if}} wt</span>
       {{/if}}
     {{else}}
       {{#if item.def}}
@@ -21,7 +21,7 @@
       <span class="item-size-badge size-{{item.customDefinition.size}}" title="{{slotCost item.customDefinition.size}}">{{sizeLabel item.customDefinition.size}}</span>
       {{/if}}
     {{/if}}
-    {{#if item.def.cannotBeStowed}}<span class="badge badge-cannot-stow" title="Cannot be stowed">Carried</span>{{/if}}
+    {{#if item.def.cannotBeStowed}}<span class="badge badge-cannot-stow" title="{{localize "DOLMENWOOD.Item.CannotBeStowed"}}">{{localize "DOLMENWOOD.Item.Carried"}}</span>{{/if}}
     {{#if item.def.qualities.length}}<span class="item-qualities">{{#each item.def.qualities}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>{{/if}}
     {{!-- One block, not two: item.def is the *effective* definition, so for a
           custom item it already IS customDefinition. Printing both rendered the
@@ -31,7 +31,7 @@
           unidentified find, and what eating it does. Rendered for the GM alone
           — the row itself stays in plain sight. --}}
     {{#if isGM}}{{#if item.gmNote}}
-    <span class="item-gm-note" title="Only you can see this"><i class="fas fa-user-secret"></i> {{item.gmNote}}</span>
+    <span class="item-gm-note" title="{{localize "DOLMENWOOD.Item.GmNote.Hint"}}"><i class="fas fa-user-secret"></i> {{item.gmNote}}</span>
     {{/if}}{{/if}}
     {{!-- How many coins this container holds is a fact about the thing, like its
           weight and its size, so it belongs among the badges. It used to be a
@@ -39,7 +39,7 @@
           shoved everything to its right sideways on the few rows that had a
           purse (Dolmenmaster, 2026-08-31). --}}
     {{#if item.def.coinCapacity}}
-    <span class="item-size-badge item-coin-capacity" title="Coins stored in this container">
+    <span class="item-size-badge item-coin-capacity" title="{{localize "DOLMENWOOD.Item.CoinCapacity.Hint"}}">
       <i class="fas fa-coins"></i> {{item.coinsStored}}/{{item.def.coinCapacity}}
     </span>
     {{/if}}
@@ -65,26 +65,26 @@
   <div class="item-uses-controls">
     {{#if isOwner}}
     <button type="button" data-action="decrementUses" data-item-id="{{item.id}}"
-            class="qty-btn" title="Use one" {{#if (eq item.uses 0)}}disabled{{/if}}>−</button>
+            class="qty-btn" title="{{localize "DOLMENWOOD.Item.UseOne"}}" {{#if (eq item.uses 0)}}disabled{{/if}}>−</button>
     {{/if}}
     <span class="item-uses {{#if (eq item.uses 0)}}uses-empty{{/if}}"
-          title="{{item.uses}} / {{item.def.maxUses}} remaining">{{item.uses}}/{{item.def.maxUses}}</span>
+          title="{{localize "DOLMENWOOD.Item.UsesLeft" uses=item.uses max=item.def.maxUses}}">{{item.uses}}/{{item.def.maxUses}}</span>
     {{#if isOwner}}
     <button type="button" data-action="incrementUses" data-item-id="{{item.id}}"
-            class="qty-btn" title="Restore one" {{#if (eq item.uses item.def.maxUses)}}disabled{{/if}}>+</button>
+            class="qty-btn" title="{{localize "DOLMENWOOD.Item.RestoreOne"}}" {{#if (eq item.uses item.def.maxUses)}}disabled{{/if}}>+</button>
     {{/if}}
   </div>
   {{else}}
   {{#if item.isBundle}}
   {{!-- Bundles count loose units, so one control replaces quantity + uses --}}
   {{#if isOwner}}
-  <div class="item-qty-controls" title="{{item.units}} left · a bundle of {{item.def.maxUses}} weighs {{item.def.weight}} wt, so each one is {{item.unitWeight}} wt">
-    <button type="button" data-action="decrementUnits" data-item-id="{{item.id}}" class="qty-btn" title="Use / consume one">−</button>
+  <div class="item-qty-controls" title="{{localize "DOLMENWOOD.Item.BundleHint" units=item.units max=item.def.maxUses weight=item.def.weight each=item.unitWeight}}">
+    <button type="button" data-action="decrementUnits" data-item-id="{{item.id}}" class="qty-btn" title="{{localize "DOLMENWOOD.Item.ConsumeOne"}}">−</button>
     <span class="item-qty">{{item.units}}</span>
-    <button type="button" data-action="incrementUnits" data-item-id="{{item.id}}" class="qty-btn" title="Add one">+</button>
+    <button type="button" data-action="incrementUnits" data-item-id="{{item.id}}" class="qty-btn" title="{{localize "DOLMENWOOD.Item.AddOne"}}">+</button>
   </div>
   {{else}}
-  <span class="item-qty-readonly" title="{{item.units}} left">×{{item.units}}</span>
+  <span class="item-qty-readonly" title="{{localize "DOLMENWOOD.Item.UnitsLeft" units=item.units}}">×{{item.units}}</span>
   {{/if}}
   {{else if canEdit}}
   <div class="item-qty-controls">
@@ -94,7 +94,7 @@
   </div>
   {{else if isOwner}}
   <div class="item-qty-controls">
-    <button type="button" data-action="decrementQty" data-item-id="{{item.id}}" class="qty-btn" title="Use / consume one">−</button>
+    <button type="button" data-action="decrementQty" data-item-id="{{item.id}}" class="qty-btn" title="{{localize "DOLMENWOOD.Item.ConsumeOne"}}">−</button>
     <span class="item-qty">{{item.quantity}}</span>
   </div>
   {{else}}
@@ -104,7 +104,7 @@
 
   {{#if isOwner}}
   <textarea class="item-notes-input" data-item-id="{{item.id}}"
-            placeholder="Notes…" title="Notes" rows="1">{{item.notes}}</textarea>
+            placeholder="{{localize "DOLMENWOOD.Item.Notes.Placeholder"}}" title="{{localize "DOLMENWOOD.Item.Notes.Label"}}" rows="1">{{item.notes}}</textarea>
   {{/if}}
 
   {{!-- What the row is worth, for the Referee alone (Dolmenmaster, 2026-08-28: *"ich
@@ -125,7 +125,7 @@
   <span class="item-actions">
     {{#if isOwner}}
     <button type="button" data-action="toggleSecret" data-item-id="{{item.id}}"
-            class="icon-btn secret-btn" title="{{#if item.isSecret}}Make visible{{else}}Make secret{{/if}}">
+            class="icon-btn secret-btn" title="{{#if item.isSecret}}{{localize "DOLMENWOOD.Item.MakeVisible"}}{{else}}{{localize "DOLMENWOOD.Item.MakeSecret"}}{{/if}}">
       <i class="fas {{#if item.isSecret}}fa-eye-slash{{else}}fa-eye{{/if}}"></i>
     </button>
     {{/if}}
@@ -133,7 +133,7 @@
     {{#if isOwner}}
     {{#if item.isEdible}}
     <button type="button" data-action="eatItem" data-item-id="{{item.id}}"
-            class="icon-btn eat-btn" title="Eat one — feeds this character for the day">
+            class="icon-btn eat-btn" title="{{localize "DOLMENWOOD.Item.Eat"}}">
       <i class="fas fa-drumstick-bite"></i>
     </button>
     {{else}}
@@ -143,21 +143,21 @@
 
     {{#if isOwner}}
     <button type="button" data-action="editItem" data-item-id="{{item.id}}"
-            class="icon-btn rename-btn" title="Edit this item — its name, and everything else about it">
+            class="icon-btn rename-btn" title="{{localize "DOLMENWOOD.Item.Edit"}}">
       <i class="fas fa-pen"></i>
     </button>
     {{/if}}
 
     {{#if canEdit}}
     <button type="button" data-action="deleteItem" data-item-id="{{item.id}}"
-            class="icon-btn delete-btn" title="Remove item">
+            class="icon-btn delete-btn" title="{{localize "DOLMENWOOD.Item.Delete"}}">
       <i class="fas fa-trash"></i>
     </button>
     {{/if}}
 
     {{#if canGive}}
     <button type="button" data-action="giveItem" data-item-id="{{item.id}}"
-            class="icon-btn give-btn" title="Give item to another player">
+            class="icon-btn give-btn" title="{{localize "DOLMENWOOD.Item.Give"}}">
       <i class="fas fa-share"></i>
     </button>
     {{/if}}

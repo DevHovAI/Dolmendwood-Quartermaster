@@ -19,23 +19,23 @@
       which a slow pack animal drags down. That belongs to the party, and the
       party has the convoy row above to say it in. --}}
 <div class="speed-readout">
-  <span class="enc-label">Speed</span>
+  <span class="enc-label">{{localize "DOLMENWOOD.Encumbrance.Speed"}}</span>
 
   {{#if (gt encumbrance.hungerSpeedLoss 0)}}
   <span class="speed-base {{speedColor encumbrance.loadSpeed}}"
-        title="What the load alone allows, before anything is taken off it.">
+        title="{{localize "DOLMENWOOD.Speed.BaseHint"}}">
     {{speedLabel encumbrance.loadSpeed}}
   </span>
   <span class="speed-op" aria-hidden="true">&minus;</span>
   <span class="speed-malus"
-        title="Going hungry costs {{encumbrance.hungerSpeedPenalty}} ft of Speed (Effects of Hunger, Player&#39;s Book p153).{{#if encumbrance.hungerFloored}} Only {{encumbrance.hungerSpeedLoss}} ft of that is taken here, because Speed is never reduced below 10.{{/if}}">
-    <i class="fas fa-drumstick-bite"></i> {{encumbrance.hungerSpeedLoss}} hungry
+        title="{{#if encumbrance.hungerFloored}}{{localize "DOLMENWOOD.Speed.HungerHintFloored" penalty=encumbrance.hungerSpeedPenalty loss=encumbrance.hungerSpeedLoss}}{{else}}{{localize "DOLMENWOOD.Speed.HungerHint" penalty=encumbrance.hungerSpeedPenalty}}{{/if}}">
+    <i class="fas fa-drumstick-bite"></i> {{localize "DOLMENWOOD.Speed.Hungry" n=encumbrance.hungerSpeedLoss}}
   </span>
   <span class="speed-op" aria-hidden="true">=</span>
   {{/if}}
 
   <span class="speed-result {{speedColor encumbrance.footSpeed}}"
-        title="{{#if (gt encumbrance.hungerSpeedLoss 0)}}{{speedLabel encumbrance.loadSpeed}} from the load, less {{encumbrance.hungerSpeedLoss}} ft of hunger.{{else}}What this character marches at, from the load they carry.{{/if}} A slower pack animal is not counted here — that is the convoy's pace, above.">
+        title="{{#if (gt encumbrance.hungerSpeedLoss 0)}}{{localize "DOLMENWOOD.Speed.ResultHint" base=(speedLabel encumbrance.loadSpeed) loss=encumbrance.hungerSpeedLoss}}{{else}}{{localize "DOLMENWOOD.Speed.ResultHintPlain"}}{{/if}}">
     {{speedLabel encumbrance.footSpeed}}
   </span>
 
@@ -46,8 +46,8 @@
         the day bar calling them starving three windows over. --}}
   {{#if (and (gt encumbrance.hungerSpeedPenalty 0) (eq encumbrance.hungerSpeedLoss 0))}}
   <span class="speed-malus speed-malus-spent"
-        title="Going hungry costs {{encumbrance.hungerSpeedPenalty}} ft of Speed (Effects of Hunger, Player&#39;s Book p153), but Speed is never reduced below 10 — the load has already taken this character there, so hunger takes nothing further.">
-    <i class="fas fa-drumstick-bite"></i> hungry &mdash; the 10 ft floor holds
+        title="{{localize "DOLMENWOOD.Speed.FloorHint" penalty=encumbrance.hungerSpeedPenalty}}">
+    <i class="fas fa-drumstick-bite"></i> {{localize "DOLMENWOOD.Speed.Floor"}}
   </span>
   {{/if}}
 
@@ -57,25 +57,25 @@
   {{#if (eq encumbrance.mode "weight")}}
   {{#if (gt encumbrance.totalWeight 1600)}}
   <span class="speed-headroom speed-headroom-over"
-        title="1,600 wt is the most a character can shift at all. Nothing moves until something is put down.">
-    <i class="fas fa-triangle-exclamation"></i> over max load
+        title="{{localize "DOLMENWOOD.Speed.OverMaxHint"}}">
+    <i class="fas fa-triangle-exclamation"></i> {{localize "DOLMENWOOD.Speed.OverMax"}}
   </span>
   {{else if encumbrance.nextTierSpeed}}
   <span class="speed-headroom"
-        title="Room left at this pace: picking up more than {{encumbrance.weightToNextTier}} wt drops it to {{speedLabel encumbrance.nextTierSpeed}}.">
-    +{{encumbrance.weightToNextTier}} wt to {{speedLabel encumbrance.nextTierSpeed}}
+        title="{{localize "DOLMENWOOD.Speed.HeadroomHint" wt=encumbrance.weightToNextTier speed=(speedLabel encumbrance.nextTierSpeed)}}">
+    {{localize "DOLMENWOOD.Speed.Headroom" wt=encumbrance.weightToNextTier speed=(speedLabel encumbrance.nextTierSpeed)}}
   </span>
   {{else}}
   <span class="speed-headroom"
-        title="Room left before the load cannot be shifted at all: 1,600 wt is a character's maximum.">
-    +{{encumbrance.weightToNextTier}} wt to a standstill
+        title="{{localize "DOLMENWOOD.Speed.StandstillHint"}}">
+    {{localize "DOLMENWOOD.Speed.Standstill" wt=encumbrance.weightToNextTier}}
   </span>
   {{/if}}
   {{/if}}
 
   {{!-- Slot mode only: which of the two tracks is setting the pace. --}}
   {{#if (neq encumbrance.bottleneck "none")}}
-  <span class="enc-bottleneck" title="This is the load that is holding the pace down">
+  <span class="enc-bottleneck" title="{{localize "DOLMENWOOD.Speed.BottleneckHint"}}">
     ⚠ {{bottleneckLabel encumbrance.bottleneck}}
   </span>
   {{/if}}

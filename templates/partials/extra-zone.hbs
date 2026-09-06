@@ -5,7 +5,7 @@
   <div class="zone-footer-btns">
     {{#if isOwner}}
     <button type="button" class="icon-btn" data-action="toggleDropZone"
-            data-zone-id="{{zone.id}}" title="{{#if zone.isDropped}}Pick up zone{{else}}Drop zone (leave behind){{/if}}">
+            data-zone-id="{{zone.id}}" title="{{#if zone.isDropped}}{{localize "DOLMENWOOD.Zone.PickUp"}}{{else}}{{localize "DOLMENWOOD.Zone.Drop"}}{{/if}}">
       <i class="fas {{#if zone.isDropped}}fa-hand-holding{{else}}fa-arrow-down{{/if}}"></i>
     </button>
     {{!-- One button, two dialogs: which one opens is decided by what the zone is
@@ -14,7 +14,7 @@
           one it will be, or the pencil promises something it will not do. --}}
     <button type="button" class="rename-zone-btn icon-btn" data-action="renameExtraZone"
             data-zone-id="{{zone.id}}"
-            title="{{#if isGM}}{{#if zone.animalItemId}}Edit this animal or vehicle — name, type, icon, colour, capacity, speed, qualities, description{{else}}Rename zone — name, icon and colour{{/if}}{{else}}Rename zone — name, icon and colour{{/if}}">
+            title="{{#if isGM}}{{#if zone.animalItemId}}{{localize "DOLMENWOOD.Zone.EditAnimal"}}{{else}}{{localize "DOLMENWOOD.Zone.RenameHint"}}{{/if}}{{else}}{{localize "DOLMENWOOD.Zone.RenameHint"}}{{/if}}">
       <i class="fas fa-pencil"></i>
     </button>
     {{/if}}
@@ -22,28 +22,28 @@
           it moves the zone out of the shared store into that character. --}}
     {{#if canGiveZone}}
     <button type="button" class="icon-btn give-btn" data-action="giveZone"
-            data-zone-id="{{zone.id}}" title="Give to one other character">
+            data-zone-id="{{zone.id}}" title="{{localize "DOLMENWOOD.Zone.GiveHint"}}">
       <i class="fas fa-share"></i>
     </button>
     {{/if}}
     {{#if zone.isShared}}
     {{#if canShare}}
     <button type="button" class="icon-btn unshare-btn" data-action="unshareZone"
-            data-zone-id="{{zone.id}}" title="Take back into this character's inventory">
+            data-zone-id="{{zone.id}}" title="{{localize "DOLMENWOOD.Zone.UnshareHint"}}">
       <i class="fas fa-hand-holding-hand"></i>
     </button>
     {{/if}}
     {{else}}
     {{#if canShare}}
     <button type="button" class="icon-btn share-btn" data-action="shareZone"
-            data-zone-id="{{zone.id}}" title="Share with the whole party">
+            data-zone-id="{{zone.id}}" title="{{localize "DOLMENWOOD.Zone.ShareHint"}}">
       <i class="fas fa-people-group"></i>
     </button>
     {{/if}}
     {{/if}}
     {{#if isGM}}
     <button type="button" class="delete-zone-btn icon-btn" data-action="deleteExtraZone"
-            data-zone-id="{{zone.id}}" title="Delete zone — items moved to Stowed">
+            data-zone-id="{{zone.id}}" title="{{localize "DOLMENWOOD.Zone.DeleteHint"}}">
       <i class="fas fa-trash"></i>
     </button>
     {{/if}}

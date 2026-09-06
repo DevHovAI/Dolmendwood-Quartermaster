@@ -2,20 +2,20 @@
   <span class="item-name">
     <i class="fas fa-box item-cat-icon" style="color:#a07b00;"></i>
     {{item.name}}
-    <span class="item-size-badge size-normal">{{item.coinsStored}} / {{item.capacity}} coins</span>
+    <span class="item-size-badge size-normal">{{localize "DOLMENWOOD.Coins.InContainer" stored=item.coinsStored capacity=item.capacity}}</span>
   </span>
 
   {{#if isOwner}}
-  <select class="item-zone-select" data-item-id="{{item.id}}" title="Move to zone">
+  <select class="item-zone-select" data-item-id="{{item.id}}" title="{{localize "DOLMENWOOD.Item.MoveToZone"}}">
     {{#if (eq encMode "weight")}}
-    <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
+    <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>{{localize "DOLMENWOOD.Zone.Equipped"}}</option>
     {{#each extraZones}}
     <option value="{{this.id}}" {{#if (eq ../item.zone this.id)}}selected{{/if}}>{{this.name}}</option>
     {{/each}}
     {{else}}
-    <option value="tiny"     {{#if (eq item.zone "tiny")}}selected{{/if}}>Belt Pouch</option>
-    <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>Equipped</option>
-    <option value="stowed"   {{#if (eq item.zone "stowed")}}selected{{/if}}>Stowed</option>
+    <option value="tiny"     {{#if (eq item.zone "tiny")}}selected{{/if}}>{{localize "DOLMENWOOD.Zone.BeltPouch"}}</option>
+    <option value="equipped" {{#if (eq item.zone "equipped")}}selected{{/if}}>{{localize "DOLMENWOOD.Zone.Equipped"}}</option>
+    <option value="stowed"   {{#if (eq item.zone "stowed")}}selected{{/if}}>{{localize "DOLMENWOOD.Zone.Stowed"}}</option>
     {{#each extraZones}}
     <option value="{{this.id}}" {{#if (eq ../item.zone this.id)}}selected{{/if}}>{{this.name}}</option>
     {{/each}}
@@ -25,7 +25,7 @@
 
   {{#if canEdit}}
   <button type="button" class="icon-btn btn-danger" data-action="deleteItem"
-          data-item-id="{{item.id}}" title="Remove from inventory">
+          data-item-id="{{item.id}}" title="{{localize "DOLMENWOOD.Item.RemoveFromInventory"}}">
     <i class="fas fa-trash"></i>
   </button>
   {{/if}}
