@@ -40,6 +40,7 @@
 
 import { ADVANCEMENT } from "./advancement";
 import type { ClassKey } from "./xpAward";
+import { t } from "../helpers/i18n";
 
 export type RouteId = "trainer" | "alone" | "aloneFast" | "cap";
 
@@ -126,7 +127,10 @@ export function routesFor(cls: ClassKey, level: number, xp: number): RouteOffer[
 
   const atTop = next === undefined;
   const short = (need: number): string =>
-    `${(need - xp).toLocaleString()} XP short — needs ${need.toLocaleString()}.`;
+    t("DOLMENWOOD.Sheet.Route.Blocked.Short", {
+      short: (need - xp).toLocaleString(),
+      need: need.toLocaleString(),
+    });
 
   const offers: RouteOffer[] = [];
 
@@ -143,32 +147,48 @@ export function routesFor(cls: ClassKey, level: number, xp: number): RouteOffer[
       costXp: 0,
       costNote: note,
       available: !atTop && xp >= needXp,
-      blocked: atTop ? `Level ${top} is the top of the table.` : xp >= needXp ? undefined : short(needXp),
+      blocked: atTop
+        ? t("DOLMENWOOD.Sheet.Route.Blocked.Top", { top })
+        : xp >= needXp
+          ? undefined
+          : short(needXp),
     });
   };
 
-  single("trainer", "With a trainer", "Until the end of the day", 100 * level, `100 gp × Level ${level}`);
-  single("alone", "Without a trainer", "5 weeks", 50 * level, `5 weeks × 10 gp × Level ${level}`);
+  single(
+    "trainer",
+    t("DOLMENWOOD.Sheet.Route.Trainer.Label"),
+    t("DOLMENWOOD.Sheet.Route.Trainer.Duration"),
+    100 * level,
+    t("DOLMENWOOD.Sheet.Route.Trainer.Cost", { level })
+  );
+  single(
+    "alone",
+    t("DOLMENWOOD.Sheet.Route.Alone.Label"),
+    t("DOLMENWOOD.Sheet.Route.Alone.Duration"),
+    50 * level,
+    t("DOLMENWOOD.Sheet.Route.Alone.Cost", { level })
+  );
 
   // The fast route needs the cap to measure its requirement against, so at the
   // last two Levels of the table it simply is not on offer.
   const fastNeed = next !== undefined && cap !== undefined ? next + halfGap(next, cap) : undefined;
   offers.push({
     id: "aloneFast",
-    label: "Without a trainer, on extra XP",
-    duration: "2 weeks",
+    label: t("DOLMENWOOD.Sheet.Route.Fast.Label"),
+    duration: t("DOLMENWOOD.Sheet.Route.Fast.Duration"),
     fromLevel: level,
     toLevel: level + 1,
     needXp: fastNeed ?? 0,
     costGp: 20 * level,
     costXp: 0,
-    costNote: `2 weeks × 10 gp × Level ${level}`,
+    costNote: t("DOLMENWOOD.Sheet.Route.Fast.Cost", { level }),
     available: fastNeed !== undefined && xp >= fastNeed,
     blocked:
       fastNeed === undefined
         ? atTop
-          ? `Level ${top} is the top of the table.`
-          : "No cap above this Level to measure the extra experience against."
+          ? t("DOLMENWOOD.Sheet.Route.Blocked.Top", { top })
+          : t("DOLMENWOOD.Sheet.Route.Blocked.NoCap")
         : xp >= fastNeed
           ? undefined
           : short(fastNeed),
@@ -182,18 +202,22 @@ export function routesFor(cls: ClassKey, level: number, xp: number): RouteOffer[
   const capCost = next !== undefined && cap !== undefined ? halfGap(next, cap) : 0;
   offers.push({
     id: "cap",
-    label: "At the cap, without waiting",
-    duration: "At once",
+    label: t("DOLMENWOOD.Sheet.Route.Cap.Label"),
+    duration: t("DOLMENWOOD.Sheet.Route.Cap.Duration"),
     fromLevel: level,
     toLevel: level + 1,
     needXp: cap ?? 0,
     costGp: 0,
     costXp: capCost,
-    costNote: `${capCost.toLocaleString()} XP — half of ${(cap ?? 0).toLocaleString()} − ${(next ?? 0).toLocaleString()}`,
+    costNote: t("DOLMENWOOD.Sheet.Route.Cap.Cost", {
+      cost: capCost.toLocaleString(),
+      cap: (cap ?? 0).toLocaleString(),
+      next: (next ?? 0).toLocaleString(),
+    }),
     available: cap !== undefined && xp >= cap,
     blocked:
       cap === undefined
-        ? `No Level ${level + 2} on the table, so there is no cap to reach.`
+        ? t("DOLMENWOOD.Sheet.Route.Blocked.NoLevel", { level: level + 2 })
         : xp >= cap
           ? undefined
           : short(cap),

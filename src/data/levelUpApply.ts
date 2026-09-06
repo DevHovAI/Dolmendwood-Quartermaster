@@ -5,6 +5,7 @@ import { hpDieFor, hpGainFor, levelChange, thresholdFor } from "./levelUp";
 import type { HpGain, RouteOffer } from "./levelUp";
 import type { ClassKey } from "./xpAward";
 import { announce, rollDice, total } from "./rollCard";
+import { t } from "../helpers/i18n";
 import { escapeHTML } from "../helpers/handlebars";
 
 /**
@@ -46,17 +47,20 @@ export async function applyLevelUp(
   // drawn. Between then and now a purse can empty and XP can be spent, so the
   // requirements are asked again here rather than trusted.
   if (sys.level !== offer.fromLevel) {
-    return { ok: false, reason: "The Level on the sheet changed — reopen the sheet and try again." };
+    return { ok: false, reason: t("DOLMENWOOD.Sheet.LevelUp.WrongLevel") };
   }
   if (sys.xp.value < offer.needXp) {
     return {
       ok: false,
-      reason: `${offer.needXp.toLocaleString()} XP are needed and the sheet has ${sys.xp.value.toLocaleString()}.`,
+      reason: t("DOLMENWOOD.Sheet.LevelUp.ShortXp", {
+        need: offer.needXp.toLocaleString(),
+        has: sys.xp.value.toLocaleString(),
+      }),
     };
   }
 
   const change = levelChange(cls, sys.level, offer.toLevel);
-  if (!change) return { ok: false, reason: "That Level is not on the Class's advancement table." };
+  if (!change) return { ok: false, reason: t("DOLMENWOOD.Sheet.LevelUp.NotOnTable") };
 
   // ── The purse first, because it is the one step that can refuse ─────────────
   const costCp = offer.costGp * IN_CP.gp;
@@ -70,7 +74,10 @@ export async function applyLevelUp(
     if (!paid) {
       return {
         ok: false,
-        reason: `${actor.name} cannot pay ${offer.costGp} gp — nothing was charged and no Level was taken.`,
+        reason: t("DOLMENWOOD.Sheet.LevelUp.CannotPay", {
+          name: actor.name ?? "",
+          gp: offer.costGp,
+        }),
       };
     }
   }
@@ -136,10 +143,19 @@ function card(
 ): string {
   const hpLines = gains
     .map((g) => {
-      const parts = g.printed.includes("d")
-        ? `${g.printed} rolled ${g.rolled}${g.conMod ? ` ${g.conMod > 0 ? "+" : "−"} ${Math.abs(g.conMod)} CON` : ""}`
-        : `${g.printed} flat, no Constitution Modifier past Level 10`;
-      return `<li>Level ${g.level}: ${parts} → <strong>+${g.gained}</strong></li>`;
+      // The Constitution term is arithmetic rather than prose — " + 2 CON" —
+      // so it rides along as a placeholder instead of splitting the sentence.
+      const con = g.conMod ? ` ${g.conMod > 0 ? "+" : "−"} ${Math.abs(g.conMod)} CON` : "";
+      const key = g.printed.includes("d")
+        ? "DOLMENWOOD.Sheet.LevelUp.Card.HpRolled"
+        : "DOLMENWOOD.Sheet.LevelUp.Card.HpFlat";
+      return t(key, {
+        level: g.level,
+        printed: g.printed,
+        rolled: g.rolled,
+        con,
+        gained: g.gained,
+      });
     })
     .join("");
 
@@ -148,37 +164,66 @@ function card(
   ).join(", ");
 
   const paid: string[] = [];
-  if (offer.costGp > 0) paid.push(`${offer.costGp} gp`);
+  if (offer.costGp > 0) paid.push(`${offer.costGp} ${t("DOLMENWOOD.Currency.GP")}`);
   if (offer.costXp > 0) paid.push(`${offer.costXp.toLocaleString()} XP`);
+  const sub =
+    paid.length === 0
+      ? t("DOLMENWOOD.Sheet.LevelUp.Card.SubFree", {
+          route: escapeHTML(offer.label),
+          duration: escapeHTML(offer.duration),
+        })
+      : t("DOLMENWOOD.Sheet.LevelUp.Card.Sub", {
+          route: escapeHTML(offer.label),
+          duration: escapeHTML(offer.duration),
+          paid:
+            paid.length === 1
+              ? paid[0]!
+              : t("DOLMENWOOD.Sheet.LevelUp.Card.And", { a: paid[0]!, b: paid[1]! }),
+        });
 
   return `<div class="dw-day-roll dw-levelup-card">
-      <h3><i class="fas fa-angles-up"></i> ${escapeHTML(name)} reaches Level ${change.toLevel}</h3>
-      <p class="dw-day-roll-sub">${escapeHTML(offer.label)} &middot; ${escapeHTML(offer.duration)}${
-        paid.length ? ` &middot; paid ${paid.join(" and ")}` : " &middot; no cost"
-      }</p>
+      <h3><i class="fas fa-angles-up"></i> ${t("DOLMENWOOD.Sheet.LevelUp.Card.Head", {
+        name: escapeHTML(name),
+        level: change.toLevel,
+      })}</h3>
+      <p class="dw-day-roll-sub">${sub}</p>
       <ul class="dw-camp-rows">
-        <li>Level <strong>${change.fromLevel} → ${change.toLevel}</strong></li>
-        <li>Hit Points <strong>+${hpGained}</strong> — ${before.hp.max} → ${before.hp.max + hpGained} maximum</li>
-        <li>Attack ${change.attack.from >= 0 ? "+" : ""}${change.attack.from} → <strong>${
-          change.attack.to >= 0 ? "+" : ""
-        }${change.attack.to}</strong></li>
-        <li>Save Targets ${saveLine}</li>
-        <li>XP ${before.xp.value.toLocaleString()} → <strong>${newXp.toLocaleString()}</strong>, next Level at ${
-          change.nextXp ? change.nextXp.toLocaleString() : "—"
-        }</li>
+        ${t("DOLMENWOOD.Sheet.LevelUp.Card.Level", {
+          from: change.fromLevel,
+          to: change.toLevel,
+        })}
+        ${t("DOLMENWOOD.Sheet.LevelUp.Card.Hp", {
+          gained: hpGained,
+          from: before.hp.max,
+          to: before.hp.max + hpGained,
+        })}
+        ${t("DOLMENWOOD.Sheet.LevelUp.Card.Attack", {
+          from: `${change.attack.from >= 0 ? "+" : ""}${change.attack.from}`,
+          to: `${change.attack.to >= 0 ? "+" : ""}${change.attack.to}`,
+        })}
+        ${t("DOLMENWOOD.Sheet.LevelUp.Card.Saves", { saves: saveLine })}
+        ${t("DOLMENWOOD.Sheet.LevelUp.Card.Xp", {
+          from: before.xp.value.toLocaleString(),
+          to: newXp.toLocaleString(),
+          next: change.nextXp ? change.nextXp.toLocaleString() : "—",
+        })}
       </ul>
       <ul class="dw-day-roll-effects">${hpLines}</ul>
-      <p class="dw-day-roll-note">Skill Targets, expert points, spells and Class traits were not
-        touched — those are still read out of the ${escapeHTML(cls)} entry by hand.</p>
+      <p class="dw-day-roll-note">${t("DOLMENWOOD.Sheet.LevelUp.Card.Note", {
+        class: escapeHTML(cls),
+      })}</p>
     </div>`;
 }
 
 /** The XP ceiling a Level sits under, for the sheet's own line. */
 export function capLine(cls: ClassKey, level: number, xp: number): string {
   const cap = thresholdFor(cls, level + 2);
-  if (cap === undefined) return "No cap above this Level.";
+  if (cap === undefined) return t("DOLMENWOOD.Sheet.CapLine.None");
   const left = cap - xp;
   return left > 0
-    ? `Cap ${cap.toLocaleString()} XP — ${left.toLocaleString()} to go.`
-    : `Cap ${cap.toLocaleString()} XP — reached.`;
+    ? t("DOLMENWOOD.Sheet.CapLine.ToGo", {
+        cap: cap.toLocaleString(),
+        left: left.toLocaleString(),
+      })
+    : t("DOLMENWOOD.Sheet.CapLine.Reached", { cap: cap.toLocaleString() });
 }

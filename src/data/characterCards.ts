@@ -1,4 +1,5 @@
 import { announce } from "./rollCard";
+import { t } from "../helpers/i18n";
 import { escapeHTML } from "../helpers/handlebars";
 import { buildRollData, judge, type RollPlan } from "./characterRolls";
 
@@ -87,11 +88,11 @@ function rollCardHTML(
   verdict: { success: boolean; decidedByDie: boolean } | undefined,
   flavour: RollFlavour
 ): string {
-  const who = escapeHTML(actor.name ?? "Someone");
+  const who = escapeHTML(actor.name ?? t("DOLMENWOOD.Sheet.Card.Someone"));
   const headline = verdict
     ? `<p class="dw-day-roll-headline${verdict.success ? "" : " is-bad"}">
          <strong class="dw-sheet-total">${total}</strong>
-         ${verdict.success ? "Success" : "Failure"}
+         ${t(verdict.success ? "DOLMENWOOD.Sheet.Card.Success" : "DOLMENWOOD.Sheet.Card.Failure")}
        </p>`
     : `<p class="dw-day-roll-headline"><strong class="dw-sheet-total">${total}</strong></p>`;
 
@@ -100,12 +101,17 @@ function rollCardHTML(
   const against =
     plan.target === undefined
       ? ""
-      : ` &mdash; ${plan.atOrUnder ? "at or under" : "at or over"} ${plan.target}`;
+      : ` &mdash; ${t(
+          plan.atOrUnder ? "DOLMENWOOD.Sheet.Card.AtOrUnder" : "DOLMENWOOD.Sheet.Card.AtOrOver",
+          { target: plan.target }
+        )}`;
 
   // Said plainly, because it is the rule a computer is most likely to be
   // suspected of getting wrong.
   const byTheDie = verdict?.decidedByDie
-    ? `<p class="dw-day-roll-note">A natural ${verdict.success ? plan.faces : 1} decides it, whatever the modifiers.</p>`
+    ? `<p class="dw-day-roll-note">${t("DOLMENWOOD.Sheet.Card.Natural", {
+        n: verdict.success ? (plan.faces ?? 20) : 1,
+      })}</p>`
     : "";
 
   return `<div class="dw-day-roll dw-sheet-roll">

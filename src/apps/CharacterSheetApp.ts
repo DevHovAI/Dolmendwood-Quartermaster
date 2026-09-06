@@ -662,7 +662,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       { ...plan, target: sys.saves[save.key] || undefined },
       {
         icon: "fa-shield-halved",
-        ...(magical ? { note: "Against magic, so the Wisdom modifier applies." } : {}),
+        ...(magical ? { note: t("DOLMENWOOD.Sheet.Roll.MagicNote") } : {}),
       }
     );
   }
@@ -709,7 +709,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       const left = castOne(block.prepared);
       if (left === null) {
         ui.notifications?.warn(
-          `${block.name} is not prepared. Mark it with a spell credit first — those are handed out when spells are prepared of a morning.`
+          t("DOLMENWOOD.Sheet.Spell.NotPrepared", { name: block.name })
         );
         return;
       }
@@ -746,12 +746,21 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       {
         formula,
         faces: 20,
-        label: `${weapon.name} — ${missile ? "Missile" : "Melee"} Attack`,
+        label: t("DOLMENWOOD.Sheet.Roll.Attack", {
+          name: weapon.name,
+          mode: missile ? "Missile" : "Melee",
+        }),
       },
       {
         icon: "fa-crosshairs",
         ...(band && weapon.ranges
-          ? { note: `${band} range — ${weapon.ranges[band]} feet.` }
+          ? {
+              // A key per band rather than the band's name dropped into a
+              // sentence: "kurze Entfernung" is not "short" with a word after it.
+              note: t(`DOLMENWOOD.Sheet.Roll.Band.${BAND_KEY[band]}`, {
+                feet: weapon.ranges[band],
+              }),
+            }
           : {}),
       }
     );
@@ -770,7 +779,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
       this.actor,
       {
         formula: damageFormula(weapon, { missile, situational: this.#situational() }),
-        label: `${weapon.name} — Damage`,
+        label: t("DOLMENWOOD.Sheet.Roll.Damage", { name: weapon.name }),
       },
       { icon: "fa-burst" }
     );
@@ -892,9 +901,11 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     const block = getExtras(this.actor).blocks.find((b) => b.id === id);
     if (!block) return;
     const ok = await foundry.applications.api.DialogV2.confirm({
-      window: { title: "Delete block" },
-      content: `<p>Delete <strong>${block.name}</strong>? Anything referring to
-        <code>@b.${block.slug}</code> will read it as nought.</p>`,
+      window: { title: t("DOLMENWOOD.Sheet.Block.Delete.Title") },
+      content: t("DOLMENWOOD.Sheet.Block.Delete.Body", {
+        name: escapeHTML(block.name),
+        slug: escapeHTML(block.slug),
+      }),
     });
     if (!ok) return;
     await updateExtras(this.actor, (x) => {
@@ -912,7 +923,11 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
    * module ships no Class data and never will.
    */
   private static async _onAddSkill(this: CharacterSheetApp): Promise<void> {
-    const name = await promptText("New skill target", "What is it called?", "Climb");
+    const name = await promptText(
+      t("DOLMENWOOD.Sheet.Skills.NewTitle"),
+      t("DOLMENWOOD.Sheet.Skills.NewLabel"),
+      t("DOLMENWOOD.Sheet.Skills.NewPlaceholder")
+    );
     if (!name) return;
     await updateExtras(this.actor, (x) => {
       const taken = [
@@ -1000,8 +1015,8 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
         : markOne(block.prepared, x.spellCredits);
       if (!move) {
         refused = back
-          ? `${block.name} has no charge to take back.`
-          : "No spell credits left. They are handed out when spells are prepared of a morning.";
+          ? t("DOLMENWOOD.Sheet.Spell.NoCharge", { name: block.name })
+          : t("DOLMENWOOD.Sheet.Spell.NoCredits");
         return x;
       }
       block.prepared = move.prepared;
@@ -1061,34 +1076,48 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     const bill: string[] = [];
     if (offer.costGp > 0)
       bill.push(
-        `<li><strong>${offer.costGp} ${t("DOLMENWOOD.Currency.GP")}</strong> — ${offer.costNote}</li>`
+        t("DOLMENWOOD.Sheet.LevelUp.BillGp", {
+          gp: offer.costGp,
+          currency: t("DOLMENWOOD.Currency.GP"),
+          note: offer.costNote,
+        })
       );
     if (offer.costXp > 0)
       bill.push(
-        `<li><strong>${offer.costXp.toLocaleString()} XP</strong> — ${sys.xp.value.toLocaleString()} becomes ${(
-          sys.xp.value - offer.costXp
-        ).toLocaleString()}</li>`
+        t("DOLMENWOOD.Sheet.LevelUp.BillXp", {
+          cost: offer.costXp.toLocaleString(),
+          from: sys.xp.value.toLocaleString(),
+          to: (sys.xp.value - offer.costXp).toLocaleString(),
+        })
       );
-    if (bill.length === 0) bill.push("<li>Nothing to pay</li>");
+    if (bill.length === 0) bill.push(t("DOLMENWOOD.Sheet.LevelUp.BillNothing"));
 
     const confirmed = await Dialog.confirm({
-      title: `Level ${sys.level} → ${offer.toLevel}`,
+      title: t("DOLMENWOOD.Sheet.LevelUp.Title", { from: sys.level, to: offer.toLevel }),
       content:
-        `<p><strong>${escapeHTML(this.actor.name ?? "")}</strong> — ${escapeHTML(offer.label)}, ${escapeHTML(offer.duration)}.</p>` +
-        `<p class="qm-hint">Paid:</p><ul>${bill.join("")}</ul>` +
-        "<p class=\"qm-hint\">Written to the sheet: Level, XP, the next threshold, Attack " +
-        `${signed(change.attack.from)} → ${signed(change.attack.to)}, the five Save Targets, and ` +
-        "Hit Points rolled for each Level gained. Skill Targets, spells and Class traits are left alone.</p>",
+        t("DOLMENWOOD.Sheet.LevelUp.Who", {
+          name: escapeHTML(this.actor.name ?? ""),
+          route: escapeHTML(offer.label),
+          duration: escapeHTML(offer.duration),
+        }) +
+        `<p class="qm-hint">${t("DOLMENWOOD.Sheet.LevelUp.Paid")}</p><ul>${bill.join("")}</ul>` +
+        `<p class="qm-hint">${t("DOLMENWOOD.Sheet.LevelUp.Written", {
+          from: signed(change.attack.from),
+          to: signed(change.attack.to),
+        })}</p>`,
     });
     if (!confirmed) return;
 
     const result = await applyLevelUp(this.actor, key, offer);
     if (!result.ok) {
-      ui.notifications?.warn(result.reason ?? "The Level could not be taken.");
+      ui.notifications?.warn(result.reason ?? t("DOLMENWOOD.Sheet.LevelUp.Failed"));
       return;
     }
     ui.notifications?.info(
-      `${this.actor.name} is now Level ${offer.toLevel}. The chat card lists every figure that moved.`
+      t("DOLMENWOOD.Sheet.LevelUp.Done", {
+        name: this.actor.name ?? "",
+        level: offer.toLevel,
+      })
     );
     void this.render(false);
   }
@@ -1112,7 +1141,7 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
     if (!src) return;
     await new foundry.applications.apps.ImagePopout({
       src,
-      window: { title: this.actor.name ?? "Portrait" },
+      window: { title: this.actor.name ?? t("DOLMENWOOD.Sheet.Portrait.Title") },
       uuid: this.actor.uuid,
     }).render(true);
   }
@@ -1148,6 +1177,13 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
  */
 const PORTRAIT_BOX = 200;
 
+/** Which key names each range band, so the note reads as a sentence. */
+const BAND_KEY: Record<RangeBand, string> = {
+  short: "Short",
+  medium: "Medium",
+  long: "Long",
+};
+
 // ─── Small shared pieces ───────────────────────────────────────────────────────
 
 function signed(n: number): string {
@@ -1179,11 +1215,11 @@ async function promptText(title: string, label: string, placeholder = ""): Promi
         </form>`,
       buttons: {
         ok: {
-          label: "Add",
+          label: t("DOLMENWOOD.Common.Add"),
           icon: '<i class="fas fa-check"></i>',
           callback: (html: JQuery) => done(String(html.find("#dw-text-value").val() ?? "").trim() || null),
         },
-        cancel: { label: "Cancel", callback: () => done(null) },
+        cancel: { label: t("DOLMENWOOD.Common.Cancel"), callback: () => done(null) },
       },
       default: "ok",
       close: () => done(null),

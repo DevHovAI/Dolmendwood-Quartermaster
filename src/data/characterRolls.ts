@@ -8,6 +8,7 @@ import {
   type BlockRoll,
   type CharacterBlock,
 } from "./characterSheet";
+import { t } from "../helpers/i18n";
 import { exhaustionPenalty, hungerEffect, getCharacterDay } from "./characterDay";
 
 /**
@@ -169,7 +170,10 @@ export function planRoll(block: CharacterBlock, roll: BlockRoll): RollPlan {
         formula: `1d6 + @${roll.ability}Mod${bonus}`,
         target: ABILITY_CHECK_TARGET,
         faces: 6,
-        label: `${block.name} — ${ability?.label ?? roll.ability} Check`,
+        label: t("DOLMENWOOD.Sheet.Roll.AbilityCheck", {
+          name: block.name,
+          ability: ability?.label ?? roll.ability,
+        }),
       };
     }
     case "skill":
@@ -177,7 +181,7 @@ export function planRoll(block: CharacterBlock, roll: BlockRoll): RollPlan {
         formula: `1d6${bonus}`,
         target: roll.target,
         faces: 6,
-        label: `${block.name} — Skill Check`,
+        label: t("DOLMENWOOD.Sheet.Roll.SkillCheck", { name: block.name }),
       };
     case "save": {
       const save = SAVES.find((s) => s.key === roll.save);
@@ -188,7 +192,10 @@ export function planRoll(block: CharacterBlock, roll: BlockRoll): RollPlan {
         formula: `1d20${wis}${bonus}`,
         target: undefined,
         faces: 20,
-        label: `${block.name} — Save versus ${save?.label ?? roll.save}`,
+        label: t("DOLMENWOOD.Sheet.Roll.Save", {
+          name: block.name,
+          save: save?.label ?? roll.save,
+        }),
       };
     }
     case "attack": {
@@ -196,7 +203,10 @@ export function planRoll(block: CharacterBlock, roll: BlockRoll): RollPlan {
       return {
         formula: `1d20 + @attack + @${ability}Mod${bonus} + @attackPenalty`,
         faces: 20,
-        label: `${block.name} — ${roll.missile ? "Missile" : "Melee"} Attack`,
+        label: t("DOLMENWOOD.Sheet.Roll.Attack", {
+          name: block.name,
+          mode: roll.missile ? "Missile" : "Melee",
+        }),
       };
     }
     case "xin6":
@@ -205,7 +215,7 @@ export function planRoll(block: CharacterBlock, roll: BlockRoll): RollPlan {
         target: roll.target,
         atOrUnder: true,
         faces: 6,
-        label: `${block.name} — ${roll.target}-in-6`,
+        label: t("DOLMENWOOD.Sheet.Roll.Xin6", { name: block.name, target: roll.target }),
       };
     case "formula":
       return { formula: roll.formula, label: block.name };
