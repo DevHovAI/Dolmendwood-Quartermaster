@@ -72,8 +72,8 @@ Hooks.once("init", () => {
 
   // Register world-scoped settings
   game.settings!.register(MODULE_ID, SETTINGS.SHOP_STATE, {
-    name: "Shop State",
-    hint: "Active tags and available items for the shop panel.",
+    name: "DOLMENWOOD.Settings.ShopState.Name",
+    hint: "DOLMENWOOD.Settings.ShopState.Hint",
     scope: "world",
     config: false,
     type: Object,
@@ -153,14 +153,14 @@ Hooks.once("init", () => {
   });
 
   game.settings!.register(MODULE_ID, SETTINGS.ENCUMBRANCE_MODE, {
-    name: "Encumbrance System",
-    hint: "Slot Encumbrance tracks gear slots (equipped ≤10, stowed ≤16). Weight Encumbrance tracks total item weight in coins (max 1,600).",
+    name: "DOLMENWOOD.Settings.Encumbrance.Name",
+    hint: "DOLMENWOOD.Settings.Encumbrance.Hint",
     scope: "world",
     config: true,
     type: String,
     choices: {
-      slots: "Slot Encumbrance (default)",
-      weight: "Weight Encumbrance",
+      slots: "DOLMENWOOD.Settings.Encumbrance.Choice.Slots",
+      weight: "DOLMENWOOD.Settings.Encumbrance.Choice.Weight",
     },
     default: "slots",
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
@@ -188,8 +188,8 @@ Hooks.once("init", () => {
   // nothing — but it is a setting, because an actor vanishing from the sidebar
   // with no visible switch is baffling when something goes wrong.
   game.settings!.register(MODULE_ID, SETTINGS.HIDE_MANAGED_ACTORS, {
-    name: "Hide Quartermaster actors from the sidebar",
-    hint: "Keeps the shared party store actor and all loot boxes out of the Actors tab, for the GM as well. They stay reachable: the shared store has its own card in the Party Overview, and every loot box is listed in the Loot window. Turn this off to get the sidebar entries back.",
+    name: "DOLMENWOOD.Settings.HideActors.Name",
+    hint: "DOLMENWOOD.Settings.HideActors.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -203,8 +203,8 @@ Hooks.once("init", () => {
   // the controls render, so without it the change would only show up after a
   // scene switch — which reads as the setting not working.
   game.settings!.register(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_INN, {
-    name: "Players may open the Inn from the toolbar",
-    hint: "Off by default. The toolbar inn is the generic, place-less one — its quality and menu are whatever was last set up, and a player buying there pays real coins for a bed at an inn that does not exist on the map. Every actual inn is reached by double-clicking its map note. Turn this on if you want players to reach the generic inn anyway.",
+    name: "DOLMENWOOD.Settings.PlayersInn.Name",
+    hint: "DOLMENWOOD.Settings.PlayersInn.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -213,8 +213,8 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_LOOT, {
-    name: "Players may open Loot from the toolbar",
-    hint: "On by default. Players only ever see boxes that have been released, and it is the one route back into a half-divided hoard that does not depend on the map pin being visible or the chat message still being on screen.",
+    name: "DOLMENWOOD.Settings.PlayersLoot.Name",
+    hint: "DOLMENWOOD.Settings.PlayersLoot.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -223,8 +223,8 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.PLAYER_TOOLBAR_TRASH, {
-    name: "Players may open the Trash from the toolbar",
-    hint: "On by default. Players only ever see what they deleted themselves, and they cannot restore or empty anything — that stays with the GM. Being able to look is what lets a player say which item they lost.",
+    name: "DOLMENWOOD.Settings.PlayersTrash.Name",
+    hint: "DOLMENWOOD.Settings.PlayersTrash.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -235,8 +235,8 @@ Hooks.once("init", () => {
   // ── Where the shops are, and who may reach them ────────────────────────────
 
   game.settings!.register(MODULE_ID, SETTINGS.PLAYER_GENERIC_SHOP, {
-    name: "Players may open the general shop from the toolbar",
-    hint: "Off by default. The general shop is the place-less one — it belongs to no map note, so it can be neither a specialist nor a buyer, and it is reachable from anywhere at any time. With this off, players buy where the party is standing and the map notes are what a shop means. The GM keeps the button either way.",
+    name: "DOLMENWOOD.Settings.PlayersShop.Name",
+    hint: "DOLMENWOOD.Settings.PlayersShop.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -245,8 +245,8 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.PLAYER_ADD_CUSTOM_ITEM, {
-    name: "Players may invent items in their own inventory",
-    hint: "On by default, which is how it has always worked. The Add Custom Item button lets a player write a line into their own sheet — name, weight and all — without asking anyone. Turn it off for a table where everything should come from the catalogue, a shop, or the GM's hand. The GM's own Add Item button is not affected.",
+    name: "DOLMENWOOD.Settings.PlayersCustomItem.Name",
+    hint: "DOLMENWOOD.Settings.PlayersCustomItem.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -254,8 +254,8 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.SHOPS_NEED_PARTY_PRESENT, {
-    name: "Places open only where the party is standing",
-    hint: "On by default. A player may open a shop, market, inn or loot note only if the party's token is in the same hex on a hex map, or simply on the same scene where there is no hex grid — a village map, say. The GM is never restricted. Turn this off to let players open any of them from anywhere, as before.",
+    name: "DOLMENWOOD.Settings.PartyPresent.Name",
+    hint: "DOLMENWOOD.Settings.PartyPresent.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -263,8 +263,8 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.PARTY_MARKER_ACTOR, {
-    name: "The party's marker on the map",
-    hint: "The name of the actor whose token stands for the party while travelling. Leave this empty and every party character's own token counts instead — which is what you want if you move the characters individually. Name a marker here if the party travels as one token that belongs to no player, since such a token is otherwise invisible to the module.",
+    name: "DOLMENWOOD.Settings.PartyMarker.Name",
+    hint: "DOLMENWOOD.Settings.PartyMarker.Hint",
     scope: "world",
     config: true,
     type: String,
@@ -272,8 +272,8 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.TRASH_LIMIT, {
-    name: "Trash size (per inventory)",
-    hint: "How many deleted rows each character, loot box and the shared store keeps before the oldest fall out. This is an undo buffer, not an archive. Set it to 0 to switch the trash off entirely — deleting is then final again, as it was before.",
+    name: "DOLMENWOOD.Settings.TrashSize.Name",
+    hint: "DOLMENWOOD.Settings.TrashSize.Hint",
     scope: "world",
     config: true,
     type: Number,
@@ -290,12 +290,12 @@ Hooks.once("init", () => {
   // server hands out, so a path to somewhere else on the disk cannot work. Set
   // once by the GM, it serves every player at the table.
   const bookHint =
-    "A PDF inside Foundry's data folder (upload it with the file picker). Page references on the module's cards then open your own copy at the right page. Nothing of the book is stored in the module.";
+    "DOLMENWOOD.Settings.Book.Hint";
   (
     [
-      [SETTINGS.BOOK_PLAYERS, "Player's Book (PDF)"],
-      [SETTINGS.BOOK_CAMPAIGN, "Campaign Book (PDF)"],
-      [SETTINGS.BOOK_MONSTERS, "Monster Book (PDF)"],
+      [SETTINGS.BOOK_PLAYERS, "DOLMENWOOD.Settings.BookPlayers.Name"],
+      [SETTINGS.BOOK_CAMPAIGN, "DOLMENWOOD.Settings.BookCampaign.Name"],
+      [SETTINGS.BOOK_MONSTERS, "DOLMENWOOD.Settings.BookMonsters.Name"],
     ] as const
   ).forEach(([key, name]) => {
     game.settings!.register(MODULE_ID, key, {
@@ -317,8 +317,8 @@ Hooks.once("init", () => {
   // bar carries the shortcut, opening it uninvited is a preference rather than
   // a service, and the default is to leave the screen alone.
   game.settings!.register(MODULE_ID, SETTINGS.AUTO_OPEN_INVENTORY, {
-    name: "Open a player's inventory when they log in",
-    hint: "Off by default. When on, a player with a character assigned gets their inventory window thrown open as Foundry finishes loading. With the day bar on there is a backpack button on it either way, so this is only about saving the first click.",
+    name: "DOLMENWOOD.Settings.AutoOpenInventory.Name",
+    hint: "DOLMENWOOD.Settings.AutoOpenInventory.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -329,8 +329,8 @@ Hooks.once("init", () => {
   // the weather once it is known, and their own character's hunger and rest.
   // None of the Referee's half — no duty ticks, no hex, no page references.
   game.settings!.register(MODULE_ID, SETTINGS.PLAYER_DAY_BAR, {
-    name: "Players get a day bar of their own",
-    hint: "A slimmer strip carrying only what the characters would know: the day and what the party is doing, Travel Points walked, the weather once the GM has rolled it, and each player's own hunger and rest clocks. The duty list, the hex, the region and every page reference stay with the GM. Each player still switches their own bar on from the toolbar.",
+    name: "DOLMENWOOD.Settings.PlayerDayBar.Name",
+    hint: "DOLMENWOOD.Settings.PlayerDayBar.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -342,8 +342,8 @@ Hooks.once("init", () => {
   // hands three of the day's duties and the camp's group steps to the table,
   // and a Referee should switch that on deliberately rather than discover it.
   game.settings!.register(MODULE_ID, SETTINGS.PLAYER_DAY_ROLLS, {
-    name: "Players roll their own day duties",
-    hint: "Puts the die on the players' own bar for preparing spells, finding food and fetching firewood — each for their own character, once a day — and for the camp's group steps. The weather, getting lost and both wandering-monster checks stay with the GM, and every result still goes to whoever it went to before: the watches are still whispered. Every roll comes back with the next in-game day.",
+    name: "DOLMENWOOD.Settings.PlayerDayRolls.Name",
+    hint: "DOLMENWOOD.Settings.PlayerDayRolls.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -355,8 +355,8 @@ Hooks.once("init", () => {
   // Empty means anybody, which is Dolmenmaster's own resolution: name a leader and
   // it is theirs, name nobody and whoever gets there first does it.
   game.settings!.register(MODULE_ID, SETTINGS.CAMP_LEADER, {
-    name: "Party leader",
-    hint: "The character who rolls what the whole party shares — finding food, and the camp's steps: the campsite, water, the fire, cooking, camaraderie, the watches and bedding down. Leave it empty and any player may roll them, first come first served. Preparing spells and fetching firewood are never affected: those are each character's own, and gathered wood goes into their own pack.",
+    name: "DOLMENWOOD.Settings.CampLeader.Name",
+    hint: "DOLMENWOOD.Settings.CampLeader.Hint",
     scope: "world",
     config: true,
     type: String,
@@ -367,8 +367,8 @@ Hooks.once("init", () => {
   // Everything through one door. Off by default, because the bar can be folded
   // away or switched off and the toolbar is then the only way back in.
   game.settings!.register(MODULE_ID, SETTINGS.BAR_ONLY_ACCESS, {
-    name: "Reach the module's windows from the day bar only",
-    hint: "Takes the Inn, Loot and Trash buttons off the scene toolbar for anyone who has the day bar, since the bar carries the same shortcuts. The button that shows and hides the bar itself always stays — without it there would be no way back.",
+    name: "DOLMENWOOD.Settings.BarOnly.Name",
+    hint: "DOLMENWOOD.Settings.BarOnly.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -377,22 +377,22 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.BOOKS_FOR_PLAYERS, {
-    name: "Which books players may open",
-    hint: "Page references are printed for everyone, but only the GM opens the Campaign and Monster Books by default — those two give away lairs, hoards and what lives in the next hex. A reference a player may not open stays on the card as plain text.",
+    name: "DOLMENWOOD.Settings.BooksForPlayers.Name",
+    hint: "DOLMENWOOD.Settings.BooksForPlayers.Hint",
     scope: "world",
     config: true,
     type: String,
     choices: {
-      none: "None — the GM only",
-      players: "The Player's Book only (default)",
-      all: "All three",
+      none: "DOLMENWOOD.Settings.BooksForPlayers.Choice.None",
+      players: "DOLMENWOOD.Settings.BooksForPlayers.Choice.Players",
+      all: "DOLMENWOOD.Settings.BooksForPlayers.Choice.All",
     },
     default: "players",
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.BOOK_PAGE_OFFSET, {
-    name: "Book page offset",
-    hint: "How far the PDF's page numbering runs ahead of the printed page numbers. All three Dolmenwood books carry two pages of front matter that the printed numbering does not count, so printed p152 is the PDF's page 154 — leave this at 2 unless a reference lands short.",
+    name: "DOLMENWOOD.Settings.BookOffset.Name",
+    hint: "DOLMENWOOD.Settings.BookOffset.Hint",
     scope: "world",
     config: true,
     type: Number,
@@ -404,8 +404,8 @@ Hooks.once("init", () => {
   // been calibrated, and a switch that silently needs a second step is worse
   // than one the Referee turns on when they have taken the measurement.
   game.settings!.register(MODULE_ID, SETTINGS.HEX_FROM_TOKEN, {
-    name: "Read the hex off the party's token",
-    hint: "Once a map has been calibrated — stand the token in a hex you know and press the crosshairs beside the Hex box on the day bar — moving the token sets the hex on the bar by itself, with the terrain and region the book gives it, and brings up the hex briefing. Leave this off and the module only warns that a token has crossed a hex boundary, which is what it did before.",
+    name: "DOLMENWOOD.Settings.HexFromToken.Name",
+    hint: "DOLMENWOOD.Settings.HexFromToken.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -423,8 +423,8 @@ Hooks.once("init", () => {
   // reading on has said what it wants; but its own switch, because plenty of
   // Referees would rather move the marker freely and spend the points by hand.
   game.settings!.register(MODULE_ID, SETTINGS.TP_FROM_MOVEMENT, {
-    name: "Charge Travel Points for the hexes a move crosses",
-    hint: "While the hex is being read off the token, moving it also spends the day's Travel Points: 2 per hex along a road or track, and the terrain's own cost per hex when travelling wild (Player's Book pp156–157). A move the party cannot afford is never blocked — it is walked, and the card says how far short they were, which is the book's own answer to that.",
+    name: "DOLMENWOOD.Settings.ChargeTp.Name",
+    hint: "DOLMENWOOD.Settings.ChargeTp.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -435,8 +435,8 @@ Hooks.once("init", () => {
   // to enter the next hex does not enter it. Refusing the move keeps the token,
   // the points and the clock all where they were, with nothing to put back.
   game.settings!.register(MODULE_ID, SETTINGS.TP_REFUSE_SHORT, {
-    name: "Refuse a move the party cannot pay for",
-    hint: "A move costing more Travel Points than the party has left is stopped before it happens, and a message says what it would have cost and how far they can still get today. Switch this off and the move is walked instead: the points are spent down to zero and the card says how far short they were, for a table that would rather rule on it themselves.",
+    name: "DOLMENWOOD.Settings.RefuseShort.Name",
+    hint: "DOLMENWOOD.Settings.RefuseShort.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -449,9 +449,9 @@ Hooks.once("init", () => {
   // API touches only keys it made itself, so weather the Referee set by hand
   // through FXMaster's window survives all of this untouched.
   game.settings!.register(MODULE_ID, SETTINGS.WEATHER_FX, {
-    name: "Paint the day's weather onto the map",
+    name: "DOLMENWOOD.Settings.WeatherFx.Name",
     hint:
-      "Needs the FXMaster module. The weather rolled each morning is drawn on the maps you switch on for it: rain, snow, fog, and the coloured mists the unseasons bring. Switch this on and then press the cloud beside the Weather duty on the day bar, once per map that should show it. A map you have not switched on is never touched, and neither is any weather you set yourself through FXMaster.",
+      "DOLMENWOOD.Settings.WeatherFx.Hint",
     scope: "world",
     config: true,
     type: Boolean,
@@ -464,15 +464,15 @@ Hooks.once("init", () => {
   // Subtle by default — the first cut of this was too much, and the fix for too
   // much is never to start there again.
   game.settings!.register(MODULE_ID, SETTINGS.WEATHER_FX_STRENGTH, {
-    name: "How strongly the weather is drawn",
-    hint: "How much of it there is — how many drops, how thick the air. Not how big it is drawn: that is set for a world map seen from a long way up and is the same at every setting. Ordinary is the figure the Dolmenwood map was tuned to by hand; subtle halves it.",
+    name: "DOLMENWOOD.Settings.WeatherStrength.Name",
+    hint: "DOLMENWOOD.Settings.WeatherStrength.Hint",
     scope: "world",
     config: true,
     type: String,
     choices: {
-      subtle: "Subtle",
-      normal: "Ordinary",
-      strong: "Strong",
+      subtle: "DOLMENWOOD.Settings.WeatherStrength.Choice.Subtle",
+      normal: "DOLMENWOOD.Settings.WeatherStrength.Choice.Normal",
+      strong: "DOLMENWOOD.Settings.WeatherStrength.Choice.Strong",
     },
     default: "normal",
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
@@ -577,8 +577,8 @@ Hooks.once("init", () => {
   } as Parameters<NonNullable<typeof game.settings>["register"]>[2]);
 
   game.settings!.register(MODULE_ID, SETTINGS.FOLLOW_WORLD_TIME, {
-    name: "Tie the day counter to the world clock",
-    hint: "Off by default, and it works both ways when on. The world clock passing into a new day moves the counter on, re-rolling the inn menus and the day's duties; and the bar's own ▶ pushes the clock forward to 7:00 the next morning. Built on core's world time rather than any one module's API, so it works with Simple Calendar, SmallTime, about-time or Foundry's own controls alike. However far the clock jumps, the counter only ever advances one day.",
+    name: "DOLMENWOOD.Settings.FollowWorldTime.Name",
+    hint: "DOLMENWOOD.Settings.FollowWorldTime.Hint",
     scope: "world",
     config: true,
     type: Boolean,
