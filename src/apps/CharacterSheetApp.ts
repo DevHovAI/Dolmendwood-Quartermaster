@@ -1173,7 +1173,8 @@ export class CharacterSheetApp extends foundry.applications.api.HandlebarsApplic
  *
  * Here as well as in the stylesheet because the window has to be able to say
  * *why* a picture looks soft, and that answer is a comparison against this
- * number. The two are checked against each other by `render-sheet.js`.
+ * number. The two are checked against each other by `npm run sheet:check`,
+ * which also renders this window in both languages without a browser.
  */
 const PORTRAIT_BOX = 200;
 
