@@ -53,6 +53,12 @@ String übersetzt, schlägt hier nach, bevor er ein Wort erfindet.
 | trainer | Lehrmeister |
 | background / affiliation | Hintergrund / Zugehörigkeit |
 | range band: short, medium, long | kurze, mittlere, weite Entfernung |
+| to pray for a spell | im Gebet erbitten (Partizip: im Gebet erbeten) |
+
+`erbeten` ist das Partizip von *erbitten*, nicht von *beten* — es gibt weder
+`sie erbeten` noch `zu erbeten`. Beides stand im Modul und ist am 2026-09-06
+korrigiert. `im Gebet` steht dabei, weil das Wort sonst wie ein verunglücktes
+„beten“ aussieht; genau so hat Dolmenmaster es gelesen.
 
 `Gesinnung` ist meine Entscheidung vom 2026-09-06, nicht Dolmenmasters — es ist
 ein gewöhnliches Wort und kein Dolmenwood-Eigenbegriff. Wenn er es anders haben
