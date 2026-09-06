@@ -7674,6 +7674,27 @@ span.day-bar-panel-tick {
    whatever Foundry's own form-group and paragraph margins happened to add up
    to. It is a stack of separate questions, which is rung 6 on the ladder. */
 
+/* ── Our own page of Foundry's settings menu ───────────────────────────────────
+   **A setting's name gets the height of an input field between its lines, and
+   this one is core's own bug rather than a rule.** `blocks` layer:
+
+     .standard-form .form-group > label { line-height: var(--input-height) }   /* 2rem */
+
+   Core knows it is wrong for a name that wraps and corrects it one layer
+   later — for `#client-settings`, which is what the settings window was
+   called before v13. It is `#settings-config` now (`SettingsConfig.DEFAULT_OPTIONS`),
+   so the correction matches nothing and every wrapped setting name in every
+   module stands 32px apart. Dolmenmaster found it on ours (2026-09-06).
+
+   **Scoped to this module's own page and no further.** Foundry renders each
+   package's settings into its own section, `data-category="<package id>"`, so
+   the fix reaches our twenty-four names and leaves every other module's page
+   exactly as its author sees it. Fixing core's window wholesale would be a
+   module redressing somebody else's settings, which is not ours to do. */
+#settings-config [data-category="dolmenwood-party-inventory"] .form-group > label {
+  line-height: var(--dw-leading-snug);
+}
+
 /* ── Every dialog this module opens ───────────────────────────────────────────
    **Foundry gives a form's label the height of a field.**
    `body.game .app form .form-group label { line-height: var(--form-field-height) }`
