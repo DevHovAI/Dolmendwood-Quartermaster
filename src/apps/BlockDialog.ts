@@ -360,9 +360,18 @@ export async function promptBlock(
         // natural width and the dialog opened as wide as the screen. By the
         // time the kind changes the width is set, that branch is skipped, and
         // only the height is measured again.
+        //
+        // **And only when the questions do not fit**, or the refit would undo
+        // the height asked for above: `height: "auto"` means "as tall as the
+        // content", which for a short kind is *shorter* than the window, and
+        // a window that shrank when a kind was chosen would be worse than one
+        // that scrolled.
         html.find("#dw-block-kind").on("change", () => {
           paint();
-          dialog.setPosition({ height: "auto" });
+          const content = dialog.element?.find(".window-content")[0];
+          if (content && content.scrollHeight > content.clientHeight + 1) {
+            dialog.setPosition({ height: "auto" });
+          }
         });
 
         // The address, live, while a new block is still being named.
@@ -377,11 +386,19 @@ export async function promptBlock(
         paint();
       },
       close: () => done(null),
-      // **A width, which this dialog never had.** It fell back to Foundry's
-      // 400px while every comparable dialog here asks for 460 to 720 — and
-      // this one carries a text area, three explanations and inline code
-      // samples (Dolmenmaster, 2026-09-05).
-    }, { width: 560 });
+      // **A width and a height, neither of which this dialog ever had.** It
+      // fell back to Foundry's 400px while every comparable dialog here asks
+      // for 460 to 720 — and this one carries a text area, three explanations
+      // and inline code samples (Dolmenmaster, 2026-09-05).
+      //
+      // **The height is asked for rather than measured** (Dolmenmaster,
+      // 2026-09-06: *"du sollst das fenster höher machen"*, twice). Left to
+      // itself Foundry fits the window to the questions a new block shows
+      // before a kind is chosen, which is the shortest this form is ever going
+      // to be — correct arithmetic, and too small to work in. Capped to the
+      // viewport the way the shop does it, so a small screen still gets a
+      // window that fits on it.
+    }, { width: 560, height: Math.min(720, window.innerHeight - 80) });
     dialog.render(true);
   });
 }
