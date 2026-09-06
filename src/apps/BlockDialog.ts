@@ -344,14 +344,26 @@ export async function promptBlock(
             const kinds = (el.getAttribute("data-kind") ?? "").split(" ");
             el.style.display = chosen && kinds.includes(chosen) ? "" : "none";
           });
-          // And the window grows with them. Foundry measures a dialog exactly
-          // once and then writes that number into `style.height` as pixels
-          // (`Application#setPosition`), so questions revealed afterwards
-          // would be pushed into a small scrolling box. The custom-item
-          // dialog already refits itself for the same reason.
-          dialog.setPosition({ height: "auto" });
         };
-        html.find("#dw-block-kind").on("change", paint);
+
+        // **The window grows with the questions, and only after the first
+        // render.** Foundry measures a dialog exactly once and writes the
+        // result into `style.height` as pixels, so questions revealed
+        // afterwards would be pushed into a small scrolling box.
+        //
+        // Why not on the first paint too, which is where this sat and was
+        // wrong: `Application#setPosition` sets the width in the same call,
+        // and it does so whenever `el.style.width` is still empty —
+        // `tarW = width || el.offsetWidth`, clamped to the viewport. During
+        // `render` the width has not been applied yet (the base class does it
+        // *after* this callback), so an unconstrained form measured its own
+        // natural width and the dialog opened as wide as the screen. By the
+        // time the kind changes the width is set, that branch is skipped, and
+        // only the height is measured again.
+        html.find("#dw-block-kind").on("change", () => {
+          paint();
+          dialog.setPosition({ height: "auto" });
+        });
 
         // The address, live, while a new block is still being named.
         if (!existing) {
