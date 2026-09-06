@@ -38,6 +38,17 @@ export interface BlockDialogResult {
 }
 
 /** The six kinds, in the order the book introduces them. */
+/**
+ * The air under the last question, in pixels.
+ *
+ * Foundry's own fit is exact, which puts the last field hard against the
+ * buttons — *"es war vorher kaum Abstand zum 'Gewürfelt als'"* — and the
+ * first answer to that, a flat 720, was *"n büschn zu hoch"* (Dolmenmaster,
+ * 2026-09-06). So the window is the height of its questions plus this, which
+ * is a hand's breadth at any kind rather than a guess that only suits one.
+ */
+const AIR = 48;
+
 const KINDS: { value: string; labelKey: string }[] = [
   { value: "", labelKey: "DOLMENWOOD.Block.Kind.None" },
   { value: "ability", labelKey: "DOLMENWOOD.Block.Kind.Ability" },
@@ -346,32 +357,36 @@ export async function promptBlock(
           });
         };
 
-        // **The window grows with the questions, and only after the first
-        // render.** Foundry measures a dialog exactly once and writes the
-        // result into `style.height` as pixels, so questions revealed
-        // afterwards would be pushed into a small scrolling box.
+        // **As tall as its questions, and a breath more.**
         //
-        // Why not on the first paint too, which is where this sat and was
-        // wrong: `Application#setPosition` sets the width in the same call,
-        // and it does so whenever `el.style.width` is still empty —
-        // `tarW = width || el.offsetWidth`, clamped to the viewport. During
-        // `render` the width has not been applied yet (the base class does it
-        // *after* this callback), so an unconstrained form measured its own
-        // natural width and the dialog opened as wide as the screen. By the
-        // time the kind changes the width is set, that branch is skipped, and
-        // only the height is measured again.
+        // Foundry measures a dialog exactly once, so a kind chosen afterwards
+        // would push its questions into a scrolling box; and its measurement
+        // is exact, which leaves the last field sitting hard against the
+        // buttons. Both are answered by measuring again whenever the form
+        // changes and adding `AIR` to whatever comes back.
         //
-        // **And only when the questions do not fit**, or the refit would undo
-        // the height asked for above: `height: "auto"` means "as tall as the
-        // content", which for a short kind is *shorter* than the window, and
-        // a window that shrank when a kind was chosen would be worse than one
-        // that scrolled.
+        // **Never during the `render` callback**, which is where the first
+        // attempt at this sat and was wrong. `Application#setPosition` sets
+        // the width in the same call, and it does so whenever
+        // `el.style.width` is still empty — `tarW = width || el.offsetWidth`,
+        // clamped to the viewport. The base class applies the position
+        // *after* this callback, so a fit called from inside it measured an
+        // unconstrained form and opened the window as wide as the screen. One
+        // frame later the width is set and that branch is skipped.
+        const fit = () => {
+          const el = dialog.element?.[0];
+          if (!el) return;
+          // "auto" is Foundry's own word for "as tall as the content": it
+          // clears the height, measures, and writes the number back.
+          dialog.setPosition({ height: "auto" });
+          dialog.setPosition({
+            height: Math.min(el.offsetHeight + AIR, window.innerHeight - 40),
+          });
+        };
+
         html.find("#dw-block-kind").on("change", () => {
           paint();
-          const content = dialog.element?.find(".window-content")[0];
-          if (content && content.scrollHeight > content.clientHeight + 1) {
-            dialog.setPosition({ height: "auto" });
-          }
+          fit();
         });
 
         // The address, live, while a new block is still being named.
@@ -384,6 +399,7 @@ export async function promptBlock(
           });
         }
         paint();
+        requestAnimationFrame(fit);
       },
       close: () => done(null),
       // **A width and a height, neither of which this dialog ever had.** It
@@ -391,14 +407,9 @@ export async function promptBlock(
       // for 460 to 720 — and this one carries a text area, three explanations
       // and inline code samples (Dolmenmaster, 2026-09-05).
       //
-      // **The height is asked for rather than measured** (Dolmenmaster,
-      // 2026-09-06: *"du sollst das fenster höher machen"*, twice). Left to
-      // itself Foundry fits the window to the questions a new block shows
-      // before a kind is chosen, which is the shortest this form is ever going
-      // to be — correct arithmetic, and too small to work in. Capped to the
-      // viewport the way the shop does it, so a small screen still gets a
-      // window that fits on it.
-    }, { width: 560, height: Math.min(720, window.innerHeight - 80) });
+      // The height is not asked for here. It is measured after the first
+      // render and re-measured whenever the form changes — see `fit`.
+    }, { width: 560 });
     dialog.render(true);
   });
 }
