@@ -23,6 +23,16 @@ String übersetzt, schlägt hier nach, bevor er ein Wort erfindet.
 | Eigen- und Ortsnamen | — | Prinzell, Lankshorn, Hag's Addle … bleiben, wie sie sind. |
 | Slot (Ausrüstung) | ~~Feld~~ | Dolmenmasters Entscheidung, 2026-09-05. Der Gepäckplatz heißt Slot, Plural Slots. **Achtung:** `Feld` bleibt richtig, wo ein *Eingabefeld* gemeint ist („trag das Hex ins Feld ein“) und wo es um Äcker geht. |
 | Survival, Skill Target | ~~Überleben, Fertigkeitswert~~ | Regelbegriffe wie Prime Ability. |
+| Listen, Search | ~~Lauschen, Suchen~~ | Die anderen beiden gedruckten Skills, gleiche Begründung. |
+| Hit Points, Armour Class, Attack, Magic Resistance | ~~Trefferpunkte, Rüstungsklasse~~ | Stehen so auf dem gedruckten Bogen, und OSE führt die Felder unter diesen Namen. |
+| Ability Check, Skill Check, Saving Throw, Save, Attack Roll, Reaction Roll | — | Die Namen der Würfe. So schlägt man sie nach. |
+| Doom, Ray, Hold, Blast, Spell | — | Die fünf Saves, wie das Buch sie nennt. |
+| Strength, Intelligence, Wisdom, Dexterity, Constitution, Charisma | — | Ebenso, ausgeschrieben wie abgekürzt. |
+| Melee, Missile | ~~Nahkampf, Fernkampf~~ | Als *Bezeichnung* eines Angriffs oder einer Quality. Die Prosa darum ist deutsch: „Nahkampfschaden“ bleibt richtig. |
+| Arcane, Holy | ~~arkan, heilig~~ | Die beiden Zauberarten des Buches (S. 78 und S. 100). |
+| Trait | ~~Wesenszug~~ | Der Block-Typ auf dem Attributsbogen. |
+| Rank (Zauber) | ~~Grad, Stufe~~ | Regelbegriff. |
+| Moon Sign | ~~Mondzeichen~~ | Regelbegriff — **und** der gespeicherte Name der Blockgruppe, unter der ein gewähltes Zeichen abgelegt wird. Der Picker findet den alten Block über genau diesen Namen, um ihn zu ersetzen; eine mit der Sprache wechselnde Überschrift hinterließe einen Charakter mit zwei Moon Signs. |
 
 ## Wird übersetzt
 
@@ -37,6 +47,17 @@ String übersetzt, schlägt hier nach, bevor er ein Wort erfindet.
 | GM / Referee | Referee (der Referee, maskulin) |
 | attribute sheet | Attributsbogen |
 | party | Gruppe |
+| Alignment | Gesinnung |
+| cap (XP-Obergrenze) | Deckel |
+| spell credit / charge | Zauberguthaben / Ladung |
+| trainer | Lehrmeister |
+| background / affiliation | Hintergrund / Zugehörigkeit |
+| range band: short, medium, long | kurze, mittlere, weite Entfernung |
+
+`Gesinnung` und `Deckel` sind meine Entscheidung vom 2026-09-06, nicht
+Dolmenmasters — beide sind gewöhnliche Wörter statt Dolmenwood-Eigenbegriffe,
+und der Deckel ist ohnehin eine Hausregel. Wenn er sie anders haben will, sind
+es zwei Zeilen hier und je eine Handvoll Schlüssel.
 
 `Klasse` ist bewusst deutsch: es ist ein gewöhnliches Wort, kein
 Dolmenwood-Eigenbegriff, und `"X" ist keine Class, die dieses Modul kennt` liest
