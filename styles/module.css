@@ -166,6 +166,33 @@
   --dw-space-7: 16px;
   --dw-space-8: 24px;
 
+  /* ══ LEADING ═══════════════════════════════════════════════════════════
+     The third metric, and the one the design pass never did. Type has a
+     scale and space has a ladder; the room *between two lines of the same
+     paragraph* had neither, and the file carried seven different values for
+     it — 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4 — none of them chosen.
+
+     **Three rungs, and they are for TEXT.** A control that sets
+     `line-height: 1` or a pixel figure is stating its own height, not the
+     leading of a paragraph, and none of those moved.
+
+       tight   headings, names, a line that will not wrap
+       snug    every other piece of interface text: labels, rows, badges
+       prose   a paragraph that actually runs to several lines
+
+     **Rounding rule: nearest rung, and a tie goes DOWN.** The opposite of
+     the spacing ladder's, and for the opposite reason — that one had to
+     keep controls aligned, this one is answering *"häufig bei einem
+     Zeilenumbruch die Zeilen zu viel Abstand"* (Dolmenmaster, 2026-09-06).
+
+     **The value is unitless on purpose.** Foundry's own is not: core sets
+     `line-height: var(--line-height-16)` on a form's hints, which is a flat
+     16px that does not shrink when this module prints at 11. A ratio
+     follows the text. */
+  --dw-leading-tight: 1.15;
+  --dw-leading-snug:  1.3;
+  --dw-leading-prose: 1.4;
+
   /* The gap between the lanes of a list row -- the text on the left, the count
      controls and notes, and the value and buttons on the right. One number, so
      the three read as evenly spaced (Dolmenmaster, 2026-08-31). Named through the
@@ -301,7 +328,7 @@ body {
   font-family: var(--dw-font-title);
   font-size: var(--dw-text-xl);
   font-weight: 700;
-  line-height: 1.15;
+  line-height: var(--dw-leading-tight);
   letter-spacing: 0.02em;
   text-shadow: 0 1px 0 rgba(255,255,255,0.6);
 }
@@ -873,7 +900,7 @@ body {
 .item-name {
   flex: 1;
   overflow: visible;
-  line-height: 1.4;
+  line-height: var(--dw-leading-prose);
 }
 
 .item-qualities {
@@ -889,7 +916,7 @@ body {
   color: var(--dw-tertiary);
   font-style: italic;
   margin-top: var(--dw-space-1);
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
   white-space: normal;
 }
 
@@ -985,7 +1012,7 @@ body {
   flex-shrink: 1;
   flex-grow: 1;
   resize: none;
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
   height: 1.6em;
   min-height: 1.6em;
   overflow: hidden;
@@ -1217,7 +1244,7 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
   overflow-wrap: anywhere;
-  line-height: 1.25;
+  line-height: var(--dw-leading-snug);
   height: 2.5em;
   font-weight: bold;
   font-size: var(--dw-text-sm);
@@ -2015,7 +2042,7 @@ body {
   color: var(--dw-tertiary);
   font-style: italic;
   margin-top: var(--dw-space-1);
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
 }
 
 .price-factor-badge {
@@ -2759,7 +2786,7 @@ body {
   color: var(--dw-tertiary);
   font-style: italic;
   font-size: var(--dw-text-sm);
-  line-height: 1.4;
+  line-height: var(--dw-leading-prose);
   border-bottom: 1px solid rgba(160,100,30,0.12);
 }
 
@@ -2822,7 +2849,7 @@ body {
   font-style: italic;
   color: var(--dw-tertiary);
   font-size: var(--dw-text-xs);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
 }
 
 .inn-item-tag {
@@ -2990,7 +3017,7 @@ body {
   font-size: var(--dw-text-base);
   font-family: inherit;
   font-weight: bold;
-  line-height: 1.4;
+  line-height: var(--dw-leading-prose);
   white-space: nowrap;
   border: 1px solid var(--dw-border);
   border-radius: 4px;
@@ -3319,7 +3346,7 @@ body {
   color: var(--dw-tertiary);
   font-family: inherit;
   font-size: var(--dw-text-sm);
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -3354,7 +3381,7 @@ body {
   font-family: inherit;
   font-size: var(--dw-text-sm);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -3590,12 +3617,12 @@ body {
 
 .loot-browser-name {
   font-weight: bold;
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
 }
 
 .loot-browser-meta {
   font-size: var(--dw-text-xs);
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
   color: var(--dw-tertiary);
 }
 
@@ -3906,7 +3933,7 @@ body > #dolmenwood-day-bar {
   box-shadow: 0 2px 6px var(--dw-shadow);
   color: var(--dw-text);
   font-size: var(--dw-text-sm);
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
 }
 
 .day-bar-strip {
@@ -4005,12 +4032,12 @@ body > #dolmenwood-day-bar {
    will not fit is clipped rather than allowed to push the chip open. */
 .day-bar-duties .day-bar-duty-text {
   overflow: hidden;
-  line-height: 1.1;
+  line-height: var(--dw-leading-tight);
 }
 
 .day-bar-duties .day-bar-duty-result {
   font-size: var(--dw-text-xs);
-  line-height: 1.15;
+  line-height: var(--dw-leading-tight);
 }
 
 .day-bar-tp .day-bar-tp-btn,
@@ -4229,7 +4256,7 @@ body > #dolmenwood-day-bar {
   color: var(--dw-text);
   font-family: inherit;
   font-size: var(--dw-text-sm);
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
 }
 
 /* The party has crossed a hex boundary since the context was last answered.
@@ -4248,7 +4275,7 @@ body > #dolmenwood-day-bar {
   color: var(--speed-orange);
   font-size: var(--dw-text-sm);
   font-weight: 600;
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -4314,7 +4341,7 @@ body > #dolmenwood-day-bar {
 .dw-food-method-text {
   display: flex;
   flex-direction: column;
-  line-height: 1.25;
+  line-height: var(--dw-leading-snug);
 }
 
 .dw-food-method-yield {
@@ -4438,7 +4465,7 @@ body > #dolmenwood-day-bar {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  line-height: 1.15;
+  line-height: var(--dw-leading-tight);
 }
 
 /* Today's result, read at a glance under the label it belongs to. Capped so a
@@ -4577,7 +4604,7 @@ body > #dolmenwood-day-bar {
 .dw-encounter-scene {
   margin: var(--dw-space-3) 0;
   font-size: var(--dw-text-base);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
 }
 
 /* Morale, hoard and temperament, read off the stat block rather than looked up. */
@@ -4626,7 +4653,7 @@ body > #dolmenwood-day-bar {
   border-radius: 3px;
   color: var(--dw-text);
   font-size: var(--dw-text-sm);
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -5060,7 +5087,7 @@ body > #dolmenwood-day-bar {
   border: none;
   color: inherit;
   font-size: var(--dw-text-base);
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
 }
 
 .duty-group-tick-btn,
@@ -5113,7 +5140,7 @@ body > #dolmenwood-day-bar {
 .duty-group-hint {
   color: var(--dw-tertiary);
   font-size: var(--dw-text-sm);
-  line-height: 1.25;
+  line-height: var(--dw-leading-snug);
   white-space: normal;
 }
 
@@ -5984,7 +6011,7 @@ span.day-bar-panel-tick {
   grid-column: 1;
   font-weight: bold;
   font-size: var(--dw-text-sm);
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
 }
 
 .qm-form .form-group > .qm-field {
@@ -6025,7 +6052,7 @@ span.day-bar-panel-tick {
   grid-column: 2;
   margin: 0;
   font-size: var(--dw-text-xs);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   opacity: 0.75;
 }
 
@@ -6055,7 +6082,7 @@ span.day-bar-panel-tick {
 .qm-form > .qm-hint {
   margin: var(--dw-space-3) 0 0;
   font-size: var(--dw-text-xs);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   opacity: 0.75;
 }
 
@@ -6314,7 +6341,7 @@ span.day-bar-panel-tick {
 
 .dw-camp-rows li {
   margin: var(--dw-space-1) 0;
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
 }
 
 /* ── A rolling step inside the Making camp window ────────────────────────────
@@ -6345,7 +6372,7 @@ span.day-bar-panel-tick {
 .duty-group-result {
   color: var(--dw-secondary);
   font-size: var(--dw-text-sm);
-  line-height: 1.25;
+  line-height: var(--dw-leading-snug);
   white-space: normal;
 }
 
@@ -6583,7 +6610,7 @@ span.day-bar-panel-tick {
   border: 1px solid var(--speed-orange);
   border-radius: 4px;
   color: var(--dw-text);
-  line-height: 1.3;
+  line-height: var(--dw-leading-snug);
 }
 
 .party-unsorted > i {
@@ -6745,7 +6772,7 @@ span.day-bar-panel-tick {
   color: var(--dw-magic-fill);
   font-size: var(--dw-text-xs);
   font-style: italic;
-  line-height: 1.25;
+  line-height: var(--dw-leading-snug);
 }
 
 .item-gm-note > i {
@@ -6892,7 +6919,7 @@ span.day-bar-panel-tick {
   height: var(--dw-sheet-input-h);
   padding: var(--dw-space-2) var(--dw-space-5);
   font-size: var(--dw-text-base);
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
 }
 
 /* A number is read at a glance and compared down a column, so it is centred and
@@ -6921,7 +6948,7 @@ span.day-bar-panel-tick {
   min-height: 52px;
   padding: var(--dw-space-3) var(--dw-space-5);
   font-size: var(--dw-text-base);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   resize: vertical;
 }
 
@@ -7056,7 +7083,7 @@ span.day-bar-panel-tick {
   margin: 0;
   font-size: var(--dw-text-xl);
   font-weight: 700;
-  line-height: 1.1;
+  line-height: var(--dw-leading-tight);
 }
 
 .dw-sheet-head-actions {
@@ -7264,7 +7291,7 @@ span.day-bar-panel-tick {
 
 .dw-ability-governs {
   font-size: var(--dw-text-xs);
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
   opacity: 0.7;
 }
 
@@ -7632,7 +7659,7 @@ span.day-bar-panel-tick {
 .dw-block-text {
   margin: var(--dw-space-3) 0 0;
   font-size: var(--dw-text-sm);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   opacity: 0.9;
 }
 
@@ -7646,6 +7673,34 @@ span.day-bar-panel-tick {
    no layout of its own at all — one rule, for its horizontal line — so it was
    whatever Foundry's own form-group and paragraph margins happened to add up
    to. It is a stack of separate questions, which is rung 6 on the ladder. */
+
+/* ── Every dialog this module opens ───────────────────────────────────────────
+   **Foundry gives a form's label the height of a field.**
+   `body.game .app form .form-group label { line-height: var(--form-field-height) }`
+   — 26 pixels, which is right for a label that fits on one line and beside the
+   point for one that does not. A wrapped label then has as much room between
+   its two lines as there is between two whole fields, so it reads as two
+   labels: *"Qualitäten (durch Kommas getrennt)"* in the animal dialog, which is
+   where Dolmenmaster found it (2026-09-06). German wraps more labels than
+   English did, so the pass that made this module speak German is what made it
+   visible — it was always there.
+
+   The class exists to beat that rule without touching anybody else's dialog:
+   `form.dw-form` carries one more class than core's selector does, and every
+   form this module writes now has it. */
+.dw-form .form-group label,
+body.game .app form.dw-form .form-group label {
+  line-height: var(--dw-leading-snug);
+}
+
+/* And the same for the paragraph under a field, where core sets a flat 16px
+   that does not follow the module's smaller text. The margin goes with it:
+   core gives it `3px 0`, which fights the gap its container already sets. */
+body.game .app form.dw-form .hint,
+body.game .app form.dw-form .qm-hint {
+  margin: 0;
+  line-height: var(--dw-leading-prose);
+}
 
 .dw-block-form {
   display: flex;
@@ -7928,7 +7983,7 @@ span.day-bar-panel-tick {
   background: none;
   color: inherit;
   font: inherit;
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   text-align: left;
   white-space: normal;
   cursor: pointer;
@@ -8022,7 +8077,7 @@ span.day-bar-panel-tick {
   color: inherit;
   font: inherit;
   font-size: var(--dw-text-sm);
-  line-height: 1.35;
+  line-height: var(--dw-leading-snug);
   text-align: left;
   justify-content: flex-start;
   white-space: normal;
@@ -8747,5 +8802,5 @@ span.day-bar-panel-tick {
   flex: 0 0 auto;
   padding: var(--dw-space-2) var(--dw-space-3);
   font-size: var(--dw-text-sm);
-  line-height: 1.2;
+  line-height: var(--dw-leading-tight);
 }

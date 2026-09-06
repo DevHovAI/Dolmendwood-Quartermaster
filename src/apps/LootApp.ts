@@ -464,7 +464,7 @@ class NewLootBoxDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Loot.New.Title"),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Loot.New.Name")}</label>
             <input type="text" id="loot-box-name" placeholder="${escapeHTML(
@@ -503,7 +503,7 @@ class RenameLootDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Loot.Edit.Title"),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Loot.New.Name")}</label>
             <input type="text" id="loot-rename" value="${escapeHTML(actor.name ?? "")}" />
@@ -554,7 +554,7 @@ class SetLootCoinsDialog extends Dialog {
 
     super({
       title: t("DOLMENWOOD.Loot.Coins.Title"),
-      content: `<form>${fields}</form>`,
+      content: `<form class="dw-form">${fields}</form>`,
       buttons: {
         save: {
           label: t("DOLMENWOOD.Common.Save"),
@@ -596,7 +596,7 @@ class TakeLootItemDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Loot.Take.Title", { name: item.name }),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Loot.Take.To")}</label>
             <select id="take-target">${targetOptions}</select>
@@ -708,7 +708,7 @@ class TakeLootCoinsDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Loot.TakeCoins.Title"),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Loot.Take.To")}</label>
             <select id="take-coin-target">${targetOptions}</select>
@@ -777,7 +777,7 @@ class SplitLootCoinsDialog extends Dialog {
       {
         title: t("DOLMENWOOD.Loot.Split.Title"),
         content: `
-          <form>
+          <form class="dw-form">
             <p class="loot-split-total">${t("DOLMENWOOD.Loot.Split.InBox", {
               coins: coinSummary(lootCoins(lootActor)),
             })}</p>

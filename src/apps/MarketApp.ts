@@ -189,7 +189,7 @@ class MarketEntryDialog extends Dialog {
       .join("");
 
     const content = `
-      <form class="qm-form">
+      <form class="dw-form qm-form">
         <div class="form-group">
           <label for="entry-name">${t("DOLMENWOOD.Market.Dialog.Name.Label")}</label>
           <div class="qm-field">

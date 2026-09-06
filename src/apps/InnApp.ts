@@ -741,7 +741,7 @@ export class InnApp extends foundry.applications.api.HandlebarsApplicationMixin(
       new Dialog({
         title: t("DOLMENWOOD.Inn.Treat.Title"),
         content: `
-          <form class="qm-form">
+          <form class="dw-form qm-form">
             <p class="qm-hint">${t("DOLMENWOOD.Inn.Treat.Hint")}</p>
             <div class="form-group">
               <label>${t("DOLMENWOOD.Inn.Treat.Recipient")}</label>
@@ -950,7 +950,7 @@ class BuyTakeAwayDialog extends Dialog {
         ? t("DOLMENWOOD.Inn.TakeAway.TitleContainer", { container: containerLabel(kind!) })
         : t("DOLMENWOOD.Inn.TakeAway.TitlePlain"),
       content: `
-        <form class="qm-form">
+        <form class="dw-form qm-form">
           <p class="qm-lead">
             <strong>${escapeHTML(title)}</strong><br />
             <span class="qm-lead-sub">${subtitle}</span>
@@ -1164,7 +1164,7 @@ class InnEntryDialog extends Dialog {
     super({
       title: t(entry ? "DOLMENWOOD.Inn.Line.Edit" : "DOLMENWOOD.Inn.Line.Add"),
       content: `
-        <form class="qm-form">
+        <form class="dw-form qm-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Inn.Line.Name.Label")}</label>
             <div class="qm-field">
@@ -1323,7 +1323,7 @@ class InnSectionDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Inn.SectionDialog.Title"),
       content: `
-        <form class="qm-form">
+        <form class="dw-form qm-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Inn.SectionDialog.Quality.Label")}</label>
             <div class="qm-field"><select id="inn-section-quality">${qualityOptions}</select></div>

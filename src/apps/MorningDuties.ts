@@ -120,7 +120,7 @@ export async function promptSpellPreparation(): Promise<{ casters: CasterChoice[
 
   const choice = await ask<{ casters: CasterChoice[]; remember: Map<string, number> }>(
     t("DOLMENWOOD.Morning.Spells.Title"),
-    `<form class="dw-camp-form">
+    `<form class="dw-form dw-camp-form">
       <p class="hint">${t("DOLMENWOOD.Morning.Spells.Hint", { chance: SPELL_LOSS_IN_6 })}</p>
       <div class="dw-spell-rows">${rows}</div>
       <p class="hint">${t("DOLMENWOOD.Morning.Spells.Rested")}</p>

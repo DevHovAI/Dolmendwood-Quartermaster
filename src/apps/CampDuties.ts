@@ -284,7 +284,7 @@ export async function promptFirewood(): Promise<FirewoodChoice | null> {
 
   return ask<FirewoodChoice>(
     t("DOLMENWOOD.Camp.Wood.Title"),
-    `<form class="dw-camp-form">
+    `<form class="dw-form dw-camp-form">
       <p class="hint">${t("DOLMENWOOD.Camp.Wood.Hint", { night: NIGHT_HOURS })}</p>
       <div class="dw-camp-members">${rows}</div>
       <div class="form-group">
@@ -351,7 +351,7 @@ export async function promptFire(): Promise<FireChoice | null> {
 
   return ask<FireChoice>(
     t("DOLMENWOOD.Camp.Fire.Title"),
-    `<form class="dw-camp-form">
+    `<form class="dw-form dw-camp-form">
       <p class="hint">${t("DOLMENWOOD.Camp.Fire.Hint")}</p>
       <div class="form-group">
         <label for="dw-fire-chance">${t("DOLMENWOOD.Camp.Fire.ChanceLabel")}</label>
@@ -520,7 +520,7 @@ export async function promptCampActivity(
 
   return ask<{ actorId: string; meal?: MealChoice; doomTarget?: number }>(
     t(spec.labelKey),
-    `<form class="dw-camp-form">
+    `<form class="dw-form dw-camp-form">
       <p class="hint">${t("DOLMENWOOD.Camp.Activity.Hint", {
         target: ABILITY_CHECK_TARGET,
         success: escapeHTML(t(spec.successKey)),
@@ -592,7 +592,7 @@ export async function promptEaters(portions: number): Promise<{ eaterIds: string
 
   return ask<{ eaterIds: string[] }>(
     t("DOLMENWOOD.Camp.Eat.Title"),
-    `<form class="dw-camp-form">
+    `<form class="dw-form dw-camp-form">
       <p class="hint">${tn("DOLMENWOOD.Camp.Eat.Hint", portions)}</p>
       <div class="dw-camp-members">${rows}</div>
       <p class="dw-meal-count"></p>
@@ -832,7 +832,7 @@ export async function promptWatches(): Promise<WatchChoice | null> {
 
   return ask<WatchChoice>(
     t("DOLMENWOOD.Camp.Watch.Title"),
-    `<form class="dw-camp-form">
+    `<form class="dw-form dw-camp-form">
       <p class="hint">${t("DOLMENWOOD.Camp.Watch.Hint")}</p>
       <div class="dw-watch-rows">${rows}</div>
       <div class="form-group">
@@ -1113,7 +1113,7 @@ export async function promptSleep(): Promise<SleepChoice | null> {
 
   return ask<SleepChoice>(
     t("DOLMENWOOD.Duty.Sleep.Label"),
-    `<form class="dw-camp-form dw-sleep-form">
+    `<form class="dw-form dw-camp-form dw-sleep-form">
       <label class="dw-sleep-fire">
         <input type="checkbox" id="dw-sleep-fire" ${campfire ? "checked" : ""}${
           isGM() ? "" : " disabled"

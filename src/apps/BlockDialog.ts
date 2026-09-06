@@ -132,7 +132,7 @@ export async function promptBlock(
         ? t("DOLMENWOOD.Block.TitleEdit", { name: existing.name })
         : t("DOLMENWOOD.Block.TitleNew"),
       content: `
-        <form class="dw-camp-form dw-block-form">
+        <form class="dw-form dw-camp-form dw-block-form">
           <div class="dw-block-field">
             <div class="form-group">
               <label for="dw-block-group">${t("DOLMENWOOD.Block.Group.Label")}</label>

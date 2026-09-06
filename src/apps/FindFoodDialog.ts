@@ -154,7 +154,7 @@ export async function promptFindFood(): Promise<FindFoodChoice | null> {
     new Dialog({
       title: t("DOLMENWOOD.Food.Title"),
       content: `
-        <form class="dw-food-form">
+        <form class="dw-form dw-food-form">
           <div class="dw-food-methods">${methods}</div>
 
           ${

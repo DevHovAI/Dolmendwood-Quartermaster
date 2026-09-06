@@ -1035,7 +1035,7 @@ export class ShopApp extends foundry.applications.api.HandlebarsApplicationMixin
       const answer = await new Promise<number>((resolve) => {
         new Dialog({
           title: t("DOLMENWOOD.Shop.SellQty.Title"),
-          content: `<form class="qm-form">
+          content: `<form class="dw-form qm-form">
             ${t("DOLMENWOOD.Shop.SellQty.Body", { what: escapeHTML(row.name) })}
             <p class="qm-hint">${t("DOLMENWOOD.Shop.SellQty.Hint", {
               cost: coinText(cpToCoin(perItemCp)),
@@ -1365,7 +1365,7 @@ class AddToShopDialog extends Dialog {
         ? t("DOLMENWOOD.Shop.Entry.EditTitle", { name: was.name })
         : t("DOLMENWOOD.Shop.AddToShop.Label"),
       content: `
-        <form class="qm-form">
+        <form class="dw-form qm-form">
           <div class="form-group">
             <label for="shop-item-kind">${t("DOLMENWOOD.Shop.Entry.Kind.Label")}</label>
             <div class="qm-field">

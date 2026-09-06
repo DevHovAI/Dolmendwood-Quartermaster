@@ -91,7 +91,7 @@ export async function promptHuntSpoils(
     new Dialog({
       title: t("DOLMENWOOD.Hunt.Title"),
       content: `
-        <form class="dw-camp-form">
+        <form class="dw-form dw-camp-form">
           <p class="hint">${
             beast
               ? t("DOLMENWOOD.Hunt.IntroNamed", { beast: escapeHTML(beast) })

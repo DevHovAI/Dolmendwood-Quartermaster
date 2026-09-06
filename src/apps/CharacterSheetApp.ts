@@ -1210,7 +1210,7 @@ async function promptText(title: string, label: string, placeholder = ""): Promi
     };
     new Dialog({
       title,
-      content: `<form class="dw-camp-form">
+      content: `<form class="dw-form dw-camp-form">
           <div class="form-group">
             <label for="dw-text-value">${label}</label>
             <input type="text" id="dw-text-value" placeholder="${placeholder}" autofocus>

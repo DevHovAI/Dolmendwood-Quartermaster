@@ -1909,7 +1909,7 @@ export class AddItemDialog extends Dialog {
       // in `.qm-field` and the notes in `.qm-hint` for the same reason: those are
       // the class names the grid places.
       content: `
-        <form class="qm-form">
+        <form class="dw-form qm-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.ItemDialog.Item")}</label>
             <div class="qm-field"><select id="add-item-select">${selectContent}</select></div>
@@ -2090,7 +2090,7 @@ export class AddCustomItemDialog extends Dialog {
       // See the note on AddItemDialog: `qm-form`, `.qm-field`, `.qm-hint` are
       // what the dialog grid places. Without them nothing lines up.
       content: `
-        <form class="qm-form">
+        <form class="dw-form qm-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.ItemDialog.Name.Label")}</label>
             <div class="qm-field">
@@ -2219,7 +2219,7 @@ class GiveItemDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Give.TitleFor", { name: item.name }),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Give.To")}</label>
             <select id="give-item-target">${memberOptions}</select>
@@ -2384,7 +2384,7 @@ class PickGiveZoneDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Give.ToWho", { who: toActor.name ?? "" }),
       content: `
-        <form>
+        <form class="dw-form">
           <p style="margin:0 0 8px;opacity:0.8;">
             ${count} item${count === 1 ? "" : "s"} → ${escapeHTML(toActor.name ?? "")}
           </p>
@@ -2429,7 +2429,7 @@ class MovePartDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Give.MoveTitle", { name: item.name }),
       content: `
-        <form>
+        <form class="dw-form">
           ${amountFieldHTML(available, "move-part-amount")}
           <div class="form-group">
             <label>${t("DOLMENWOOD.Give.MoveTo")}</label>
@@ -2489,7 +2489,7 @@ class GiveZoneDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Give.TitleFor", { name: zone.name }),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Give.To")}</label>
             <select id="give-zone-target">${memberOptions}</select>
@@ -2548,7 +2548,7 @@ class GiveCoinsDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Give.Coins.Title"),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Give.To")}</label>
             <select id="give-coins-target">${memberOptions}</select>
@@ -2619,7 +2619,7 @@ class AddExtraZoneDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Zone.Add.Title"),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Zone.Name.Label")}</label>
             <input type="text" id="extra-zone-name" placeholder="${t("DOLMENWOOD.Zone.Name.Placeholder")}" />
@@ -2666,7 +2666,7 @@ class RenameZoneDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Zone.Rename.Title"),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Zone.Name.Label")}</label>
             <input type="text" id="rename-zone-name" value="${escapeHTML(currentName)}" />
@@ -2717,7 +2717,7 @@ class GrantCoinsDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Coins.Grant.Title", { who: toActor.name ?? "" }),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.Currency.PP")}</label>
             <input type="number" id="grant-pp" value="0" min="0" />
@@ -2828,7 +2828,7 @@ class MoveCoinsBetweenZonesDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.Coins.Move.TitleFrom", { from: fromName }),
       content: `
-        <form>
+        <form class="dw-form">
           <p style="margin:0 0 8px;opacity:0.8;">
             Available: ${fromCoins.pp}${t("DOLMENWOOD.Currency.PP")} &nbsp; ${fromCoins.gp}${t(
               "DOLMENWOOD.Currency.GP"
@@ -2957,7 +2957,7 @@ class CustomAnimalDialog extends Dialog {
         ? t("DOLMENWOOD.Animal.Title.Edit")
         : t("DOLMENWOOD.Animal.Title.Add"),
       content: `
-        <form>
+        <form class="dw-form">
           <div class="form-group">
             <label>${t("DOLMENWOOD.ItemDialog.Name.Label")}</label>
             <input type="text" id="animal-name" placeholder="${t("DOLMENWOOD.Animal.Name.Placeholder")}" value="${escapeHTML(d?.name ?? "")}" />
@@ -3281,7 +3281,7 @@ class EditItemDialog extends Dialog {
     super({
       title: t("DOLMENWOOD.ItemDialog.Edit.Title", { name: item.name }),
       content: `
-        <form class="qm-form">
+        <form class="dw-form qm-form">
           <div class="form-group">
             <label for="edit-name">${t("DOLMENWOOD.ItemDialog.Name.Label")}</label>
             <div class="qm-field">
