@@ -32,6 +32,7 @@ String übersetzt, schlägt hier nach, bevor er ein Wort erfindet.
 | Arcane, Holy | ~~arkan, heilig~~ | Die beiden Zauberarten des Buches (S. 78 und S. 100). |
 | Trait | ~~Wesenszug~~ | Der Block-Typ auf dem Attributsbogen. |
 | Rank (Zauber) | ~~Grad, Stufe~~ | Regelbegriff. |
+| Cap (XP-Obergrenze) | ~~Deckel, Limit, Maximum~~ | **Dolmenmaster verwarf „Deckel“, 2026-09-06** — und seine eigenen Hausregeln beantworten die Frage: die vierte Spalte der Aufstiegstabelle in `docs/Hausregeln.pdf` heißt, auf Deutsch, „Cap erreicht“. Das Wort fällt an diesem Tisch also ohnehin schon. Maskulin: *der* Cap. Die Prosa ringsum darf „Obergrenze“ sagen, wo sie das Wort erklärt. |
 | Moon Sign | ~~Mondzeichen~~ | Regelbegriff — **und** der gespeicherte Name der Blockgruppe, unter der ein gewähltes Zeichen abgelegt wird. Der Picker findet den alten Block über genau diesen Namen, um ihn zu ersetzen; eine mit der Sprache wechselnde Überschrift hinterließe einen Charakter mit zwei Moon Signs. |
 
 ## Wird übersetzt
@@ -48,16 +49,14 @@ String übersetzt, schlägt hier nach, bevor er ein Wort erfindet.
 | attribute sheet | Attributsbogen |
 | party | Gruppe |
 | Alignment | Gesinnung |
-| cap (XP-Obergrenze) | Deckel |
 | spell credit / charge | Zauberguthaben / Ladung |
 | trainer | Lehrmeister |
 | background / affiliation | Hintergrund / Zugehörigkeit |
 | range band: short, medium, long | kurze, mittlere, weite Entfernung |
 
-`Gesinnung` und `Deckel` sind meine Entscheidung vom 2026-09-06, nicht
-Dolmenmasters — beide sind gewöhnliche Wörter statt Dolmenwood-Eigenbegriffe,
-und der Deckel ist ohnehin eine Hausregel. Wenn er sie anders haben will, sind
-es zwei Zeilen hier und je eine Handvoll Schlüssel.
+`Gesinnung` ist meine Entscheidung vom 2026-09-06, nicht Dolmenmasters — es ist
+ein gewöhnliches Wort und kein Dolmenwood-Eigenbegriff. Wenn er es anders haben
+will, ist es eine Zeile hier und eine Handvoll Schlüssel.
 
 `Klasse` ist bewusst deutsch: es ist ein gewöhnliches Wort, kein
 Dolmenwood-Eigenbegriff, und `"X" ist keine Class, die dieses Modul kennt` liest
